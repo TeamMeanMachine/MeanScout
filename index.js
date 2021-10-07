@@ -36,6 +36,8 @@ let matchCount = 1;
 let isAbsent = false;
 let gameMetrics = [];
 
+var current = new Date();
+
 // If you make a new type, be sure to add it here
 const metricTypes = {
   "toggle": ToggleMetric,
@@ -255,7 +257,7 @@ function downloadSurveys(askUser = true) {
   switch (downloadSelect.value) {
     case "JSON":
       anchor.href += encodeURIComponent(localStorage.surveys);
-      anchor.download = "surveys.json";
+      anchor.download = scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".json";
       break;
     case "CSV":
       let surveys = JSON.parse(localStorage.surveys);
@@ -271,7 +273,7 @@ function downloadSurveys(askUser = true) {
         });
       }
       anchor.href += encodeURIComponent(csv);
-      anchor.download = "surveys.csv";
+      anchor.download = scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".csv";
       break;
   }
   document.body.append(anchor);
