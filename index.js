@@ -3,7 +3,7 @@ if ("serviceWorker" in navigator) {
 }
 
 const CLIENT_ID = "155768213524-qjadle6fmokbb21i5rjanf050a99l3je.apps.googleusercontent.com";
-const API_KEY = "AIzaSyDsV3f5DyiV6CuaA_QL7YQ2N054WYYgRWc";
+const API_KEY = "AIzaSyDv0_CMDEiUnHlnJhD5mF08tHMAO-evIgs";
 
 const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
@@ -47,14 +47,12 @@ signOutButton.onclick = () => {
 
 uploadButton.onclick = () => {
   try {
-    const body = {
-      values: "test",
-    };
+    const body = (JSON.parse(localStorage.getItem("surveys")) || []).map(survey => survey.map(obj => obj.value));
     gapi.client.sheets.spreadsheets.values
       .append({
-        spreadsheetId: "1GhQVQuMi2vgVK8yhzlwz9rvgdF6HIy429ksH_Vy4sTQ",
+        spreadsheetId: "1e2iezkWwJcl4Q56xPV8vNziepM7y5cRdLHK1RczME88",
         resource: { values: body },
-        range: "Raw Data!A1",
+        range: "Raw!A2",
         valueInputOption: "RAW",
       })
       .then((response) => {
