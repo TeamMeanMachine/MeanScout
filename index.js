@@ -5,6 +5,8 @@ if ("serviceWorker" in navigator) {
 const CLIENT_ID = "155768213524-qjadle6fmokbb21i5rjanf050a99l3je.apps.googleusercontent.com";
 const API_KEY = "AIzaSyDv0_CMDEiUnHlnJhD5mF08tHMAO-evIgs";
 
+const SPREADSHEET_ID = "1e2iezkWwJcl4Q56xPV8vNziepM7y5cRdLHK1RczME88";
+
 const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
@@ -17,20 +19,7 @@ const signOutButton = document.getElementById("signout-btn");
 const uploadButton = document.getElementById("surveys-upload-btn");
 
 authorizeButton.onclick = () => {
-  tokenClient.callback = async (resp) => {
-    if (resp.error !== undefined) {
-      throw resp;
-    }
-    signOutButton.style.display = "initial";
-    authorizeButton.innerText = "Refresh";
-    uploadButton.style.display = "initial";
-  };
-
-  if (gapi.client.getToken() === null) {
-    tokenClient.requestAccessToken({ prompt: "consent" });
-  } else {
-    tokenClient.requestAccessToken({ prompt: "" });
-  }
+  tokenClient.requestAccessToken();
 };
 
 signOutButton.onclick = () => {
@@ -38,7 +27,6 @@ signOutButton.onclick = () => {
   if (token !== null) {
     google.accounts.oauth2.revoke(token.access_token);
     gapi.client.setToken("");
-    document.getElementById("content").innerText = "";
     authorizeButton.innerText = "Authorize";
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
@@ -47,10 +35,10 @@ signOutButton.onclick = () => {
 
 uploadButton.onclick = () => {
   try {
-    const body = (JSON.parse(localStorage.getItem("surveys")) || []).map(survey => survey.map(obj => obj.value));
+    const body = (JSON.parse(localStorage.getItem("surveys")) || []).map((survey) => survey.map((obj) => obj.value));
     gapi.client.sheets.spreadsheets.values
       .append({
-        spreadsheetId: "1e2iezkWwJcl4Q56xPV8vNziepM7y5cRdLHK1RczME88",
+        spreadsheetId: SPREADSHEET_ID,
         resource: { values: body },
         range: "Raw!A2",
         valueInputOption: "RAW",
@@ -83,7 +71,15 @@ function gisLoaded() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: "",
+    prompt: "",
+    callback: async (resp) => {
+      if (resp.error !== undefined) {
+        throw resp;
+      }
+      signOutButton.style.display = "initial";
+      authorizeButton.innerText = "Refresh";
+      uploadButton.style.display = "initial";
+    },
   });
   gisInited = true;
   maybeEnableButtons();
