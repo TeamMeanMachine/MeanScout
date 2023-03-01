@@ -2,10 +2,99 @@ if ("serviceWorker" in navigator) {
   window.onload = () => navigator.serviceWorker.register("./sw.js");
 }
 
-function handleClientLoad() {
-  /*console.log("kari");
-  gapi.load("client", async () =>
-  gapi.auth.setToken(await GetAccessTokenFromServiceAccount.do(serviceAccount)))*/
+const CLIENT_ID = "155768213524-qjadle6fmokbb21i5rjanf050a99l3je.apps.googleusercontent.com";
+const API_KEY = "AIzaSyDsV3f5DyiV6CuaA_QL7YQ2N054WYYgRWc";
+
+const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+
+const authorizeButton = document.getElementById("authorize-btn");
+const signOutButton = document.getElementById("signout-btn");
+const uploadButton = document.getElementById("surveys-upload-btn");
+
+authorizeButton.onclick = () => {
+  tokenClient.callback = async (resp) => {
+    if (resp.error !== undefined) {
+      throw resp;
+    }
+    signOutButton.style.display = "initial";
+    authorizeButton.innerText = "Refresh";
+    uploadButton.style.display = "initial";
+  };
+
+  if (gapi.client.getToken() === null) {
+    tokenClient.requestAccessToken({ prompt: "consent" });
+  } else {
+    tokenClient.requestAccessToken({ prompt: "" });
+  }
+};
+
+signOutButton.onclick = () => {
+  const token = gapi.client.getToken();
+  if (token !== null) {
+    google.accounts.oauth2.revoke(token.access_token);
+    gapi.client.setToken("");
+    document.getElementById("content").innerText = "";
+    authorizeButton.innerText = "Authorize";
+    signOutButton.style.display = "none";
+    uploadButton.style.display = "none";
+  }
+};
+
+uploadButton.onclick = () => {
+  try {
+    const body = {
+      values: "test",
+    };
+    gapi.client.sheets.spreadsheets.values
+      .append({
+        spreadsheetId: "1GhQVQuMi2vgVK8yhzlwz9rvgdF6HIy429ksH_Vy4sTQ",
+        resource: { values: body },
+        range: "Raw Data!A1",
+        valueInputOption: "RAW",
+      })
+      .then((response) => {
+        const result = response.result;
+        console.log(`${result.updates.updatedCells} cells appended.`);
+      });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+authorizeButton.style.display = "none";
+signOutButton.style.display = "none";
+uploadButton.style.display = "none";
+
+function gapiLoaded() {
+  gapi.load("client", async () => {
+    await gapi.client.init({
+      apiKey: API_KEY,
+      discoveryDocs: [DISCOVERY_DOC],
+    });
+    gapiInited = true;
+    maybeEnableButtons();
+  });
+}
+
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: "",
+  });
+  gisInited = true;
+  maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+  if (gapiInited && gisInited) {
+    authorizeButton.style.display = "initial";
+  }
 }
 
 const menuToggleButton = document.querySelector("#menu-toggle-btn");
@@ -14,10 +103,8 @@ const menuDiv = document.querySelector("#menu");
 const locationSelect = document.querySelector("#location-select");
 const templateCopyButton = document.querySelector("#template-copy-btn");
 const templateEditButton = document.querySelector("#template-edit-btn");
-const authenticateButton = document.querySelector("#sheets-authenticate-btn");
 const downloadSelect = document.querySelector("#download-type-sel");
 const surveysDownloadButton = document.querySelector("#surveys-download-btn");
-const surveysUploadButton = document.querySelector("#surveys-upload-btn");
 const surveysEraseButton = document.querySelector("#surveys-erase-btn");
 const teamMetric = document.querySelector("#metric-team");
 const teamMetricList = document.querySelector("#teams-list");
@@ -26,15 +113,12 @@ const absentMetric = document.querySelector("#metric-absent");
 const customMetricsDiv = document.querySelector("#metrics-custom");
 const surveySaveButton = document.querySelector("#survey-save-btn");
 const surveyResetButton = document.querySelector("#survey-reset-btn");
-const serviceAccountStatus = document.querySelector("#service-account-status");
 
 menuToggleButton.onclick = () => toggleMenu();
-locationSelect.onchange = e => setLocation(e.target.value);
+locationSelect.onchange = (e) => setLocation(e.target.value);
 templateCopyButton.onclick = () => copyTemplate();
 templateEditButton.onclick = () => editTemplate();
-authenticateButton.onclick = () => authenticate();
 surveysDownloadButton.onclick = () => downloadSurveys();
-surveysUploadButton.onclick = () => uploadSurveys();
 surveysEraseButton.onclick = () => eraseSurveys();
 teamMetric.oninput = () => backupSurvey();
 matchMetric.oninput = () => backupSurvey();
@@ -51,12 +135,12 @@ var current = new Date();
 
 // If you make a new type, be sure to add it here
 const metricTypes = {
-  "toggle": ToggleMetric,
-  "number": NumberMetric,
-  "select": SelectMetric,
-  "text": TextMetric,
-  "rating": RatingMetric,
-  "timer": TimerMetric,
+  toggle: ToggleMetric,
+  number: NumberMetric,
+  select: SelectMetric,
+  text: TextMetric,
+  rating: RatingMetric,
+  timer: TimerMetric,
 };
 
 // The example template showcases each metric type
@@ -68,29 +152,26 @@ const exampleTemplate = {
     { name: "Text", type: "text", tip: "Tip" },
     { name: "Rating", type: "rating" },
     { name: "Timer", type: "timer" },
-  ]
+  ],
 };
 
 let currentTemplate = JSON.parse(localStorage.template ?? JSON.stringify(exampleTemplate));
 loadTemplate(currentTemplate);
 setLocation(localStorage.location ?? "Red Near");
-let serviceAccount;
-if (!localStorage.serviceAccount == "") { serviceAccount = JSON.parse(localStorage.serviceAccount); handleClientLoad(); serviceAccountStatus.style.color = "green"; serviceAccountStatus.innerHTML = "Service Account Loaded"; }
-else { serviceAccountStatus.style.color = "red"; serviceAccountStatus.innerHTML = "Service Account Not Loaded"; }
 
 if (localStorage.backup) {
   const backup = JSON.parse(localStorage.backup);
-  teamMetric.value = backup.find(metric => metric.name == "Team").value;
-  matchCount = backup.find(metric => metric.name == "Match").value;
+  teamMetric.value = backup.find((metric) => metric.name == "Team").value;
+  matchCount = backup.find((metric) => metric.name == "Match").value;
   matchMetric.value = matchCount;
-  isAbsent = backup.find(metric => metric.name == "Absent").value;
+  isAbsent = backup.find((metric) => metric.name == "Absent").value;
   if (isAbsent) {
     absentMetric.innerHTML = "<i class='square-checked text-icon'></i>Absent";
     customMetricsDiv.classList.toggle("hide");
     refreshIcons(absentMetric);
   }
-  gameMetrics.forEach(metric => {
-    metric.update(backup.find(m => m.name == metric.name).value);
+  gameMetrics.forEach((metric) => {
+    metric.update(backup.find((m) => m.name == metric.name).value);
   });
 }
 
@@ -100,7 +181,9 @@ function backupSurvey() {
     { name: "Team", value: teamMetric.value },
     { name: "Match", value: matchMetric.value },
     { name: "Absent", value: isAbsent },
-    ...gameMetrics.map(metric => { return { name: metric.name, value: metric.value } })
+    ...gameMetrics.map((metric) => {
+      return { name: metric.name, value: metric.value };
+    }),
   ]);
 }
 
@@ -137,42 +220,21 @@ function editTemplate() {
     if (newPrompt == "reset") {
       setTemplate();
     } else {
-	  let newTemplate;
-	  try {
-		newTemplate = JSON.parse(newPrompt);
-      } catch (e) {
-	    alert("Could not set template!\n" + e);
-	  }
+      const newTemplate = JSON.parse(newPrompt);
       let error;
       if (newTemplate.metrics) {
-        newTemplate.metrics.forEach(metric => {
+        newTemplate.metrics.forEach((metric) => {
           if (!metric.name) error = "Metric has no name";
           if (!Array.isArray(metric.values ?? [])) error = "Metric has invalid values";
           if (!metricTypes.hasOwnProperty(metric.type)) error = "Metric has invalid type";
         });
       } else error = "Template has no metrics";
       if (error) {
-        alert(`Could not set template!\n${error}`);
+        alert(`Could not set template! ${error}`);
         return;
       }
       setTemplate(newTemplate);
     }
-  }
-}
-
-/** Saves the google service account JSON into local storage */
-function authenticate() {
-  const newPrompt = prompt("Paste new service file JSON:");
-  if (newPrompt) {
-    try {
-	  serviceAccount = JSON.parse(newPrompt);
-      localStorage.serviceAccount = JSON.stringify(serviceAccount ?? "");
-      handleClientLoad();
-    } catch (e) {
-      alert("Could not authenticate!\n" + e);
-    }
-    if (!localStorage.serviceAccount == "") { serviceAccountStatus.style.color = "green"; serviceAccountStatus.innerHTML = "Service Account Loaded"; }
-    else { serviceAccountStatus.style.color = "red"; serviceAccountStatus.innerHTML = "Service Account Not Loaded"; }
   }
 }
 
@@ -195,14 +257,14 @@ function setTemplate(newTemplate = exampleTemplate) {
 function loadTemplate(newTemplate = exampleTemplate) {
   teamMetricList.innerHTML = "";
   if (newTemplate.teams) {
-    newTemplate.teams.forEach(team => {
+    newTemplate.teams.forEach((team) => {
       teamMetricList.innerHTML += `<option value="${team}">`;
     });
   }
   customMetricsDiv.innerHTML = "";
   gameMetrics = [];
   let metricObject;
-  newTemplate.metrics.forEach(metric => {
+  newTemplate.metrics.forEach((metric) => {
     metricObject = new metricTypes[metric.type](metric);
     if (metric.group) {
       let groupSpan = document.createElement("span");
@@ -239,7 +301,7 @@ function saveSurvey() {
     return;
   }
   if (currentTemplate.teams) {
-    if (!currentTemplate.teams.some(team => team == teamMetric.value)) {
+    if (!currentTemplate.teams.some((team) => team == teamMetric.value)) {
       alert("Invalid team value");
       teamMetric.focus();
       return;
@@ -257,7 +319,9 @@ function saveSurvey() {
     { name: "Team", value: teamMetric.value },
     { name: "Match", value: matchMetric.value },
     { name: "Absent", value: isAbsent },
-    ...gameMetrics.map(metric => { return { name: metric.name, value: metric.value } })
+    ...gameMetrics.map((metric) => {
+      return { name: metric.name, value: metric.value };
+    }),
   ]);
   localStorage.surveys = JSON.stringify(surveys);
   resetSurvey(false);
@@ -276,7 +340,7 @@ function resetSurvey(askUser = true) {
     matchMetric.value = matchCount;
   }
   if (isAbsent) toggleAbsent();
-  gameMetrics.forEach(metric => metric.reset());
+  gameMetrics.forEach((metric) => metric.reset());
   refreshIcons();
   localStorage.backup = "";
 }
@@ -292,23 +356,25 @@ function downloadSurveys(askUser = true) {
   switch (downloadSelect.value) {
     case "JSON":
       anchor.href += encodeURIComponent(localStorage.surveys);
-      anchor.download = scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".json";
+      anchor.download =
+        scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".json";
       break;
     case "CSV":
       let surveys = JSON.parse(localStorage.surveys);
       let csv = "";
       if (surveys) {
-        surveys.forEach(survey => {
+        surveys.forEach((survey) => {
           let surveyAsCSV = "";
-          survey.forEach(metric => {
-            if (typeof metric.value == "string") surveyAsCSV += "\"" + metric.value + "\",";
+          survey.forEach((metric) => {
+            if (typeof metric.value == "string") surveyAsCSV += '"' + metric.value + '",';
             else surveyAsCSV += metric.value + ",";
           });
           csv += surveyAsCSV + "\n";
         });
       }
       anchor.href += encodeURIComponent(csv);
-      anchor.download = scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".csv";
+      anchor.download =
+        scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".csv";
       break;
   }
   document.body.append(anchor);
@@ -316,44 +382,7 @@ function downloadSurveys(askUser = true) {
   anchor.remove();
 }
 
-function appendValues(spreadsheetId, _values) {
-  let values = [
-    [
-      // Cell values ...
-    ],
-    // Additional rows ...
-  ];
-  values = _values;
-  const body = {
-    values: values,
-  };
-  try {
-    gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: spreadsheetId,
-      resource: body,
-    }).then((response) => {
-      const result = response.result;
-      console.log(`${result.updates.updatedCells} cells appended.`);
-    });
-  } catch (err) {
-    console.log(err.message);
-    return;
-  }
-}
-
-/**
- * Uploads all surveys from `localStorage` to google sheets - /!\ BETA
- * @param {boolean} askUser A boolean that represents whether to prompt the user
- */
-function uploadSurveys(askUser = true) {
-  if (localStorage.serviceAccount == "") alert("You must authenticate first!");
-  else {
-    if (askUser) if (!confirm("Confirm upload?")) return;
-    appendValues("1GhQVQuMi2vgVK8yhzlwz9rvgdF6HIy429ksH_Vy4sTQ", localStorage.surveys);
-  }
-}
-
 /** Erases all surveys from `localStorage` after prompting the user */
 function eraseSurveys() {
-  if (prompt("Type 'erase' to erase saved surveys\nWARNING: This will reset the service account too!!") == "erase") { localStorage.surveys = "[]"; localStorage.serviceAccount = ""; serviceAccountStatus.style.color = "red"; serviceAccountStatus.innerHTML = "Service Account Not Loaded"; }
+  if (prompt("Type 'erase' to erase saved surveys") == "erase") localStorage.surveys = "[]";
 }
