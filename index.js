@@ -27,7 +27,8 @@ signOutButton.onclick = () => {
   if (token !== null) {
     google.accounts.oauth2.revoke(token.access_token);
     gapi.client.setToken("");
-    authorizeButton.innerText = "Authorize";
+    authorizeButton.innerHTML = "<i class='auth text-icon'></i>Authorize";
+    refreshIcons(authorizeButton);
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
   }
@@ -77,7 +78,8 @@ function gisLoaded() {
         throw resp;
       }
       signOutButton.style.display = "initial";
-      authorizeButton.innerText = "Refresh";
+      authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
+      refreshIcons(authorizeButton);
       uploadButton.style.display = "initial";
     },
   });
