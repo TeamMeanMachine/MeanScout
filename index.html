@@ -43,6 +43,11 @@
           <button id="template-edit-btn"><i class="pen text-icon"></i>Edit</button>
         </div>
       </div>
+      <div>Sheets API
+        <div class="flex">
+          <button id="sheets-authenticate-btn"><i class="auth text-icon"></i>Authenticate</button>
+        </div>
+      </div>
       <div>Surveys
         <div class="flex">
           <div>
@@ -52,6 +57,7 @@
             </select>
           </div>
           <button id="surveys-download-btn"><i class="download text-icon"></i>Download</button>
+          <button id="surveys-upload-btn"><i class="upload text-icon"></i>Upload</button>
           <button id="surveys-erase-btn"><i class="eraser text-icon"></i>Erase</button>
         </div>
       </div>
@@ -78,7 +84,13 @@
       <button id="survey-reset-btn"><i class="undo text-icon"></i>Reset</button>
     </div>
   </div>
+  <div class="flex spaced" id="menu-bar">
+    <span id="service-account-status"></span>
+  </div>
   <!-- `index.js` should always go last -->
+  <script src="./getToken.js"></script>
+  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
   <script src="./icon.js"></script>
   <script src="./metric.js"></script>
   <script src="./index.js"></script>
