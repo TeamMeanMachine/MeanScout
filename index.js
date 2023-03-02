@@ -59,10 +59,14 @@ uploadButton.onclick = () => {
           console.log(`${result.updates.updatedCells} cells appended.`);
           localStorage.pendingUploadSurveys = "[]";
           alert(numUp + " survey(s) uploaded");
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Could not upload:\n" + JSON.stringify(err));
         });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     alert("Could not upload:\n" + err);
   }
 };
@@ -350,13 +354,20 @@ function saveSurvey() {
         .then((response) => {
           const result = response.result;
           console.log(`${result.updates.updatedCells} cells appended.`);
+        })
+        .catch((err) => {
+           console.error(err);
+           let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
+           pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
+           localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
+           alert("Survey failed to upload, use the manual \"Upload\" button later to try again.\n" + JSON.stringify(err));
         });
     } catch (err) {
-      console.log(err);
+      console.error(err);log
       let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
       pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
       localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
-      alert("Survey failed to upload, use the manual \"Upload\" button later to try again.");
+      alert("Survey failed to upload, use the manual \"Upload\" button later to try again.\n" + err);
     }
   } else {
     let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
