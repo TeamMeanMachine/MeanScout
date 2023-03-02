@@ -358,6 +358,10 @@ function saveSurvey() {
       localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
       alert("Survey failed to upload, use the manual \"Upload\" button later to try again.");
     }
+  } else {
+    let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
+    pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
+    localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
   }
 }
 
