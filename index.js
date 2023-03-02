@@ -23,6 +23,7 @@ if(localStorage.pendingUploadSurveys == null) localStorage.pendingUploadSurveys 
 const authorizeButton = document.getElementById("authorize-btn");
 const signOutButton = document.getElementById("signout-btn");
 const uploadButton = document.getElementById("surveys-upload-btn");
+const sheetStatusIcon = document.getElementById("sheet-icn");
 
 authorizeButton.onclick = () => {
   tokenClient.requestAccessToken();
@@ -35,6 +36,8 @@ signOutButton.onclick = () => {
     gapi.client.setToken("");
     authorizeButton.innerHTML = "<i class='auth text-icon'></i>Authorize";
     refreshIcons(authorizeButton);
+    sheetStatusIcon.innerHTML = "<i class='hide'></i>";
+    refreshIcons(sheetStatusIcon);
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
     localStorage.storedToken = "";
@@ -85,6 +88,8 @@ function gapiLoaded() {
       signOutButton.style.display = "initial";
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
+      sheetStatusIcon.innerHTML = "<i class='sheet text-icon'></i>";
+      refreshIcons(sheetStatusIcon);
       uploadButton.style.display = "initial";
       authorized = true;
     }
@@ -105,6 +110,8 @@ function gisLoaded() {
       signOutButton.style.display = "initial";
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
+      sheetStatusIcon.innerHTML = "<i class='sheet text-icon'></i>";
+      refreshIcons(sheetStatusIcon);
       uploadButton.style.display = "initial";
       authorized = true;
     },

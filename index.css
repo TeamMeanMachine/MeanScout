@@ -108,6 +108,13 @@ svg,
   flex-wrap: wrap;
 }
 
+.flex2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .spaced > * {
   margin: 8px;
 }
