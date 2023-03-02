@@ -6,6 +6,8 @@ const CLIENT_ID = "155768213524-qjadle6fmokbb21i5rjanf050a99l3je.apps.googleuser
 const API_KEY = "AIzaSyDv0_CMDEiUnHlnJhD5mF08tHMAO-evIgs";
 
 const SPREADSHEET_ID = "1e2iezkWwJcl4Q56xPV8vNziepM7y5cRdLHK1RczME88";
+const SPREADSHEET_SHEET = "Raw";
+const SPREADSHEET_RANGE = "A2";
 
 const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
@@ -13,6 +15,7 @@ const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
+let authorized = false;
 if(localStorage.storedToken == null) localStorage.storedToken = "";
 
 const authorizeButton = document.getElementById("authorize-btn");
@@ -33,25 +36,34 @@ signOutButton.onclick = () => {
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
     localStorage.storedToken = "";
+    authorized = false;
   }
 };
 
 uploadButton.onclick = () => {
   try {
-    const body = (JSON.parse(localStorage.getItem("surveys")) || []).map((survey) => survey.map((obj) => obj.value));
-    gapi.client.sheets.spreadsheets.values
-      .append({
-        spreadsheetId: SPREADSHEET_ID,
-        resource: { values: body },
-        range: "Raw!A2",
-        valueInputOption: "RAW",
-      })
-      .then((response) => {
-        const result = response.result;
-        console.log(`${result.updates.updatedCells} cells appended.`);
-      });
+    if(localStorage.getItem("pendingUploadSurveys") == "[]") {
+      alert("No surveys are pending upload.");
+    } else {
+      let numUp = JSON.parse(localStorage.pendingUploadSurveys).length;
+      const body = (JSON.parse(localStorage.getItem("pendingUploadSurveys")) || []).map((pendingUploadSurveys) => pendingUploadSurveys.map((obj) => obj.value));
+      gapi.client.sheets.spreadsheets.values
+        .append({
+          spreadsheetId: SPREADSHEET_ID,
+          resource: { values: body },
+          range: SPREADSHEET_SHEET + "!" + SPREADSHEET_RANGE,
+          valueInputOption: "RAW",
+        })
+        .then((response) => {
+          const result = response.result;
+          console.log(`${result.updates.updatedCells} cells appended.`);
+          localStorage.pendingUploadSurveys = "[]";
+          alert(numUp + " survey(s) uploaded");
+        });
+    }
   } catch (err) {
     console.log(err);
+    alert("Could not upload:\n" + err);
   }
 };
 
@@ -72,6 +84,7 @@ function gapiLoaded() {
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
       uploadButton.style.display = "initial";
+      authorized = true;
     }
     maybeEnableButtons();
   });
@@ -91,6 +104,7 @@ function gisLoaded() {
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
       uploadButton.style.display = "initial";
+      authorized = true;
     },
   });
   gisInited = true;
@@ -331,6 +345,28 @@ function saveSurvey() {
   ]);
   localStorage.surveys = JSON.stringify(surveys);
   resetSurvey(false);
+  if(authorized) {
+    try {
+      const body = [JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1].map(obj => obj.value)];
+      gapi.client.sheets.spreadsheets.values
+        .append({
+          spreadsheetId: SPREADSHEET_ID,
+          resource: { values: body },
+          range: SPREADSHEET_SHEET + "!" + SPREADSHEET_RANGE,
+          valueInputOption: "RAW",
+        })
+        .then((response) => {
+          const result = response.result;
+          console.log(`${result.updates.updatedCells} cells appended.`);
+        });
+    } catch (err) {
+      console.log(err);
+      let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
+      pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
+      localStorage.setItem('pendingUploadSurveys', JSON.stringify(pendingUploadSurveys));
+      alert("Survey failed to upload, use the manual \"Upload\" button later to try again.");
+    }
+  }
 }
 
 /**
@@ -356,17 +392,23 @@ function resetSurvey(askUser = true) {
  * @param {boolean} askUser A boolean that represents whether to prompt the user
  */
 function downloadSurveys(askUser = true) {
-  if (askUser) if (!confirm("Confirm download?")) return;
+  let downloadFrom = localStorage.surveys;
+  if(JSON.parse(localStorage.pendingUploadSurveys).length == 0 && JSON.parse(localStorage.pendingUploadSurveys).length == 0) { alert("There are no surveys to download"); return; }
+  if(localStorage.getItem("pendingUploadSurveys") !== "[]" && confirm("There are currently " + JSON.parse(localStorage.pendingUploadSurveys).length + " survey(s) pending upload... download them instead?")) {
+    downloadFrom = localStorage.pendingUploadSurveys;
+  } else {
+    if(askUser) if(!confirm("There is a total of " + JSON.parse(localStorage.surveys).length + " offline survey(s)... download them?")) return;  
+  }
   const anchor = document.createElement("a");
   anchor.href = "data:text/plain;charset=utf-8,";
   switch (downloadSelect.value) {
     case "JSON":
-      anchor.href += encodeURIComponent(localStorage.surveys);
+      anchor.href += encodeURIComponent(downloadFrom);
       anchor.download =
         scoutLocation + " Surveys " + current.toLocaleDateString() + "@" + current.toLocaleTimeString() + ".json";
       break;
     case "CSV":
-      let surveys = JSON.parse(localStorage.surveys);
+      let surveys = JSON.parse(downloadFrom);
       let csv = "";
       if (surveys) {
         surveys.forEach((survey) => {
@@ -390,5 +432,5 @@ function downloadSurveys(askUser = true) {
 
 /** Erases all surveys from `localStorage` after prompting the user */
 function eraseSurveys() {
-  if (prompt("Type 'erase' to erase saved surveys") == "erase") localStorage.surveys = "[]";
+  if(prompt("Type 'erase' to erase saved surveys") == "erase") { localStorage.surveys = "[]"; localStorage.pendingUploadSurveys = "[]" }
 }
