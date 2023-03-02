@@ -167,45 +167,6 @@ const metricTypes = {
   timer: TimerMetric,
 };
 
-// The default template showcases each metric type
-// TODO XMLHttpRequest is deprecated replace with more elegant solution later
-let defaultTemplate;
-let xhr = new XMLHttpRequest();
-xhr.open("GET", "./DEFAULT-TEMPLATE.json", false);
-xhr.send();
-if (xhr.status === 200) {
-  try {
-    const data = JSON.parse(xhr.responseText);
-    defaultTemplate = {
-      metrics: data.metrics,
-    };
-  } catch(err) {
-    console.error("Failed to load DEFAULT-TEMPLATE.json, falling back to stock template\n" + err);
-    defaultTemplate = {
-      metrics: [
-        { name: "Toggle", type: "toggle", group: "Group" },
-        { name: "Number", type: "number" },
-        { name: "Select", type: "select", values: ["Value 1", "Value 2", "Value 3"] },
-        { name: "Text", type: "text", tip: "Tip" },
-        { name: "Rating", type: "rating" },
-        { name: "Timer", type: "timer" },
-      ],
-    };
-  } 
-} else {
-  console.error("Failed to load DEFAULT-TEMPLATE.json, falling back to stock template\n" + xhr.statusText);
-  defaultTemplate = {
-    metrics: [
-      { name: "Toggle", type: "toggle", group: "Group" },
-      { name: "Number", type: "number" },
-      { name: "Select", type: "select", values: ["Value 1", "Value 2", "Value 3"] },
-      { name: "Text", type: "text", tip: "Tip" },
-      { name: "Rating", type: "rating" },
-      { name: "Timer", type: "timer" },
-    ],
-  };
-}
-
 let currentTemplate = JSON.parse(localStorage.template ?? JSON.stringify(defaultTemplate));
 loadTemplate(currentTemplate);
 setLocation(localStorage.location ?? "Red Near");
