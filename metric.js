@@ -52,6 +52,7 @@ class NumberMetric {
     crementor.innerHTML = `<i class="${text}"></i>`;
     crementor.onclick = () => {
       if (!this.number.value) this.number.value = 0;
+      if (this.number.value == 0 && dir == -1) return;
       this.update(parseInt(this.number.value) + dir);
       backupSurvey();
     };
