@@ -3,11 +3,6 @@ if ("serviceWorker" in navigator) {
 }
 
 const CLIENT_ID = "155768213524-qjadle6fmokbb21i5rjanf050a99l3je.apps.googleusercontent.com";
-const API_KEY = "AIzaSyDv0_CMDEiUnHlnJhD5mF08tHMAO-evIgs";
-
-const SPREADSHEET_ID = "1e2iezkWwJcl4Q56xPV8vNziepM7y5cRdLHK1RczME88";
-const SPREADSHEET_SHEET = "Raw";
-const SPREADSHEET_RANGE = "A2";
 
 const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
@@ -172,19 +167,46 @@ const metricTypes = {
   timer: TimerMetric,
 };
 
-// The example template showcases each metric type
-const exampleTemplate = {
-  metrics: [
-    { name: "Toggle", type: "toggle", group: "Group" },
-    { name: "Number", type: "number" },
-    { name: "Select", type: "select", values: ["Value 1", "Value 2", "Value 3"] },
-    { name: "Text", type: "text", tip: "Tip" },
-    { name: "Rating", type: "rating" },
-    { name: "Timer", type: "timer" },
-  ],
-};
+// The default template showcases each metric type
+// TODO XMLHttpRequest is deprecated replace with more elegant solution later
+let defaultTemplate;
+let xhr = new XMLHttpRequest();
+xhr.open("GET", "./DEFAULT-TEMPLATE.json", false);
+xhr.send();
+if (xhr.status === 200) {
+  try {
+    const data = JSON.parse(xhr.responseText);
+    defaultTemplate = {
+      metrics: data.metrics,
+    };
+  } catch(err) {
+    console.error("Failed to load DEFAULT-TEMPLATE.json, falling back to stock template\n" + err);
+    defaultTemplate = {
+      metrics: [
+        { name: "Toggle", type: "toggle", group: "Group" },
+        { name: "Number", type: "number" },
+        { name: "Select", type: "select", values: ["Value 1", "Value 2", "Value 3"] },
+        { name: "Text", type: "text", tip: "Tip" },
+        { name: "Rating", type: "rating" },
+        { name: "Timer", type: "timer" },
+      ],
+    };
+  } 
+} else {
+  console.error("Failed to load DEFAULT-TEMPLATE.json, falling back to stock template\n" + xhr.statusText);
+  defaultTemplate = {
+    metrics: [
+      { name: "Toggle", type: "toggle", group: "Group" },
+      { name: "Number", type: "number" },
+      { name: "Select", type: "select", values: ["Value 1", "Value 2", "Value 3"] },
+      { name: "Text", type: "text", tip: "Tip" },
+      { name: "Rating", type: "rating" },
+      { name: "Timer", type: "timer" },
+    ],
+  };
+}
 
-let currentTemplate = JSON.parse(localStorage.template ?? JSON.stringify(exampleTemplate));
+let currentTemplate = JSON.parse(localStorage.template ?? JSON.stringify(defaultTemplate));
 loadTemplate(currentTemplate);
 setLocation(localStorage.location ?? "Red Near");
 
@@ -271,7 +293,7 @@ function editTemplate() {
  * Sets a new template or to example template
  * @param {object} newTemplate An object that contains template data
  */
-function setTemplate(newTemplate = exampleTemplate) {
+function setTemplate(newTemplate = defaultTemplate) {
   currentTemplate = JSON.parse(JSON.stringify(newTemplate));
   localStorage.template = JSON.stringify(currentTemplate ?? "");
   loadTemplate(currentTemplate);
@@ -283,7 +305,7 @@ function setTemplate(newTemplate = exampleTemplate) {
  * Loads a template into the UI
  * @param {object} newTemplate An object that contains template data
  */
-function loadTemplate(newTemplate = exampleTemplate) {
+function loadTemplate(newTemplate = defaultTemplate) {
   teamMetricList.innerHTML = "";
   if (newTemplate.teams) {
     newTemplate.teams.forEach((team) => {
