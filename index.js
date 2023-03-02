@@ -363,7 +363,7 @@ function saveSurvey() {
            alert("Survey failed to upload, use the manual \"Upload\" button later to try again.\n" + JSON.stringify(err));
         });
     } catch (err) {
-      console.error(err);log
+      console.error(err);
       let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
       pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
       localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
