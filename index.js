@@ -19,6 +19,18 @@ const authorizeButton = document.getElementById("authorize-btn");
 const signOutButton = document.getElementById("signout-btn");
 const uploadButton = document.getElementById("surveys-upload-btn");
 const sheetStatusIcon = document.getElementById("sheet-icn");
+const statusButton = document.getElementById("surveys-status-btn");
+
+statusButton.onclick = () => {
+  alert(
+    "Total offline survey(s): " + JSON.parse(localStorage.surveys).length + "\n" +
+    "Survey(s) pending upload: " + JSON.parse(localStorage.pendingUploadSurveys).length + "\n" +
+    "Authenticated: " + authorized + "\n" +
+    "Spreadsheet ID: " + SPREADSHEET_ID + "\n" +
+    "Sheet Name: " + SPREADSHEET_SHEET + "\n" +
+    "Spreadsheet Range: " + SPREADSHEET_RANGE
+  );
+};
 
 authorizeButton.onclick = () => {
   tokenClient.requestAccessToken();
