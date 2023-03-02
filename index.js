@@ -17,6 +17,8 @@ let gapiInited = false;
 let gisInited = false;
 let authorized = false;
 if(localStorage.storedToken == null) localStorage.storedToken = "";
+if(localStorage.surveys == null) localStorage.surveys = "[]";
+if(localStorage.pendingUploadSurveys == null) localStorage.pendingUploadSurveys = "[]";
 
 const authorizeButton = document.getElementById("authorize-btn");
 const signOutButton = document.getElementById("signout-btn");
@@ -363,7 +365,7 @@ function saveSurvey() {
       console.log(err);
       let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
       pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
-      localStorage.setItem('pendingUploadSurveys', JSON.stringify(pendingUploadSurveys));
+      localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
       alert("Survey failed to upload, use the manual \"Upload\" button later to try again.");
     }
   }
@@ -393,8 +395,8 @@ function resetSurvey(askUser = true) {
  */
 function downloadSurveys(askUser = true) {
   let downloadFrom = localStorage.surveys;
-  if(JSON.parse(localStorage.pendingUploadSurveys).length == 0 && JSON.parse(localStorage.pendingUploadSurveys).length == 0) { alert("There are no surveys to download"); return; }
-  if(localStorage.getItem("pendingUploadSurveys") !== "[]" && confirm("There are currently " + JSON.parse(localStorage.pendingUploadSurveys).length + " survey(s) pending upload... download them instead?")) {
+  if(localStorage.surveys == "[]" && localStorage.pendingUploadSurveys == "[]") { alert("There are no surveys to download"); return; }
+  if(localStorage.pendingUploadSurveys !== "[]" && confirm("There are currently " + JSON.parse(localStorage.pendingUploadSurveys).length + " survey(s) pending upload... download them instead?")) {
     downloadFrom = localStorage.pendingUploadSurveys;
   } else {
     if(askUser) if(!confirm("There is a total of " + JSON.parse(localStorage.surveys).length + " offline survey(s)... download them?")) return;  
