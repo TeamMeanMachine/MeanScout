@@ -13,6 +13,7 @@ const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
+if(localStorage.storedToken == null) localStorage.storedToken = "";
 
 const authorizeButton = document.getElementById("authorize-btn");
 const signOutButton = document.getElementById("signout-btn");
@@ -31,6 +32,7 @@ signOutButton.onclick = () => {
     refreshIcons(authorizeButton);
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
+    localStorage.storedToken = "";
   }
 };
 
@@ -64,6 +66,13 @@ function gapiLoaded() {
       discoveryDocs: [DISCOVERY_DOC],
     });
     gapiInited = true;
+    if(localStorage.storedToken !== "") {
+      gapi.client.setToken(JSON.parse(localStorage.storedToken));
+      signOutButton.style.display = "initial";
+      authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
+      refreshIcons(authorizeButton);
+      uploadButton.style.display = "initial";
+    }
     maybeEnableButtons();
   });
 }
@@ -77,6 +86,7 @@ function gisLoaded() {
       if (resp.error !== undefined) {
         throw resp;
       }
+      localStorage.storedToken = JSON.stringify(gapi.client.getToken());
       signOutButton.style.display = "initial";
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
