@@ -1,6 +1,6 @@
 # MeanScout
 
-A lightweight FRC scouting web app.
+A lightweight FRC scouting web app with Google Sheets API integration.
 
 ## Features
 
@@ -11,11 +11,15 @@ A lightweight FRC scouting web app.
 - Optional team whitelisting
 - Uses browser storage to store surveys
 - Different export methods (i.e. JSON and CSV)
+- Can append data from every match to a Google Sheets spreadsheet
+- Backups failed uploads to be uploaded later
+- Verifies via OAuth
 
 ## Libraries
 
 - [FontAwesome Icons](https://fontawesome.com/)
 - [Workbox](https://developers.google.com/web/tools/workbox)
+- [Google Sheets API](https://developers.google.com/sheets/api/guides/concepts)
 
 Otherwise, MeanScout is built with native HTML/CSS/JS.
 
@@ -60,6 +64,10 @@ Types:
 Setting `group` to a string adds a label before the metric and moves the metric to a new line. Metrics after will appear to be grouped together.
 
 ## Exporting
+
+When setting up MeanScout on your web server, paste your own API Key (with access to the Google Sheets API), your Spreadsheet ID, which Sheet you would like to access in your Spreadsheet, and what cell to start appending data at. For now you should also replace the Client ID with your own OAuth Client ID as the TMM OAuth is not public.
+
+Once everything is setup and you are authenticated MeanScout will attempt to upload every single survey to your spreadsheet when the user submits it. If an upload fails it is saved to local storage to be uploaded later. In addition all data is backed up if you wish to use this version of the app offline and manually download surveys.
 
 Surveys are stored in a JSON array. Each survey is also an array containing metric objects with names and values.
 
