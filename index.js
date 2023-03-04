@@ -344,6 +344,12 @@ function saveSurvey() {
     matchMetric.focus();
     return;
   }
+  // Runs a check to see if the match number already has a saved survey, this way we ensure we don't get more than 1 survey per match
+  if ((JSON.parse(localStorage.getItem("surveys")) || []).map((surveys) => (surveys.find(obj => obj.name === "Match")).value).includes(matchMetric.value)) {
+    alert("This match number has already been recorded");
+    matchMetric.focus();
+    return;
+  }
   if (!confirm("Confirm save?")) return;
   let surveys = JSON.parse(localStorage.surveys ?? "[]");
   surveys.push([
