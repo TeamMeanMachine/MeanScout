@@ -24,9 +24,14 @@ const statusButton = document.getElementById("surveys-status-btn");
 const uploadNotification = document.getElementById("upload-notification");
 
 statusButton.onclick = () => {
+  let matchesScouted;
+  if(JSON.parse(localStorage.surveys).length !== 0) {
+    matchesScouted = (JSON.parse(localStorage.getItem("surveys")) || []).map((surveys) => (surveys.find(obj => obj.name === "Match")).value).sort((a, b) => a - b).join(', ');
+  } else matchesScouted = "None";
   alert(
     "Total offline survey(s): " + JSON.parse(localStorage.surveys).length + "\n" +
     "Survey(s) pending upload: " + JSON.parse(localStorage.pendingUploadSurveys).length + "\n" +
+    "Matches scouted: " + matchesScouted + "\n" +
     "Authenticated: " + authorized + "\n" +
     "Spreadsheet ID: " + SPREADSHEET_ID + "\n" +
     "Sheet Name: " + SPREADSHEET_SHEET + "\n" +
