@@ -344,7 +344,7 @@ function saveSurvey() {
     }
   }
   // Matches a 1-3 long sequence of numbers
-  if (!/\d{1,3}/.test(matchMetric.value)) {
+  if (!/^(?!0)\d+$/.test(matchMetric.value)) {
     alert("Invalid match value");
     matchMetric.focus();
     return;
