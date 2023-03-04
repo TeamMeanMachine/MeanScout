@@ -15,11 +15,13 @@ if(localStorage.storedToken == null) localStorage.storedToken = "";
 if(localStorage.surveys == null) localStorage.surveys = "[]";
 if(localStorage.pendingUploadSurveys == null) localStorage.pendingUploadSurveys = "[]";
 
+const authPanel = document.getElementById("auth-panel");
 const authorizeButton = document.getElementById("authorize-btn");
 const signOutButton = document.getElementById("signout-btn");
 const uploadButton = document.getElementById("surveys-upload-btn");
 const sheetStatusIcon = document.getElementById("sheet-icn");
 const statusButton = document.getElementById("surveys-status-btn");
+const uploadNotification = document.getElementById("upload-notification");
 
 statusButton.onclick = () => {
   alert(
@@ -43,8 +45,7 @@ signOutButton.onclick = () => {
     gapi.client.setToken("");
     authorizeButton.innerHTML = "<i class='auth text-icon'></i>Authorize";
     refreshIcons(authorizeButton);
-    sheetStatusIcon.innerHTML = "<i class='hide'></i>";
-    refreshIcons(sheetStatusIcon);
+    sheetStatusIcon.style.display = "none";
     signOutButton.style.display = "none";
     uploadButton.style.display = "none";
     localStorage.storedToken = "";
@@ -70,6 +71,7 @@ uploadButton.onclick = () => {
           const result = response.result;
           console.log(`${result.updates.updatedCells} cells appended.`);
           localStorage.pendingUploadSurveys = "[]";
+          uploadNotification.style.display = "none";
           alert(numUp + " survey(s) uploaded");
         })
         .catch((err) => {
@@ -83,9 +85,12 @@ uploadButton.onclick = () => {
   }
 };
 
-authorizeButton.style.display = "none";
+uploadNotification.style.display = "none";
+authPanel.style.display = "none";
+sheetStatusIcon.style.display = "none";
 signOutButton.style.display = "none";
 uploadButton.style.display = "none";
+if(localStorage.pendingUploadSurveys !== "[]") uploadNotification.style.display = "initial";
 
 function gapiLoaded() {
   gapi.load("client", async () => {
@@ -99,8 +104,7 @@ function gapiLoaded() {
       signOutButton.style.display = "initial";
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
-      sheetStatusIcon.innerHTML = "<i class='sheet text-icon'></i>";
-      refreshIcons(sheetStatusIcon);
+      sheetStatusIcon.style.display = "initial";
       uploadButton.style.display = "initial";
       authorized = true;
     }
@@ -121,8 +125,7 @@ function gisLoaded() {
       signOutButton.style.display = "initial";
       authorizeButton.innerHTML = "<i class='undo text-icon'></i>Reload";
       refreshIcons(authorizeButton);
-      sheetStatusIcon.innerHTML = "<i class='sheet text-icon'></i>";
-      refreshIcons(sheetStatusIcon);
+      sheetStatusIcon.style.display = "initial";
       uploadButton.style.display = "initial";
       authorized = true;
     },
@@ -133,7 +136,7 @@ function gisLoaded() {
 
 function maybeEnableButtons() {
   if (gapiInited && gisInited) {
-    authorizeButton.style.display = "initial";
+    authPanel.style.display = "initial";
   }
 }
 
@@ -372,6 +375,7 @@ function saveSurvey() {
            let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
            pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
            localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
+           uploadNotification.style.display = "initial";
            alert("Survey failed to upload, use the manual \"Upload\" button later to try again.\n" + JSON.stringify(err));
         });
     } catch (err) {
@@ -379,12 +383,14 @@ function saveSurvey() {
       let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
       pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
       localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
+      uploadNotification.style.display = "initial";
       alert("Survey failed to upload, use the manual \"Upload\" button later to try again.\n" + err);
     }
   } else {
     let pendingUploadSurveys = JSON.parse(localStorage.pendingUploadSurveys ?? "[]");
     pendingUploadSurveys.push(JSON.parse(localStorage.getItem("surveys"))[surveys.length - 1]);
     localStorage.pendingUploadSurveys = JSON.stringify(pendingUploadSurveys);
+    uploadNotification.style.display = "initial";
   }
 }
 
@@ -451,5 +457,9 @@ function downloadSurveys(askUser = true) {
 
 /** Erases all surveys from `localStorage` after prompting the user */
 function eraseSurveys() {
-  if(prompt("Type 'erase' to erase saved surveys") == "erase") { localStorage.surveys = "[]"; localStorage.pendingUploadSurveys = "[]" }
+  if(prompt("Type 'erase' to erase saved surveys") == "erase") {
+    localStorage.surveys = "[]";
+    localStorage.pendingUploadSurveys = "[]";
+    uploadNotification.style.display = "none";
+  }
 }
