@@ -70,7 +70,7 @@ uploadButton.onclick = () => {
           spreadsheetId: SPREADSHEET_ID,
           resource: { values: body },
           range: SPREADSHEET_SHEET + "!" + SPREADSHEET_RANGE,
-          valueInputOption: "RAW",
+          valueInputOption: "USER_ENTERED",
         })
         .then((response) => {
           const result = response.result;
@@ -375,7 +375,7 @@ function saveSurvey() {
           spreadsheetId: SPREADSHEET_ID,
           resource: { values: body },
           range: SPREADSHEET_SHEET + "!" + SPREADSHEET_RANGE,
-          valueInputOption: "RAW",
+          valueInputOption: "USER_ENTERED",
         })
         .then((response) => {
           const result = response.result;
