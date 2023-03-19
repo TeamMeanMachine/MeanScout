@@ -132,11 +132,11 @@ class TextMetric {
   }
 }
 
-/** A star rating bar. Value is a number (0-4). */
+/** A star rating bar. Value is a number (1-5). */
 class RatingMetric {
   constructor(metric = { name: "Rating" }) {
     this.name = metric.name;
-    this.value = 0;
+    this.value = 1;
     this.element = document.createElement("div");
     this.element.innerHTML = this.name + "<br>";
     this.ratingBar = document.createElement("div");
@@ -159,6 +159,7 @@ class RatingMetric {
     this.ratingBar.querySelectorAll(".star").forEach((star, i) => {
       star.querySelector("i").className = `star-${newValue < i ? "empty" : "filled"}`;
     });
+    this.value += 1;
     refreshIcons(this.ratingBar);
   }
 
