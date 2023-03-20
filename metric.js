@@ -141,10 +141,10 @@ class RatingMetric {
     this.element.innerHTML = this.name + "<br>";
     this.ratingBar = document.createElement("div");
     this.ratingBar.classList.add("flex");
-    for (let i = 0; i < 5; i++) {
+    for (let i = 1; i < 6; i++) {
       const star = document.createElement("button");
       star.classList.add("star");
-      star.innerHTML = `<i class="star-${i == 0 ? "filled" : "empty"}"></i>`;
+      star.innerHTML = `<i class="star-${i == 1 ? "filled" : "empty"}"></i>`;
       star.onclick = () => {
         this.update(i);
         backupSurvey();
@@ -154,12 +154,11 @@ class RatingMetric {
     this.element.append(this.ratingBar);
   }
 
-  update(newValue = 0) {
+  update(newValue = 1) {
     this.value = newValue;
     this.ratingBar.querySelectorAll(".star").forEach((star, i) => {
-      star.querySelector("i").className = `star-${newValue < i ? "empty" : "filled"}`;
+      star.querySelector("i").className = `star-${newValue <= i ? "empty" : "filled"}`;
     });
-    this.value += 1;
     refreshIcons(this.ratingBar);
   }
 
