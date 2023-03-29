@@ -59,6 +59,7 @@ signOutButton.onclick = () => {
 };
 
 uploadButton.onclick = () => {
+  uploadButton.disabled = true;
   try {
     if(localStorage.getItem("pendingUploadSurveys") == "[]") {
       alert("No surveys are pending upload.");
@@ -88,6 +89,7 @@ uploadButton.onclick = () => {
     console.error(err);
     alert("Could not upload:\n" + err);
   }
+  uploadButton.disabled = false;
 };
 
 uploadNotification.style.display = "none";
