@@ -60,6 +60,10 @@ h2:not(:first-child) {
   padding-top: var(--outer-gap);
 }
 
+small {
+  font-size: 16px;
+}
+
 body :focus-visible,
 :is(input, select, textarea):focus,
 :is(input, select, textarea):hover {

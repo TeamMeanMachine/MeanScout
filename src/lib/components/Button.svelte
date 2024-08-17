@@ -22,10 +22,8 @@
 <style>
   button {
     background: var(--fg-color);
-    display: inline-flex;
-    gap: var(--inner-gap);
-    justify-content: center;
     padding: var(--inner-gap);
+    text-align: left;
     text-decoration: none;
   }
 

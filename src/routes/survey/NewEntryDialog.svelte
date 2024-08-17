@@ -22,6 +22,9 @@
 
   let dialog: Dialog;
 
+  let prefilledMatch = $state(getPrefilledMatch());
+  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
+
   let team = $state("");
   let match = $state(0);
   let absent = $state(false);
@@ -30,14 +33,44 @@
   let suggestedTeams = $derived(getSuggestedTeams(match));
 
   function onopen() {
-    match =
+    match = prefilledMatch;
+    team = prefilledTeam;
+  }
+
+  function getPrefilledMatch() {
+    return (
       1 +
       Math.max(
         ...entryRecords
           .filter((entry): entry is IDBRecord<MatchEntry> => entry.type == "match")
           .map((entry) => entry.match),
         0,
-      );
+      )
+    );
+  }
+
+  function getPrefilledTeam(matchValue: number) {
+    if (surveyRecord.type != "match") return "";
+
+    const matchData = surveyRecord.matches.find((match) => match.number == matchValue);
+    if (!matchData) return "";
+
+    switch ($targetStore) {
+      case "red 1":
+        return matchData.red1;
+      case "red 2":
+        return matchData.red2;
+      case "red 3":
+        return matchData.red3;
+      case "blue 1":
+        return matchData.blue1;
+      case "blue 2":
+        return matchData.blue2;
+      case "blue 3":
+        return matchData.blue3;
+      default:
+        return "";
+    }
   }
 
   function getSuggestedTeams(matchValue: number) {
@@ -49,28 +82,22 @@
       if (matchData) {
         switch ($targetStore) {
           case "red 1":
-            team = matchData.red1;
-            teamSet.add(team);
+            teamSet.add(matchData.red1);
             break;
           case "red 2":
-            team = matchData.red2;
-            teamSet.add(team);
+            teamSet.add(matchData.red2);
             break;
           case "red 3":
-            team = matchData.red3;
-            teamSet.add(team);
+            teamSet.add(matchData.red3);
             break;
           case "blue 1":
-            team = matchData.blue1;
-            teamSet.add(team);
+            teamSet.add(matchData.blue1);
             break;
           case "blue 2":
-            team = matchData.blue2;
-            teamSet.add(team);
+            teamSet.add(matchData.blue2);
             break;
           case "blue 3":
-            team = matchData.blue3;
-            teamSet.add(team);
+            teamSet.add(matchData.blue3);
             break;
           default:
             teamSet.add(matchData.red1);
@@ -158,7 +185,9 @@
       surveyRecord.modified = new Date();
 
       if (absent) {
+        entryRecords.push({ ...entry, id: id as number });
         dialog.close();
+        prefilledMatch = getPrefilledMatch();
       } else {
         location.hash = `/entry/${id}`;
       }
@@ -174,9 +203,12 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="plus" />
-    New entry
+    <Container direction="column" gap="small">
+      New entry
+      <small>Team {prefilledTeam}, Match {prefilledMatch}</small>
+    </Container>
   </Container>
 </Button>
 

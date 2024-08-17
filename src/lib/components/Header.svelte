@@ -18,7 +18,9 @@
 <header>
   {#if backLink !== undefined}
     <Anchor route={backLink}>
-      <Icon name="arrow-left" />
+      <Container>
+        <Icon name="arrow-left" />
+      </Container>
     </Anchor>
   {/if}
 
@@ -46,6 +48,7 @@
 
   span {
     color: var(--theme-color);
+    font-size: 16px;
     padding: var(--inner-gap);
     text-align: right;
     text-transform: capitalize;

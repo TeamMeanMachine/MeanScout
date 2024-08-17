@@ -36,12 +36,29 @@
 
     show = true;
   };
+
+  function getTeamsFromAllMatches() {
+    if (surveyRecord.type != "match") return [];
+
+    let teams = new Set<string>();
+    for (const match of surveyRecord.matches) {
+      teams.add(match.red1);
+      teams.add(match.red2);
+      teams.add(match.red3);
+      teams.add(match.blue1);
+      teams.add(match.blue2);
+      teams.add(match.blue3);
+    }
+    return [...teams];
+  }
 </script>
 
 <Header backLink="" title={surveyRecord.name} iconName="list-ul" />
 
 <Container direction="column" padding="large">
-  <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
+  {#if show}
+    <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
+  {/if}
 </Container>
 
 {#if show && draftEntries.length}
@@ -51,9 +68,9 @@
       <Anchor route="entry/{draft.id}">
         <Container align="center" maxWidth spaceBetween>
           <Container direction="column" gap="small">
-            <span>Team: {draft.team}</span>
+            <span><small>Team</small> {draft.team}</span>
             {#if draft.type == "match"}
-              <span>Match: {draft.match}</span>
+              <span><small>Match</small> {draft.match}</span>
             {/if}
           </Container>
           <Icon name="arrow-right" />
@@ -66,20 +83,26 @@
 <Container direction="column" padding="large">
   <h2>Survey</h2>
   <Anchor route="survey/{surveyRecord.id}/entries">
-    <Container maxWidth spaceBetween>
-      <Container>
+    <Container align="center" maxWidth spaceBetween>
+      <Container align="center">
         <Icon name="list-ol" />
-        Entries
+        <Container direction="column" gap="small">
+          Entries
+          <small>{entryRecords.length - draftEntries.length} completed. View, Edit, Export, Import</small>
+        </Container>
       </Container>
       <Icon name="arrow-right" />
     </Container>
   </Anchor>
   {#if surveyRecord.type == "match"}
     <Anchor route="survey/{surveyRecord.id}/analysis">
-      <Container maxWidth spaceBetween>
-        <Container>
+      <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
           <Icon name="chart-simple" />
-          Analysis
+          <Container direction="column" gap="small">
+            Analysis
+            <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
+          </Container>
         </Container>
         <Icon name="arrow-right" />
       </Container>
@@ -87,39 +110,56 @@
   {/if}
   {#if $modeStore == "admin"}
     <Anchor route="survey/{surveyRecord.id}/fields">
-      <Container maxWidth spaceBetween>
-        <Container>
+      <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
           <Icon name="list-check" />
-          Fields
+          <Container direction="column" gap="small">
+            Fields
+            <small>Configure, Preview</small>
+          </Container>
         </Container>
         <Icon name="arrow-right" />
       </Container>
     </Anchor>
     {#if surveyRecord.type == "match"}
       <Anchor route="survey/{surveyRecord.id}/matches">
-        <Container maxWidth spaceBetween>
-          <Container>
+        <Container align="center" maxWidth spaceBetween>
+          <Container align="center">
             <Icon name="table-list" />
-            Matches
+            <Container direction="column" gap="small">
+              Matches
+              <small>{surveyRecord.matches.length} total</small>
+            </Container>
           </Container>
           <Icon name="arrow-right" />
         </Container>
       </Anchor>
     {/if}
     <Anchor route="survey/{surveyRecord.id}/teams">
-      <Container maxWidth spaceBetween>
-        <Container>
+      <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
           <Icon name="people-group" />
-          Teams
+          <Container direction="column" gap="small">
+            Teams
+            <small>
+              {#if surveyRecord.type == "match"}
+                {getTeamsFromAllMatches().length} from matches,
+              {/if}
+              {surveyRecord.teams.length} added
+            </small>
+          </Container>
         </Container>
         <Icon name="arrow-right" />
       </Container>
     </Anchor>
     <Anchor route="survey/{surveyRecord.id}/options">
-      <Container maxWidth spaceBetween>
-        <Container>
+      <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
           <Icon name="gears" />
-          Options
+          <Container direction="column" gap="small">
+            Options
+            <small>Export, TBA event</small>
+          </Container>
         </Container>
         <Icon name="arrow-right" />
       </Container>

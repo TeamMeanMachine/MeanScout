@@ -43,9 +43,9 @@
 {#if entryRecord.status == "draft"}
   <Container padding="large" align="end">
     <Container direction="column">
-      <span>Team: <strong>{entryRecord.team}</strong></span>
+      <span><small>Team</small> <strong>{entryRecord.team}</strong></span>
       {#if entryRecord.type == "match"}
-        <span>Match: <strong>{entryRecord.match}</strong></span>
+        <span><small>Match</small> <strong>{entryRecord.match}</strong></span>
       {/if}
     </Container>
 
@@ -73,10 +73,10 @@
   </Container>
 
   <Container direction="column" padding="large">
-    <span>Team: <strong>{entryRecord.team}</strong></span>
+    <span><small>Team</small> <strong>{entryRecord.team}</strong></span>
     {#if entryRecord.type == "match"}
-      <span>Match: <strong>{entryRecord.match}</strong></span>
-      <span>Absent: <strong>{entryRecord.absent}</strong></span>
+      <span><small>Match</small> <strong>{entryRecord.match}</strong></span>
+      <span><small>Absent</small> <strong>{entryRecord.absent}</strong></span>
     {/if}
 
     {#if entryRecord.type != "match" || !entryRecord.absent}
@@ -85,10 +85,10 @@
         {#if field.type == "group"}
           <h2>{field.name}</h2>
           {#each field.fields as innerField, innerFieldIndex (innerField)}
-            <span>{innerField.name}: {entryRecord.values[previousFields + innerFieldIndex]}</span>
+            <span><small>{innerField.name}</small> {entryRecord.values[previousFields + innerFieldIndex]}</span>
           {/each}
         {:else}
-          <span>{field.name}: {entryRecord.values[previousFields]}</span>
+          <span><small>{field.name}</small> {entryRecord.values[previousFields]}</span>
         {/if}
       {/each}
     {/if}

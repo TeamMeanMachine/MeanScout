@@ -45,19 +45,25 @@
     <ImportSurveyDialog {idb} />
   {/if}
   <Anchor route="settings">
-    <Container maxWidth spaceBetween>
-      <Container>
+    <Container align="center" maxWidth spaceBetween>
+      <Container align="center">
         <Icon name="gears" />
-        Settings
+        <Container direction="column" gap="small">
+          Settings
+          <small>Mode, Target, TBA setup</small>
+        </Container>
       </Container>
       <Icon name="arrow-right" />
     </Container>
   </Anchor>
   <Anchor route="about">
-    <Container maxWidth spaceBetween>
-      <Container>
+    <Container align="center" maxWidth spaceBetween>
+      <Container align="center">
         <Icon name="info-circle" />
-        About
+        <Container direction="column" gap="small">
+          About
+          <small>Guides, Info</small>
+        </Container>
       </Container>
       <Icon name="arrow-right" />
     </Container>

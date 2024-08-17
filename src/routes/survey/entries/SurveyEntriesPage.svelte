@@ -66,11 +66,11 @@
       <Anchor route="entry/{entry.id}">
         <Container align="center" maxWidth spaceBetween>
           <Container direction="column" gap="small">
-            <span>Team: {entry.team}</span>
+            <span><small>Team</small> {entry.team}</span>
             {#if entry.type == "match"}
-              <span>Match: {entry.match}</span>
+              <span><small>Match</small> {entry.match}</span>
               {#if entry.absent}
-                <strong>Absent: {entry.absent}</strong>
+                <strong><small>Absent</small> {entry.absent}</strong>
               {/if}
             {/if}
           </Container>
@@ -100,11 +100,11 @@
       <Anchor route="entry/{entry.id}">
         <Container align="center" maxWidth spaceBetween>
           <Container direction="column" gap="small">
-            <span>Team: {entry.team}</span>
+            <span><small>Team</small> {entry.team}</span>
             {#if entry.type == "match"}
-              <span>Match: {entry.match}</span>
+              <span><small>Match</small> {entry.match}</span>
               {#if entry.absent}
-                <strong>Absent: {entry.absent}</strong>
+                <strong><small>Absent</small> {entry.absent}</strong>
               {/if}
             {/if}
           </Container>
