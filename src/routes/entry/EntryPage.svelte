@@ -38,9 +38,12 @@
   }
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Entry" iconName="list-ol" />
-
 {#if entryRecord.status == "draft"}
+  <Header backLink="survey/{surveyRecord.id}">
+    <small>{surveyRecord.name}</small>
+    <h1>Draft</h1>
+  </Header>
+
   <Container padding="large" align="end">
     <Container direction="column">
       <span><small>Team</small> <strong>{entryRecord.team}</strong></span>
@@ -68,6 +71,11 @@
     {/each}
   </Container>
 {:else}
+  <Header backLink="survey/{surveyRecord.id}/entries">
+    <small>{surveyRecord.name}</small>
+    <h1>Entry</h1>
+  </Header>
+
   <Container padding="large">
     <ExportEntryDialog {surveyRecord} entry={entryRecord} />
   </Container>

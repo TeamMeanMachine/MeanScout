@@ -1,36 +1,39 @@
 <script lang="ts">
   import { modeStore, targetStore } from "$lib/settings";
+  import type { Snippet } from "svelte";
   import Anchor from "./Anchor.svelte";
   import Container from "./Container.svelte";
   import Icon from "./Icon.svelte";
 
   let {
     backLink = undefined,
-    title = undefined,
-    iconName = undefined,
+    children = undefined,
   }: {
     backLink?: string | undefined;
-    title?: string | undefined;
-    iconName?: string | undefined;
+    children?: Snippet | undefined;
   } = $props();
 </script>
 
 <header>
-  {#if backLink !== undefined}
-    <Anchor route={backLink}>
-      <Container>
-        <Icon name="arrow-left" />
+  <Container align="center">
+    {#if backLink === undefined}
+      <Container padding="small">
+        <img src="./logo.svg" alt="" width="30" height="30" />
       </Container>
-    </Anchor>
-  {/if}
-
-  <Container align="center" padding="small">
-    {#if iconName !== undefined}
-      <Icon name={iconName} />
     {:else}
-      <img src="./logo.svg" alt="" width="30" height="30" />
+      <Anchor route={backLink}>
+        <Container>
+          <Icon name="arrow-left" />
+        </Container>
+      </Anchor>
     {/if}
-    <h1>{title ?? "MeanScout"}</h1>
+    <Container direction="column" gap="none">
+      {#if children}
+        {@render children()}
+      {:else}
+        <h1>MeanScout</h1>
+      {/if}
+    </Container>
   </Container>
 
   <span>{$modeStore == "admin" ? "Admin" : $targetStore}</span>
@@ -41,9 +44,10 @@
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
     gap: var(--outer-gap);
-    padding: var(--outer-gap) var(--outer-gap) calc(var(--outer-gap) * 2);
+    justify-content: space-between;
+    min-height: 74px;
+    padding: var(--outer-gap);
   }
 
   span {

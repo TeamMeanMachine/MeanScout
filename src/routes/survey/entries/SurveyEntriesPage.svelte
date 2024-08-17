@@ -41,7 +41,10 @@
   };
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Entries" iconName="list-ol" />
+<Header backLink="survey/{surveyRecord.id}">
+  <small>{surveyRecord.name}</small>
+  <h1>Entries</h1>
+</Header>
 
 <Container direction="column" padding="large">
   {#if $modeStore == "admin"}

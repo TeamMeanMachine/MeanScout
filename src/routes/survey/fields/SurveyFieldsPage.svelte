@@ -45,7 +45,10 @@
   }
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Fields" iconName="list-check" />
+<Header backLink="survey/{surveyRecord.id}">
+  <small>{surveyRecord.name}</small>
+  <h1>Fields</h1>
+</Header>
 
 <Container direction="column" padding="large">
   {#if preview}

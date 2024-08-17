@@ -45,7 +45,10 @@
   }
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Teams" iconName="people-group" />
+<Header backLink="survey/{surveyRecord.id}">
+  <small>{surveyRecord.name}</small>
+  <h1>Teams</h1>
+</Header>
 
 <Container direction="column" padding="large">
   {#if $tbaAuthKeyStore && surveyRecord.tbaEventKey}

@@ -53,7 +53,9 @@
   }
 </script>
 
-<Header backLink="" title={surveyRecord.name} iconName="list-ul" />
+<Header backLink="">
+  <h1>{surveyRecord.name}</h1>
+</Header>
 
 <Container direction="column" padding="large">
   {#if show}

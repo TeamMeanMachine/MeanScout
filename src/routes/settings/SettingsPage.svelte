@@ -6,10 +6,11 @@
   import { modes, modeStore, targets, targetStore } from "$lib/settings";
 </script>
 
-<Header backLink="" title="Settings" iconName="gears" />
+<Header backLink="">
+  <h1>Settings</h1>
+</Header>
 
 <Container direction="column" padding="large">
-  <h2>Settings</h2>
   <Container>
     <Container direction="column" gap="none">
       Mode

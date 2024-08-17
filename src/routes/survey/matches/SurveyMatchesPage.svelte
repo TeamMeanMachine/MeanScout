@@ -37,7 +37,10 @@
   setTimeout(() => (show = true), 0);
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Matches" iconName="table-list" />
+<Header backLink="survey/{surveyRecord.id}">
+  <small>{surveyRecord.name}</small>
+  <h1>Matches</h1>
+</Header>
 
 <Container direction="column" padding="large">
   {#if $tbaAuthKeyStore && surveyRecord.tbaEventKey}

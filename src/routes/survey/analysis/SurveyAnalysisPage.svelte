@@ -63,7 +63,10 @@
   };
 </script>
 
-<Header backLink="survey/{surveyRecord.id}" title="Analysis" iconName="chart-simple" />
+<Header backLink="survey/{surveyRecord.id}">
+  <small>{surveyRecord.name}</small>
+  <h1>Analysis</h1>
+</Header>
 
 {#if surveyRecord.expressions.length}
   <Container direction="column" padding="large">

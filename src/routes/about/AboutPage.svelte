@@ -3,7 +3,9 @@
   import Header from "$lib/components/Header.svelte";
 </script>
 
-<Header backLink="" title="About MeanScout" iconName="info-circle" />
+<Header backLink="">
+  <h1>About MeanScout</h1>
+</Header>
 
 <Container direction="column" padding="large">
   <span>A lightweight FRC scouting web app built with SvelteKit.</span>
