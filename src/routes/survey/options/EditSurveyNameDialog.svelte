@@ -34,9 +34,12 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="pen" />
-    Edit name: {surveyRecord.name}
+    <Container direction="column" gap="small">
+      {surveyRecord.name}
+      <small>Edit name</small>
+    </Container>
   </Container>
 </Button>
 

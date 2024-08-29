@@ -3,7 +3,7 @@
   import Header from "$lib/components/Header.svelte";
   import EditTbaAuthKeyDialog from "./EditTbaAuthKeyDialog.svelte";
   import EditTeamSettingDialog from "./EditTeamSettingDialog.svelte";
-  import { modes, modeStore, targets, targetStore } from "$lib/settings";
+  import { modes, modeStore, targets, targetStore, tbaAuthKeyStore } from "$lib/settings";
 </script>
 
 <Header backLink="">
@@ -32,9 +32,10 @@
     </Container>
   </Container>
   {#if $modeStore == "admin"}
-    <h2>Team</h2>
-    <EditTeamSettingDialog />
     <h2>The Blue Alliance</h2>
+    {#if $tbaAuthKeyStore}
+      <EditTeamSettingDialog />
+    {/if}
     <EditTbaAuthKeyDialog />
   {/if}
 </Container>

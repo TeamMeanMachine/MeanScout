@@ -27,12 +27,14 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
+    <Icon name="user-group" />
     {#if $teamStore}
-      <Icon name="pen" />
-      Edit team: {$teamStore}
+      <Container direction="column" gap="small">
+        {$teamStore}
+        <small>Edit team</small>
+      </Container>
     {:else}
-      <Icon name="plus" />
       Add team
     {/if}
   </Container>

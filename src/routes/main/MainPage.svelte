@@ -29,9 +29,14 @@
     <h2>Surveys</h2>
     {#each surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
-        <Container maxWidth spaceBetween>
-          <span>{survey.name}</span>
+        <Container align="center">
           <Icon name="arrow-right" />
+          <Container direction="column" gap="small">
+            {survey.name}
+            {#if survey.tbaEventKey?.length}
+              <small>{survey.tbaEventKey}</small>
+            {/if}
+          </Container>
         </Container>
       </Anchor>
     {/each}
@@ -45,27 +50,21 @@
     <ImportSurveyDialog {idb} />
   {/if}
   <Anchor route="settings">
-    <Container align="center" maxWidth spaceBetween>
-      <Container align="center">
-        <Icon name="gears" />
-        <Container direction="column" gap="small">
-          Settings
-          <small>Mode, Target, TBA setup</small>
-        </Container>
+    <Container align="center">
+      <Icon name="gears" />
+      <Container direction="column" gap="small">
+        Settings
+        <small>Mode, Target, TBA setup</small>
       </Container>
-      <Icon name="arrow-right" />
     </Container>
   </Anchor>
   <Anchor route="about">
-    <Container align="center" maxWidth spaceBetween>
-      <Container align="center">
-        <Icon name="info-circle" />
-        <Container direction="column" gap="small">
-          About
-          <small>Guides, Info</small>
-        </Container>
+    <Container align="center">
+      <Icon name="info-circle" />
+      <Container direction="column" gap="small">
+        About
+        <small>Guides, Info</small>
       </Container>
-      <Icon name="arrow-right" />
     </Container>
   </Anchor>
 </Container>

@@ -52,7 +52,7 @@
       return;
     }
 
-    if (result.data.tbaEventKey && await tbaEventKeyIsInvalid(result.data.tbaEventKey)) {
+    if (result.data.tbaEventKey && (await tbaEventKeyIsInvalid(result.data.tbaEventKey))) {
       error = "TBA event key is invalid";
       return;
     }
@@ -79,9 +79,12 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="paste" />
-    Import survey
+    <Container direction="column" gap="small">
+      Import survey
+      <small>From a file</small>
+    </Container>
   </Container>
 </Button>
 

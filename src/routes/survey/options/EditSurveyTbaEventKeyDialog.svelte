@@ -65,12 +65,14 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
+    <Icon name="calendar-days" />
     {#if surveyRecord.tbaEventKey}
-      <Icon name="pen" />
-      Edit event: {surveyRecord.tbaEventKey}
+      <Container direction="column" gap="small">
+        {surveyRecord.tbaEventKey}
+        <small>Edit event</small>
+      </Container>
     {:else}
-      <Icon name="plus" />
       Add event
     {/if}
   </Container>

@@ -123,7 +123,7 @@
 <Button onclick={newMatch}>
   <Container maxWidth>
     <Icon name="plus" />
-    Add match
+    New match
   </Container>
 </Button>
 

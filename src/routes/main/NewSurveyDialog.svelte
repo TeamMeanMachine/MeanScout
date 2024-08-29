@@ -76,9 +76,12 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="plus" />
-    New survey
+    <Container direction="column" gap="small">
+      New survey
+      <small>From scratch</small>
+    </Container>
   </Container>
 </Button>
 

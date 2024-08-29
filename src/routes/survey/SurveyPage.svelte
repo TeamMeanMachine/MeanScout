@@ -55,6 +55,9 @@
 
 <Header backLink="">
   <h1>{surveyRecord.name}</h1>
+  {#if surveyRecord.tbaEventKey}
+    <small>{surveyRecord.tbaEventKey}</small>
+  {/if}
 </Header>
 
 <Container direction="column" padding="large">
@@ -68,14 +71,14 @@
     <h2>Drafts</h2>
     {#each draftEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as draft (draft.id)}
       <Anchor route="entry/{draft.id}">
-        <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
+          <Icon name="arrow-right" />
           <Container direction="column" gap="small">
             <span><small>Team</small> {draft.team}</span>
             {#if draft.type == "match"}
               <span><small>Match</small> {draft.match}</span>
             {/if}
           </Container>
-          <Icon name="arrow-right" />
         </Container>
       </Anchor>
     {/each}
@@ -84,86 +87,72 @@
 
 <Container direction="column" padding="large">
   <h2>Survey</h2>
+
   <Anchor route="survey/{surveyRecord.id}/entries">
-    <Container align="center" maxWidth spaceBetween>
-      <Container align="center">
-        <Icon name="list-ol" />
-        <Container direction="column" gap="small">
-          Entries
-          <small>{entryRecords.length - draftEntries.length} completed. View, Edit, Export, Import</small>
-        </Container>
+    <Container align="center">
+      <Icon name="list-ol" />
+      <Container direction="column" gap="small">
+        Entries
+        <small>{entryRecords.length - draftEntries.length} completed</small>
       </Container>
-      <Icon name="arrow-right" />
     </Container>
   </Anchor>
+
   {#if surveyRecord.type == "match"}
     <Anchor route="survey/{surveyRecord.id}/analysis">
-      <Container align="center" maxWidth spaceBetween>
-        <Container align="center">
-          <Icon name="chart-simple" />
-          <Container direction="column" gap="small">
-            Analysis
-            <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
-          </Container>
+      <Container align="center">
+        <Icon name="chart-simple" />
+        <Container direction="column" gap="small">
+          Analysis
+          <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
         </Container>
-        <Icon name="arrow-right" />
+      </Container>
+    </Anchor>
+
+    <Anchor route="survey/{surveyRecord.id}/matches">
+      <Container align="center">
+        <Icon name="table-list" />
+        <Container direction="column" gap="small">
+          Matches
+          <small>{surveyRecord.matches.length} total</small>
+        </Container>
       </Container>
     </Anchor>
   {/if}
+
+  <Anchor route="survey/{surveyRecord.id}/teams">
+    <Container align="center">
+      <Icon name="people-group" />
+      <Container direction="column" gap="small">
+        Teams
+        <small>
+          {#if surveyRecord.type == "match"}
+            {getTeamsFromAllMatches().length} from matches,
+          {/if}
+          {surveyRecord.teams.length} added
+        </small>
+      </Container>
+    </Container>
+  </Anchor>
+
   {#if $modeStore == "admin"}
     <Anchor route="survey/{surveyRecord.id}/fields">
-      <Container align="center" maxWidth spaceBetween>
-        <Container align="center">
-          <Icon name="list-check" />
-          <Container direction="column" gap="small">
-            Fields
-            <small>Configure, Preview</small>
-          </Container>
+      <Container align="center">
+        <Icon name="list-check" />
+        <Container direction="column" gap="small">
+          Fields
+          <small>Configure, Preview</small>
         </Container>
-        <Icon name="arrow-right" />
       </Container>
     </Anchor>
-    {#if surveyRecord.type == "match"}
-      <Anchor route="survey/{surveyRecord.id}/matches">
-        <Container align="center" maxWidth spaceBetween>
-          <Container align="center">
-            <Icon name="table-list" />
-            <Container direction="column" gap="small">
-              Matches
-              <small>{surveyRecord.matches.length} total</small>
-            </Container>
-          </Container>
-          <Icon name="arrow-right" />
-        </Container>
-      </Anchor>
-    {/if}
-    <Anchor route="survey/{surveyRecord.id}/teams">
-      <Container align="center" maxWidth spaceBetween>
-        <Container align="center">
-          <Icon name="people-group" />
-          <Container direction="column" gap="small">
-            Teams
-            <small>
-              {#if surveyRecord.type == "match"}
-                {getTeamsFromAllMatches().length} from matches,
-              {/if}
-              {surveyRecord.teams.length} added
-            </small>
-          </Container>
-        </Container>
-        <Icon name="arrow-right" />
-      </Container>
-    </Anchor>
+
     <Anchor route="survey/{surveyRecord.id}/options">
-      <Container align="center" maxWidth spaceBetween>
-        <Container align="center">
-          <Icon name="gears" />
-          <Container direction="column" gap="small">
-            Options
-            <small>Export, TBA event</small>
-          </Container>
+      <Container align="center">
+        <Icon name="gears" />
+        <Container direction="column" gap="small">
+          Options
+          <small>Export, TBA event</small>
         </Container>
-        <Icon name="arrow-right" />
       </Container>
     </Anchor>
   {/if}

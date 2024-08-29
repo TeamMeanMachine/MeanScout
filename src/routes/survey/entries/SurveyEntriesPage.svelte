@@ -67,7 +67,8 @@
     />
     {#each submittedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
       <Anchor route="entry/{entry.id}">
-        <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
+          <Icon name="arrow-right" />
           <Container direction="column" gap="small">
             <span><small>Team</small> {entry.team}</span>
             {#if entry.type == "match"}
@@ -77,7 +78,6 @@
               {/if}
             {/if}
           </Container>
-          <Icon name="arrow-right" />
         </Container>
       </Anchor>
     {/each}
@@ -101,7 +101,8 @@
     />
     {#each exportedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
       <Anchor route="entry/{entry.id}">
-        <Container align="center" maxWidth spaceBetween>
+        <Container align="center">
+          <Icon name="arrow-right" />
           <Container direction="column" gap="small">
             <span><small>Team</small> {entry.team}</span>
             {#if entry.type == "match"}
@@ -111,7 +112,6 @@
               {/if}
             {/if}
           </Container>
-          <Icon name="arrow-right" />
         </Container>
       </Anchor>
     {/each}

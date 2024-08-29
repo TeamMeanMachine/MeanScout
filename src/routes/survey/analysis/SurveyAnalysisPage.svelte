@@ -90,7 +90,7 @@
       {#each surveyRecord.pickLists as pickList, pickListIndex}
         <Container direction="column" padding="large">
           <Button onclick={() => calculatePickListDialog?.open(pickListIndex)}>
-            <Container gap="small" maxWidth>
+            <Container>
               <Icon name="list-ol" />
               {pickList.name}
             </Container>
@@ -98,8 +98,10 @@
           {#if $modeStore == "admin"}
             <Container>
               <Button onclick={() => pickListDialog?.editPickList(pickListIndex)}>
-                <Icon name="pen" />
-                Edit
+                <Container>
+                  <Icon name="pen" />
+                  Edit
+                </Container>
               </Button>
               <DeletePickListDialog bind:surveyRecord {pickListIndex} />
             </Container>
@@ -139,12 +141,14 @@
           }
         }}
       >
-        <Icon name="list-check" />
-        {#if isSelecting}
-          Stop selecting
-        {:else}
-          Select
-        {/if}
+        <Container>
+          <Icon name="list-check" />
+          {#if isSelecting}
+            Stop selecting
+          {:else}
+            Select
+          {/if}
+        </Container>
       </Button>
       {#if isSelecting}
         <Button

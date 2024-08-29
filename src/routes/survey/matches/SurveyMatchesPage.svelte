@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { MatchSurvey } from "$lib/survey";
   import Button from "$lib/components/Button.svelte";
   import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { tbaAuthKeyStore } from "$lib/settings";
-  import { tbaGetEventMatches } from "$lib/tba";
+  import type { Entry } from "$lib/entry";
+  import { modeStore } from "$lib/settings";
+  import type { MatchSurvey } from "$lib/survey";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import MatchDialog from "./MatchDialog.svelte";
 
@@ -21,20 +21,22 @@
     idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
   });
 
-  let matchDialog: MatchDialog;
-
-  async function getMatchesFromTBAEvent() {
-    if (!surveyRecord.tbaEventKey) return;
-
-    const response = await tbaGetEventMatches(surveyRecord.tbaEventKey, $tbaAuthKeyStore);
-    if (response) {
-      surveyRecord.matches = response;
-      surveyRecord.modified = new Date();
-    }
-  }
+  let matchDialog: MatchDialog | undefined = $state();
 
   let show = $state(false);
-  setTimeout(() => (show = true), 0);
+
+  let entryRecords = $state<IDBRecord<Entry>[]>([]);
+
+  const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+  entriesRequest.onerror = () => (show = true);
+
+  entriesRequest.onsuccess = () => {
+    const entries = entriesRequest.result;
+    if (!entries) return;
+
+    entryRecords = entries;
+    show = true;
+  };
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -43,56 +45,59 @@
 </Header>
 
 <Container direction="column" padding="large">
-  {#if $tbaAuthKeyStore && surveyRecord.tbaEventKey}
-    <Button onclick={getMatchesFromTBAEvent}>
-      <Container maxWidth>
-        <Icon name="cloud-arrow-down" />
-        Get matches from TBA event: {surveyRecord.tbaEventKey}
-      </Container>
-    </Button>
+  {#if $modeStore == "admin"}
+    <MatchDialog bind:this={matchDialog} bind:surveyRecord />
   {/if}
+</Container>
 
-  <MatchDialog bind:this={matchDialog} bind:surveyRecord />
-
-  <h2>Matches</h2>
+<Container direction="column" padding="large">
   {#if show && surveyRecord.matches.length}
     <Container>
       <table>
         <thead>
           <tr>
-            <th colspan="2" class="match-number">Match</th>
+            <th colspan={$modeStore == "admin" ? 2 : 1} class="match-number">Match</th>
             <th colspan="3">Teams</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
           {#each surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match}
+            {@const entry = entryRecords.find((e) => e.type == "match" && e.match == match.number)}
             <tr>
-              <td>
-                <Container padding="small" gap="small">
-                  <Button onclick={() => matchDialog.editMatch(match.number)}>
-                    <Icon name="pen" />
-                  </Button>
-                  <DeleteMatchDialog bind:surveyRecord {match} />
-                </Container>
-              </td>
+              {#if $modeStore == "admin"}
+                <td>
+                  <Container padding="small" gap="small">
+                    <Button onclick={() => matchDialog?.editMatch(match.number)}>
+                      <Icon name="pen" />
+                    </Button>
+                    <DeleteMatchDialog bind:surveyRecord {match} />
+                  </Container>
+                </td>
+              {/if}
               <td class="match-number">{match.number}</td>
               <td>
                 <Container direction="column" padding="small" gap="small">
-                  <span class="red-team">{match.red1}</span>
-                  <span class="blue-team">{match.blue1}</span>
+                  <small class="red-team">{match.red1}</small>
+                  <small class="blue-team">{match.blue1}</small>
                 </Container>
               </td>
               <td>
                 <Container direction="column" padding="small" gap="small">
-                  <span class="red-team">{match.red2}</span>
-                  <span class="blue-team">{match.blue2}</span>
+                  <small class="red-team">{match.red2}</small>
+                  <small class="blue-team">{match.blue2}</small>
                 </Container>
               </td>
               <td>
                 <Container direction="column" padding="small" gap="small">
-                  <span class="red-team">{match.red3}</span>
-                  <span class="blue-team">{match.blue3}</span>
+                  <small class="red-team">{match.red3}</small>
+                  <small class="blue-team">{match.blue3}</small>
                 </Container>
+              </td>
+              <td class="status">
+                {#if entry}
+                  <small>{entry.status}</small>
+                {/if}
               </td>
             </tr>
           {/each}
@@ -107,7 +112,12 @@
 </Container>
 
 <style>
-  td.match-number {
+  table {
+    border-collapse: collapse;
+  }
+
+  td.match-number,
+  .status {
     padding: var(--outer-gap);
   }
 
@@ -123,5 +133,10 @@
 
   td .blue-team {
     color: var(--blue);
+  }
+
+  .status {
+    text-align: center;
+    text-transform: capitalize;
   }
 </style>

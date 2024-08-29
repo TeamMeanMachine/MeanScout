@@ -64,12 +64,14 @@
 </script>
 
 <Button onclick={newPickList}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="plus" />
-    New pick list
-    {#if preselectedExpressionNames?.length}
-      using selected expressions ({preselectedExpressionNames.length})
-    {/if}
+    <Container direction="column" gap="small">
+      New pick list
+      {#if preselectedExpressionNames?.length}
+        <small>From selected expressions</small>
+      {/if}
+    </Container>
   </Container>
 </Button>
 

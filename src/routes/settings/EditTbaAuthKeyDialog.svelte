@@ -34,12 +34,14 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
+    <Icon name="key" />
     {#if $tbaAuthKeyStore}
-      <Icon name="pen" />
-      Edit API auth key
+      <Container direction="column" gap="small">
+        ********
+        <small>Edit API auth key</small>
+      </Container>
     {:else}
-      <Icon name="plus" />
       Add API auth key
     {/if}
   </Container>

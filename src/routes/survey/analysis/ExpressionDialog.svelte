@@ -114,12 +114,14 @@
 </script>
 
 <Button onclick={newExpression}>
-  <Container maxWidth>
+  <Container align="center" maxWidth>
     <Icon name="plus" />
-    New expression
-    {#if preselectedExpressionNames?.length}
-      using selected expressions ({preselectedExpressionNames.length})
-    {/if}
+    <Container direction="column" gap="small">
+      New expression
+      {#if preselectedExpressionNames?.length}
+        <small>From selected expressions</small>
+      {/if}
+    </Container>
   </Container>
 </Button>
 
