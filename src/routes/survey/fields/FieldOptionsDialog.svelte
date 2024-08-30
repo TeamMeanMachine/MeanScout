@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Field } from "$lib/field";
@@ -9,13 +8,11 @@
     fields = $bindable(),
     field = $bindable(),
     fieldIndex,
-    disabled = false,
     onchange = undefined,
   }: {
     fields: Field[];
     field: Field;
     fieldIndex: number;
-    disabled: boolean;
     onchange?: (() => void) | undefined;
   } = $props();
 
@@ -34,7 +31,7 @@
   }
 </script>
 
-<Button {disabled} onclick={() => dialog.open()}>
+<Button onclick={() => dialog.open()}>
   <Icon name="ellipsis-vertical" />
 </Button>
 
@@ -45,15 +42,11 @@
     Type: {field.type}
   </span>
   <Button onclick={duplicateField}>
-    <Container maxWidth>
-      <Icon name="clone" />
-      Clone field
-    </Container>
+    <Icon name="clone" />
+    Clone field
   </Button>
   <Button onclick={deleteField}>
-    <Container maxWidth>
-      <Icon name="trash" />
-      Delete field
-    </Container>
+    <Icon name="trash" />
+    Delete field
   </Button>
 </Dialog>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import Button from "./Button.svelte";
-  import Container from "./Container.svelte";
   import Icon from "./Icon.svelte";
 
   let {
@@ -18,6 +17,17 @@
 
   let element: HTMLDialogElement;
 
+  let ignoreClose = false;
+
+  function closeCallback() {
+    if (!ignoreClose) element.close();
+    ignoreClose = false;
+  }
+
+  function cancelClose() {
+    ignoreClose = true;
+  }
+
   export function open() {
     onopen && onopen(element);
     element.showModal();
@@ -28,41 +38,27 @@
   }
 </script>
 
-<dialog bind:this={element} {onclose}>
-  {@render children()}
-  <Container spaceBetween>
-    {#if onconfirm}
-      <Button onclick={() => onconfirm && onconfirm()}>
-        <Icon name="check" />
-        Confirm
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<dialog
+  bind:this={element}
+  {onclose}
+  onmouseup={closeCallback}
+  class="max-h-dvh w-[min(100dvw,540px)] bg-neutral-900 shadow-2xl backdrop:backdrop-blur"
+>
+  <div onmouseup={cancelClose} onmousedown={cancelClose} class="flex flex-col gap-3 p-3">
+    {@render children()}
+    <div class="flex flex-wrap justify-between gap-3">
+      {#if onconfirm}
+        <Button onclick={onconfirm} classes="flex items-center gap-1">
+          <Icon name="check" />
+          Confirm
+        </Button>
+      {/if}
+      <Button onclick={close} classes="flex items-center gap-1">
+        <Icon name="xmark" />
+        Close
       </Button>
-    {/if}
-    <Button onclick={close}>
-      <Icon name="xmark" />
-      Close
-    </Button>
-  </Container>
+    </div>
+  </div>
 </dialog>
-
-<style>
-  dialog {
-    background: rgb(25, 25, 25);
-    flex-direction: column;
-    gap: var(--outer-gap);
-    max-height: 100dvh;
-    padding: var(--outer-gap);
-    width: min(100dvw, 540px);
-  }
-
-  dialog:focus-visible {
-    outline: none;
-  }
-
-  dialog::backdrop {
-    background: rgba(0, 0, 0, 0.5);
-  }
-
-  dialog[open] {
-    display: flex;
-  }
-</style>

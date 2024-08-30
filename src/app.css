@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --theme-red: 244 67 54;
+    --theme-blue: 33 150 243;
+    --theme-orange: 255 152 0;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="red"] {
+    --theme-color: var(--theme-red);
+  }
+
+  :root[data-theme="blue"] {
+    --theme-color: var(--theme-blue);
+  }
+
+  :root[data-theme="orange"] {
+    --theme-color: var(--theme-orange);
+  }
+
+  :disabled {
+    @apply !cursor-default opacity-50 !outline-none;
+  }
+
+  body :focus-visible,
+  :is(input, select, textarea, a, button):focus,
+  :is(input, select, textarea, a, button):hover {
+    @apply outline outline-2 outline-neutral-300;
+  }
+
+  ::selection {
+    @apply bg-theme text-white;
+  }
+}

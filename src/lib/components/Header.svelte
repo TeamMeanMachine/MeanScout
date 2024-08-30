@@ -2,7 +2,6 @@
   import { modeStore, targetStore } from "$lib/settings";
   import type { Snippet } from "svelte";
   import Anchor from "./Anchor.svelte";
-  import Container from "./Container.svelte";
   import Icon from "./Icon.svelte";
 
   let {
@@ -14,47 +13,23 @@
   } = $props();
 </script>
 
-<header>
-  <Container align="center">
+<header class="flex min-h-[70px] flex-wrap items-center justify-between gap-3 p-3">
+  <div class="flex flex-wrap items-center gap-3">
     {#if backLink === undefined}
-      <Container padding="small">
-        <img src="./logo.svg" alt="" width="30" height="30" />
-      </Container>
+      <img src="./logo.svg" alt="" width="25" height="25" />
     {:else}
       <Anchor route={backLink}>
-        <Container>
-          <Icon name="arrow-left" />
-        </Container>
+        <Icon name="arrow-left" />
       </Anchor>
     {/if}
-    <Container direction="column" gap="none">
+    <div class="flex flex-col">
       {#if children}
         {@render children()}
       {:else}
-        <h1>MeanScout</h1>
+        <h1 class="font-bold">MeanScout</h1>
       {/if}
-    </Container>
-  </Container>
+    </div>
+  </div>
 
-  <span>{$modeStore == "admin" ? "Admin" : $targetStore}</span>
+  <small class="capitalize text-theme">{$modeStore == "admin" ? "Admin" : $targetStore}</small>
 </header>
-
-<style>
-  header {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--outer-gap);
-    justify-content: space-between;
-    min-height: 74px;
-    padding: var(--outer-gap);
-  }
-
-  span {
-    color: var(--theme-color);
-    font-size: 16px;
-    padding: var(--inner-gap);
-    text-align: right;
-    text-transform: capitalize;
-  }
-</style>

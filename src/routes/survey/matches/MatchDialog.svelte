@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { MatchSurvey } from "$lib/survey";
@@ -121,47 +120,45 @@
 </script>
 
 <Button onclick={newMatch}>
-  <Container maxWidth>
-    <Icon name="plus" />
-    New match
-  </Container>
+  <Icon name="plus" />
+  New match
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   {#if matchNumber == undefined}
     <span>Add match</span>
-    <Container direction="column" gap="none">
+    <label class="flex flex-col">
       Number
-      <input type="number" pattern="[0-9]*" bind:value={match.number} />
-    </Container>
+      <input type="number" pattern="[0-9]*" bind:value={match.number} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {:else}
     <span>Edit match {match.number}</span>
   {/if}
 
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Red 1
-    <input maxlength="5" bind:value={match.red1} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input maxlength="5" bind:value={match.red1} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Red 2
-    <input maxlength="5" bind:value={match.red2} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input maxlength="5" bind:value={match.red2} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Red 3
-    <input maxlength="5" bind:value={match.red3} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input maxlength="5" bind:value={match.red3} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Blue 1
-    <input maxlength="5" bind:value={match.blue1} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input maxlength="5" bind:value={match.blue1} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Blue 2
-    <input maxlength="5" bind:value={match.blue2} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input maxlength="5" bind:value={match.blue2} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Blue 3
-    <input maxlength="5" bind:value={match.blue3} />
-  </Container>
+    <input maxlength="5" bind:value={match.blue3} class="bg-neutral-800 p-2 text-theme" />
+  </label>
   {#if error}
     <span>Error: {error}</span>
   {/if}

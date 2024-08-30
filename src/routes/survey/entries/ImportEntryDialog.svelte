@@ -1,7 +1,6 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
@@ -99,10 +98,8 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
-    <Icon name="qrcode" />
-    Import from QR code
-  </Container>
+  <Icon name="qrcode" />
+  Import from QR code
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onopen} {onclose}>

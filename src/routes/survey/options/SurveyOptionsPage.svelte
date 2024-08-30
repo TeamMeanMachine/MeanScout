@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { tbaAuthKeyStore } from "$lib/settings";
@@ -47,37 +46,38 @@
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
-  <h1>Options</h1>
+  <h1 class="font-bold">Options</h1>
 </Header>
 
-<Container direction="column" padding="large">
+<div class="flex flex-col gap-2 p-3">
   <ExportSurveyDialog {surveyRecord} />
   <EditSurveyNameDialog bind:surveyRecord />
-  {#if $tbaAuthKeyStore}
-    <h2>The Blue Alliance</h2>
+</div>
+
+{#if $tbaAuthKeyStore}
+  <div class="flex flex-col gap-2 p-3">
+    <h2 class="font-bold">The Blue Alliance</h2>
     <EditSurveyTbaEventKeyDialog bind:surveyRecord />
     {#if surveyRecord.tbaEventKey}
       <Button onclick={getMatchesFromTBAEvent}>
-        <Container align="center" maxWidth>
-          <Icon name="table-list" />
-          <Container direction="column" gap="small">
-            Get matches from TBA
-            <small>Removes existing matches</small>
-          </Container>
-        </Container>
+        <Icon name="table-list" />
+        <div class="flex flex-col">
+          Get matches from TBA
+          <small>Removes existing matches</small>
+        </div>
       </Button>
       <Button onclick={getTeamsFromTBAEvent}>
-        <Container align="center" maxWidth>
-          <Icon name="people-group" />
-          <Container direction="column" gap="small">
-            Get teams from TBA
-            <small>Removes existing teams</small>
-          </Container>
-        </Container>
+        <Icon name="people-group" />
+        <div class="flex flex-col">
+          Get teams from TBA
+          <small>Removes existing teams</small>
+        </div>
       </Button>
     {/if}
-  {/if}
+  </div>
+{/if}
 
-  <h2>Danger Zone</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Danger Zone</h2>
   <DeleteSurveyDialog {idb} {surveyRecord} />
-</Container>
+</div>

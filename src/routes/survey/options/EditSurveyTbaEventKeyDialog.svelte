@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { tbaAuthKeyStore, teamStore } from "$lib/settings";
@@ -65,17 +64,15 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="calendar-days" />
-    {#if surveyRecord.tbaEventKey}
-      <Container direction="column" gap="small">
-        {surveyRecord.tbaEventKey}
-        <small>Edit event</small>
-      </Container>
-    {:else}
-      Add event
-    {/if}
-  </Container>
+  <Icon name="calendar-days" />
+  {#if surveyRecord.tbaEventKey}
+    <div class="flex flex-col">
+      {surveyRecord.tbaEventKey}
+      <small>Edit event</small>
+    </div>
+  {:else}
+    Add event
+  {/if}
 </Button>
 
 <Dialog bind:this={dialog} {onopen} {onconfirm} {onclose}>
@@ -85,7 +82,7 @@
       <option value={key}>{name}</option>
     {/each}
   </datalist>
-  <input bind:value={event} list="events-list" />
+  <input bind:value={event} list="events-list" class="bg-neutral-800 p-2 text-theme" />
   {#if error}
     <span>Error: {error}</span>
   {/if}

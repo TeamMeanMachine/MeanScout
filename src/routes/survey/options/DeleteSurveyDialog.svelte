@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Survey } from "$lib/survey";
@@ -70,10 +69,8 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
-    <Icon name="trash" />
-    Delete survey
-  </Container>
+  <Icon name="trash" />
+  Delete survey
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>

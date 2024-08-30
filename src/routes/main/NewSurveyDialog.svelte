@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
@@ -76,30 +75,28 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="plus" />
-    <Container direction="column" gap="small">
-      New survey
-      <small>From scratch</small>
-    </Container>
-  </Container>
+  <Icon name="plus" />
+  <div class="flex flex-col">
+    New survey
+    <small>From scratch</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>New survey</span>
 
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Survey name
-    <input bind:value={name} />
-  </Container>
-  <Container direction="column" gap="none">
+    <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <label class="flex flex-col">
     Survey type
-    <select bind:value={type}>
+    <select bind:value={type} class="bg-neutral-800 p-2 capitalize text-theme">
       {#each surveyTypes as surveyType}
         <option>{surveyType}</option>
       {/each}
     </select>
-  </Container>
+  </label>
   {#if error}
     <span>{error}</span>
   {/if}

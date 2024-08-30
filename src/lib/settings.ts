@@ -36,7 +36,7 @@ export const targetStore = localStorageStore<Target>("target", "red 1", (target)
       var newTheme = "red";
   }
 
-  document.documentElement.style.setProperty("--theme-color", `var(--${newTheme})`);
+  document.documentElement.dataset.theme = newTheme;
 });
 
 // Mode setting

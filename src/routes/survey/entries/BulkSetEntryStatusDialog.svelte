@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { EntryStatus } from "$lib/entry";
@@ -61,10 +60,8 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
-    <Icon name="file-pen" />
-    Set entries as {to}
-  </Container>
+  <Icon name="file-pen" />
+  Set entries as {to}
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>

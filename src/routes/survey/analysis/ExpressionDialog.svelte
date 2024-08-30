@@ -2,7 +2,6 @@
   import { parseValueFromString } from "$lib";
   import { mapExpressionTypes, reduceExpressionTypes, type Expression, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { flattenFields, getDetailedFieldName, type Field } from "$lib/field";
@@ -114,26 +113,24 @@
 </script>
 
 <Button onclick={newExpression}>
-  <Container align="center" maxWidth>
-    <Icon name="plus" />
-    <Container direction="column" gap="small">
-      New expression
-      {#if preselectedExpressionNames?.length}
-        <small>From selected expressions</small>
-      {/if}
-    </Container>
-  </Container>
+  <Icon name="plus" />
+  <div class="flex flex-col">
+    New expression
+    {#if preselectedExpressionNames?.length}
+      <small>From selected expressions</small>
+    {/if}
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>{expressionIndex == undefined ? "New" : "Edit"} expression</span>
 
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Name
-    <input bind:value={expression.name} />
-  </Container>
+    <input bind:value={expression.name} class="bg-neutral-800 p-2 text-theme" />
+  </label>
 
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Type
     <select
       value={expression.type}
@@ -184,6 +181,7 @@
             break;
         }
       }}
+      class="bg-neutral-800 p-2 capitalize text-theme"
     >
       <optgroup label="Reducers">
         {#each reduceExpressionTypes as expressionType}
@@ -196,13 +194,13 @@
         {/each}
       </optgroup>
     </select>
-  </Container>
+  </label>
 
   {#if expression.type == "count"}
-    <Container direction="column" gap="none">
+    <label class="flex flex-col">
       Value to count
-      <input bind:value={expression.valueToCount} />
-    </Container>
+      <input bind:value={expression.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {:else if expression.type == "convert"}
     <ExpressionConvertersDialog
       bind:expression
@@ -210,23 +208,23 @@
       defaultTo={structuredClone($state.snapshot(expression.defaultTo))}
     />
   {:else if expression.type == "multiply"}
-    <Container direction="column" gap="none">
+    <label class="flex flex-col">
       Multiplier
-      <input type="number" bind:value={expression.multiplier} />
-    </Container>
+      <input type="number" bind:value={expression.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {:else if expression.type == "divide"}
-    <Container direction="column" gap="none">
+    <label class="flex flex-col">
       Divisor
-      <input type="number" bind:value={expression.divisor} />
-    </Container>
+      <input type="number" bind:value={expression.divisor} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {/if}
 
   <span>Inputs</span>
 
-  <div class="dialog-overflow">
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     <details open>
-      <summary>Expressions</summary>
-      <Container direction="column" padding="small" gap="small">
+      <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Expressions</summary>
+      <div class="flex flex-col gap-2 p-2">
         {#each expressions as exp}
           {@const inputIndex = expression.inputs.findIndex(
             (input) => input.from == "expression" && input.expressionName == exp.name,
@@ -242,22 +240,20 @@
               }
             }}
           >
-            <Container maxWidth>
-              {#if isInput}
-                <Icon name="square-check" />
-              {:else}
-                <Icon style="regular" name="square" />
-              {/if}
-              {exp.name}
-            </Container>
+            {#if isInput}
+              <Icon name="square-check" />
+            {:else}
+              <Icon style="regular" name="square" />
+            {/if}
+            {exp.name}
           </Button>
         {/each}
-      </Container>
+      </div>
     </details>
 
     <details open>
-      <summary>Fields</summary>
-      <Container direction="column" padding="small" gap="small">
+      <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Fields</summary>
+      <div class="flex flex-col gap-2 p-2">
         {#each flattenedFields as _, fieldIndex}
           {@const inputIndex = expression.inputs.findIndex(
             (input) => input.from == "field" && input.fieldIndex == fieldIndex,
@@ -273,17 +269,15 @@
               }
             }}
           >
-            <Container maxWidth>
-              {#if isInput}
-                <Icon name="square-check" />
-              {:else}
-                <Icon style="regular" name="square" />
-              {/if}
-              {getDetailedFieldName(fields, fieldIndex)}
-            </Container>
+            {#if isInput}
+              <Icon name="square-check" />
+            {:else}
+              <Icon style="regular" name="square" />
+            {/if}
+            {getDetailedFieldName(fields, fieldIndex)}
           </Button>
         {/each}
-      </Container>
+      </div>
     </details>
   </div>
 
@@ -291,21 +285,3 @@
     <span>Error: {error}</span>
   {/if}
 </Dialog>
-
-<style>
-  summary {
-    background: var(--fg-color);
-    cursor: default;
-    padding: var(--inner-gap);
-    padding-left: var(--outer-gap);
-  }
-
-  summary:hover,
-  summary:focus {
-    outline: var(--outline);
-  }
-
-  summary::marker {
-    color: var(--theme-color);
-  }
-</style>

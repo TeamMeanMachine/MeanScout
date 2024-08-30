@@ -62,13 +62,6 @@
   }
 </script>
 
-<canvas bind:this={canvas} style:display={reading ? "block" : "none"}>
+<canvas bind:this={canvas} class="max-w-full basis-0 {reading ? 'block' : 'hidden'}">
   Displays the camera when trying to read a QR code.
 </canvas>
-
-<style>
-  canvas {
-    max-width: 100%;
-    flex-basis: 0;
-  }
-</style>

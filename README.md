@@ -7,6 +7,7 @@ https://meanscout.team2471.org
 ## Powered by
 
 - [SvelteKit](https://kit.svelte.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
 - [FontAwesome](https://fontawesome.com/)
 - [Fira Code](https://github.com/tonsky/FiraCode)
 - [The Blue Alliance](https://www.thebluealliance.com/)

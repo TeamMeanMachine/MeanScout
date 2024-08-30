@@ -15,12 +15,4 @@
   });
 </script>
 
-<canvas bind:this={canvas}>Displays a QR code to scan.</canvas>
-
-<style>
-  canvas {
-    aspect-ratio: 1/1;
-    max-width: 100%;
-    flex-basis: 0;
-  }
-</style>
+<canvas bind:this={canvas} class="aspect-square max-w-full basis-0">Displays a QR code to scan.</canvas>

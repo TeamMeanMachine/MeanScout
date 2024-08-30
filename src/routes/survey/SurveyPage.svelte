@@ -1,6 +1,5 @@
 <script lang="ts">
   import Anchor from "$lib/components/Anchor.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
@@ -54,106 +53,92 @@
 </script>
 
 <Header backLink="">
-  <h1>{surveyRecord.name}</h1>
+  <h1 class="font-bold">{surveyRecord.name}</h1>
   {#if surveyRecord.tbaEventKey}
     <small>{surveyRecord.tbaEventKey}</small>
   {/if}
 </Header>
 
-<Container direction="column" padding="large">
+<div class="flex flex-col gap-2 p-3">
   {#if show}
     <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
   {/if}
-</Container>
+</div>
 
 {#if show && draftEntries.length}
-  <Container direction="column" padding="large">
-    <h2>Drafts</h2>
+  <div class="flex flex-col gap-2 p-3">
+    <h2 class="font-bold">Drafts</h2>
     {#each draftEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as draft (draft.id)}
       <Anchor route="entry/{draft.id}">
-        <Container align="center">
-          <Icon name="arrow-right" />
-          <Container direction="column" gap="small">
-            <span><small>Team</small> {draft.team}</span>
-            {#if draft.type == "match"}
-              <span><small>Match</small> {draft.match}</span>
-            {/if}
-          </Container>
-        </Container>
+        <Icon name="arrow-right" />
+        <div class="flex flex-col">
+          <span><small>Team</small> {draft.team}</span>
+          {#if draft.type == "match"}
+            <span><small>Match</small> {draft.match}</span>
+          {/if}
+        </div>
       </Anchor>
     {/each}
-  </Container>
+  </div>
 {/if}
 
-<Container direction="column" padding="large">
-  <h2>Survey</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Survey</h2>
 
   <Anchor route="survey/{surveyRecord.id}/entries">
-    <Container align="center">
-      <Icon name="list-ol" />
-      <Container direction="column" gap="small">
-        Entries
-        <small>{entryRecords.length - draftEntries.length} completed</small>
-      </Container>
-    </Container>
+    <Icon name="list-ol" />
+    <div class="flex flex-col">
+      Entries
+      <small>{entryRecords.length - draftEntries.length} completed</small>
+    </div>
   </Anchor>
 
   {#if surveyRecord.type == "match"}
     <Anchor route="survey/{surveyRecord.id}/analysis">
-      <Container align="center">
-        <Icon name="chart-simple" />
-        <Container direction="column" gap="small">
-          Analysis
-          <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
-        </Container>
-      </Container>
+      <Icon name="chart-simple" />
+      <div class="flex flex-col">
+        Analysis
+        <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
+      </div>
     </Anchor>
 
     <Anchor route="survey/{surveyRecord.id}/matches">
-      <Container align="center">
-        <Icon name="table-list" />
-        <Container direction="column" gap="small">
-          Matches
-          <small>{surveyRecord.matches.length} total</small>
-        </Container>
-      </Container>
+      <Icon name="table-list" />
+      <div class="flex flex-col">
+        Matches
+        <small>{surveyRecord.matches.length} total</small>
+      </div>
     </Anchor>
   {/if}
 
   <Anchor route="survey/{surveyRecord.id}/teams">
-    <Container align="center">
-      <Icon name="people-group" />
-      <Container direction="column" gap="small">
-        Teams
-        <small>
-          {#if surveyRecord.type == "match"}
-            {getTeamsFromAllMatches().length} from matches,
-          {/if}
-          {surveyRecord.teams.length} added
-        </small>
-      </Container>
-    </Container>
+    <Icon name="people-group" />
+    <div class="flex flex-col">
+      Teams
+      <small>
+        {#if surveyRecord.type == "match"}
+          {getTeamsFromAllMatches().length} from matches,
+        {/if}
+        {surveyRecord.teams.length} added
+      </small>
+    </div>
   </Anchor>
 
   {#if $modeStore == "admin"}
     <Anchor route="survey/{surveyRecord.id}/fields">
-      <Container align="center">
-        <Icon name="list-check" />
-        <Container direction="column" gap="small">
-          Fields
-          <small>Configure, Preview</small>
-        </Container>
-      </Container>
+      <Icon name="list-check" />
+      <div class="flex flex-col">
+        Fields
+        <small>Configure, Preview</small>
+      </div>
     </Anchor>
 
     <Anchor route="survey/{surveyRecord.id}/options">
-      <Container align="center">
-        <Icon name="gears" />
-        <Container direction="column" gap="small">
-          Options
-          <small>Export, TBA event</small>
-        </Container>
-      </Container>
+      <Icon name="gears" />
+      <div class="flex flex-col">
+        Options
+        <small>Export, TBA event</small>
+      </div>
     </Anchor>
   {/if}
-</Container>
+</div>

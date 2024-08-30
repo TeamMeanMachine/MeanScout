@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Container from "$lib/components/Container.svelte";
   import type { SelectField } from "$lib/field";
 
   let {
@@ -13,11 +12,11 @@
   } = $props();
 </script>
 
-<Container direction="column" gap="none">
+<label class="flex flex-col">
   {field.name}
-  <select bind:value {onchange}>
+  <select bind:value {onchange} class="bg-neutral-800 p-2 capitalize text-theme">
     {#each field.values as val}
       <option value={val}>{val}</option>
     {/each}
   </select>
-</Container>
+</label>

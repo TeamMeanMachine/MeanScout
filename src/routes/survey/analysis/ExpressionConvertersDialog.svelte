@@ -2,7 +2,6 @@
   import { parseValueFromString } from "$lib";
   import type { ConvertExpression } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
 
@@ -37,48 +36,39 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth gap="small">
-    <Icon name="pen" />
-    Edit Converters
-  </Container>
+  <Icon name="pen" />
+  Edit Converters
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   Converters
   {#each converters as converter, converterIndex}
-    <Container align="end">
+    <div class="flex flex-wrap items-end gap-2">
       <Button onclick={() => (converters = converters.toSpliced(converterIndex, 1))}>
         <Icon name="trash" />
       </Button>
-      <Container gap="none" align="end">
-        <Container direction="column" gap="none">
+      <div class="flex flex-wrap items-end">
+        <label class="flex flex-col">
           From
-          <input class="converter" bind:value={converter.from} />
-        </Container>
-        <Container padding="small">
+          <input bind:value={converter.from} class="w-36 bg-neutral-800 p-2 text-theme" />
+        </label>
+        <div class="p-2">
           <Icon name="arrow-right" />
-        </Container>
-        <Container direction="column" gap="none">
+        </div>
+        <label class="flex flex-col">
           To
-          <input class="converter" bind:value={converter.to} />
-        </Container>
-      </Container>
-    </Container>
+          <input bind:value={converter.to} class="w-36 bg-neutral-800 p-2 text-theme" />
+        </label>
+      </div>
+    </div>
   {/each}
   <Button onclick={() => (converters = [...converters, { from: "", to: "" }])}>
-    <Container maxWidth>
-      <Icon name="plus" />
-      New converter
-    </Container>
+    <Icon name="plus" />
+    New converter
   </Button>
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Default to
-    <input bind:value={defaultTo} placeholder="Leave blank to keep input" />
-  </Container>
+    <input bind:value={defaultTo} class="bg-neutral-800 p-2 text-theme" />
+  </label>
+  <small>Leave blank to keep input</small>
 </Dialog>
-
-<style>
-  .converter {
-    width: 150px;
-  }
-</style>

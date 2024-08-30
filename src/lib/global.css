@@ -22,7 +22,7 @@ html {
   --fg-color: rgba(127, 127, 127, 0.2);
   --red: #f44336;
   --blue: #2196f3;
-  --orange: #ff9800;
+  --orange: rgb(255, 152, 0);
   --theme-color: var(--red);
   --outline: white solid 2px;
   background: black;

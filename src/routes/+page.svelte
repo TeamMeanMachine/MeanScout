@@ -1,12 +1,11 @@
 <script lang="ts">
   import { persistStorage } from "$lib";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import type { Entry } from "$lib/entry";
   import { fieldTypes, flattenFields, type Field } from "$lib/field";
-  import "$lib/global.css";
   import type { MatchSurvey } from "$lib/survey";
   import type { ComponentProps } from "svelte";
+  import "../app.css";
   import AboutPage from "./about/AboutPage.svelte";
   import EntryPage from "./entry/EntryPage.svelte";
   import MainPage from "./main/MainPage.svelte";
@@ -362,14 +361,14 @@
 
 {#if idbError}
   <Header />
-  <Container padding="large">
+  <div class="flex flex-col gap-3 p-3">
     <h2>Error</h2>
     <p>
       MeanScout was unable to access IndexedDB. Double check that your device/browser supports it, and that you haven't
       removed the permission to access it.
     </p>
     <p>Error: {idbError}</p>
-  </Container>
+  </div>
 {:else if current?.page == ""}
   <MainPage {...current.props} />
 {:else if current?.page == "settings"}

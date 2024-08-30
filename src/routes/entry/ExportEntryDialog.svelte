@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createEntryFileName, download, shareAsFile, shareAsText } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { entryAsCSV, type Entry } from "$lib/entry";
@@ -43,10 +42,8 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
-    <Icon name="share-from-square" />
-    Export
-  </Container>
+  <Icon name="share-from-square" />
+  Export
 </Button>
 
 <Dialog bind:this={dialog} {onopen} {onclose}>
@@ -58,22 +55,16 @@
 
   {#if "canShare" in navigator}
     <Button onclick={shareEntryAsFile}>
-      <Container maxWidth>
-        <Icon name="share-from-square" />
-        Share as file
-      </Container>
+      <Icon name="share-from-square" />
+      Share as file
     </Button>
     <Button onclick={shareEntryAsText}>
-      <Container maxWidth>
-        <Icon name="share" />
-        Share as text snippet
-      </Container>
+      <Icon name="share" />
+      Share as text snippet
     </Button>
   {/if}
   <Button onclick={downloadEntry}>
-    <Container maxWidth>
-      <Icon name="download" />
-      Download as file
-    </Container>
+    <Icon name="download" />
+    Download as file
   </Button>
 </Dialog>

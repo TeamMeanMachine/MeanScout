@@ -14,7 +14,7 @@
 
   let dialog: Dialog;
 
-  function onConfirm() {
+  function onconfirm() {
     surveyRecord.pickLists = surveyRecord.pickLists.toSpliced(pickListIndex, 1);
     surveyRecord.modified = new Date();
     dialog.close();
@@ -26,6 +26,6 @@
   Delete
 </Button>
 
-<Dialog bind:this={dialog} onconfirm={onConfirm}>
+<Dialog bind:this={dialog} {onconfirm}>
   <span>Delete pick list?</span>
 </Dialog>

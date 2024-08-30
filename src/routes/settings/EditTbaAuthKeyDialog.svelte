@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { tbaAuthKeyStore } from "$lib/settings";
@@ -34,17 +33,15 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="key" />
-    {#if $tbaAuthKeyStore}
-      <Container direction="column" gap="small">
-        ********
-        <small>Edit API auth key</small>
-      </Container>
-    {:else}
-      Add API auth key
-    {/if}
-  </Container>
+  <Icon name="key" />
+  {#if $tbaAuthKeyStore}
+    <div class="flex flex-col">
+      ********
+      <small>Edit API auth key</small>
+    </div>
+  {:else}
+    Add API auth key
+  {/if}
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
@@ -55,7 +52,7 @@
       Add TBA API auth key
     {/if}
   </span>
-  <input bind:value={tbaAuthKey} />
+  <input bind:value={tbaAuthKey} class="bg-neutral-800 p-2 text-theme" />
   {#if error}
     <span>Error: {error}</span>
   {/if}

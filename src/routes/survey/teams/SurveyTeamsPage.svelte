@@ -1,9 +1,8 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-    import { modeStore } from "$lib/settings";
+  import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -36,26 +35,30 @@
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
-  <h1>Teams</h1>
+  <h1 class="font-bold">Teams</h1>
 </Header>
 
-<Container direction="column" padding="large">
-  {#if $modeStore == "admin"}
-    <Container direction="column" gap="none">
+{#if $modeStore == "admin"}
+  <div class="flex items-end gap-2 p-3">
+    <label class="flex flex-col">
       New team
-      <Container>
-        <input style="width:200px" bind:value={teamInput} onkeydown={(e) => e.key == "Enter" && addTeam()} />
-        <Button disabled={!teamInput.trim().length || surveyRecord.teams.includes(teamInput.trim())} onclick={addTeam}>
-          <Icon name="plus" />
-          Add
-        </Button>
-      </Container>
-    </Container>
-  {/if}
+      <input
+        bind:value={teamInput}
+        onkeydown={(e) => e.key == "Enter" && addTeam()}
+        class="w-48 bg-neutral-800 p-2 text-theme"
+      />
+    </label>
+    <Button disabled={!teamInput.trim().length || surveyRecord.teams.includes(teamInput.trim())} onclick={addTeam}>
+      <Icon name="plus" />
+      Add
+    </Button>
+  </div>
+{/if}
 
-  <h2>Teams</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Teams</h2>
   {#if surveyRecord.teams.length}
-    <Container>
+    <div class="flex gap-2">
       {#if $modeStore == "admin"}
         {#each surveyRecord.teams.toSorted((a, b) => a.localeCompare(b, "en", { numeric: true })) as team}
           <Button onclick={() => deleteTeam(team)}>
@@ -65,7 +68,7 @@
       {:else}
         {surveyRecord.teams.toSorted((a, b) => a.localeCompare(b, "en", { numeric: true })).join(", ")}
       {/if}
-    </Container>
+    </div>
   {:else}
     <span>
       No teams.
@@ -76,4 +79,4 @@
       {/if}
     </span>
   {/if}
-</Container>
+</div>

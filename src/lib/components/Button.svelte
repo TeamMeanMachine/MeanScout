@@ -4,35 +4,17 @@
 
   let {
     disabled = false,
-    star = false,
     onclick,
+    classes = "",
     children,
   }: {
     disabled?: boolean;
-    star?: boolean;
     onclick?: HTMLButtonAttributes["onclick"];
+    classes?: string;
     children: Snippet;
   } = $props();
 </script>
 
-<button {onclick} class:star {disabled}>
+<button {onclick} {disabled} class="flex flex-wrap items-center gap-2 bg-neutral-800 p-2 text-left {classes}">
   {@render children()}
 </button>
-
-<style>
-  button {
-    background: var(--fg-color);
-    padding: var(--inner-gap);
-    text-align: left;
-    text-decoration: none;
-  }
-
-  button:focus,
-  button:hover {
-    outline: var(--outline);
-  }
-
-  .star {
-    padding: var(--inner-gap) 6px;
-  }
-</style>

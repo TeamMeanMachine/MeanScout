@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { ExpressionAsExpressionInput } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
@@ -65,12 +64,12 @@
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
-  <h1>Analysis</h1>
+  <h1 class="font-bold">Analysis</h1>
 </Header>
 
-{#if surveyRecord.expressions.length}
-  <Container direction="column" padding="large">
-    <h2>Pick Lists</h2>
+<div class="flex flex-col gap-2 p-3">
+  {#if surveyRecord.expressions.length}
+    <h2 class="font-bold">Pick Lists</h2>
     <CalculatePickListDialog
       bind:this={calculatePickListDialog}
       pickLists={surveyRecord.pickLists}
@@ -86,36 +85,32 @@
         {preselectedExpressionNames}
       />
     {/if}
-    <Container direction="column" gap="none">
+    <div class="flex flex-col">
       {#each surveyRecord.pickLists as pickList, pickListIndex}
-        <Container direction="column" padding="large">
+        <div class="flex flex-col gap-2 p-3">
           <Button onclick={() => calculatePickListDialog?.open(pickListIndex)}>
-            <Container>
-              <Icon name="list-ol" />
-              {pickList.name}
-            </Container>
+            <Icon name="list-ol" />
+            {pickList.name}
           </Button>
           {#if $modeStore == "admin"}
-            <Container>
+            <div class="flex flex-wrap gap-2">
               <Button onclick={() => pickListDialog?.editPickList(pickListIndex)}>
-                <Container>
-                  <Icon name="pen" />
-                  Edit
-                </Container>
+                <Icon name="pen" />
+                Edit
               </Button>
               <DeletePickListDialog bind:surveyRecord {pickListIndex} />
-            </Container>
+            </div>
           {/if}
-        </Container>
+        </div>
       {/each}
-    </Container>
-  </Container>
-{:else}
-  <Container padding="large">To set up pick lists, first create some expressions.</Container>
-{/if}
+    </div>
+  {:else}
+    To set up pick lists, first create some expressions.
+  {/if}
+</div>
 
-<Container direction="column" padding="large">
-  <h2>Expressions</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Expressions</h2>
   <CalculateExpressionDialog
     bind:this={calculateExpressionDialog}
     {entriesByTeam}
@@ -130,7 +125,7 @@
       bind:pickLists={surveyRecord.pickLists}
       {preselectedExpressionNames}
     />
-    <Container>
+    <div class="flex gap-2">
       <Button
         onclick={() => {
           if (isSelecting) {
@@ -141,14 +136,12 @@
           }
         }}
       >
-        <Container>
-          <Icon name="list-check" />
-          {#if isSelecting}
-            Stop selecting
-          {:else}
-            Select
-          {/if}
-        </Container>
+        <Icon name="list-check" />
+        {#if isSelecting}
+          Stop selecting
+        {:else}
+          Select
+        {/if}
       </Button>
       {#if isSelecting}
         <Button
@@ -160,23 +153,21 @@
             }
           }}
         >
-          <Container>
-            {#if preselectedExpressionNames.length}
-              <Icon name="xmark" />
-              Deselect all
-            {:else}
-              <Icon name="check" />
-              Select all
-            {/if}
-          </Container>
+          {#if preselectedExpressionNames.length}
+            <Icon name="xmark" />
+            Deselect all
+          {:else}
+            <Icon name="check" />
+            Select all
+          {/if}
         </Button>
       {/if}
-    </Container>
+    </div>
   {/if}
 
-  <Container direction="column" gap="none">
+  <div class="flex flex-col">
     {#each surveyRecord.expressions as expression, expressionIndex}
-      <Container direction="column" padding="large">
+      <div class="flex flex-col gap-2 p-3">
         {#if isSelecting}
           {@const isSelected = preselectedExpressionNames.includes(expression.name)}
           <Button
@@ -188,24 +179,20 @@
               }
             }}
           >
-            <Container maxWidth gap="small">
-              {#if isSelected}
-                <Icon name="square-check" />
-              {:else}
-                <Icon style="regular" name="square" />
-              {/if}
-              {expression.name}
-            </Container>
+            {#if isSelected}
+              <Icon name="square-check" />
+            {:else}
+              <Icon style="regular" name="square" />
+            {/if}
+            {expression.name}
           </Button>
         {:else}
           <Button onclick={() => calculateExpressionDialog?.open(expressionIndex)}>
-            <Container gap="small" maxWidth>
-              <Icon name="percent" />
-              {expression.name}
-            </Container>
+            <Icon name="percent" />
+            {expression.name}
           </Button>
           {#if $modeStore == "admin"}
-            <Container>
+            <div class="flex flex-wrap gap-2">
               <Button onclick={() => expressionDialog?.editExpression(expressionIndex)}>
                 <Icon name="pen" />
                 Edit
@@ -218,10 +205,10 @@
                   Delete
                 </Button>
               {/if}
-            </Container>
+            </div>
           {/if}
         {/if}
-      </Container>
+      </div>
     {/each}
-  </Container>
-</Container>
+  </div>
+</div>

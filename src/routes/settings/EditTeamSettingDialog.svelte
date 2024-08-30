@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { teamStore } from "$lib/settings";
@@ -27,17 +26,15 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="user-group" />
-    {#if $teamStore}
-      <Container direction="column" gap="small">
-        {$teamStore}
-        <small>Edit team</small>
-      </Container>
-    {:else}
-      Add team
-    {/if}
-  </Container>
+  <Icon name="user-group" />
+  {#if $teamStore}
+    <div class="flex flex-col">
+      {$teamStore}
+      <small>Edit team</small>
+    </div>
+  {:else}
+    Add team
+  {/if}
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
@@ -48,7 +45,7 @@
       Add team
     {/if}
   </span>
-  <input bind:value={teamInput} />
+  <input bind:value={teamInput} class="bg-neutral-800 p-2 text-theme" />
   {#if error}
     <span>Error: {error}</span>
   {/if}

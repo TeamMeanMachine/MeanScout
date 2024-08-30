@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { TimerField } from "$lib/field";
 
@@ -38,24 +37,15 @@
   }
 </script>
 
-<Container direction="column" gap="none">
+<div class="flex flex-col">
   {field.name}
-  <Container gap="none">
+  <div class="flex flex-wrap">
     <Button onclick={running ? pause : start}>
       <Icon name={running ? "pause" : "play"} />
     </Button>
-    <span class="number">{value.toFixed(1)}</span>
+    <span class="w-12 bg-neutral-800 p-2 text-center">{value.toFixed(1)}</span>
     <Button onclick={stop}>
       <Icon name="stop" />
     </Button>
-  </Container>
-</Container>
-
-<style>
-  .number {
-    background: var(--fg-color);
-    padding: var(--inner-gap);
-    text-align: center;
-    width: 80px;
-  }
-</style>
+  </div>
+</div>

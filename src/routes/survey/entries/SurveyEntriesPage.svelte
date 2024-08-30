@@ -1,6 +1,5 @@
 <script lang="ts">
   import Anchor from "$lib/components/Anchor.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
@@ -43,16 +42,18 @@
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
-  <h1>Entries</h1>
+  <h1 class="font-bold">Entries</h1>
 </Header>
 
-<Container direction="column" padding="large">
+<div class="flex flex-col gap-2 p-3">
   {#if $modeStore == "admin"}
     <ImportEntriesDialog {idb} {surveyRecord} />
     <ImportEntryDialog {idb} {surveyRecord} bind:exportedEntries />
   {/if}
+</div>
 
-  <h2>Submitted Entries</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Submitted Entries</h2>
   {#if show && submittedEntries.length}
     <ExportEntriesDialog {surveyRecord} entries={submittedEntries} />
     <BulkSetEntryStatusDialog
@@ -67,27 +68,27 @@
     />
     {#each submittedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
       <Anchor route="entry/{entry.id}">
-        <Container align="center">
-          <Icon name="arrow-right" />
-          <Container direction="column" gap="small">
-            <span><small>Team</small> {entry.team}</span>
-            {#if entry.type == "match"}
-              <span><small>Match</small> {entry.match}</span>
-              {#if entry.absent}
-                <strong><small>Absent</small> {entry.absent}</strong>
-              {/if}
+        <Icon name="arrow-right" />
+        <div class="flex flex-col">
+          <span><small>Team</small> {entry.team}</span>
+          {#if entry.type == "match"}
+            <span><small>Match</small> {entry.match}</span>
+            {#if entry.absent}
+              <strong><small>Absent</small> {entry.absent}</strong>
             {/if}
-          </Container>
-        </Container>
+          {/if}
+        </div>
       </Anchor>
     {/each}
   {:else if show}
-    <span>No entries.</span>
+    No entries.
   {:else}
-    <span>Loading...</span>
+    Loading...
   {/if}
+</div>
 
-  <h2>Exported Entries</h2>
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Exported Entries</h2>
   {#if show && exportedEntries.length}
     <BulkSetEntryStatusDialog
       {idb}
@@ -101,23 +102,21 @@
     />
     {#each exportedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
       <Anchor route="entry/{entry.id}">
-        <Container align="center">
-          <Icon name="arrow-right" />
-          <Container direction="column" gap="small">
-            <span><small>Team</small> {entry.team}</span>
-            {#if entry.type == "match"}
-              <span><small>Match</small> {entry.match}</span>
-              {#if entry.absent}
-                <strong><small>Absent</small> {entry.absent}</strong>
-              {/if}
+        <Icon name="arrow-right" />
+        <div class="flex flex-col">
+          <span><small>Team</small> {entry.team}</span>
+          {#if entry.type == "match"}
+            <span><small>Match</small> {entry.match}</span>
+            {#if entry.absent}
+              <strong><small>Absent</small> {entry.absent}</strong>
             {/if}
-          </Container>
-        </Container>
+          {/if}
+        </div>
       </Anchor>
     {/each}
   {:else if show}
-    <span>No entries.</span>
+    No entries.
   {:else}
-    <span>Loading...</span>
+    Loading...
   {/if}
-</Container>
+</div>

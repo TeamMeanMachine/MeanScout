@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Survey } from "$lib/survey";
@@ -34,18 +33,16 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="pen" />
-    <Container direction="column" gap="small">
-      {surveyRecord.name}
-      <small>Edit name</small>
-    </Container>
-  </Container>
+  <Icon name="pen" />
+  <div class="flex flex-col">
+    {surveyRecord.name}
+    <small>Edit name</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>Edit name:</span>
-  <input bind:value={name} />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
   {#if error}
     <span>{error}</span>
   {/if}

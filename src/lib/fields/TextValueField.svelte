@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Container from "$lib/components/Container.svelte";
   import type { TextField } from "$lib/field";
 
   let {
@@ -13,11 +12,12 @@
   } = $props();
 </script>
 
-<Container direction="column" gap="none" maxWidth>
+<div class="flex w-full flex-col">
   {field.name}
   {#if field.long}
-    <textarea placeholder={field.tip} bind:value {onchange}></textarea>
+    <textarea placeholder={field.tip} bind:value {onchange} class="h-72 resize-none bg-neutral-800 p-2 text-theme">
+    </textarea>
   {:else}
-    <input placeholder={field.tip} bind:value {onchange} />
+    <input placeholder={field.tip} bind:value {onchange} class="bg-neutral-800 p-2 text-theme" />
   {/if}
-</Container>
+</div>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -203,13 +202,11 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="plus" />
-    <Container direction="column" gap="small">
-      New entry
-      <small>Team {prefilledTeam}, Match {prefilledMatch}</small>
-    </Container>
-  </Container>
+  <Icon name="plus" />
+  <div class="flex flex-col">
+    New entry
+    <small>Team {prefilledTeam}, Match {prefilledMatch}</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onopen} {onconfirm} {onclose}>
@@ -220,25 +217,23 @@
       <option value={team}></option>
     {/each}
   </datalist>
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Team
-    <input list="teams-list" bind:value={team} />
-  </Container>
+    <input list="teams-list" bind:value={team} class="bg-neutral-800 p-2 text-theme" />
+  </label>
 
   {#if surveyRecord.type == "match"}
-    <Container direction="column" gap="none">
+    <label class="flex flex-col">
       Match
-      <input type="number" bind:value={match} />
-    </Container>
+      <input type="number" bind:value={match} class="bg-neutral-800 p-2 text-theme" />
+    </label>
     <Button onclick={() => (absent = !absent)}>
-      <Container gap="small" maxWidth>
-        {#if absent}
-          <Icon name="square-check" />
-        {:else}
-          <Icon style="regular" name="square" />
-        {/if}
-        Absent
-      </Container>
+      {#if absent}
+        <Icon name="square-check" />
+      {:else}
+        <Icon style="regular" name="square" />
+      {/if}
+      Absent
     </Button>
   {/if}
 

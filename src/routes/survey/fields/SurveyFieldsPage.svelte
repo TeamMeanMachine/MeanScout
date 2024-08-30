@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -23,7 +22,6 @@
   let entriesPresent = $state(false);
   let disabled = $state(surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0);
   let preview = $state(false);
-  let previewAbsentValue = $state(false);
 
   const entryCountRequest = idb.transaction("entries").objectStore("entries").index("surveyId").count(surveyRecord.id);
   entryCountRequest.onsuccess = () => {
@@ -47,48 +45,33 @@
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
-  <h1>Fields</h1>
+  <h1 class="font-bold">Fields</h1>
 </Header>
 
-<Container direction="column" padding="large">
+<div class="flex flex-col gap-4 p-3">
   {#if preview}
-    <Container align="end">
-      <Container direction="column" gap="none">
-        Team
-        <input class="team" list="teams-list" maxlength="6" />
-      </Container>
+    <div class="flex flex-col">
+      <span><small>Team</small> <strong>####</strong></span>
       {#if surveyRecord.type == "match"}
-        <Container direction="column" gap="none">
-          Match
-          <input class="match" type="number" pattern="[0-9]*" required />
-        </Container>
-        <Container direction="column" gap="none">
-          <Button onclick={() => (previewAbsentValue = !previewAbsentValue)}>
-            {#if previewAbsentValue}
-              <Icon name="square-check" />
-            {:else}
-              <Icon style="regular" name="square" />
-            {/if}
-            Absent
-          </Button>
-        </Container>
+        <span><small>Match</small> <strong>##</strong></span>
       {/if}
-
-      {#if surveyRecord.type != "match" || !previewAbsentValue}
-        {#each surveyRecord.fields as field (field)}
-          {#if field.type == "group"}
-            <h2>{field.name}</h2>
-            <Container align="end" maxWidth>
+    </div>
+    <div class="flex flex-wrap items-end gap-2">
+      {#each surveyRecord.fields as field (field)}
+        {#if field.type == "group"}
+          <div class="flex w-full flex-col gap-1">
+            <h2 class="font-bold">{field.name}</h2>
+            <div class="mb-4 flex flex-wrap items-end gap-2">
               {#each field.fields as innerField (innerField)}
                 <FieldValueEditor field={innerField} value={getDefaultFieldValue(innerField)} />
               {/each}
-            </Container>
-          {:else}
-            <FieldValueEditor {field} value={getDefaultFieldValue(field)} />
-          {/if}
-        {/each}
-      {/if}
-    </Container>
+            </div>
+          </div>
+        {:else}
+          <FieldValueEditor {field} value={getDefaultFieldValue(field)} />
+        {/if}
+      {/each}
+    </div>
   {:else}
     {#if disabled}
       <span>
@@ -111,12 +94,12 @@
       />
     {/each}
   {/if}
-</Container>
+</div>
 
-<footer>
+<footer class="flex flex-wrap gap-2 p-3">
   <Button {disabled} onclick={newField}>
     <Icon name="plus" />
-    Field
+    New field
   </Button>
   <Button onclick={togglePreview}>
     {#if preview}
@@ -127,13 +110,3 @@
     Preview
   </Button>
 </footer>
-
-<style>
-  .team {
-    width: 130px;
-  }
-
-  .match {
-    width: 80px;
-  }
-</style>

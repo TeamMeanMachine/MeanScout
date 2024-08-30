@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { fieldTypes, type Field } from "$lib/field";
   import FieldOptionsDialog from "./FieldOptionsDialog.svelte";
@@ -90,82 +89,83 @@
   }
 </script>
 
-<Container direction="column" padding="large">
-  <Container>
-    <Container direction="column" gap="none">
+<div class="flex flex-col gap-2">
+  <div class="flex flex-wrap items-end gap-2">
+    <label class="flex flex-col">
       Name
-      <input bind:value={field.name} {onchange} {disabled} />
-    </Container>
-    <Container direction="column" gap="none">
+      <input bind:value={field.name} {onchange} {disabled} class="bg-neutral-800 p-2 text-theme" />
+    </label>
+    <label class="flex flex-col">
       Type
-      <select value={field.type} onchange={(e) => switchFieldType(e.currentTarget.value)} {disabled}>
+      <select
+        value={field.type}
+        onchange={(e) => switchFieldType(e.currentTarget.value)}
+        {disabled}
+        class="bg-neutral-800 p-2 capitalize text-theme"
+      >
         {#each fieldTypes as fieldType}
           <option>{fieldType}</option>
         {/each}
       </select>
-    </Container>
-  </Container>
-
-  <Container>
-    <Button disabled={fieldIndex == 0 || disabled} onclick={() => moveField(-1)}>
-      <Icon name="arrow-up" />
-    </Button>
-    <Button disabled={fieldIndex == fields.length - 1 || disabled} onclick={() => moveField(1)}>
-      <Icon name="arrow-down" />
-    </Button>
-    <FieldOptionsDialog bind:fields bind:field {fieldIndex} {disabled} {onchange} />
-  </Container>
+    </label>
+  </div>
 
   {#if !disabled}
+    <div class="flex flex-wrap gap-2">
+      <Button disabled={fieldIndex == 0} onclick={() => moveField(-1)}>
+        <Icon name="arrow-up" />
+      </Button>
+      <Button disabled={fieldIndex == fields.length - 1} onclick={() => moveField(1)}>
+        <Icon name="arrow-down" />
+      </Button>
+      <FieldOptionsDialog bind:fields bind:field {fieldIndex} {onchange} />
+    </div>
+
     {#if field.type == "number"}
-      <Container direction="column" padding="large" maxWidth>
-        <Container>
-          <Button onclick={toggleAllowNegative}>
-            {#if field.allowNegative}
-              <Icon name="square-check" />
-            {:else}
-              <Icon style="regular" name="square" />
-            {/if}
-            Allow negative
-          </Button>
-        </Container>
-      </Container>
+      <div class="flex gap-2 pl-3">
+        <Button onclick={toggleAllowNegative}>
+          {#if field.allowNegative}
+            <Icon name="square-check" />
+          {:else}
+            <Icon style="regular" name="square" />
+          {/if}
+          Allow negative
+        </Button>
+      </div>
     {:else if field.type == "select"}
-      <Container direction="column" padding="large" maxWidth>
+      <div class="flex flex-col gap-2 pl-3">
         {field.name} Values
         {#each field.values as _, i}
-          <Container>
-            <input bind:value={field.values[i]} {onchange} style="width:200px" />
+          <div class="flex gap-2">
+            <input bind:value={field.values[i]} {onchange} class="w-48 bg-neutral-800 p-2 text-theme" />
             <Button onclick={() => deleteSelectValue(i)}>
               <Icon name="trash" />
             </Button>
-          </Container>
+          </div>
         {/each}
-        <Container>
+        <div>
           <Button onclick={newSelectValue}>
             <Icon name="plus" />
           </Button>
-        </Container>
-      </Container>
+        </div>
+      </div>
     {:else if field.type == "text"}
-      <Container direction="column" padding="large" maxWidth>
-        <Container align="end">
-          <Container direction="column" gap="none">
-            Tip
-            <input bind:value={field.tip} {onchange} />
-          </Container>
-          <Button onclick={toggleLong}>
-            {#if field.long}
-              <Icon name="square-check" />
-            {:else}
-              <Icon style="regular" name="square" />
-            {/if}
-            Long
-          </Button>
-        </Container>
-      </Container>
+      <div class="flex flex-col items-start gap-2 pl-3">
+        <label class="flex flex-col">
+          Tip
+          <input bind:value={field.tip} {onchange} class="bg-neutral-800 p-2 text-theme" />
+        </label>
+        <Button onclick={toggleLong}>
+          {#if field.long}
+            <Icon name="square-check" />
+          {:else}
+            <Icon style="regular" name="square" />
+          {/if}
+          Long
+        </Button>
+      </div>
     {:else if field.type == "group"}
-      <Container direction="column" padding="large" maxWidth>
+      <div class="flex flex-col gap-3 pl-3 pt-1">
         {field.name} Fields
         {#each field.fields as innerField, innerFieldIndex (innerField)}
           <svelte:self
@@ -175,12 +175,12 @@
             fieldIndex={innerFieldIndex}
           />
         {/each}
-        <Container>
+        <div>
           <Button onclick={newField}>
             <Icon name="plus" />
           </Button>
-        </Container>
-      </Container>
+        </div>
+      </div>
     {/if}
   {/if}
-</Container>
+</div>

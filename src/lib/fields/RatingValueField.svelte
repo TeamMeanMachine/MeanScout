@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { RatingField } from "$lib/field";
 
@@ -24,13 +23,13 @@
   }
 </script>
 
-<Container direction="column" gap="none">
+<div class="flex flex-col">
   {field.name}
-  <Container gap="none">
+  <div class="flex flex-wrap">
     {#each Array(5) as _, i}
-      <Button star onclick={() => rate(i)}>
+      <Button onclick={() => rate(i)} classes="px-1.5">
         <Icon style={value > i ? "solid" : "regular"} name="star" />
       </Button>
     {/each}
-  </Container>
-</Container>
+  </div>
+</div>

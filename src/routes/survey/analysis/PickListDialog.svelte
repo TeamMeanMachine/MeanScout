@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Expression, PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
 
@@ -64,33 +63,31 @@
 </script>
 
 <Button onclick={newPickList}>
-  <Container align="center" maxWidth>
-    <Icon name="plus" />
-    <Container direction="column" gap="small">
-      New pick list
-      {#if preselectedExpressionNames?.length}
-        <small>From selected expressions</small>
-      {/if}
-    </Container>
-  </Container>
+  <Icon name="plus" />
+  <div class="flex flex-col">
+    New pick list
+    {#if preselectedExpressionNames?.length}
+      <small>From selected expressions</small>
+    {/if}
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>{pickListIndex == undefined ? "New" : "Edit"} pick list</span>
 
-  <Container direction="column" gap="none">
+  <label class="flex flex-col">
     Name
-    <input bind:value={pickList.name} />
-  </Container>
+    <input bind:value={pickList.name} class="bg-neutral-800 p-2 text-theme" />
+  </label>
 
   <span>Expressions</span>
 
-  <div class="dialog-overflow">
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each expressions as expression}
       {@const weightIndex = pickList.weights.findIndex((weight) => weight.expressionName == expression.name)}
       {@const isWeight = weightIndex != -1}
 
-      <Container direction="column" gap="small">
+      <div class="flex flex-col">
         <Button
           onclick={() => {
             if (isWeight) {
@@ -100,23 +97,27 @@
             }
           }}
         >
-          <Container maxWidth>
-            {#if isWeight}
-              <Icon name="square-check" />
-            {:else}
-              <Icon style="regular" name="square" />
-            {/if}
-            {expression.name}
-          </Container>
+          {#if isWeight}
+            <Icon name="square-check" />
+          {:else}
+            <Icon style="regular" name="square" />
+          {/if}
+          {expression.name}
         </Button>
         {#if isWeight}
-          <Container direction="column" gap="none">
+          <label class="m-2 ml-10 flex flex-col self-start">
             Weight
-            <input type="number" min="-100" max="100" step="1" bind:value={pickList.weights[weightIndex].percentage} />
-          </Container>
-          <div style="margin-bottom: var(--outer-gap)"></div>
+            <input
+              type="number"
+              min="-100"
+              max="100"
+              step="1"
+              bind:value={pickList.weights[weightIndex].percentage}
+              class="bg-neutral-800 p-2 text-theme"
+            />
+          </label>
         {/if}
-      </Container>
+      </div>
     {/each}
   </div>
 

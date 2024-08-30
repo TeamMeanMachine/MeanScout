@@ -1,7 +1,6 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
@@ -95,15 +94,18 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container maxWidth>
-    <Icon name="paste" />
-    Import entries
-  </Container>
+  <Icon name="paste" />
+  Import entries
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>Import entries</span>
-  <input type="file" accept=".csv" bind:files />
+  <input
+    type="file"
+    accept=".csv"
+    bind:files
+    class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
+  />
   {#if error}
     <span>{error}</span>
   {/if}

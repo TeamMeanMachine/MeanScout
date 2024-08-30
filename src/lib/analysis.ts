@@ -16,7 +16,7 @@ export type ExpressionInput = z.infer<typeof expressionInputSchema>;
 
 const baseExpressionSchema = z.object({
   name: z.string(),
-  inputs: z.array(expressionInputSchema).nonempty(),
+  inputs: z.array(expressionInputSchema),
 });
 
 export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] as const;

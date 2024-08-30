@@ -41,23 +41,23 @@
   <span>{expression.name}</span>
 
   {#if sortedTeamData.length}
-    <div class="dialog-overflow">
-      <table class="team-rank-table">
+    <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+      <table class="w-full text-right">
         <thead>
           <tr>
-            <th>Rank</th>
-            <th>Team</th>
-            <th>Value</th>
-            <th>Percent</th>
+            <th class="p-2">Rank</th>
+            <th class="p-2">Team</th>
+            <th class="p-2">Value</th>
+            <th class="p-2">Percent</th>
           </tr>
         </thead>
         <tbody>
           {#each sortedTeamData as teamValue, i}
             <tr>
-              <td>{i + 1}</td>
-              <td>{teamValue.team}</td>
-              <td>{teamValue.value.toFixed(2)}</td>
-              <td>{teamValue.percentage.toFixed(2)}%</td>
+              <td class="p-2">{i + 1}</td>
+              <td class="p-2">{teamValue.team}</td>
+              <td class="p-2">{teamValue.value.toFixed(2)}</td>
+              <td class="p-2">{teamValue.percentage.toFixed(2)}%</td>
             </tr>
           {/each}
         </tbody>

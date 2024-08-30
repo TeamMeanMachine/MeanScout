@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Container from "$lib/components/Container.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { tbaAuthKeyStore } from "$lib/settings";
@@ -79,18 +78,21 @@
 </script>
 
 <Button onclick={() => dialog.open()}>
-  <Container align="center" maxWidth>
-    <Icon name="paste" />
-    <Container direction="column" gap="small">
-      Import survey
-      <small>From a file</small>
-    </Container>
-  </Container>
+  <Icon name="paste" />
+  <div class="flex flex-col">
+    Import survey
+    <small>From a file</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>Import survey</span>
-  <input type="file" accept=".json,.txt" bind:files />
+  <input
+    type="file"
+    accept=".json,.txt"
+    bind:files
+    class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
+  />
   {#if error}
     <span>{error}</span>
   {/if}

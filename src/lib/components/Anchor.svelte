@@ -3,26 +3,15 @@
 
   let {
     route = "",
+    classes = "",
     children,
   }: {
     route?: string;
+    classes?: string;
     children: Snippet;
   } = $props();
 </script>
 
-<a href="#/{route}">
+<a href="#/{route}" class="flex flex-wrap items-center gap-2 bg-neutral-800 p-2 {classes}">
   {@render children()}
 </a>
-
-<style>
-  a {
-    background: var(--fg-color);
-    padding: var(--inner-gap);
-    text-decoration: none;
-  }
-
-  a:focus,
-  a:hover {
-    outline: var(--outline);
-  }
-</style>
