@@ -1,26 +1,40 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData, type Expression, type PickList } from "$lib/analysis";
+  import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
+  import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
+  import { modeStore } from "$lib/settings";
+  import type { MatchSurvey } from "$lib/survey";
+  import DeletePickListDialog from "./DeletePickListDialog.svelte";
+  import UpsertPickListDialog from "./UpsertPickListDialog.svelte";
 
   let {
-    pickLists,
+    surveyRecord = $bindable(),
+    upsertPickListDialog,
+    deletePickListDialog,
     entriesByTeam,
-    expressions,
   }: {
-    pickLists: PickList[];
+    surveyRecord: IDBRecord<MatchSurvey>;
+    upsertPickListDialog: UpsertPickListDialog | undefined;
+    deletePickListDialog: DeletePickListDialog | undefined;
     entriesByTeam: Record<string, IDBRecord<Entry>[]>;
-    expressions: Expression[];
   } = $props();
 
   let dialog: Dialog;
 
+  let pickListIndex = $state(-1);
   let pickList = $state<PickList>({ name: "New pick list", weights: [] });
   let sortedTeamData = $state<{ team: string; percentage: number }[]>([]);
-  let error = $state("");
 
   export function open(index: number) {
-    pickList = pickLists[index];
+    pickListIndex = index;
+    refresh();
+    dialog.open();
+  }
+
+  export function refresh() {
+    pickList = surveyRecord.pickLists[pickListIndex];
 
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
@@ -28,7 +42,7 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, expressions, entriesByTeam);
+      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -41,14 +55,16 @@
     sortedTeamData = Object.keys(normalizedPickListData)
       .map((team) => ({ team, percentage: normalizedPickListData[team] }))
       .toSorted((a, b) => b.percentage - a.percentage);
+  }
 
-    dialog.open();
+  export function close() {
+    dialog.close();
   }
 
   function onclose() {
+    pickListIndex = -1;
     pickList = { name: "New pick list", weights: [] };
     sortedTeamData = [];
-    error = "";
   }
 </script>
 
@@ -78,7 +94,16 @@
     </div>
   {/if}
 
-  {#if error}
-    <span>Error: {error}</span>
+  {#if $modeStore == "admin"}
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => upsertPickListDialog?.editPickList(pickListIndex)}>
+        <Icon name="pen" />
+        Edit
+      </Button>
+      <Button onclick={() => deletePickListDialog?.open(pickListIndex)}>
+        <Icon name="trash" />
+        Delete
+      </Button>
+    </div>
   {/if}
 </Dialog>

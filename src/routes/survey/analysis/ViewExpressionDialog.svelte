@@ -1,39 +1,56 @@
 <script lang="ts">
   import { calculateTeamData, normalizeTeamData, type Expression } from "$lib/analysis";
+  import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
+  import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
+  import { modeStore } from "$lib/settings";
+  import type { Survey } from "$lib/survey";
+  import UpsertExpressionDialog from "./UpsertExpressionDialog.svelte";
 
   let {
     entriesByTeam,
-    expressions,
+    upsertExpressionDialog,
+    surveyRecord = $bindable(),
+    usedExpressionNames = undefined,
   }: {
     entriesByTeam: Record<string, IDBRecord<Entry>[]>;
-    expressions: Expression[];
+    upsertExpressionDialog: UpsertExpressionDialog | undefined;
+    surveyRecord: IDBRecord<Survey>;
+    usedExpressionNames?: string[] | undefined;
   } = $props();
 
   let dialog: Dialog;
 
+  let expressionIndex = $state(-1);
   let expression = $state<Expression>({ name: "", type: "average", inputs: [] });
   let sortedTeamData = $state<{ team: string; percentage: number; value: number }[]>([]);
-  let error = $state("");
 
   export function open(index: number) {
-    expression = expressions[index];
+    expressionIndex = index;
+    refresh();
+    dialog.open();
+  }
 
-    const teamData = calculateTeamData(expression.name, expressions, entriesByTeam);
+  export function refresh() {
+    expression = surveyRecord.expressions[expressionIndex];
+
+    const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam);
     const normalizedTeamData = normalizeTeamData(teamData);
 
     sortedTeamData = Object.keys(normalizedTeamData)
       .map((team) => ({ team, percentage: normalizedTeamData[team], value: teamData[team] }))
       .toSorted((a, b) => b.value - a.value);
+  }
 
-    dialog.open();
+  export function close() {
+    dialog.close();
   }
 
   function onclose() {
+    expressionIndex = -1;
     expression = { name: "", type: "average", inputs: [] };
     sortedTeamData = [];
-    error = "";
   }
 </script>
 
@@ -65,7 +82,23 @@
     </div>
   {/if}
 
-  {#if error}
-    <span>Error: {error}</span>
+  {#if $modeStore == "admin"}
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => upsertExpressionDialog?.editExpression(expressionIndex)}>
+        <Icon name="pen" />
+        Edit
+      </Button>
+      {#if !usedExpressionNames?.includes(expression.name)}
+        <Button
+          onclick={() => {
+            surveyRecord.expressions = surveyRecord.expressions.toSpliced(expressionIndex, 1);
+            dialog.close();
+          }}
+        >
+          <Icon name="trash" />
+          Delete
+        </Button>
+      {/if}
+    </div>
   {/if}
 </Dialog>

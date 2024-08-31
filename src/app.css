@@ -22,6 +22,10 @@
     --theme-color: var(--theme-orange);
   }
 
+  :root:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   :disabled {
     @apply !cursor-default opacity-50 !outline-none;
   }

@@ -1,22 +1,22 @@
 <script lang="ts">
-  import type { Expression, PickList } from "$lib/analysis";
+  import type { PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import type { MatchSurvey } from "$lib/survey";
 
   let {
-    expressions,
-    pickLists = $bindable(),
+    surveyRecord = $bindable(),
     preselectedExpressionNames = undefined,
+    onupdate,
   }: {
-    expressions: Expression[];
-    pickLists: PickList[];
+    surveyRecord: IDBRecord<MatchSurvey>;
     preselectedExpressionNames?: string[] | undefined;
+    onupdate?: () => void;
   } = $props();
 
   let dialog: Dialog;
 
-  let error = $state("");
   let pickListIndex = $state<number | undefined>(undefined);
   let pickList = $state<PickList>({ name: "New pick list", weights: [] });
 
@@ -38,39 +38,29 @@
 
   export function editPickList(index: number) {
     pickListIndex = index;
-    pickList = structuredClone($state.snapshot(pickLists[pickListIndex]));
+    pickList = structuredClone($state.snapshot(surveyRecord.pickLists[pickListIndex]));
     dialog.open();
   }
 
   function onconfirm() {
     pickList.weights = pickList.weights.filter((weight) => weight.percentage);
     if (pickListIndex == undefined) {
-      pickLists = [...pickLists, structuredClone($state.snapshot(pickList))];
+      surveyRecord.pickLists = [...surveyRecord.pickLists, structuredClone($state.snapshot(pickList))];
     } else {
-      pickLists[pickListIndex] = structuredClone($state.snapshot(pickList));
+      surveyRecord.pickLists[pickListIndex] = structuredClone($state.snapshot(pickList));
     }
     dialog.close();
+    if (pickListIndex !== undefined) onupdate?.();
   }
 
   function onclose() {
     if (pickListIndex == undefined) {
       pickList = { name: "New pick list", weights: [] };
     } else {
-      pickList = structuredClone($state.snapshot(pickLists[pickListIndex]));
+      pickList = structuredClone($state.snapshot(surveyRecord.pickLists[pickListIndex]));
     }
-    error = "";
   }
 </script>
-
-<Button onclick={newPickList}>
-  <Icon name="plus" />
-  <div class="flex flex-col">
-    New pick list
-    {#if preselectedExpressionNames?.length}
-      <small>From selected expressions</small>
-    {/if}
-  </div>
-</Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>{pickListIndex == undefined ? "New" : "Edit"} pick list</span>
@@ -83,7 +73,7 @@
   <span>Expressions</span>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
-    {#each expressions as expression}
+    {#each surveyRecord.expressions as expression}
       {@const weightIndex = pickList.weights.findIndex((weight) => weight.expressionName == expression.name)}
       {@const isWeight = weightIndex != -1}
 
@@ -99,10 +89,11 @@
         >
           {#if isWeight}
             <Icon name="square-check" />
+            <strong>{expression.name}</strong>
           {:else}
             <Icon style="regular" name="square" />
+            {expression.name}
           {/if}
-          {expression.name}
         </Button>
         {#if isWeight}
           <label class="m-2 ml-10 flex flex-col self-start">
@@ -122,8 +113,4 @@
   </div>
 
   <span>Total weights: {totalWeights}%</span>
-
-  {#if error}
-    <span>Error: {error}</span>
-  {/if}
 </Dialog>

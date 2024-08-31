@@ -1,25 +1,24 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
-  import { mapExpressionTypes, reduceExpressionTypes, type Expression, type PickList } from "$lib/analysis";
+  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { flattenFields, getDetailedFieldName, type Field } from "$lib/field";
-  import ExpressionConvertersDialog from "./ExpressionConvertersDialog.svelte";
+  import { flattenFields, getDetailedFieldName } from "$lib/field";
+  import type { Survey } from "$lib/survey";
+  import EditConvertersDialog from "./EditConvertersDialog.svelte";
 
   let {
-    expressions = $bindable(),
-    fields,
-    pickLists = $bindable(),
+    surveyRecord = $bindable(),
     preselectedExpressionNames = undefined,
+    onupdate,
   }: {
-    expressions: Expression[];
-    fields: Field[];
-    pickLists: PickList[];
+    surveyRecord: IDBRecord<Survey>;
     preselectedExpressionNames?: string[] | undefined;
+    onupdate?: () => void;
   } = $props();
 
-  const flattenedFields = flattenFields(fields);
+  const flattenedFields = flattenFields(surveyRecord.fields);
 
   let dialog: Dialog;
 
@@ -43,7 +42,7 @@
 
   export function editExpression(index: number) {
     expressionIndex = index;
-    expression = structuredClone($state.snapshot(expressions[expressionIndex]));
+    expression = structuredClone($state.snapshot(surveyRecord.expressions[expressionIndex]));
     dialog.open();
   }
 
@@ -55,7 +54,7 @@
       return;
     }
 
-    if (expressions.find((e, i) => e.name == expression.name && i != expressionIndex)) {
+    if (surveyRecord.expressions.find((e, i) => e.name == expression.name && i != expressionIndex)) {
       error = "name must be unique!";
       return;
     }
@@ -74,11 +73,11 @@
     }
 
     if (expressionIndex == undefined) {
-      expressions = [...expressions, structuredClone($state.snapshot(expression))];
+      surveyRecord.expressions = [...surveyRecord.expressions, structuredClone($state.snapshot(expression))];
     } else {
-      const prevName = expressions[expressionIndex].name;
+      const prevName = surveyRecord.expressions[expressionIndex].name;
       if (expression.name != prevName) {
-        expressions = expressions.map((e) => {
+        surveyRecord.expressions = surveyRecord.expressions.map((e) => {
           e.inputs = e.inputs.map((i) => {
             if (i.from == "expression" && i.expressionName == prevName) {
               i.expressionName = expression.name;
@@ -87,7 +86,7 @@
           });
           return e;
         });
-        pickLists = pickLists.map((pickList) => {
+        surveyRecord.pickLists = surveyRecord.pickLists.map((pickList) => {
           pickList.weights = pickList.weights.map((weight) => {
             if (weight.expressionName == prevName) {
               weight.expressionName = expression.name;
@@ -97,30 +96,21 @@
           return pickList;
         });
       }
-      expressions[expressionIndex] = structuredClone($state.snapshot(expression));
+      surveyRecord.expressions[expressionIndex] = structuredClone($state.snapshot(expression));
     }
     dialog.close();
+    if (expressionIndex !== undefined) onupdate?.()
   }
 
   function onclose() {
     if (expressionIndex == undefined) {
       expression = { name: "", type: "average", inputs: [] };
     } else {
-      expression = structuredClone($state.snapshot(expressions[expressionIndex]));
+      expression = structuredClone($state.snapshot(surveyRecord.expressions[expressionIndex]));
     }
     error = "";
   }
 </script>
-
-<Button onclick={newExpression}>
-  <Icon name="plus" />
-  <div class="flex flex-col">
-    New expression
-    {#if preselectedExpressionNames?.length}
-      <small>From selected expressions</small>
-    {/if}
-  </div>
-</Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>{expressionIndex == undefined ? "New" : "Edit"} expression</span>
@@ -202,7 +192,7 @@
       <input bind:value={expression.valueToCount} class="bg-neutral-800 p-2 text-theme" />
     </label>
   {:else if expression.type == "convert"}
-    <ExpressionConvertersDialog
+    <EditConvertersDialog
       bind:expression
       converters={structuredClone($state.snapshot(expression.converters))}
       defaultTo={structuredClone($state.snapshot(expression.defaultTo))}
@@ -225,7 +215,7 @@
     <details open>
       <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Expressions</summary>
       <div class="flex flex-col gap-2 p-2">
-        {#each expressions as exp}
+        {#each surveyRecord.expressions as exp}
           {@const inputIndex = expression.inputs.findIndex(
             (input) => input.from == "expression" && input.expressionName == exp.name,
           )}
@@ -242,10 +232,11 @@
           >
             {#if isInput}
               <Icon name="square-check" />
+              <strong>{exp.name}</strong>
             {:else}
               <Icon style="regular" name="square" />
+              {exp.name}
             {/if}
-            {exp.name}
           </Button>
         {/each}
       </div>
@@ -259,6 +250,7 @@
             (input) => input.from == "field" && input.fieldIndex == fieldIndex,
           )}
           {@const isInput = inputIndex != -1}
+          {@const name = getDetailedFieldName(surveyRecord.fields, fieldIndex)}
 
           <Button
             onclick={() => {
@@ -271,10 +263,11 @@
           >
             {#if isInput}
               <Icon name="square-check" />
+              <strong>{name}</strong>
             {:else}
               <Icon style="regular" name="square" />
+              {name}
             {/if}
-            {getDetailedFieldName(fields, fieldIndex)}
           </Button>
         {/each}
       </div>

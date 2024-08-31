@@ -1,31 +1,38 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord = $bindable(),
-    pickListIndex,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    pickListIndex: number;
+    ondelete: () => void;
   } = $props();
 
   let dialog: Dialog;
 
+  let pickListIndex: number | undefined = undefined;
+
+  export function open(index: number) {
+    pickListIndex = index;
+    dialog.open();
+  }
+
   function onconfirm() {
-    surveyRecord.pickLists = surveyRecord.pickLists.toSpliced(pickListIndex, 1);
-    surveyRecord.modified = new Date();
+    if (pickListIndex !== undefined) {
+      surveyRecord.pickLists = surveyRecord.pickLists.toSpliced(pickListIndex, 1);
+      surveyRecord.modified = new Date();
+    }
     dialog.close();
+    ondelete();
+  }
+
+  function onclose() {
+    pickListIndex = undefined;
   }
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="trash" />
-  Delete
-</Button>
-
-<Dialog bind:this={dialog} {onconfirm}>
+<Dialog bind:this={dialog} {onconfirm} {onclose}>
   <span>Delete pick list?</span>
 </Dialog>

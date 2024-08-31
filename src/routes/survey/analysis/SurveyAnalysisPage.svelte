@@ -6,11 +6,11 @@
   import type { Entry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
-  import CalculateExpressionDialog from "./CalculateExpressionDialog.svelte";
-  import CalculatePickListDialog from "./CalculatePickListDialog.svelte";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
-  import ExpressionDialog from "./ExpressionDialog.svelte";
-  import PickListDialog from "./PickListDialog.svelte";
+  import UpsertExpressionDialog from "./UpsertExpressionDialog.svelte";
+  import UpsertPickListDialog from "./UpsertPickListDialog.svelte";
+  import ViewExpressionDialog from "./ViewExpressionDialog.svelte";
+  import ViewPickListDialog from "./ViewPickListDialog.svelte";
 
   let {
     idb,
@@ -24,11 +24,12 @@
     idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
   });
 
-  let calculatePickListDialog = $state<CalculatePickListDialog | undefined>(undefined);
-  let pickListDialog = $state<PickListDialog | undefined>(undefined);
+  let viewPickListDialog = $state<ViewPickListDialog | undefined>(undefined);
+  let upsertPickListDialog = $state<UpsertPickListDialog | undefined>(undefined);
+  let deletePickListDialog = $state<DeletePickListDialog | undefined>(undefined);
 
-  let calculateExpressionDialog = $state<CalculateExpressionDialog | undefined>(undefined);
-  let expressionDialog = $state<ExpressionDialog | undefined>(undefined);
+  let viewExpressionDialog = $state<ViewExpressionDialog | undefined>(undefined);
+  let upsertExpressionDialog = $state<UpsertExpressionDialog | undefined>(undefined);
 
   let preselectedExpressionNames = $state<string[]>([]);
   let isSelecting = $state(false);
@@ -70,38 +71,43 @@
 <div class="flex flex-col gap-2 p-3">
   {#if surveyRecord.expressions.length}
     <h2 class="font-bold">Pick Lists</h2>
-    <CalculatePickListDialog
-      bind:this={calculatePickListDialog}
-      pickLists={surveyRecord.pickLists}
+    <ViewPickListDialog
+      bind:this={viewPickListDialog}
+      bind:surveyRecord
+      {upsertPickListDialog}
+      {deletePickListDialog}
       {entriesByTeam}
-      expressions={surveyRecord.expressions}
+    />
+    <UpsertPickListDialog
+      bind:this={upsertPickListDialog}
+      bind:surveyRecord
+      {preselectedExpressionNames}
+      onupdate={() => viewPickListDialog?.refresh()}
+    />
+    <DeletePickListDialog
+      bind:this={deletePickListDialog}
+      bind:surveyRecord
+      ondelete={() => viewPickListDialog?.close()}
     />
 
     {#if $modeStore == "admin"}
-      <PickListDialog
-        bind:this={pickListDialog}
-        expressions={surveyRecord.expressions}
-        bind:pickLists={surveyRecord.pickLists}
-        {preselectedExpressionNames}
-      />
-    {/if}
-    <div class="flex flex-col">
-      {#each surveyRecord.pickLists as pickList, pickListIndex}
-        <div class="flex flex-col gap-2 p-3">
-          <Button onclick={() => calculatePickListDialog?.open(pickListIndex)}>
-            <Icon name="list-ol" />
-            {pickList.name}
-          </Button>
-          {#if $modeStore == "admin"}
-            <div class="flex flex-wrap gap-2">
-              <Button onclick={() => pickListDialog?.editPickList(pickListIndex)}>
-                <Icon name="pen" />
-                Edit
-              </Button>
-              <DeletePickListDialog bind:surveyRecord {pickListIndex} />
-            </div>
+      <Button onclick={() => upsertPickListDialog?.newPickList()}>
+        <Icon name="plus" />
+        <div class="flex flex-col">
+          New pick list
+          {#if isSelecting}
+            <small>From selected expressions</small>
           {/if}
         </div>
+      </Button>
+    {/if}
+
+    <div class="flex flex-col gap-2">
+      {#each surveyRecord.pickLists as pickList, pickListIndex}
+        <Button onclick={() => viewPickListDialog?.open(pickListIndex)}>
+          <Icon name="list-ol" />
+          {pickList.name}
+        </Button>
       {/each}
     </div>
   {:else}
@@ -111,63 +117,75 @@
 
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Expressions</h2>
-  <CalculateExpressionDialog
-    bind:this={calculateExpressionDialog}
+  <ViewExpressionDialog
+    bind:this={viewExpressionDialog}
+    bind:surveyRecord
+    {upsertExpressionDialog}
     {entriesByTeam}
-    expressions={surveyRecord.expressions}
+    {usedExpressionNames}
+  />
+  <UpsertExpressionDialog
+    bind:this={upsertExpressionDialog}
+    bind:surveyRecord
+    {preselectedExpressionNames}
+    onupdate={() => viewExpressionDialog?.refresh()}
   />
 
   {#if $modeStore == "admin"}
-    <ExpressionDialog
-      bind:this={expressionDialog}
-      bind:expressions={surveyRecord.expressions}
-      fields={surveyRecord.fields}
-      bind:pickLists={surveyRecord.pickLists}
-      {preselectedExpressionNames}
-    />
-    <div class="flex gap-2">
-      <Button
-        onclick={() => {
-          if (isSelecting) {
-            preselectedExpressionNames = [];
-            isSelecting = false;
-          } else {
-            isSelecting = true;
-          }
-        }}
-      >
-        <Icon name="list-check" />
-        {#if isSelecting}
-          Stop selecting
-        {:else}
-          Select
-        {/if}
+    <div class="flex flex-col gap-2">
+      <Button onclick={() => upsertExpressionDialog?.newExpression()}>
+        <Icon name="plus" />
+        <div class="flex flex-col">
+          New expression
+          {#if isSelecting}
+            <small>From selected expressions</small>
+          {/if}
+        </div>
       </Button>
-      {#if isSelecting}
+      <div class="flex flex-wrap gap-2">
         <Button
           onclick={() => {
-            if (preselectedExpressionNames.length) {
+            if (isSelecting) {
               preselectedExpressionNames = [];
+              isSelecting = false;
             } else {
-              preselectedExpressionNames = surveyRecord.expressions.map((expression) => expression.name);
+              isSelecting = true;
             }
           }}
         >
-          {#if preselectedExpressionNames.length}
-            <Icon name="xmark" />
-            Deselect all
+          <Icon name="list-check" />
+          {#if isSelecting}
+            Stop selecting
           {:else}
-            <Icon name="check" />
-            Select all
+            Select
           {/if}
         </Button>
-      {/if}
+        {#if isSelecting}
+          <Button
+            onclick={() => {
+              if (preselectedExpressionNames.length) {
+                preselectedExpressionNames = [];
+              } else {
+                preselectedExpressionNames = surveyRecord.expressions.map((expression) => expression.name);
+              }
+            }}
+          >
+            {#if preselectedExpressionNames.length}
+              <Icon name="xmark" />
+              Deselect all
+            {:else}
+              <Icon name="check" />
+              Select all
+            {/if}
+          </Button>
+        {/if}
+      </div>
     </div>
   {/if}
 
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-2">
     {#each surveyRecord.expressions as expression, expressionIndex}
-      <div class="flex flex-col gap-2 p-3">
+      <div class="flex flex-col gap-2">
         {#if isSelecting}
           {@const isSelected = preselectedExpressionNames.includes(expression.name)}
           <Button
@@ -181,32 +199,17 @@
           >
             {#if isSelected}
               <Icon name="square-check" />
+              <strong>{expression.name}</strong>
             {:else}
               <Icon style="regular" name="square" />
+              {expression.name}
             {/if}
-            {expression.name}
           </Button>
         {:else}
-          <Button onclick={() => calculateExpressionDialog?.open(expressionIndex)}>
+          <Button onclick={() => viewExpressionDialog?.open(expressionIndex)}>
             <Icon name="percent" />
             {expression.name}
           </Button>
-          {#if $modeStore == "admin"}
-            <div class="flex flex-wrap gap-2">
-              <Button onclick={() => expressionDialog?.editExpression(expressionIndex)}>
-                <Icon name="pen" />
-                Edit
-              </Button>
-              {#if !usedExpressionNames.includes(expression.name)}
-                <Button
-                  onclick={() => (surveyRecord.expressions = surveyRecord.expressions.toSpliced(expressionIndex, 1))}
-                >
-                  <Icon name="trash" />
-                  Delete
-                </Button>
-              {/if}
-            </div>
-          {/if}
         {/if}
       </div>
     {/each}
