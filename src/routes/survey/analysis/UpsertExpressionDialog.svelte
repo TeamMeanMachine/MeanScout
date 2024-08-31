@@ -99,7 +99,7 @@
       surveyRecord.expressions[expressionIndex] = structuredClone($state.snapshot(expression));
     }
     dialog.close();
-    if (expressionIndex !== undefined) onupdate?.()
+    if (expressionIndex !== undefined) onupdate?.();
   }
 
   function onclose() {

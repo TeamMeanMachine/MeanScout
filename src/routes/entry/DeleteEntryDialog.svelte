@@ -29,9 +29,9 @@
       surveyRecord.modified = new Date();
 
       if (entryRecord.status == "draft") {
-        location.hash = `/survey/${surveyRecord.id}/entries`;
-      } else {
         location.hash = `/survey/${surveyRecord.id}`;
+      } else {
+        location.hash = `/survey/${surveyRecord.id}/entries`;
       }
     };
   }
