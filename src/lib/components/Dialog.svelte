@@ -35,6 +35,7 @@
 
   export function close() {
     element.close();
+    ignoreClose = false;
   }
 </script>
 
@@ -44,9 +45,9 @@
   bind:this={element}
   {onclose}
   onmouseup={closeCallback}
-  class="max-h-dvh w-[min(100dvw,540px)] bg-neutral-900 shadow-2xl backdrop:backdrop-blur"
+  class="max-h-dvh w-[540px] bg-neutral-900 shadow-2xl [max-width:100vw] backdrop:backdrop-blur"
 >
-  <div onmouseup={cancelClose} onmousedown={cancelClose} class="flex flex-col gap-3 p-3">
+  <div onmouseup={cancelClose} onmousedown={cancelClose} class="flex max-h-dvh flex-col gap-3 p-3">
     {@render children()}
     <div class="flex flex-wrap justify-between gap-3">
       {#if onconfirm}
