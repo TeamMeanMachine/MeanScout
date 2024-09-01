@@ -10,31 +10,14 @@
   let {
     idb,
     surveyRecord,
+    entryRecords,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
+    entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
-
-  let entryRecords = $state<IDBRecord<Entry>[]>([]);
-  let draftEntries = $state<IDBRecord<Entry>[]>([]);
-  let show = $state(false);
-
-  const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-  entriesRequest.onerror = () => (show = true);
-
-  entriesRequest.onsuccess = () => {
-    const entries = entriesRequest.result;
-    if (!entries) return;
-
-    entryRecords = entries;
-    draftEntries = entries.filter((entry) => entry.status == "draft");
-
-    show = true;
-  };
+  let draftEntries = $state(entryRecords.filter((entry) => entry.status == "draft"));
 
   function getTeamsFromAllMatches() {
     if (surveyRecord.type != "match") return [];
@@ -60,12 +43,10 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  {#if show}
-    <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
-  {/if}
+  <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
 </div>
 
-{#if show && draftEntries.length}
+{#if draftEntries.length}
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Drafts</h2>
     {#each draftEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as draft (draft.id)}

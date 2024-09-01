@@ -6,16 +6,11 @@
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
   } = $props();
-
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
 
   let teamInput = $state("");
 

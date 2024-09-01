@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import type { Entry } from "$lib/entry";
+  import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import UpsertExpressionDialog from "./UpsertExpressionDialog.svelte";
@@ -14,7 +14,7 @@
     surveyRecord = $bindable(),
     usedExpressionNames = undefined,
   }: {
-    entriesByTeam: Record<string, IDBRecord<Entry>[]>;
+    entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     upsertExpressionDialog: UpsertExpressionDialog | undefined;
     surveyRecord: IDBRecord<Survey>;
     usedExpressionNames?: string[] | undefined;

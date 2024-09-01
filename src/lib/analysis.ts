@@ -1,6 +1,6 @@
 import { valueSchema } from "$lib";
 import { z } from "zod";
-import type { Entry } from "./entry";
+import type { MatchEntry } from "./entry";
 
 const fieldAsExpressionInputSchema = z.object({ from: z.literal("field"), fieldIndex: z.number() });
 export type FieldAsExpressionInput = z.infer<typeof fieldAsExpressionInputSchema>;
@@ -66,7 +66,7 @@ export type PickList = z.infer<typeof pickListSchema>;
 export function calculateTeamData(
   expressionName: string,
   expressions: Expression[],
-  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>,
 ) {
   const teamData: Record<string, number> = {};
   for (const team in entriesByTeam) {
@@ -92,7 +92,12 @@ export function normalizeTeamData(teamData: Record<string, number>, percentage =
   return normalizedTeamData;
 }
 
-export function getExpressionInput(team: string, input: ExpressionInput, expressions: Expression[], entries: Entry[]) {
+export function getExpressionInput(
+  team: string,
+  input: ExpressionInput,
+  expressions: Expression[],
+  entries: MatchEntry[],
+) {
   switch (input.from) {
     case "expression":
       return runExpression(team, input.expressionName, expressions, entries);
@@ -103,7 +108,7 @@ export function getExpressionInput(team: string, input: ExpressionInput, express
   }
 }
 
-export function runExpression(team: string, expressionName: string, expressions: Expression[], entries: Entry[]) {
+export function runExpression(team: string, expressionName: string, expressions: Expression[], entries: MatchEntry[]) {
   const expression = expressions.find((e) => e.name == expressionName);
   if (!expression) return 0;
 

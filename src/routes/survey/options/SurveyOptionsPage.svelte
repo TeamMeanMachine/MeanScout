@@ -18,10 +18,6 @@
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
-
   async function getMatchesFromTBAEvent() {
     if (surveyRecord.type != "match") return;
     if (!surveyRecord.tbaEventKey) return;

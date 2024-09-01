@@ -2,40 +2,22 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import type { Entry } from "$lib/entry";
+  import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import MatchDialog from "./MatchDialog.svelte";
 
   let {
-    idb,
     surveyRecord,
+    entryRecords,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<MatchSurvey>;
+    entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
-
   let matchDialog: MatchDialog | undefined = $state();
-
-  let show = $state(false);
-
-  let entryRecords = $state<IDBRecord<Entry>[]>([]);
-
-  const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-  entriesRequest.onerror = () => (show = true);
-
-  entriesRequest.onsuccess = () => {
-    const entries = entriesRequest.result;
-    if (!entries) return;
-
-    entryRecords = entries;
-    show = true;
-  };
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -50,7 +32,7 @@
 {/if}
 
 <div class="flex gap-2 p-3">
-  {#if show && surveyRecord.matches.length}
+  {#if surveyRecord.matches.length}
     <table class="border-collapse">
       <thead>
         <tr>
@@ -61,7 +43,7 @@
       </thead>
       <tbody>
         {#each surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match}
-          {@const entry = entryRecords.find((e) => e.type == "match" && e.match == match.number)}
+          {@const entry = entryRecords.find((e) => e.match == match.number)}
           <tr>
             {#if $modeStore == "admin"}
               <td>
@@ -97,9 +79,7 @@
         {/each}
       </tbody>
     </table>
-  {:else if show}
-    No matches.
   {:else}
-    Loading...
+    No matches.
   {/if}
 </div>

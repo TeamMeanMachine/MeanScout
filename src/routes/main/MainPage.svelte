@@ -9,16 +9,11 @@
 
   let {
     idb,
+    surveyRecords,
   }: {
     idb: IDBDatabase;
+    surveyRecords: IDBRecord<Survey>[];
   } = $props();
-
-  let surveyRecords = $state<IDBRecord<Survey>[]>([]);
-
-  const surveysRequest = idb.transaction("surveys").objectStore("surveys").getAll();
-  surveysRequest.onsuccess = () => {
-    surveyRecords = surveysRequest.result ?? [];
-  };
 </script>
 
 <Header />

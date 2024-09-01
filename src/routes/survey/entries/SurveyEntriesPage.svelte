@@ -13,31 +13,15 @@
   let {
     idb,
     surveyRecord,
+    entryRecords,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
+    entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
-
-  let submittedEntries = $state<IDBRecord<Entry>[]>([]);
-  let exportedEntries = $state<IDBRecord<Entry>[]>([]);
-  let show = $state(false);
-
-  const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-  entriesRequest.onerror = () => (show = true);
-
-  entriesRequest.onsuccess = () => {
-    const entries = entriesRequest.result;
-    if (!entries) return;
-
-    submittedEntries = entries.filter((entry) => entry.status == "submitted");
-    exportedEntries = entries.filter((entry) => entry.status == "exported");
-
-    show = true;
-  };
+  let submittedEntries = $state(entryRecords.filter((entry) => entry.status == "submitted"));
+  let exportedEntries = $state(entryRecords.filter((entry) => entry.status == "exported"));
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -54,7 +38,7 @@
 
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Submitted Entries</h2>
-  {#if show && submittedEntries.length}
+  {#if submittedEntries.length}
     <ExportEntriesDialog {surveyRecord} entries={submittedEntries} />
     <BulkSetEntryStatusDialog
       {idb}
@@ -80,16 +64,14 @@
         </div>
       </Anchor>
     {/each}
-  {:else if show}
-    No entries.
   {:else}
-    Loading...
+    No entries.
   {/if}
 </div>
 
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Exported Entries</h2>
-  {#if show && exportedEntries.length}
+  {#if exportedEntries.length}
     <BulkSetEntryStatusDialog
       {idb}
       {surveyRecord}
@@ -114,9 +96,7 @@
         </div>
       </Anchor>
     {/each}
-  {:else if show}
-    No entries.
   {:else}
-    Loading...
+    No entries.
   {/if}
 </div>

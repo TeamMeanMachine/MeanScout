@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import type { Entry } from "$lib/entry";
+  import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
@@ -13,16 +13,22 @@
   import ViewPickListDialog from "./ViewPickListDialog.svelte";
 
   let {
-    idb,
     surveyRecord,
+    entryRecords,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<MatchSurvey>;
+    entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
+  const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
+  for (const entry of entryRecords) {
+    if (entry.team in entriesByTeam) {
+      entriesByTeam[entry.team] = [...entriesByTeam[entry.team], entry];
+    } else {
+      entriesByTeam[entry.team] = [entry];
+    }
+  }
 
   let viewPickListDialog = $state<ViewPickListDialog | undefined>(undefined);
   let upsertPickListDialog = $state<UpsertPickListDialog | undefined>(undefined);
@@ -41,26 +47,6 @@
       .map((input) => input.expressionName),
     ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
-
-  const entriesByTeam: Record<string, IDBRecord<Entry>[]> = {};
-
-  const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-  entriesRequest.onsuccess = () => {
-    const entries = entriesRequest.result;
-    if (!entries) return;
-
-    for (const entry of entries) {
-      if (entry.status == "draft") {
-        continue;
-      }
-
-      if (entry.team in entriesByTeam) {
-        entriesByTeam[entry.team] = [...entriesByTeam[entry.team], entry];
-      } else {
-        entriesByTeam[entry.team] = [entry];
-      }
-    }
-  };
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">

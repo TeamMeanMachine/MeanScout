@@ -1,9 +1,7 @@
 <script lang="ts">
   import { persistStorage } from "$lib";
   import Header from "$lib/components/Header.svelte";
-  import type { Entry } from "$lib/entry";
-  import { fieldTypes, flattenFields, type Field } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
+  import { migrateIDB } from "$lib/migrate";
   import type { ComponentProps } from "svelte";
   import "../app.css";
   import AboutPage from "./about/AboutPage.svelte";
@@ -35,24 +33,40 @@
     | { page: "survey"; subpage: "options"; props: ComponentProps<SurveyOptionsPage> }
     | { page: "entry"; props: ComponentProps<EntryPage> };
 
-  let current = $state<CurrentPage>(undefined);
+  let current = $state<CurrentPage>();
+
+  $effect(() => {
+    if (current?.page == "survey" || current?.page == "entry") {
+      idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(current.props.surveyRecord));
+    }
+  });
+
+  $effect(() => {
+    if (current?.page == "entry") {
+      idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(current.props.entryRecord));
+    }
+  });
 
   function setMainPage() {
-    if (current?.page == "") {
-      return;
-    }
+    const surveysRequest = idb.transaction("surveys").objectStore("surveys").getAll();
 
-    current = {
-      page: "",
-      props: { idb },
+    surveysRequest.onerror = () => {
+      current = {
+        page: "",
+        props: { idb, surveyRecords: [] },
+      };
+    };
+
+    surveysRequest.onsuccess = () => {
+      const surveyRecords = surveysRequest.result ?? [];
+      current = {
+        page: "",
+        props: { idb, surveyRecords },
+      };
     };
   }
 
   function setSettingsPage() {
-    if (current?.page == "settings") {
-      return;
-    }
-
     current = {
       page: "settings",
       props: {},
@@ -60,10 +74,6 @@
   }
 
   function setAboutPage() {
-    if (current?.page == "about") {
-      return;
-    }
-
     current = {
       page: "about",
       props: {},
@@ -74,29 +84,6 @@
     id: number,
     subpage: "" | "entries" | "analysis" | "fields" | "matches" | "teams" | "options",
   ) {
-    if (current?.page == "survey" && current.props.surveyRecord.id == id) {
-      current.subpage = subpage;
-      return;
-    }
-
-    if (current?.page == "entry") {
-      if (subpage == "analysis" || subpage == "matches") {
-        current = {
-          page: "survey",
-          subpage,
-          props: { idb, surveyRecord: current.props.surveyRecord as IDBRecord<MatchSurvey> },
-        };
-        return;
-      }
-
-      current = {
-        page: "survey",
-        subpage,
-        props: { idb, surveyRecord: current.props.surveyRecord },
-      };
-      return;
-    }
-
     const surveyRequest = idb.transaction("surveys").objectStore("surveys").get(id);
     surveyRequest.onerror = () => setMainPage();
 
@@ -104,36 +91,62 @@
       const surveyRecord = surveyRequest.result;
       if (!surveyRecord) return setMainPage();
 
-      if (!surveyRecord.expressions) {
-        surveyRecord.expressions = [];
-      }
+      if (subpage == "" || subpage == "entries" || subpage == "analysis" || subpage == "matches") {
+        const entriesRequest = idb
+          .transaction("entries")
+          .objectStore("entries")
+          .index("surveyId")
+          .getAll(surveyRecord.id);
 
-      if (!surveyRecord.pickLists) {
-        surveyRecord.pickLists = [];
-      }
+        entriesRequest.onerror = () => {
+          current = {
+            page: "survey",
+            subpage,
+            props: { idb, surveyRecord, entryRecords: [] },
+          };
+        };
 
-      if (subpage == "analysis" || subpage == "matches") {
+        entriesRequest.onsuccess = () => {
+          const entryRecords = entriesRequest.result ?? [];
+          current = {
+            page: "survey",
+            subpage,
+            props: { idb, surveyRecord, entryRecords },
+          };
+        };
+      } else if (subpage == "fields") {
+        const entryCountRequest = idb
+          .transaction("entries")
+          .objectStore("entries")
+          .index("surveyId")
+          .count(surveyRecord.id);
+
+        entryCountRequest.onerror = () => {
+          current = {
+            page: "survey",
+            subpage,
+            props: { idb, surveyRecord, entryCount: 0 },
+          };
+        };
+
+        entryCountRequest.onsuccess = () => {
+          current = {
+            page: "survey",
+            subpage,
+            props: { idb, surveyRecord, entryCount: entryCountRequest.result },
+          };
+        };
+      } else {
         current = {
           page: "survey",
           subpage,
-          props: { idb, surveyRecord: surveyRecord as IDBRecord<MatchSurvey> },
+          props: { idb, surveyRecord },
         };
-        return;
       }
-
-      current = {
-        page: "survey",
-        subpage,
-        props: { idb, surveyRecord },
-      };
     };
   }
 
   function setEntryPage(id: number) {
-    if (current?.page == "entry" && current.props.entryRecord.id == id) {
-      return;
-    }
-
     const getTransaction = idb.transaction(["surveys", "entries"]);
     getTransaction.onerror = () => setMainPage();
 
@@ -147,32 +160,12 @@
       const entryRecord = entryRequest.result;
       if (!entryRecord) return setMainPage();
 
-      if (!entryRecord.status) {
-        entryRecord.status = "submitted";
-      }
-
-      if (current?.page == "survey" || current?.page == "entry") {
-        current = {
-          page: "entry",
-          props: { idb, surveyRecord: current.props.surveyRecord, entryRecord },
-        };
-        return;
-      }
-
       const surveyRequest = surveyStore.get(entryRecord.surveyId);
       surveyRequest.onerror = () => setMainPage();
 
       surveyRequest.onsuccess = () => {
         const surveyRecord = surveyRequest.result;
         if (!surveyRecord) return setMainPage();
-
-        if (!surveyRecord.expressions) {
-          surveyRecord.expressions = [];
-        }
-
-        if (!surveyRecord.pickLists) {
-          surveyRecord.pickLists = [];
-        }
 
         current = {
           page: "entry",
@@ -216,132 +209,12 @@
     }
   }
 
-  function migrateEntries(entryStore: IDBStore<Entry>, surveyId: number, flattenedFields: any[]) {
-    const entryCursorRequest = entryStore.index("surveyId").openCursor(surveyId);
-    entryCursorRequest.onerror = () => {};
-
-    entryCursorRequest.onsuccess = () => {
-      const entryCursor = entryCursorRequest.result;
-      if (!entryCursor) return;
-
-      const entry = entryCursor.value as any;
-
-      if (!entry.type) {
-        entry.type = "match";
-      }
-
-      flattenedFields.forEach((field, i) => {
-        if (field.type == "team") {
-          entry.team = entry.values[i];
-          entry.values.splice(i, 1);
-        }
-
-        if (entry.type == "match") {
-          if (field.type == "match") {
-            entry.match = entry.values[i];
-            entry.values.splice(i, 1);
-          }
-
-          if (field.type == "toggle" && field.name == "Absent") {
-            entry.absent = entry.values[i];
-            entry.values.splice(i, 1);
-          }
-        }
-      });
-
-      if (!entry.team) {
-        entry.team = "";
-      }
-
-      if (entry.type == "match") {
-        if (!entry.match) {
-          entry.match = 1;
-        }
-
-        if (!entry.absent) {
-          entry.absent = false;
-        }
-      }
-
-      entryCursor.update(entry);
-      entryCursor.continue();
-    };
-  }
-
-  function migrateFields<T extends Field>(fields: T[]) {
-    return fields
-      .map((field) => {
-        if (field.type == "group") {
-          field.fields = migrateFields(field.fields);
-        }
-        return field;
-      })
-      .filter((field) => fieldTypes.includes(field.type) && !(field.type == "toggle" && field.name == "Absent"));
-  }
-
-  function migrateSurveys(transaction: IDBTransaction) {
-    const surveyStore = transaction.objectStore("surveys");
-    const entryStore = transaction.objectStore("entries");
-
-    const surveyCursorRequest = surveyStore.openCursor();
-    surveyCursorRequest.onerror = () => {};
-
-    surveyCursorRequest.onsuccess = () => {
-      const surveyCursor = surveyCursorRequest.result;
-      if (!surveyCursor) return;
-
-      const survey = surveyCursor.value as any;
-
-      if (!survey.type) {
-        survey.type = "match";
-      }
-
-      if (survey.type == "match" && !Array.isArray(survey.matches)) {
-        survey.matches = [];
-      }
-
-      migrateEntries(entryStore, survey.id, flattenFields(survey.fields));
-
-      survey.fields = migrateFields(survey.fields);
-
-      if (!survey.expressions) {
-        survey.expressions = [];
-      }
-
-      if (!survey.pickLists) {
-        survey.pickLists = [];
-      }
-
-      surveyCursor.update(survey);
-      surveyCursor.continue();
-    };
-  }
-
   function openIDB() {
-    const request = indexedDB.open("MeanScout", 8);
+    const latestVersion = 8;
+
+    const request = indexedDB.open("MeanScout", latestVersion);
     request.onerror = () => (idbError = `${request.error?.message}`);
-
-    request.onupgradeneeded = (e) => {
-      const storeNames = request.result.objectStoreNames;
-
-      if (!storeNames.contains("entries")) {
-        const entryStore = request.result.createObjectStore("entries", { keyPath: "id", autoIncrement: true });
-        entryStore.createIndex("surveyId", "surveyId", { unique: false });
-      } else if (request.transaction) {
-        const entryStore = request.transaction.objectStore("entries");
-        if (!entryStore.indexNames.contains("surveyId")) {
-          entryStore.createIndex("surveyId", "surveyId", { unique: false });
-        }
-      }
-
-      if (!storeNames.contains("surveys")) {
-        request.result.createObjectStore("surveys", { keyPath: "id", autoIncrement: true });
-      }
-
-      if (e.oldVersion < 8 && request.transaction) {
-        migrateSurveys(request.transaction);
-      }
-    };
+    request.onupgradeneeded = (e) => migrateIDB(request, e.oldVersion, latestVersion);
 
     request.onsuccess = () => {
       if (!request.result) {

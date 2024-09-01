@@ -19,14 +19,6 @@
     entryRecord: IDBRecord<Entry>;
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
-
-  $effect(() => {
-    idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(entryRecord));
-  });
-
   function countPreviousFields(index: number) {
     return flattenFields(surveyRecord.fields.slice(0, index)).length;
   }

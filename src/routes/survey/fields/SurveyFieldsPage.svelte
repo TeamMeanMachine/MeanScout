@@ -8,26 +8,17 @@
   import FieldEditor from "./FieldEditor.svelte";
 
   let {
-    idb,
     surveyRecord,
+    entryCount,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
+    entryCount: number;
   } = $props();
 
-  $effect(() => {
-    idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
-  });
+  const disabled = surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0 || entryCount > 0;
 
-  let entriesPresent = $state(false);
-  let disabled = $state(surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0);
   let preview = $state(false);
-
-  const entryCountRequest = idb.transaction("entries").objectStore("entries").index("surveyId").count(surveyRecord.id);
-  entryCountRequest.onsuccess = () => {
-    entriesPresent = entryCountRequest.result > 0;
-    if (!disabled) disabled = entriesPresent;
-  };
 
   function newField() {
     surveyRecord.modified = new Date();
@@ -76,7 +67,7 @@
     {#if disabled}
       <span>
         Cannot modify fields with
-        {#if entriesPresent}
+        {#if entryCount > 0}
           entries
         {:else}
           pick lists/expressions
