@@ -51,17 +51,6 @@ export function parseValueFromString(value: any) {
   return value;
 }
 
-export function persistStorage() {
-  if (!navigator.storage) return;
-  navigator.storage
-    .persisted()
-    .then((isPersisted) => {
-      if (isPersisted) return;
-      navigator.storage.persist().catch(console.error);
-    })
-    .catch(console.error);
-}
-
 export function download(data: string, name: string, type: string) {
   const blob = new Blob([data], { type });
   const url = URL.createObjectURL(blob);

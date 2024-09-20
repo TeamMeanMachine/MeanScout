@@ -17,15 +17,6 @@
   let files = $state<FileList | undefined>(undefined);
   let error = $state("");
 
-  async function tbaEventKeyIsInvalid(tbaEventKey: string) {
-    if ($tbaAuthKeyStore && typeof tbaEventKey == "string" && tbaEventKey.length) {
-      const eventKey = tbaEventKey.trim();
-      return !(await tbaEventExists(eventKey, $tbaAuthKeyStore));
-    }
-
-    return false;
-  }
-
   async function onconfirm() {
     if (!files?.length) {
       error = "No input";
@@ -51,7 +42,7 @@
       return;
     }
 
-    if (result.data.tbaEventKey && (await tbaEventKeyIsInvalid(result.data.tbaEventKey))) {
+    if (result.data.tbaEventKey?.length && !(await tbaEventExists(result.data.tbaEventKey, $tbaAuthKeyStore))) {
       error = "TBA event key is invalid";
       return;
     }
