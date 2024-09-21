@@ -29,7 +29,7 @@
   }
 
   export function open() {
-    onopen && onopen(element);
+    onopen?.(element);
     element.showModal();
   }
 
@@ -47,11 +47,17 @@
   onmouseup={closeCallback}
   class="max-h-dvh w-[540px] bg-neutral-900 shadow-2xl [max-width:100vw] backdrop:backdrop-blur"
 >
-  <div onmouseup={cancelClose} onmousedown={cancelClose} class="flex max-h-dvh flex-col gap-3 p-3">
+  <form
+    method="dialog"
+    onsubmit={(e) => e.preventDefault()}
+    onmouseup={cancelClose}
+    onmousedown={cancelClose}
+    class="flex max-h-dvh flex-col gap-3 p-3"
+  >
     {@render children()}
     <div class="flex flex-wrap justify-between gap-3">
       {#if onconfirm}
-        <Button onclick={onconfirm} classes="flex items-center gap-1">
+        <Button type="submit" onclick={onconfirm} classes="flex items-center gap-1">
           <Icon name="check" />
           Confirm
         </Button>
@@ -61,5 +67,5 @@
         Close
       </Button>
     </div>
-  </div>
+  </form>
 </dialog>
