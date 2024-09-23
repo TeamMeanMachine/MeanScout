@@ -5,7 +5,7 @@
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { flattenFields, getDetailedFieldName } from "$lib/field";
-  import type { Survey } from "$lib/survey";
+  import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
 
   let {
@@ -13,7 +13,7 @@
     preselectedExpressionNames = undefined,
     onupdate,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: IDBRecord<MatchSurvey>;
     preselectedExpressionNames?: string[] | undefined;
     onupdate?: () => void;
   } = $props();

@@ -5,7 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
+  import type { MatchSurvey } from "$lib/survey";
   import UpsertExpressionDialog from "./UpsertExpressionDialog.svelte";
 
   let {
@@ -16,7 +16,7 @@
   }: {
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     upsertExpressionDialog: UpsertExpressionDialog | undefined;
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: IDBRecord<MatchSurvey>;
     usedExpressionNames?: string[] | undefined;
   } = $props();
 

@@ -1,12 +1,12 @@
 <script lang="ts">
   import Dialog from "$lib/components/Dialog.svelte";
-  import type { Survey } from "$lib/survey";
+  import type { MatchSurvey } from "$lib/survey";
 
   let {
     surveyRecord = $bindable(),
     ondelete,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: IDBRecord<MatchSurvey>;
     ondelete: () => void;
   } = $props();
 

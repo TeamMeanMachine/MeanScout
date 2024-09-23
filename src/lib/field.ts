@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const fieldTypes = ["toggle", "number", "select", "text", "rating", "timer", "group"] as const;
+export const singleFieldTypes = ["toggle", "number", "select", "text", "rating", "timer"] as const;
+export type SingleFieldType = (typeof singleFieldTypes)[number];
+
+export const fieldTypes = [...singleFieldTypes, "group"] as const;
 export type FieldType = (typeof fieldTypes)[number];
 
 const toggleFieldSchema = z.object({
@@ -51,12 +54,23 @@ const singleFieldSchema = z.discriminatedUnion("type", [
   ratingFieldSchema,
   timerFieldSchema,
 ]);
-type SingleField = z.infer<typeof singleFieldSchema>;
+export type SingleField = z.infer<typeof singleFieldSchema>;
 
 const groupFieldSchema = z.object({ name: z.string(), type: z.literal("group"), fields: z.array(singleFieldSchema) });
+export type GroupField = z.infer<typeof groupFieldSchema>;
 
 export const fieldSchema = z.discriminatedUnion("type", [...singleFieldSchema.options, groupFieldSchema]);
 export type Field = z.infer<typeof fieldSchema>;
+
+export const fieldIcons: Record<FieldType, string> = {
+  toggle: "check",
+  number: "hashtag",
+  select: "square-caret-down",
+  text: "font",
+  rating: "star",
+  timer: "clock",
+  group: "list-check",
+};
 
 export function getDefaultFieldValue(field: SingleField) {
   switch (field.type) {

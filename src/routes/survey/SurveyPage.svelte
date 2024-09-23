@@ -110,7 +110,12 @@
       <Icon name="list-check" />
       <div class="flex flex-col">
         Fields
-        <small>Configure, Preview</small>
+        <small>
+          {#if surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0 || entryRecords.length > 0}
+            Configure,
+          {/if}
+          Preview
+        </small>
       </div>
     </Anchor>
 
