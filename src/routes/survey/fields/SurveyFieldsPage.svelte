@@ -90,12 +90,12 @@
         <span><small>Match</small> <strong>##</strong></span>
       {/if}
     </div>
-    <div class="flex flex-wrap items-end gap-2">
+    <div class="flex flex-col flex-wrap gap-3">
       {#each surveyRecord.fields as field (field)}
         {#if field.type == "group"}
           <div class="flex w-full flex-col gap-1">
             <h2 class="font-bold">{field.name}</h2>
-            <div class="mb-4 flex flex-wrap items-end gap-2">
+            <div class="mb-4 flex flex-col flex-wrap gap-3">
               {#each field.fields as innerField (innerField)}
                 <FieldValueEditor field={innerField} value={getDefaultFieldValue(innerField)} />
               {/each}

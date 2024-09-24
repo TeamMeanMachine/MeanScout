@@ -9,14 +9,17 @@
   let {
     idb,
     surveyRecord,
+    exportedEntries = $bindable(),
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
+    exportedEntries: IDBRecord<Entry>[];
   } = $props();
 
   let dialog: Dialog;
 
-  let files = $state<FileList | undefined>(undefined);
+  let files = $state<FileList | undefined>();
+  let importedEntries: IDBRecord<Entry>[] = [];
   let error = $state("");
 
   function addEntry(entryCSV: string[], entryStore: IDBStore<Entry>) {
@@ -45,8 +48,12 @@
       };
     }
 
-    entryStore.add(entry).onerror = (e) => {
-      e.preventDefault();
+    const addRequest = entryStore.add(entry);
+    addRequest.onerror = (e) => e.preventDefault();
+    addRequest.onsuccess = () => {
+      const id = addRequest.result;
+      if (typeof id != "number") return;
+      importedEntries = [{ id, ...entry }, ...importedEntries];
     };
   }
 
@@ -75,10 +82,11 @@
     const addTransaction = idb.transaction("entries", "readwrite");
     const entryStore = addTransaction.objectStore("entries");
     addTransaction.onabort = () => {
-      error = "could not add entries!";
+      error = "Could not add entries!";
     };
 
     addTransaction.oncomplete = () => {
+      exportedEntries = [...importedEntries, ...exportedEntries];
       dialog.close();
     };
 
@@ -89,6 +97,7 @@
   }
 
   function onclose() {
+    importedEntries = [];
     error = "";
   }
 </script>

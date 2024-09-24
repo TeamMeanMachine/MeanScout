@@ -75,6 +75,28 @@
     dialog.open();
   }
 
+  function changeType(to: string) {
+    switch (to) {
+      case "select":
+        field = {
+          name: field.name,
+          type: to,
+          values: [],
+        };
+        break;
+      case "toggle":
+      case "number":
+      case "text":
+      case "rating":
+      case "timer":
+        field = {
+          name: field.name,
+          type: to,
+        };
+        break;
+    }
+  }
+
   function toggleAllowNegative() {
     if (field.type == "number") {
       field.allowNegative = !field.allowNegative;
@@ -182,27 +204,7 @@
       Type
       <select
         value={field.type}
-        onchange={(e) => {
-          switch (e.currentTarget.value) {
-            case "select":
-              field = {
-                name: field.name,
-                type: e.currentTarget.value,
-                values: [],
-              };
-              break;
-            case "toggle":
-            case "number":
-            case "text":
-            case "rating":
-            case "timer":
-              field = {
-                name: field.name,
-                type: e.currentTarget.value,
-              };
-              break;
-          }
-        }}
+        onchange={(e) => changeType(e.currentTarget.value)}
         class="bg-neutral-800 p-2 capitalize text-theme"
       >
         {#each singleFieldTypes as fieldType}
@@ -235,10 +237,6 @@
         New value
       </Button>
     {:else if field.type == "text"}
-      <label class="flex flex-col">
-        Tip
-        <input bind:value={field.tip} class="bg-neutral-800 p-2 text-theme" />
-      </label>
       <Button onclick={toggleLong}>
         {#if field.long}
           <Icon name="square-check" />
@@ -248,6 +246,11 @@
         Long
       </Button>
     {/if}
+
+    <label class="flex flex-col">
+      Tip
+      <input bind:value={field.tip} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {/if}
 
   {#if error}

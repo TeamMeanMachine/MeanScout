@@ -62,4 +62,7 @@
       <Icon name="stop" />
     </Button>
   </div>
+  {#if field.tip}
+    <small class="pt-1">{field.tip}</small>
+  {/if}
 </div>

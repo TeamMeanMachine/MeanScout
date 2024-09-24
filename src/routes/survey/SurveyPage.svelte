@@ -37,9 +37,6 @@
 
 <Header backLink="">
   <h1 class="font-bold">{surveyRecord.name}</h1>
-  {#if surveyRecord.tbaEventKey}
-    <small>{surveyRecord.tbaEventKey}</small>
-  {/if}
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
@@ -111,7 +108,7 @@
       <div class="flex flex-col">
         Fields
         <small>
-          {#if surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0 || entryRecords.length > 0}
+          {#if surveyRecord.expressions.length == 0 && surveyRecord.pickLists.length == 0 && entryRecords.length == 0}
             Configure,
           {/if}
           Preview

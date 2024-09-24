@@ -31,7 +31,7 @@
 
 <div class="flex flex-col gap-2 p-3">
   {#if $modeStore == "admin"}
-    <ImportEntriesDialog {idb} {surveyRecord} />
+    <ImportEntriesDialog {idb} {surveyRecord} bind:exportedEntries />
     <ImportEntryDialog {idb} {surveyRecord} bind:exportedEntries />
   {/if}
 </div>

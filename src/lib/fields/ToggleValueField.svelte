@@ -19,11 +19,16 @@
   }
 </script>
 
-<Button onclick={toggle}>
-  {#if value}
-    <Icon name="square-check" />
-  {:else}
-    <Icon style="regular" name="square" />
+<div class="flex flex-col">
+  <Button onclick={toggle} classes="self-start">
+    {#if value}
+      <Icon name="square-check" />
+    {:else}
+      <Icon style="regular" name="square" />
+    {/if}
+    {field.name}
+  </Button>
+  {#if field.tip}
+    <small class="pt-1">{field.tip}</small>
   {/if}
-  {field.name}
-</Button>
+</div>

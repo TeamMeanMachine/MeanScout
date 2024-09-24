@@ -12,12 +12,14 @@
   } = $props();
 </script>
 
-<div class="flex w-full flex-col">
+<label class="flex w-full flex-col">
   {field.name}
   {#if field.long}
-    <textarea placeholder={field.tip} bind:value {onchange} class="h-72 resize-none bg-neutral-800 p-2 text-theme">
-    </textarea>
+    <textarea bind:value {onchange} class="h-72 resize-none bg-neutral-800 p-2 text-theme"> </textarea>
   {:else}
-    <input placeholder={field.tip} bind:value {onchange} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value {onchange} class="bg-neutral-800 p-2 text-theme" />
   {/if}
-</div>
+  {#if field.tip}
+    <small class="pt-1">{field.tip}</small>
+  {/if}
+</label>

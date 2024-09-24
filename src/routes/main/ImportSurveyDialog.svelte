@@ -42,7 +42,11 @@
       return;
     }
 
-    if (result.data.tbaEventKey?.length && !(await tbaEventExists(result.data.tbaEventKey, $tbaAuthKeyStore))) {
+    if (
+      result.data.tbaEventKey?.length &&
+      $tbaAuthKeyStore &&
+      !(await tbaEventExists(result.data.tbaEventKey, $tbaAuthKeyStore))
+    ) {
       error = "TBA event key is invalid";
       return;
     }

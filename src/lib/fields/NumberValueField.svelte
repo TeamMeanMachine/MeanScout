@@ -27,12 +27,15 @@
 <div class="flex flex-col">
   {field.name}
   <div class="flex flex-wrap">
-    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
-      <Icon name="minus" />
-    </Button>
-    <span class="w-12 bg-neutral-800 p-2 text-center">{value}</span>
     <Button onclick={increment}>
       <Icon name="plus" />
     </Button>
+    <span class="max-w-12 grow bg-neutral-800 p-2 text-center">{value}</span>
+    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
+      <Icon name="minus" />
+    </Button>
   </div>
+  {#if field.tip}
+    <small class="pt-1">{field.tip}</small>
+  {/if}
 </div>

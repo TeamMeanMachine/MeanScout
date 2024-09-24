@@ -62,7 +62,7 @@
           Confirm
         </Button>
       {/if}
-      <Button onclick={close} classes="flex items-center gap-1">
+      <Button autofocus onclick={close} classes="flex items-center gap-1">
         <Icon name="xmark" />
         Close
       </Button>

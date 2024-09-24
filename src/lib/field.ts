@@ -9,6 +9,7 @@ export type FieldType = (typeof fieldTypes)[number];
 const toggleFieldSchema = z.object({
   name: z.string(),
   type: z.literal("toggle"),
+  tip: z.optional(z.string()),
 });
 export type ToggleField = z.infer<typeof toggleFieldSchema>;
 
@@ -16,6 +17,7 @@ const numberFieldSchema = z.object({
   name: z.string(),
   type: z.literal("number"),
   allowNegative: z.optional(z.boolean()),
+  tip: z.optional(z.string()),
 });
 export type NumberField = z.infer<typeof numberFieldSchema>;
 
@@ -23,6 +25,7 @@ const selectFieldSchema = z.object({
   name: z.string(),
   type: z.literal("select"),
   values: z.array(z.string()),
+  tip: z.optional(z.string()),
 });
 export type SelectField = z.infer<typeof selectFieldSchema>;
 
@@ -37,12 +40,14 @@ export type TextField = z.infer<typeof textFieldSchema>;
 const ratingFieldSchema = z.object({
   name: z.string(),
   type: z.literal("rating"),
+  tip: z.optional(z.string()),
 });
 export type RatingField = z.infer<typeof ratingFieldSchema>;
 
 const timerFieldSchema = z.object({
   name: z.string(),
   type: z.literal("timer"),
+  tip: z.optional(z.string()),
 });
 export type TimerField = z.infer<typeof timerFieldSchema>;
 
@@ -114,15 +119,4 @@ export function getDetailedFieldName(fields: Field[], flattenedFieldIndex: numbe
     }
   }
   return "";
-}
-
-export function isValidField(field: any) {
-  if (typeof field != "object") return false;
-  if (typeof field.name != "string" || !field.name.trim()) return false;
-
-  if (!fieldTypes.includes(field.type)) return false;
-  if (field.type == "select" && !Array.isArray(field.values)) return false;
-  if (field.type == "group" && !Array.isArray(field.fields)) return false;
-
-  return true;
 }

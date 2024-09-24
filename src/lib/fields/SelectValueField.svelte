@@ -12,11 +12,14 @@
   } = $props();
 </script>
 
-<label class="flex flex-col">
+<label class="flex flex-col self-start">
   {field.name}
   <select bind:value {onchange} class="bg-neutral-800 p-2 capitalize text-theme">
     {#each field.values as val}
       <option value={val}>{val}</option>
     {/each}
   </select>
+  {#if field.tip}
+    <small class="pt-1">{field.tip}</small>
+  {/if}
 </label>

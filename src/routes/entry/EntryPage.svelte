@@ -43,13 +43,13 @@
       {/if}
     </div>
 
-    <div class="flex flex-wrap items-end gap-2">
+    <div class="flex flex-col flex-wrap gap-3">
       {#each surveyRecord.fields as field, i (field)}
         {@const previousFields = countPreviousFields(i)}
         {#if field.type == "group"}
           <div class="flex w-full flex-col gap-1">
             <h2 class="font-bold">{field.name}</h2>
-            <div class="mb-4 flex flex-wrap items-end gap-2">
+            <div class="mb-4 flex flex-col flex-wrap gap-3">
               {#each field.fields as innerField, innerFieldIndex (innerField)}
                 <FieldValueEditor
                   field={innerField}

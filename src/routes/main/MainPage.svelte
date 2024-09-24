@@ -24,12 +24,7 @@
     {#each surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
         <Icon name="arrow-right" />
-        <div class="flex flex-col">
-          {survey.name}
-          {#if survey.tbaEventKey?.length}
-            <small>{survey.tbaEventKey}</small>
-          {/if}
-        </div>
+        <div class="flex flex-col">{survey.name}</div>
       </Anchor>
     {/each}
   </div>

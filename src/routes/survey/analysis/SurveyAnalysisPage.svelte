@@ -30,12 +30,12 @@
     }
   }
 
-  let viewPickListDialog = $state<ViewPickListDialog | undefined>(undefined);
-  let upsertPickListDialog = $state<UpsertPickListDialog | undefined>(undefined);
-  let deletePickListDialog = $state<DeletePickListDialog | undefined>(undefined);
+  let viewPickListDialog = $state<ViewPickListDialog | undefined>();
+  let upsertPickListDialog = $state<UpsertPickListDialog | undefined>();
+  let deletePickListDialog = $state<DeletePickListDialog | undefined>();
 
-  let viewExpressionDialog = $state<ViewExpressionDialog | undefined>(undefined);
-  let upsertExpressionDialog = $state<UpsertExpressionDialog | undefined>(undefined);
+  let viewExpressionDialog = $state<ViewExpressionDialog | undefined>();
+  let upsertExpressionDialog = $state<UpsertExpressionDialog | undefined>();
 
   let preselectedExpressionNames = $state<string[]>([]);
   let isSelecting = $state(false);
@@ -47,6 +47,31 @@
       .map((input) => input.expressionName),
     ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
+
+  function toggleIsSelecting() {
+    if (isSelecting) {
+      preselectedExpressionNames = [];
+      isSelecting = false;
+    } else {
+      isSelecting = true;
+    }
+  }
+
+  function toggleSelectAll() {
+    if (preselectedExpressionNames.length) {
+      preselectedExpressionNames = [];
+    } else {
+      preselectedExpressionNames = surveyRecord.expressions.map((expression) => expression.name);
+    }
+  }
+
+  function toggleSelect(isSelected: boolean, name: string) {
+    if (isSelected) {
+      preselectedExpressionNames = preselectedExpressionNames.filter((n) => n != name);
+    } else {
+      preselectedExpressionNames = [...preselectedExpressionNames, name];
+    }
+  }
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -129,16 +154,7 @@
         </div>
       </Button>
       <div class="flex flex-wrap gap-2">
-        <Button
-          onclick={() => {
-            if (isSelecting) {
-              preselectedExpressionNames = [];
-              isSelecting = false;
-            } else {
-              isSelecting = true;
-            }
-          }}
-        >
+        <Button onclick={toggleIsSelecting}>
           <Icon name="list-check" />
           {#if isSelecting}
             Stop selecting
@@ -147,15 +163,7 @@
           {/if}
         </Button>
         {#if isSelecting}
-          <Button
-            onclick={() => {
-              if (preselectedExpressionNames.length) {
-                preselectedExpressionNames = [];
-              } else {
-                preselectedExpressionNames = surveyRecord.expressions.map((expression) => expression.name);
-              }
-            }}
-          >
+          <Button onclick={toggleSelectAll}>
             {#if preselectedExpressionNames.length}
               <Icon name="xmark" />
               Deselect all
@@ -174,15 +182,7 @@
       <div class="flex flex-col gap-2">
         {#if isSelecting}
           {@const isSelected = preselectedExpressionNames.includes(expression.name)}
-          <Button
-            onclick={() => {
-              if (isSelected) {
-                preselectedExpressionNames = preselectedExpressionNames.filter((name) => name != expression.name);
-              } else {
-                preselectedExpressionNames = [...preselectedExpressionNames, expression.name];
-              }
-            }}
-          >
+          <Button onclick={() => toggleSelect(isSelected, expression.name)}>
             {#if isSelected}
               <Icon name="square-check" />
               <strong>{expression.name}</strong>
