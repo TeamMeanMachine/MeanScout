@@ -1,12 +1,11 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
+  import type { Match } from "$lib";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import type { MatchEntry } from "$lib/entry";
+  import type { EntryStatus, MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
-  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import MatchDialog from "./MatchDialog.svelte";
+  import UpsertMatchDialog from "./UpsertMatchDialog.svelte";
 
   let {
     surveyRecord,
@@ -17,7 +16,7 @@
     entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
 
-  let matchDialog: MatchDialog | undefined = $state();
+  let matchDialog: UpsertMatchDialog | undefined = $state();
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -27,59 +26,69 @@
 
 {#if $modeStore == "admin"}
   <div class="flex flex-col gap-2 p-3">
-    <MatchDialog bind:this={matchDialog} bind:surveyRecord />
+    <UpsertMatchDialog bind:this={matchDialog} bind:surveyRecord />
   </div>
 {/if}
 
-<div class="flex gap-2 p-3">
-  {#if surveyRecord.matches.length}
-    <table class="border-collapse">
-      <thead>
-        <tr>
-          <th colspan={$modeStore == "admin" ? 2 : 1} class="text-right">Match</th>
-          <th colspan="3">Teams</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match}
-          {@const entry = entryRecords.find((e) => e.match == match.number)}
-          <tr>
-            {#if $modeStore == "admin"}
-              <td>
-                <div class="flex flex-wrap gap-2 p-2">
-                  <Button onclick={() => matchDialog?.editMatch(match.number)}>
-                    <Icon name="pen" />
-                  </Button>
-                  <DeleteMatchDialog bind:surveyRecord {match} />
-                </div>
-              </td>
-            {/if}
-            <td class="p-2 text-right">{match.number}</td>
-            <td>
-              <div class="flex flex-col gap-1 p-2 text-right">
-                <span class="text-red">{match.red1}</span>
-                <span class="text-blue">{match.blue1}</span>
-              </div>
-            </td>
-            <td>
-              <div class="flex flex-col gap-1 p-2 text-right">
-                <span class="text-red">{match.red2}</span>
-                <span class="text-blue">{match.blue2}</span>
-              </div>
-            </td>
-            <td>
-              <div class="flex flex-col gap-1 p-2 text-right">
-                <span class="text-red">{match.red3}</span>
-                <span class="text-blue">{match.blue3}</span>
-              </div>
-            </td>
-            <td class="p-2 text-center capitalize">{entry?.status}</td>
+{#snippet matchRow(match: Match, status: EntryStatus | undefined)}
+  <td class="w-0 p-2">{match.number}</td>
+  <td class="w-0">
+    <div class="flex flex-col gap-1 p-2">
+      <span class="text-red">{match.red1}</span>
+      <span class="text-blue">{match.blue1}</span>
+    </div>
+  </td>
+  <td class="w-0">
+    <div class="flex flex-col gap-1 p-2">
+      <span class="text-red">{match.red2}</span>
+      <span class="text-blue">{match.blue2}</span>
+    </div>
+  </td>
+  <td class="w-0">
+    <div class="flex flex-col gap-1 p-2">
+      <span class="text-red">{match.red3}</span>
+      <span class="text-blue">{match.blue3}</span>
+    </div>
+  </td>
+  <td class="p-2 text-left capitalize">{status}</td>
+{/snippet}
+
+{#if surveyRecord.matches.length}
+  <table class="w-full border-separate border-spacing-y-2 p-3 text-right">
+    <thead>
+      <tr>
+        <th colspan={$modeStore == "admin" ? 2 : 1} class="px-2">Match</th>
+        <th colspan="3" class="px-2 text-center">Teams</th>
+        <th class="px-2 text-left">Entry</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#each surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match}
+        {@const entry = entryRecords.find((e) => e.match == match.number)}
+        {#if $modeStore == "admin"}
+          <tr
+            tabindex="0"
+            role="button"
+            onclick={() => matchDialog?.editMatch(match.number)}
+            onkeydown={(e) => {
+              if (e.key == " " || e.key == "Enter") {
+                e.preventDefault();
+                matchDialog?.editMatch(match.number);
+              }
+            }}
+            class="button cursor-pointer bg-neutral-800"
+          >
+            <td class="w-0 p-2"><Icon name="pen" /></td>
+            {@render matchRow(match, entry?.status)}
           </tr>
-        {/each}
-      </tbody>
-    </table>
-  {:else}
-    No matches.
-  {/if}
-</div>
+        {:else}
+          <tr>
+            {@render matchRow(match, entry?.status)}
+          </tr>
+        {/if}
+      {/each}
+    </tbody>
+  </table>
+{:else}
+  <div class="flex flex-col gap-2 p-3">No matches.</div>
+{/if}

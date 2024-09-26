@@ -8,9 +8,11 @@
   let {
     surveyRecord = $bindable(),
     match,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     match: Match;
+    ondelete?: (() => void) | undefined;
   } = $props();
 
   let dialog: Dialog;
@@ -19,11 +21,13 @@
     surveyRecord.modified = new Date();
     surveyRecord.matches = surveyRecord.matches.filter((m) => m.number != match.number);
     dialog.close();
+    ondelete?.();
   }
 </script>
 
 <Button onclick={() => dialog.open()}>
   <Icon name="trash" />
+  Delete
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm}>

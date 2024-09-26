@@ -4,6 +4,7 @@
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { MatchSurvey } from "$lib/survey";
+  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
 
   let {
     surveyRecord = $bindable(),
@@ -126,7 +127,7 @@
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   {#if matchNumber == undefined}
-    <span>Add match</span>
+    <span>New match</span>
     <label class="flex flex-col">
       Number
       <input type="number" pattern="[0-9]*" bind:value={match.number} class="bg-neutral-800 p-2 text-theme" />
@@ -135,30 +136,39 @@
     <span>Edit match {match.number}</span>
   {/if}
 
-  <label class="flex flex-col">
-    Red 1
-    <input maxlength="5" bind:value={match.red1} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-  <label class="flex flex-col">
-    Red 2
-    <input maxlength="5" bind:value={match.red2} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-  <label class="flex flex-col">
-    Red 3
-    <input maxlength="5" bind:value={match.red3} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-  <label class="flex flex-col">
-    Blue 1
-    <input maxlength="5" bind:value={match.blue1} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-  <label class="flex flex-col">
-    Blue 2
-    <input maxlength="5" bind:value={match.blue2} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-  <label class="flex flex-col">
-    Blue 3
-    <input maxlength="5" bind:value={match.blue3} class="bg-neutral-800 p-2 text-theme" />
-  </label>
+  <div class="flex gap-2">
+    <label class="flex flex-col">
+      Red 1
+      <input maxlength="5" bind:value={match.red1} class="w-full bg-neutral-800 p-2 text-red" />
+    </label>
+    <label class="flex flex-col">
+      Red 2
+      <input maxlength="5" bind:value={match.red2} class="w-full bg-neutral-800 p-2 text-red" />
+    </label>
+    <label class="flex flex-col">
+      Red 3
+      <input maxlength="5" bind:value={match.red3} class="w-full bg-neutral-800 p-2 text-red" />
+    </label>
+  </div>
+
+  <div class="flex gap-2">
+    <label class="flex flex-col">
+      Blue 1
+      <input maxlength="5" bind:value={match.blue1} class="w-full bg-neutral-800 p-2 text-blue" />
+    </label>
+    <label class="flex flex-col">
+      Blue 2
+      <input maxlength="5" bind:value={match.blue2} class="w-full bg-neutral-800 p-2 text-blue" />
+    </label>
+    <label class="flex flex-col">
+      Blue 3
+      <input maxlength="5" bind:value={match.blue3} class="w-full bg-neutral-800 p-2 text-blue" />
+    </label>
+  </div>
+
+  {#if matchNumber != undefined}
+    <DeleteMatchDialog bind:surveyRecord {match} ondelete={() => dialog.close()} />
+  {/if}
   {#if error}
     <span>Error: {error}</span>
   {/if}
