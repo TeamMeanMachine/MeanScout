@@ -3,24 +3,24 @@
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
-  import QrCodeReader from "./QRCodeReader.svelte";
 
   let {
     idb,
     surveyRecord,
-    exportedEntries = $bindable(),
+    entryRecords = $bindable(),
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
-    exportedEntries: IDBRecord<Entry>[];
+    entryRecords: IDBRecord<Entry>[];
   } = $props();
 
   let dialog: Dialog;
-  let qrCodeReader: QrCodeReader;
+  let qrCodeReader: QRCodeReader;
 
-  let qrCodeData = $state<string | undefined>(undefined);
+  let qrCodeData = $state<string | undefined>();
   let error = $state("");
 
   function onopen() {
@@ -80,7 +80,7 @@
         return;
       }
 
-      exportedEntries = [{ ...entry, id: id as number }, ...exportedEntries];
+      entryRecords = [{ ...entry, id: id as number }, ...entryRecords];
       dialog.close();
     };
 
@@ -99,12 +99,15 @@
 
 <Button onclick={() => dialog.open()}>
   <Icon name="qrcode" />
-  Import from QR code
+  <div class="flex flex-col">
+    Import
+    <small>QR code</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onopen} {onclose}>
   <span>Import from QR code</span>
-  <QrCodeReader
+  <QRCodeReader
     bind:this={qrCodeReader}
     onRead={(data) => {
       qrCodeData = data;

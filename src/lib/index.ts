@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Entry } from "./entry";
-import type { Target } from "./settings";
+import type { MatchTarget, Target } from "./settings";
 import type { Survey } from "./survey";
 
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
@@ -18,6 +18,14 @@ export const matchSchema = z.object({
   blue3: z.string(),
 });
 export type Match = z.infer<typeof matchSchema>;
+
+export type EntryFilters = {
+  team: string | undefined;
+  match: number | undefined;
+  absent: boolean | undefined;
+  target: MatchTarget | undefined;
+  exported: boolean | undefined;
+};
 
 export function createEntryFileName(survey: Survey, entryOrEntries: Entry | Entry[], target?: Target) {
   if (Array.isArray(entryOrEntries)) {

@@ -9,11 +9,11 @@
   let {
     idb,
     surveyRecord,
-    exportedEntries = $bindable(),
+    entryRecords = $bindable(),
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
-    exportedEntries: IDBRecord<Entry>[];
+    entryRecords: IDBRecord<Entry>[];
   } = $props();
 
   let dialog: Dialog;
@@ -86,7 +86,7 @@
     };
 
     addTransaction.oncomplete = () => {
-      exportedEntries = [...importedEntries, ...exportedEntries];
+      entryRecords = [...importedEntries, ...entryRecords];
       dialog.close();
     };
 
@@ -104,7 +104,10 @@
 
 <Button onclick={() => dialog.open()}>
   <Icon name="paste" />
-  Import entries
+  <div class="flex flex-col">
+    Import
+    <small>File</small>
+  </div>
 </Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>

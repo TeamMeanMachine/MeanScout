@@ -1,14 +1,16 @@
 <script lang="ts">
-  import Anchor from "$lib/components/Anchor.svelte";
+  import { onMount } from "svelte";
+  import type { EntryFilters } from "$lib";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
-  import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
-  import BulkSetEntryStatusDialog from "./BulkSetEntryStatusDialog.svelte";
   import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
+  import FilterEntriesDialog from "./FilterEntriesDialog.svelte";
   import ImportEntriesDialog from "./ImportEntriesDialog.svelte";
   import ImportEntryDialog from "./ImportEntryDialog.svelte";
+  import ViewEntryDialog from "./ViewEntryDialog.svelte";
+  import Button from "$lib/components/Button.svelte";
 
   let {
     idb,
@@ -20,9 +22,134 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let submittedEntries = $state(entryRecords.filter((entry) => entry.status == "submitted"));
-  let exportedEntries = $state(entryRecords.filter((entry) => entry.status == "exported"));
+  let viewEntryDialog = $state<ViewEntryDialog | undefined>();
+
+  let filters = $state<EntryFilters>({
+    team: undefined,
+    match: undefined,
+    absent: undefined,
+    target: undefined,
+    exported: undefined,
+  });
+  let filteredEntries = $derived(entryRecords.filter(filterEntry).toSorted(sortEntries));
+
+  let displayedCount = $state(10);
+  let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
+
+  let filterDetails = $derived.by(() => {
+    let details = [];
+    if (filters.team != undefined) {
+      details.push(`Team: ${filters.team}`);
+    }
+    if (filters.match != undefined) {
+      details.push(`Match: ${filters.match}`);
+    }
+    if (filters.absent != undefined) {
+      details.push(`Absent: ${filters.absent}`);
+    }
+    if (filters.target != undefined) {
+      details.push(`Target: ${filters.target}`);
+    }
+    if (filters.exported != undefined) {
+      details.push(`Exported: ${filters.exported}`);
+    }
+    if (details.length == 0) {
+      return "Any";
+    }
+    return details.join(", ");
+  });
+
+  function filterEntry(entry: IDBRecord<Entry>) {
+    if (entry.status == "draft") {
+      return false;
+    }
+
+    if (filters.team?.length && entry.team != filters.team) {
+      return false;
+    }
+
+    if (filters.exported == true && entry.status != "exported") {
+      return false;
+    }
+
+    if (filters.exported == false && entry.status == "exported") {
+      return false;
+    }
+
+    if (entry.type == "match") {
+      if (filters.match != undefined && entry.match != filters.match) {
+        return false;
+      }
+
+      if (filters.target != undefined && surveyRecord.type == "match") {
+        const teamsOfThisTarget = surveyRecord.matches
+          .filter((match) => match.number == entry.match)
+          .map((match) => {
+            switch (filters.target) {
+              case "red 1":
+                return match.red1;
+              case "red 2":
+                return match.red2;
+              case "red 3":
+                return match.red3;
+              case "blue 1":
+                return match.blue1;
+              case "blue 2":
+                return match.blue2;
+              case "blue 3":
+                return match.blue3;
+            }
+          });
+
+        if (!teamsOfThisTarget.includes(entry.team)) {
+          return false;
+        }
+      }
+
+      if (filters.absent != undefined && filters.absent != entry.absent) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
+    if (a.type == "match" && b.type == "match") {
+      return b.match - a.match || a.team.localeCompare(b.team, undefined, { numeric: true });
+    }
+    return a.team.localeCompare(b.team, undefined, { numeric: true });
+  }
+
+  function refresh() {
+    const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+
+    entriesRequest.onerror = () => {
+      location.reload();
+    };
+
+    entriesRequest.onsuccess = () => {
+      if (!entriesRequest.result) {
+        return;
+      }
+
+      entryRecords = entriesRequest.result;
+    };
+  }
+
+  function onscroll() {
+    if (displayedCount >= filteredEntries.length) return;
+
+    if (window.scrollY + window.innerHeight * 2 >= document.body.offsetHeight) {
+      displayedCount = Math.min(displayedCount + 10, filteredEntries.length);
+    } else {
+    }
+  }
+
+  onMount(() => onscroll());
 </script>
+
+<svelte:window {onscroll} />
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
@@ -30,73 +157,70 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  {#if $modeStore == "admin"}
-    <ImportEntriesDialog {idb} {surveyRecord} bind:exportedEntries />
-    <ImportEntryDialog {idb} {surveyRecord} bind:exportedEntries />
-  {/if}
+  <ImportEntriesDialog {idb} {surveyRecord} bind:entryRecords />
+  <ImportEntryDialog {idb} {surveyRecord} bind:entryRecords />
 </div>
 
 <div class="flex flex-col gap-2 p-3">
-  <h2 class="font-bold">Submitted Entries</h2>
-  {#if submittedEntries.length}
-    <ExportEntriesDialog {surveyRecord} entries={submittedEntries} />
-    <BulkSetEntryStatusDialog
-      {idb}
-      {surveyRecord}
-      from="submitted"
-      to="exported"
-      onset={() => {
-        exportedEntries = [...exportedEntries, ...submittedEntries];
-        submittedEntries = [];
-      }}
-    />
-    {#each submittedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
-      <Anchor route="entry/{entry.id}">
-        <Icon name="arrow-right" />
-        <div class="flex flex-col">
-          <span><small>Team</small> {entry.team}</span>
-          {#if entry.type == "match"}
-            <span><small>Match</small> {entry.match}</span>
-            {#if entry.absent}
-              <strong><small>Absent</small> {entry.absent}</strong>
-            {/if}
+  <ViewEntryDialog {idb} bind:this={viewEntryDialog} bind:surveyRecord onexport={refresh} />
+  <h2 class="font-bold">Entries</h2>
+  <FilterEntriesDialog {surveyRecord} {entryRecords} bind:filters {filterDetails} />
+  <span class="mt-2">
+    {filteredEntries.length}
+    {filteredEntries.length == 1 ? "result" : "results"}
+  </span>
+  {#if filteredEntries.length}
+    <ExportEntriesDialog {idb} {surveyRecord} {filteredEntries} onexport={refresh} />
+    <table class="w-full border-separate border-spacing-y-2 text-left">
+      <thead class="sticky top-0 bg-neutral-900">
+        <tr>
+          <th class="w-0 p-2">Team</th>
+          {#if surveyRecord.type == "match"}
+            <th class="w-0 p-2">Match</th>
+            <th class="w-0 p-2">Absent</th>
           {/if}
-        </div>
-      </Anchor>
-    {/each}
-  {:else}
-    No entries.
+          <th class="w-0 p-2">Exported</th>
+          <td></td>
+        </tr>
+      </thead>
+      <tbody>
+        {#each displayedEntries as entry (entry.id)}
+          <tr
+            tabindex="0"
+            role="button"
+            onclick={() => viewEntryDialog?.open(entry)}
+            onkeydown={(e) => {
+              if (e.key == " " || e.key == "Enter") {
+                e.preventDefault();
+                viewEntryDialog?.open(entry);
+              }
+            }}
+            class="button cursor-pointer bg-neutral-800"
+          >
+            <td class="p-2 text-right">{entry.team}</td>
+            {#if entry.type == "match"}
+              <td class="p-2 text-right">{entry.match}</td>
+              <td class="p-2 text-center">
+                {#if entry.absent}
+                  <Icon name="check" />
+                {/if}
+              </td>
+            {/if}
+            <td class="p-2 text-center">
+              {#if entry.status == "exported"}
+                <Icon name="check" />
+              {/if}
+            </td>
+            <td></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   {/if}
-</div>
-
-<div class="flex flex-col gap-2 p-3">
-  <h2 class="font-bold">Exported Entries</h2>
-  {#if exportedEntries.length}
-    <BulkSetEntryStatusDialog
-      {idb}
-      {surveyRecord}
-      from="exported"
-      to="submitted"
-      onset={() => {
-        submittedEntries = [...submittedEntries, ...exportedEntries];
-        exportedEntries = [];
-      }}
-    />
-    {#each exportedEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as entry (entry.id)}
-      <Anchor route="entry/{entry.id}">
-        <Icon name="arrow-right" />
-        <div class="flex flex-col">
-          <span><small>Team</small> {entry.team}</span>
-          {#if entry.type == "match"}
-            <span><small>Match</small> {entry.match}</span>
-            {#if entry.absent}
-              <strong><small>Absent</small> {entry.absent}</strong>
-            {/if}
-          {/if}
-        </div>
-      </Anchor>
-    {/each}
-  {:else}
-    No entries.
+  {#if displayedEntries.length < filteredEntries.length}
+    <Button onclick={() => (displayedCount += 10)}>
+      <Icon name="arrow-down" />
+      Show more
+    </Button>
   {/if}
 </div>

@@ -2,10 +2,10 @@
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { entryAsCSV, type Entry } from "$lib/entry";
   import { flattenFields, getDefaultFieldValue } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import QrCodeDisplay from "./QRCodeDisplay.svelte";
 
   let {
     idb,
@@ -73,7 +73,7 @@
   <span>Share this entry:</span>
 
   {#if entryData}
-    <QrCodeDisplay data={entryData} />
+    <QRCodeDisplay data={entryData} />
   {/if}
 
   <span>Submit entry?</span>

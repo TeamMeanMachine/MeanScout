@@ -30,8 +30,8 @@
     @apply !cursor-default opacity-50 !outline-none;
   }
 
-  :is(input, select, textarea, a, button, .button):focus,
-  :is(input, select, textarea, a, button, .button):hover {
+  :is(input, select, textarea, a, button, .button, summary):focus,
+  :is(input, select, textarea, a, button, .button, summary):hover {
     @apply z-10 outline outline-2 outline-neutral-300;
   }
 

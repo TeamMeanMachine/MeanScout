@@ -9,7 +9,10 @@ function localStorageStore<T extends string>(key: string, value: T, subscriber?:
 
 // Target setting
 
-export const targets = ["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "pit"] as const;
+export const matchTargets = ["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3"] as const;
+export type MatchTarget = (typeof matchTargets)[number];
+
+export const targets = [...matchTargets, "pit"] as const;
 export type Target = (typeof targets)[number];
 
 export const targetStore = localStorageStore<Target>("target", "red 1", (target) => {

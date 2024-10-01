@@ -9,10 +9,12 @@
     idb,
     surveyRecord = $bindable(),
     entryRecord,
+    ondelete,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
+    ondelete?: (() => void) | undefined;
   } = $props();
 
   let dialog: Dialog;
@@ -27,12 +29,7 @@
 
     deleteRequest.onsuccess = () => {
       surveyRecord.modified = new Date();
-
-      if (entryRecord.status == "draft") {
-        location.hash = `/survey/${surveyRecord.id}`;
-      } else {
-        location.hash = `/survey/${surveyRecord.id}/entries`;
-      }
+      ondelete?.();
     };
   }
 
