@@ -1,11 +1,11 @@
 <script lang="ts">
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
+  import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
+  import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { flattenFields } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
-  import SubmitEntryDialog from "./SubmitEntryDialog.svelte";
 
   let {
     idb,

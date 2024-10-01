@@ -1,9 +1,9 @@
 <script lang="ts">
   import Header from "$lib/components/Header.svelte";
+  import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
+  import Router from "$lib/components/Router.svelte";
   import { migrateIDB } from "$lib/migrate";
   import "../app.css";
-  import LaunchUploadHandler from "./LaunchUploadHandler.svelte";
-  import Router from "./Router.svelte";
 
   let idb = $state<IDBDatabase | undefined>();
   let idbError = $state<string | undefined>();

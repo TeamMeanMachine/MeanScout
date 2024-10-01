@@ -3,14 +3,14 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import DeletePickListDialog from "$lib/dialogs/DeletePickListDialog.svelte";
+  import UpsertExpressionDialog from "$lib/dialogs/UpsertExpressionDialog.svelte";
+  import UpsertPickListDialog from "$lib/dialogs/UpsertPickListDialog.svelte";
+  import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
+  import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
-  import DeletePickListDialog from "./DeletePickListDialog.svelte";
-  import UpsertExpressionDialog from "./UpsertExpressionDialog.svelte";
-  import UpsertPickListDialog from "./UpsertPickListDialog.svelte";
-  import ViewExpressionDialog from "./ViewExpressionDialog.svelte";
-  import ViewPickListDialog from "./ViewPickListDialog.svelte";
 
   let {
     surveyRecord,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import UploadEntriesDialog from "./UploadEntriesDialog.svelte";
-  import UploadSurveyDialog from "./UploadSurveyDialog.svelte";
+  import UploadEntriesDialog from "$lib/dialogs/UploadEntriesDialog.svelte";
+  import UploadSurveyDialog from "$lib/dialogs/UploadSurveyDialog.svelte";
 
   let {
     idb,

@@ -6,7 +6,7 @@
   import type { Entry } from "$lib/entry";
   import { flattenFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import DeleteEntryDialog from "../../entry/DeleteEntryDialog.svelte";
+  import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntryDialog from "./ExportEntryDialog.svelte";
 
   let {

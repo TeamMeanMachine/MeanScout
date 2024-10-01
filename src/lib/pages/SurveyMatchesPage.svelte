@@ -2,10 +2,10 @@
   import type { Match } from "$lib";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import UpsertMatchDialog from "$lib/dialogs/UpsertMatchDialog.svelte";
   import type { EntryStatus, MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
-  import UpsertMatchDialog from "./UpsertMatchDialog.svelte";
 
   let {
     surveyRecord,

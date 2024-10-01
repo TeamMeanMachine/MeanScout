@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { EntryFilters } from "$lib";
+  import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
+  import FilterEntriesDialog from "$lib/dialogs/FilterEntriesDialog.svelte";
+  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
+  import ImportEntryDialog from "$lib/dialogs/ImportEntryDialog.svelte";
+  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
-  import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
-  import FilterEntriesDialog from "./FilterEntriesDialog.svelte";
-  import ImportEntriesDialog from "./ImportEntriesDialog.svelte";
-  import ImportEntryDialog from "./ImportEntryDialog.svelte";
-  import ViewEntryDialog from "./ViewEntryDialog.svelte";
-  import Button from "$lib/components/Button.svelte";
 
   let {
     idb,

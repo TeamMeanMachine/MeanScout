@@ -3,10 +3,10 @@
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import UpsertFieldDialog from "$lib/dialogs/UpsertFieldDialog.svelte";
+  import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
   import { fieldIcons, getDefaultFieldValue } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import UpsertFieldDialog from "./UpsertFieldDialog.svelte";
-  import ViewFieldDialog from "./ViewFieldDialog.svelte";
 
   let {
     surveyRecord,

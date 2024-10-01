@@ -2,10 +2,10 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
-  import NewEntryDialog from "./NewEntryDialog.svelte";
 
   let {
     idb,

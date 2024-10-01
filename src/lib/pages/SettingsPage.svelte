@@ -1,8 +1,8 @@
 <script lang="ts">
   import Header from "$lib/components/Header.svelte";
+  import EditTbaAuthKeyDialog from "$lib/dialogs/EditTbaAuthKeyDialog.svelte";
+  import EditTeamSettingDialog from "$lib/dialogs/EditTeamSettingDialog.svelte";
   import { modes, modeStore, targets, targetStore, tbaAuthKeyStore } from "$lib/settings";
-  import EditTbaAuthKeyDialog from "./EditTbaAuthKeyDialog.svelte";
-  import EditTeamSettingDialog from "./EditTeamSettingDialog.svelte";
 </script>
 
 <Header backLink="">

@@ -1,16 +1,16 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
-  import AboutPage from "./about/AboutPage.svelte";
-  import EntryPage from "./entry/EntryPage.svelte";
-  import MainPage from "./main/MainPage.svelte";
-  import SettingsPage from "./settings/SettingsPage.svelte";
-  import SurveyAnalysisPage from "./survey/analysis/SurveyAnalysisPage.svelte";
-  import SurveyEntriesPage from "./survey/entries/SurveyEntriesPage.svelte";
-  import SurveyFieldsPage from "./survey/fields/SurveyFieldsPage.svelte";
-  import SurveyMatchesPage from "./survey/matches/SurveyMatchesPage.svelte";
-  import SurveyOptionsPage from "./survey/options/SurveyOptionsPage.svelte";
-  import SurveyPage from "./survey/SurveyPage.svelte";
-  import SurveyTeamsPage from "./survey/teams/SurveyTeamsPage.svelte";
+  import AboutPage from "$lib/pages/AboutPage.svelte";
+  import EntryPage from "$lib/pages/EntryPage.svelte";
+  import MainPage from "$lib/pages/MainPage.svelte";
+  import SettingsPage from "$lib/pages/SettingsPage.svelte";
+  import SurveyAnalysisPage from "$lib/pages/SurveyAnalysisPage.svelte";
+  import SurveyEntriesPage from "$lib/pages/SurveyEntriesPage.svelte";
+  import SurveyFieldsPage from "$lib/pages/SurveyFieldsPage.svelte";
+  import SurveyMatchesPage from "$lib/pages/SurveyMatchesPage.svelte";
+  import SurveyOptionsPage from "$lib/pages/SurveyOptionsPage.svelte";
+  import SurveyPage from "$lib/pages/SurveyPage.svelte";
+  import SurveyTeamsPage from "$lib/pages/SurveyTeamsPage.svelte";
 
   let {
     idb,
