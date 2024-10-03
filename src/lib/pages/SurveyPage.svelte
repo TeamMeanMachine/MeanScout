@@ -48,13 +48,13 @@
     <h2 class="font-bold">Drafts</h2>
     {#each draftEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as draft (draft.id)}
       <Anchor route="entry/{draft.id}">
-        <Icon name="arrow-right" />
-        <div class="flex flex-col">
+        <div class="flex grow flex-col">
           <span><small>Team</small> {draft.team}</span>
           {#if draft.type == "match"}
             <span><small>Match</small> {draft.match}</span>
           {/if}
         </div>
+        <Icon name="arrow-right" />
       </Anchor>
     {/each}
   </div>
@@ -65,47 +65,51 @@
 
   <Anchor route="survey/{surveyRecord.id}/entries">
     <Icon name="list-ol" />
-    <div class="flex flex-col">
+    <div class="flex grow flex-col">
       Entries
       <small>{entryRecords.length - draftEntries.length} completed</small>
     </div>
+    <Icon name="arrow-right" />
   </Anchor>
 
   {#if surveyRecord.type == "match"}
     <Anchor route="survey/{surveyRecord.id}/analysis">
       <Icon name="chart-simple" />
-      <div class="flex flex-col">
+      <div class="flex grow flex-col">
         Analysis
         <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
       </div>
+      <Icon name="arrow-right" />
     </Anchor>
 
     <Anchor route="survey/{surveyRecord.id}/matches">
       <Icon name="table-list" />
-      <div class="flex flex-col">
+      <div class="flex grow flex-col">
         Matches
         <small>{surveyRecord.matches.length} total</small>
       </div>
+      <Icon name="arrow-right" />
     </Anchor>
   {/if}
 
   <Anchor route="survey/{surveyRecord.id}/teams">
     <Icon name="people-group" />
-    <div class="flex flex-col">
+    <div class="flex grow flex-col">
       Teams
       <small>
         {#if surveyRecord.type == "match"}
           {getTeamsFromAllMatches().length} from matches,
         {/if}
-        {surveyRecord.teams.length} added
+        {surveyRecord.teams.length} custom
       </small>
     </div>
+    <Icon name="arrow-right" />
   </Anchor>
 
   {#if $modeStore == "admin"}
     <Anchor route="survey/{surveyRecord.id}/fields">
       <Icon name="list-check" />
-      <div class="flex flex-col">
+      <div class="flex grow flex-col">
         Fields
         <small>
           {#if surveyRecord.expressions.length == 0 && surveyRecord.pickLists.length == 0 && entryRecords.length == 0}
@@ -114,14 +118,16 @@
           Preview
         </small>
       </div>
+      <Icon name="arrow-right" />
     </Anchor>
 
     <Anchor route="survey/{surveyRecord.id}/options">
       <Icon name="gears" />
-      <div class="flex flex-col">
+      <div class="flex grow flex-col">
         Options
         <small>Export, TBA event</small>
       </div>
+      <Icon name="arrow-right" />
     </Anchor>
   {/if}
 </div>

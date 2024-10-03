@@ -2,9 +2,9 @@
   import jsQR from "jsqr";
 
   let {
-    onRead,
+    onread,
   }: {
-    onRead: (data: string) => void;
+    onread: (data: string) => void;
   } = $props();
 
   let reading = $state(false);
@@ -23,7 +23,7 @@
       const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
 
       if (code) {
-        onRead(code.data);
+        onread(code.data);
         stop();
       }
     }

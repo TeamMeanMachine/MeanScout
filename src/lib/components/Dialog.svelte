@@ -31,6 +31,7 @@
   export function open() {
     onopen?.(element);
     element.showModal();
+    element.focus();
   }
 
   export function close() {
@@ -56,16 +57,20 @@
   >
     {@render children()}
     <div class="flex flex-wrap justify-between gap-3">
+      <Button onclick={close}>
+        <Icon name="xmark" />
+        {#if onconfirm}
+          Cancel
+        {:else}
+          Close
+        {/if}
+      </Button>
       {#if onconfirm}
-        <Button type="submit" onclick={onconfirm} classes="flex items-center gap-1">
+        <Button type="submit" onclick={onconfirm}>
           <Icon name="check" />
           Confirm
         </Button>
       {/if}
-      <Button autofocus onclick={close} classes="flex items-center gap-1">
-        <Icon name="xmark" />
-        Close
-      </Button>
     </div>
   </form>
 </dialog>

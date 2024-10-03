@@ -89,7 +89,13 @@
       const surveyRecord = surveyRequest.result;
       if (!surveyRecord) return setMainPage();
 
-      if (subpage == "" || subpage == "entries" || subpage == "analysis" || subpage == "matches") {
+      if (
+        subpage == "" ||
+        subpage == "entries" ||
+        subpage == "analysis" ||
+        subpage == "matches" ||
+        subpage == "teams"
+      ) {
         const entriesRequest = idb
           .transaction("entries")
           .objectStore("entries")

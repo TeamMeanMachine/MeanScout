@@ -4,7 +4,7 @@
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Entry } from "$lib/entry";
-  import { flattenFields, type SingleField } from "$lib/field";
+  import { countPreviousFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntryDialog from "./ExportEntryDialog.svelte";
@@ -12,11 +12,11 @@
   let {
     idb,
     surveyRecord = $bindable(),
-    onexport,
+    onchange,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
-    onexport?: (() => void) | undefined;
+    onchange?: (() => void) | undefined;
   } = $props();
 
   let dialog: Dialog;
@@ -27,10 +27,6 @@
   export function open(entry: IDBRecord<Entry>) {
     entryRecord = structuredClone($state.snapshot(entry));
     dialog?.open();
-  }
-
-  function countPreviousFields(index: number) {
-    return flattenFields(surveyRecord.fields.slice(0, index)).length;
   }
 
   function editEntry() {
@@ -106,7 +102,7 @@
           <tr><td class="p-2"></td></tr>
           {#if entryRecord.type != "match" || !entryRecord.absent}
             {#each surveyRecord.fields as field, i (field)}
-              {@const previousFields = countPreviousFields(i)}
+              {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
               {#if field.type == "group"}
                 <tr><th colspan="2" class="p-2">{field.name}</th></tr>
                 {#each field.fields as innerField, innerFieldIndex (innerField)}
@@ -121,14 +117,22 @@
         </tbody>
       </table>
     </div>
-    <ExportEntryDialog {idb} {surveyRecord} {entryRecord} {onexport} />
+    <ExportEntryDialog {idb} {surveyRecord} {entryRecord} {onchange} />
     {#if entryRecord.type != "match" || !entryRecord.absent}
       <Button onclick={editEntry}>
         <Icon name="pen" />
         Convert to draft and edit
       </Button>
     {/if}
-    <DeleteEntryDialog {idb} bind:surveyRecord {entryRecord} ondelete={() => dialog.close()} />
+    <DeleteEntryDialog
+      {idb}
+      bind:surveyRecord
+      {entryRecord}
+      ondelete={() => {
+        onchange?.();
+        dialog.close();
+      }}
+    />
   {/if}
 
   {#if error}

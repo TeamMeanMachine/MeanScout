@@ -21,7 +21,8 @@
 
   let dialog: Dialog;
 
-  let entryData = $state("");
+  let isExporting = $state(false);
+  let entryCSV = $state("");
   let error = $state("");
 
   function onopen() {
@@ -33,7 +34,7 @@
       }
     }
 
-    entryData = entryAsCSV(entryRecord);
+    entryCSV = entryAsCSV(entryRecord);
   }
 
   function onconfirm() {
@@ -43,7 +44,7 @@
 
     let submittedEntry: Entry = {
       ...$state.snapshot(entryRecord),
-      status: "submitted",
+      status: isExporting ? "exported" : "submitted",
       modified: new Date(),
     };
 
@@ -59,7 +60,8 @@
   }
 
   function onclose() {
-    entryData = "";
+    isExporting = false;
+    entryCSV = "";
     error = "";
   }
 </script>
@@ -70,13 +72,24 @@
 </Button>
 
 <Dialog bind:this={dialog} {onopen} {onconfirm} {onclose}>
-  <span>Share this entry:</span>
-
-  {#if entryData}
-    <QRCodeDisplay data={entryData} />
+  <span>
+    Submit
+    {#if isExporting}
+    and export
+    {/if}
+  </span>
+  <Button onclick={() => (isExporting = !isExporting)}>
+    {#if isExporting}
+      <Icon name="xmark" />
+      Don't export
+    {:else}
+      <Icon name="share-from-square" />
+      Export
+    {/if}
+  </Button>
+  {#if isExporting && entryCSV}
+    <QRCodeDisplay data={entryCSV} />
   {/if}
-
-  <span>Submit entry?</span>
   {#if error}
     <span>{error}</span>
   {/if}

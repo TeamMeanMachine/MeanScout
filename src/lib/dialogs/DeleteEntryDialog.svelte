@@ -30,6 +30,7 @@
     deleteRequest.onsuccess = () => {
       surveyRecord.modified = new Date();
       ondelete?.();
+      dialog.close();
     };
   }
 

@@ -19,6 +19,13 @@ export const matchSchema = z.object({
 });
 export type Match = z.infer<typeof matchSchema>;
 
+export type TeamInfo = {
+  team: string;
+  entryCount: number;
+  matchCount: number;
+  isCustom: boolean;
+};
+
 export type EntryFilters = {
   team: string | undefined;
   match: number | undefined;

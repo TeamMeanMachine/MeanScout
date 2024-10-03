@@ -130,6 +130,7 @@
 
     entriesRequest.onsuccess = () => {
       if (!entriesRequest.result) {
+        location.reload();
         return;
       }
 
@@ -162,7 +163,7 @@
 </div>
 
 <div class="flex flex-col gap-2 p-3">
-  <ViewEntryDialog {idb} bind:this={viewEntryDialog} bind:surveyRecord onexport={refresh} />
+  <ViewEntryDialog {idb} bind:this={viewEntryDialog} bind:surveyRecord onchange={refresh} />
   <h2 class="font-bold">Entries</h2>
   <FilterEntriesDialog {surveyRecord} {entryRecords} bind:filters {filterDetails} />
   <span class="mt-2">

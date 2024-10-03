@@ -11,12 +11,12 @@
     idb,
     surveyRecord,
     entryRecord,
-    onexport,
+    onchange,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
-    onexport?: (() => void) | undefined;
+    onchange?: (() => void) | undefined;
   } = $props();
 
   const exportFileName = createEntryFileName(surveyRecord, entryRecord);
@@ -57,7 +57,7 @@
     };
 
     request.onsuccess = () => {
-      onexport?.();
+      onchange?.();
       dialog.close();
     };
   }

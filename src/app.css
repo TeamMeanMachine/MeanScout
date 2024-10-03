@@ -38,4 +38,9 @@
   ::selection {
     @apply bg-theme text-white;
   }
+
+  dialog:focus,
+  dialog:hover {
+    @apply outline-none;
+  }
 }

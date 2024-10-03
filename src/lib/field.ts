@@ -101,6 +101,10 @@ export function flattenFields(fields: Field[]) {
   return fields.flatMap((field) => (field.type == "group" ? field.fields : field));
 }
 
+export function countPreviousFields(index: number, fields: Field[]) {
+  return flattenFields(fields.slice(0, index)).length;
+}
+
 export function getDetailedFieldName(fields: Field[], flattenedFieldIndex: number) {
   let flattenedFieldCount = 0;
   for (const field of fields) {

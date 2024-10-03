@@ -23,8 +23,8 @@
     <h2 class="font-bold">Surveys</h2>
     {#each surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
+        <div class="grow">{survey.name}</div>
         <Icon name="arrow-right" />
-        <div class="flex flex-col">{survey.name}</div>
       </Anchor>
     {/each}
   </div>
@@ -38,16 +38,18 @@
   {/if}
   <Anchor route="settings">
     <Icon name="gears" />
-    <div class="flex flex-col">
+    <div class="flex grow flex-col">
       Settings
       <small>Mode, Target, TBA setup</small>
     </div>
+    <Icon name="arrow-right" />
   </Anchor>
   <Anchor route="about">
     <Icon name="info-circle" />
-    <div class="flex flex-col">
+    <div class="flex grow flex-col">
       About
       <small>Guides, Info</small>
     </div>
+    <Icon name="arrow-right" />
   </Anchor>
 </div>

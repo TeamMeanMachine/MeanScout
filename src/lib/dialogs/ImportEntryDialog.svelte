@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { parseValueFromString } from "$lib";
+  import { parseValueFromString, type Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import type { Entry } from "$lib/entry";
+  import { countPreviousFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -20,20 +21,15 @@
   let dialog: Dialog;
   let qrCodeReader: QRCodeReader;
 
-  let qrCodeData = $state<string | undefined>();
+  let importedEntry = $state<Entry | undefined>();
   let error = $state("");
 
   function onopen() {
     qrCodeReader.start();
   }
 
-  function onconfirm() {
-    if (!qrCodeData) {
-      error = "No input";
-      return;
-    }
-
-    const entryCSV = qrCodeData
+  function onread(data: string) {
+    const entryCSV = data
       .trim()
       .split(",")
       .map((value) => value.trim());
@@ -47,9 +43,8 @@
       return;
     }
 
-    let entry: Entry;
     if (surveyRecord.type == "match") {
-      entry = {
+      importedEntry = {
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "exported",
@@ -61,7 +56,7 @@
         modified: new Date(),
       };
     } else {
-      entry = {
+      importedEntry = {
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "exported",
@@ -71,16 +66,34 @@
         modified: new Date(),
       };
     }
+  }
 
-    const addRequest = idb.transaction("entries", "readwrite").objectStore("entries").add(entry);
+  function retry() {
+    importedEntry = undefined;
+    error = "";
+    qrCodeReader.stop();
+    qrCodeReader.start();
+  }
+
+  function onconfirm() {
+    if (!importedEntry) {
+      error = "No input";
+      return;
+    }
+
+    const addRequest = idb
+      .transaction("entries", "readwrite")
+      .objectStore("entries")
+      .add($state.snapshot(importedEntry));
+
     addRequest.onsuccess = () => {
       const id = addRequest.result;
-      if (!id) {
+      if (!id || !importedEntry) {
         error = "Could not add entry!";
         return;
       }
 
-      entryRecords = [{ ...entry, id: id as number }, ...entryRecords];
+      entryRecords = [{ ...importedEntry, id: id as number }, ...entryRecords];
       dialog.close();
     };
 
@@ -92,7 +105,7 @@
 
   function onclose() {
     qrCodeReader.stop();
-    qrCodeData = "";
+    importedEntry = undefined;
     error = "";
   }
 </script>
@@ -105,17 +118,69 @@
   </div>
 </Button>
 
+{#snippet fieldRow(field: SingleField, value: Value)}
+  {#if field.type == "text"}
+    <tr>
+      <td colspan="2" class="p-2">
+        <div class="flex flex-col">
+          <small>{field.name}</small>
+          <strong>"{value}"</strong>
+        </div>
+      </td>
+    </tr>
+  {:else}
+    <tr>
+      <td class="p-2 text-sm">{field.name}</td>
+      <td class="p-2 font-bold">{value}</td>
+    </tr>
+  {/if}
+{/snippet}
+
 <Dialog bind:this={dialog} {onconfirm} {onopen} {onclose}>
   <span>Import from QR code</span>
-  <QRCodeReader
-    bind:this={qrCodeReader}
-    onRead={(data) => {
-      qrCodeData = data;
-    }}
-  />
-  {#if qrCodeData}
-    <span>{qrCodeData}</span>
+  <QRCodeReader bind:this={qrCodeReader} {onread} />
+  {#if importedEntry}
+    <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+      <table class="w-full text-left">
+        <tbody>
+          <tr><th colspan="2" class="p-2">Entry</th></tr>
+          <tr>
+            <td class="w-0 p-2 text-sm">Team</td>
+            <td class="p-2 font-bold">{importedEntry.team}</td>
+          </tr>
+          {#if importedEntry.type == "match"}
+            <tr>
+              <td class="p-2 text-sm">Match</td>
+              <td class="p-2 font-bold">{importedEntry.match}</td>
+            </tr>
+            <tr>
+              <td class="p-2 text-sm">Absent</td>
+              <td class="p-2 font-bold">{importedEntry.absent}</td>
+            </tr>
+          {/if}
+          <tr><td class="p-2"></td></tr>
+          {#if importedEntry.type != "match" || !importedEntry.absent}
+            {#each surveyRecord.fields as field, i (field)}
+              {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
+              {#if field.type == "group"}
+                <tr><th colspan="2" class="p-2">{field.name}</th></tr>
+                {#each field.fields as innerField, innerFieldIndex (innerField)}
+                  {@render fieldRow(innerField, importedEntry.values[previousFields + innerFieldIndex])}
+                {/each}
+                <tr><td class="p-2"></td></tr>
+              {:else}
+                {@render fieldRow(field, importedEntry.values[previousFields])}
+              {/if}
+            {/each}
+          {/if}
+        </tbody>
+      </table>
+    </div>
   {/if}
+  <Button onclick={retry}>
+    <Icon name="arrow-rotate-left" />
+    Retry
+  </Button>
   {#if error}
     <span>{error}</span>
   {/if}

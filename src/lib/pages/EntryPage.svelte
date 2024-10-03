@@ -4,7 +4,7 @@
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
-  import { flattenFields } from "$lib/field";
+  import { countPreviousFields } from "$lib/field";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -16,10 +16,6 @@
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
   } = $props();
-
-  function countPreviousFields(index: number) {
-    return flattenFields(surveyRecord.fields.slice(0, index)).length;
-  }
 
   function onchange() {
     entryRecord.modified = new Date();
@@ -42,7 +38,7 @@
 
   <div class="flex flex-col flex-wrap gap-3">
     {#each surveyRecord.fields as field, i (field)}
-      {@const previousFields = countPreviousFields(i)}
+      {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
       {#if field.type == "group"}
         <div class="flex w-full flex-col gap-1">
           <h2 class="font-bold">{field.name}</h2>

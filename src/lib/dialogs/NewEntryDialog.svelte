@@ -205,7 +205,14 @@
   <Icon name="plus" />
   <div class="flex flex-col">
     New entry
-    <small>Team {prefilledTeam}, Match {prefilledMatch}</small>
+    <small>
+      {#if prefilledTeam.length}
+        Team {prefilledTeam},
+      {/if}
+      {#if surveyRecord.type == "match" && prefilledMatch}
+        Match {prefilledMatch}
+      {/if}
+    </small>
   </div>
 </Button>
 
