@@ -75,7 +75,7 @@
   <span>
     Submit
     {#if isExporting}
-    and export
+      and export
     {/if}
   </span>
   <Button onclick={() => (isExporting = !isExporting)}>

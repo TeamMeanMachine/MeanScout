@@ -108,19 +108,44 @@
           New pick list
           {#if isSelecting}
             <small>From selected expressions</small>
+          {:else}
+            <small>From scratch</small>
           {/if}
         </div>
       </Button>
     {/if}
 
-    <div class="flex flex-col gap-2">
-      {#each surveyRecord.pickLists as pickList, pickListIndex}
-        <Button onclick={() => viewPickListDialog?.open(pickListIndex)}>
-          <Icon name="list-ol" />
-          {pickList.name}
-        </Button>
-      {/each}
-    </div>
+    <table class="w-full border-separate border-spacing-y-2">
+      <thead class="sticky top-0 bg-neutral-900">
+        <tr>
+          <td class="w-0"></td>
+          <th class="w-0 text-nowrap p-2 text-left">Name</th>
+          <th class="w-0 p-2 text-right">Weights</th>
+          <td></td>
+        </tr>
+      </thead>
+      <tbody>
+        {#each surveyRecord.pickLists as pickList, pickListIndex}
+          <tr
+            tabindex="0"
+            role="button"
+            onclick={() => viewPickListDialog?.open(pickListIndex)}
+            onkeydown={(e) => {
+              if (e.key == " " || e.key == "Enter") {
+                e.preventDefault();
+                viewPickListDialog?.open(pickListIndex);
+              }
+            }}
+            class="button cursor-pointer bg-neutral-800"
+          >
+            <td class="pl-2"><Icon name="list-ol" /></td>
+            <td class="text-nowrap p-2 text-left">{pickList.name}</td>
+            <td class="p-2 text-right">{pickList.weights.length}</td>
+            <td></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   {:else}
     To set up pick lists, first create some expressions.
   {/if}
@@ -150,6 +175,8 @@
           New expression
           {#if isSelecting}
             <small>From selected expressions</small>
+          {:else}
+            <small>From scratch</small>
           {/if}
         </div>
       </Button>
@@ -177,27 +204,54 @@
     </div>
   {/if}
 
-  <div class="flex flex-col gap-2">
-    {#each surveyRecord.expressions as expression, expressionIndex}
-      <div class="flex flex-col gap-2">
-        {#if isSelecting}
-          {@const isSelected = preselectedExpressionNames.includes(expression.name)}
-          <Button onclick={() => toggleSelect(isSelected, expression.name)}>
-            {#if isSelected}
-              <Icon name="square-check" />
-              <strong>{expression.name}</strong>
+  <table class="w-full border-separate border-spacing-y-2">
+    <thead class="sticky top-0 bg-neutral-900">
+      <tr>
+        <td class="w-0"></td>
+        <th class="w-0 p-2 text-left">Name</th>
+        <th class="w-0 p-2 text-right">Inputs</th>
+        <td></td>
+      </tr>
+    </thead>
+    <tbody>
+      {#each surveyRecord.expressions as expression, expressionIndex}
+        {@const isSelected = preselectedExpressionNames.includes(expression.name)}
+        {@const onclick = () => {
+          if (isSelecting) {
+            toggleSelect(isSelected, expression.name);
+          } else {
+            viewExpressionDialog?.open(expressionIndex);
+          }
+        }}
+        <tr
+          tabindex="0"
+          role="button"
+          onclick={() => onclick()}
+          onkeydown={(e) => {
+            if (e.key == " " || e.key == "Enter") {
+              e.preventDefault();
+              onclick();
+            }
+          }}
+          class="button cursor-pointer bg-neutral-800"
+          class:font-bold={isSelected}
+        >
+          <td class="w-0 pl-2">
+            {#if isSelecting}
+              {#if isSelected}
+                <Icon name="square-check" />
+              {:else}
+                <Icon style="regular" name="square" />
+              {/if}
             {:else}
-              <Icon style="regular" name="square" />
-              {expression.name}
+              <Icon name="percent" />
             {/if}
-          </Button>
-        {:else}
-          <Button onclick={() => viewExpressionDialog?.open(expressionIndex)}>
-            <Icon name="percent" />
-            {expression.name}
-          </Button>
-        {/if}
-      </div>
-    {/each}
-  </div>
+          </td>
+          <td class="p-2 text-left">{expression.name}</td>
+          <td class="p-2 text-right">{expression.inputs.length}</td>
+          <td></td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
 </div>

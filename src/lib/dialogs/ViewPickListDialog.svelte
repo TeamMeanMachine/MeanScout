@@ -95,15 +95,13 @@
   {/if}
 
   {#if $modeStore == "admin"}
-    <div class="flex flex-wrap gap-2">
-      <Button onclick={() => upsertPickListDialog?.editPickList(pickListIndex)}>
-        <Icon name="pen" />
-        Edit
-      </Button>
-      <Button onclick={() => deletePickListDialog?.open(pickListIndex)}>
-        <Icon name="trash" />
-        Delete
-      </Button>
-    </div>
+    <Button onclick={() => upsertPickListDialog?.editPickList(pickListIndex)}>
+      <Icon name="pen" />
+      Edit
+    </Button>
+    <Button onclick={() => deletePickListDialog?.open(pickListIndex)}>
+      <Icon name="trash" />
+      Delete
+    </Button>
   {/if}
 </Dialog>

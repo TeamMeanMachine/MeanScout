@@ -83,7 +83,6 @@
   {/if}
 
   {#if $modeStore == "admin"}
-    <div class="flex flex-wrap gap-2">
       <Button onclick={() => upsertExpressionDialog?.editExpression(expressionIndex)}>
         <Icon name="pen" />
         Edit
@@ -99,6 +98,5 @@
           Delete
         </Button>
       {/if}
-    </div>
   {/if}
 </Dialog>
