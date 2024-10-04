@@ -13,23 +13,27 @@
   } = $props();
 </script>
 
-<header class="flex min-h-[70px] flex-wrap items-center justify-between gap-3 p-3">
-  <div class="flex flex-wrap items-center gap-3">
-    {#if backLink === undefined}
-      <img src="./logo.svg" alt="" width="25" height="25" />
+<header class="flex min-h-[70px] items-center gap-3 p-3">
+  {#if backLink === undefined}
+    <img src="./logo.svg" alt="" width="25" height="25" />
+  {:else}
+    <Anchor route={backLink}>
+      <Icon name="arrow-left" />
+    </Anchor>
+  {/if}
+
+  <div class="flex grow flex-col">
+    {#if children}
+      {@render children()}
     {:else}
-      <Anchor route={backLink}>
-        <Icon name="arrow-left" />
-      </Anchor>
+      <h1 class="font-bold">MeanScout</h1>
     {/if}
-    <div class="flex flex-col">
-      {#if children}
-        {@render children()}
-      {:else}
-        <h1 class="font-bold">MeanScout</h1>
-      {/if}
-    </div>
   </div>
 
-  <small class="capitalize text-theme">{$modeStore == "admin" ? "Admin" : $targetStore}</small>
+  <div class="flex flex-col text-right">
+    {#if $modeStore == "admin"}
+      <small>Admin</small>
+    {/if}
+    <small class="font-bold capitalize text-theme">{$targetStore}</small>
+  </div>
 </header>
