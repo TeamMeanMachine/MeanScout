@@ -2,7 +2,8 @@
   import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import type { Entry, MatchEntry } from "$lib/entry";
+  import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
+  import { entryAsCSV, type Entry } from "$lib/entry";
   import { flattenFields, getDefaultFieldValue } from "$lib/field";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -31,21 +32,32 @@
 
   let suggestedTeams = $derived(getSuggestedTeams(match));
 
+  let isExporting = $state(false);
+
+  let entryCSV = $derived(
+    entryAsCSV({
+      surveyId: surveyRecord.id,
+      type: surveyRecord.type,
+      status: "submitted",
+      team,
+      match,
+      absent: true,
+      values: [],
+      created: new Date(),
+      modified: new Date(),
+    }),
+  );
+
   function onopen() {
     match = prefilledMatch;
     team = prefilledTeam;
   }
 
   function getPrefilledMatch() {
-    return (
-      1 +
-      Math.max(
-        ...entryRecords
-          .filter((entry): entry is IDBRecord<MatchEntry> => entry.type == "match")
-          .map((entry) => entry.match),
-        0,
-      )
-    );
+    if (surveyRecord.type != "match") return 1;
+
+    const recordedMatches = entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+    return 1 + Math.max(...recordedMatches, 0);
   }
 
   function getPrefilledTeam(matchValue: number) {
@@ -156,7 +168,7 @@
       entry = {
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
-        status: absent ? "submitted" : "draft",
+        status: absent ? (isExporting ? "exported" : "submitted") : "draft",
         team: $state.snapshot(team),
         match: $state.snapshot(match),
         absent: $state.snapshot(absent),
@@ -198,6 +210,7 @@
     match = 0;
     absent = false;
     error = "";
+    isExporting = false;
   }
 </script>
 
@@ -218,7 +231,6 @@
 
 <Dialog bind:this={dialog} {onopen} {onconfirm} {onclose}>
   <span>New entry</span>
-
   <datalist id="teams-list">
     {#each suggestedTeams as team}
       <option value={team}></option>
@@ -228,13 +240,17 @@
     Team
     <input list="teams-list" bind:value={team} class="bg-neutral-800 p-2 text-theme" />
   </label>
-
   {#if surveyRecord.type == "match"}
     <label class="flex flex-col">
       Match
       <input type="number" bind:value={match} class="bg-neutral-800 p-2 text-theme" />
     </label>
-    <Button onclick={() => (absent = !absent)}>
+    <Button
+      onclick={() => {
+        absent = !absent;
+        isExporting = false;
+      }}
+    >
       {#if absent}
         <Icon name="square-check" />
       {:else}
@@ -242,8 +258,23 @@
       {/if}
       Absent
     </Button>
+    {#if absent}
+      <Button onclick={() => (isExporting = !isExporting)}>
+        {#if isExporting}
+          <Icon name="xmark" />
+          Don't export
+        {:else}
+          <Icon name="share-from-square" />
+          Export
+        {/if}
+      </Button>
+      {#if isExporting}
+        {#key entryCSV}
+          <QRCodeDisplay data={entryCSV} />
+        {/key}
+      {/if}
+    {/if}
   {/if}
-
   {#if error}
     <span>Error: {error}</span>
   {/if}

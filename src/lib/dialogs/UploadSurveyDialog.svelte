@@ -49,7 +49,7 @@
   async function onconfirm() {
     if (!survey) return;
 
-    const addRequest = idb.transaction("surveys", "readwrite").objectStore("surveys").add(survey);
+    const addRequest = idb.transaction("surveys", "readwrite").objectStore("surveys").add($state.snapshot(survey));
     addRequest.onerror = () => {
       error = `Could not upload survey: ${addRequest.error?.message}`;
     };

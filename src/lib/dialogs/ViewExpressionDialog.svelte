@@ -83,20 +83,20 @@
   {/if}
 
   {#if $modeStore == "admin"}
-      <Button onclick={() => upsertExpressionDialog?.editExpression(expressionIndex)}>
-        <Icon name="pen" />
-        Edit
+    <Button onclick={() => upsertExpressionDialog?.editExpression(expressionIndex)}>
+      <Icon name="pen" />
+      Edit
+    </Button>
+    {#if !usedExpressionNames?.includes(expression.name)}
+      <Button
+        onclick={() => {
+          surveyRecord.expressions = surveyRecord.expressions.toSpliced(expressionIndex, 1);
+          dialog.close();
+        }}
+      >
+        <Icon name="trash" />
+        Delete
       </Button>
-      {#if !usedExpressionNames?.includes(expression.name)}
-        <Button
-          onclick={() => {
-            surveyRecord.expressions = surveyRecord.expressions.toSpliced(expressionIndex, 1);
-            dialog.close();
-          }}
-        >
-          <Icon name="trash" />
-          Delete
-        </Button>
-      {/if}
+    {/if}
   {/if}
 </Dialog>
