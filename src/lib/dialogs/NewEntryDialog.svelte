@@ -20,6 +20,15 @@
 
   const flattenedFields = flattenFields(surveyRecord.fields);
 
+  const defaultValues = flattenedFields.map((field) => {
+    switch (field.type) {
+      case "select":
+        return field.values[0];
+      default:
+        return getDefaultFieldValue(field);
+    }
+  });
+
   let dialog: Dialog;
 
   let prefilledMatch = $state(getPrefilledMatch());
@@ -33,20 +42,6 @@
   let suggestedTeams = $derived(getSuggestedTeams(match));
 
   let isExporting = $state(false);
-
-  let entryCSV = $derived(
-    entryAsCSV({
-      surveyId: surveyRecord.id,
-      type: surveyRecord.type,
-      status: "submitted",
-      team,
-      match,
-      absent: true,
-      values: [],
-      created: new Date(),
-      modified: new Date(),
-    }),
-  );
 
   function onopen() {
     match = prefilledMatch;
@@ -154,24 +149,15 @@
       }
     }
 
-    const defaultValues = flattenedFields.map((field) => {
-      switch (field.type) {
-        case "select":
-          return field.values[0];
-        default:
-          return getDefaultFieldValue(field);
-      }
-    });
-
     let entry: Entry;
     if (surveyRecord.type == "match") {
       entry = {
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: absent ? (isExporting ? "exported" : "submitted") : "draft",
-        team: $state.snapshot(team),
-        match: $state.snapshot(match),
-        absent: $state.snapshot(absent),
+        team,
+        match,
+        absent,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
@@ -181,14 +167,14 @@
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "draft",
-        team: $state.snapshot(team),
+        team,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
     }
 
-    const addRequest = idb.transaction("entries", "readwrite").objectStore("entries").add(entry);
+    const addRequest = idb.transaction("entries", "readwrite").objectStore("entries").add($state.snapshot(entry));
     addRequest.onsuccess = () => {
       const id = addRequest.result;
       if (id == undefined) return;
@@ -269,8 +255,19 @@
         {/if}
       </Button>
       {#if isExporting}
-        {#key entryCSV}
-          <QRCodeDisplay data={entryCSV} />
+        {@const absentEntryCSV = entryAsCSV({
+          surveyId: surveyRecord.id,
+          type: surveyRecord.type,
+          status: "submitted",
+          team,
+          match,
+          absent: true,
+          values: defaultValues,
+          created: new Date(),
+          modified: new Date(),
+        })}
+        {#key absentEntryCSV}
+          <QRCodeDisplay data={absentEntryCSV} />
         {/key}
       {/if}
     {/if}

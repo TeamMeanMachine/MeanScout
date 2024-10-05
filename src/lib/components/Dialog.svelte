@@ -31,7 +31,6 @@
   export function open() {
     onopen?.(element);
     element.showModal();
-    element.focus();
   }
 
   export function close() {
