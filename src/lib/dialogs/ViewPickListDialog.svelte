@@ -16,8 +16,8 @@
     entriesByTeam,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    upsertPickListDialog: UpsertPickListDialog | undefined;
-    deletePickListDialog: DeletePickListDialog | undefined;
+    upsertPickListDialog?: UpsertPickListDialog | undefined;
+    deletePickListDialog?: DeletePickListDialog | undefined;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
   } = $props();
 
@@ -94,12 +94,12 @@
     </div>
   {/if}
 
-  {#if $modeStore == "admin"}
-    <Button onclick={() => upsertPickListDialog?.editPickList(pickListIndex)}>
+  {#if $modeStore == "admin" && upsertPickListDialog && deletePickListDialog}
+    <Button onclick={() => upsertPickListDialog.editPickList(pickListIndex)}>
       <Icon name="pen" />
       Edit
     </Button>
-    <Button onclick={() => deletePickListDialog?.open(pickListIndex)}>
+    <Button onclick={() => deletePickListDialog.open(pickListIndex)}>
       <Icon name="trash" />
       Delete
     </Button>

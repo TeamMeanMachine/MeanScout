@@ -203,15 +203,12 @@
 <Button onclick={() => dialog.open()}>
   <Icon name="plus" />
   <div class="flex flex-col">
-    New entry
-    <small>
-      {#if prefilledTeam.length}
-        Team {prefilledTeam},
-      {/if}
-      {#if surveyRecord.type == "match" && prefilledMatch}
-        Match {prefilledMatch}
-      {/if}
-    </small>
+    {#if prefilledTeam.length}
+      <span><small>Team</small> {prefilledTeam}</span>
+    {/if}
+    {#if surveyRecord.type == "match" && prefilledMatch}
+      <span><small>Match</small> {prefilledMatch}</span>
+    {/if}
   </div>
 </Button>
 

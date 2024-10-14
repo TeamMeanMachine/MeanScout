@@ -34,6 +34,11 @@
   let current = $state<CurrentPage | undefined>();
 
   $effect(() => {
+    current;
+    window.scrollTo(0, 0);
+  });
+
+  $effect(() => {
     if (current?.page == "survey" || current?.page == "entry") {
       idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(current.props.surveyRecord));
     }

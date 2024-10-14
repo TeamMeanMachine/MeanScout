@@ -20,8 +20,8 @@
     surveyRecord: IDBRecord<MatchSurvey>;
     entryRecords: IDBRecord<MatchEntry>[];
     ranksPerPickList: Record<string, number>[];
-    upsertMatchDialog: UpsertMatchDialog | undefined;
-    deleteMatchDialog: DeleteMatchDialog | undefined;
+    upsertMatchDialog?: UpsertMatchDialog | undefined;
+    deleteMatchDialog?: DeleteMatchDialog | undefined;
   } = $props();
 
   let dialog: Dialog;
@@ -144,12 +144,12 @@
     </table>
   </div>
 
-  {#if $modeStore == "admin"}
-    <Button onclick={() => upsertMatchDialog?.editMatch(match.number)}>
+  {#if $modeStore == "admin" && upsertMatchDialog && deleteMatchDialog}
+    <Button onclick={() => upsertMatchDialog.editMatch(match.number)}>
       <Icon name="pen" />
       Edit
     </Button>
-    <Button onclick={() => deleteMatchDialog?.open(match.number)}>
+    <Button onclick={() => deleteMatchDialog.open(match.number)}>
       <Icon name="trash" />
       Delete
     </Button>
