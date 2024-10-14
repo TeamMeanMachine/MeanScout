@@ -1,35 +1,38 @@
 <script lang="ts">
-  import type { Match } from "$lib";
-  import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { MatchSurvey } from "$lib/survey";
 
   let {
     surveyRecord = $bindable(),
-    match,
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    match: Match;
     ondelete?: (() => void) | undefined;
   } = $props();
 
   let dialog: Dialog;
 
+  let matchNumber = $state<number | undefined>();
+
+  export function open(number: number) {
+    matchNumber = number;
+    dialog.open();
+  }
+
   function onconfirm() {
-    surveyRecord.modified = new Date();
-    surveyRecord.matches = surveyRecord.matches.filter((m) => m.number != match.number);
+    if (matchNumber != undefined) {
+      surveyRecord.modified = new Date();
+      surveyRecord.matches = surveyRecord.matches.filter((m) => m.number != matchNumber);
+    }
     dialog.close();
     ondelete?.();
   }
+
+  function onclose() {
+    matchNumber = undefined;
+  }
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="trash" />
-  Delete
-</Button>
-
-<Dialog bind:this={dialog} {onconfirm}>
-  <span>Delete match {match.number}?</span>
+<Dialog bind:this={dialog} {onconfirm} {onclose}>
+  <span>Delete match {matchNumber}?</span>
 </Dialog>

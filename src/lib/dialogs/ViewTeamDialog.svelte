@@ -21,8 +21,12 @@
   let teamInfo = $state<TeamInfo>({ team: "", entryCount: 0, matchCount: 0, isCustom: false });
   let entries = $state<IDBRecord<Entry>[]>([]);
 
-  export function open(info: TeamInfo) {
-    teamInfo = info;
+  export function open(teamOrInfo: string | TeamInfo) {
+    if (typeof teamOrInfo == "string") {
+      teamInfo.team = teamOrInfo;
+    } else {
+      teamInfo = teamOrInfo;
+    }
     entries = entryRecords.filter(filterEntries).toSorted(sortEntries);
     dialog.open();
   }

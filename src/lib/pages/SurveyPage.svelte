@@ -17,22 +17,9 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let draftEntries = $state(entryRecords.filter((entry) => entry.status == "draft"));
-
-  function getTeamsFromAllMatches() {
-    if (surveyRecord.type != "match") return [];
-
-    let teams = new Set<string>();
-    for (const match of surveyRecord.matches) {
-      teams.add(match.red1);
-      teams.add(match.red2);
-      teams.add(match.red3);
-      teams.add(match.blue1);
-      teams.add(match.blue2);
-      teams.add(match.blue3);
-    }
-    return [...teams];
-  }
+  const drafts = entryRecords
+    .filter((entry) => entry.status == "draft")
+    .toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
 </script>
 
 <Header backLink="">
@@ -43,10 +30,10 @@
   <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
 </div>
 
-{#if draftEntries.length}
+{#if drafts.length}
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Drafts</h2>
-    {#each draftEntries.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as draft (draft.id)}
+    {#each drafts as draft (draft.id)}
       <Anchor route="entry/{draft.id}">
         <div class="flex grow flex-col">
           <span><small>Team</small> {draft.team}</span>
@@ -67,17 +54,28 @@
     <Icon name="list-ol" />
     <div class="flex grow flex-col">
       Entries
-      <small>{entryRecords.length - draftEntries.length} completed</small>
+      <small>{entryRecords.length - drafts.length} completed</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>
 
   {#if surveyRecord.type == "match"}
+    {@const matchesScouted = surveyRecord.matches.filter((match) => {
+      const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+      return entryRecords.find(
+        (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
+      );
+    }).length}
+
     <Anchor route="survey/{surveyRecord.id}/analysis">
       <Icon name="chart-simple" />
       <div class="flex grow flex-col">
         Analysis
-        <small>{surveyRecord.pickLists.length} pick lists, {surveyRecord.expressions.length} expressions</small>
+        <small>
+          {surveyRecord.pickLists.length} pick {surveyRecord.pickLists.length == 1 ? "list" : "lists"},
+          {surveyRecord.expressions.length}
+          {surveyRecord.expressions.length == 1 ? "expression" : "expressions"}
+        </small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
@@ -86,7 +84,12 @@
       <Icon name="table-list" />
       <div class="flex grow flex-col">
         Matches
-        <small>{surveyRecord.matches.length} total</small>
+        <small>
+          {#if matchesScouted > 0}
+            {matchesScouted} scouted,
+          {/if}
+          {surveyRecord.matches.length} total
+        </small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
@@ -98,7 +101,19 @@
       Teams
       <small>
         {#if surveyRecord.type == "match"}
-          {getTeamsFromAllMatches().length} from matches,
+          {@const teamCountFromMatches = [
+            ...new Set(
+              surveyRecord.matches.flatMap((match) => [
+                match.red1,
+                match.red2,
+                match.red3,
+                match.blue1,
+                match.blue2,
+                match.blue3,
+              ]),
+            ),
+          ].length}
+          {teamCountFromMatches} from matches,
         {/if}
         {surveyRecord.teams.length} custom
       </small>

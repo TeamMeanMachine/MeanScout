@@ -1,10 +1,7 @@
 <script lang="ts">
   import type { Match } from "$lib";
-  import Button from "$lib/components/Button.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { MatchSurvey } from "$lib/survey";
-  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
 
   let {
     surveyRecord = $bindable(),
@@ -15,7 +12,7 @@
   let dialog: Dialog;
 
   let error = $state("");
-  let matchNumber = $state<number | undefined>(undefined);
+  let matchNumber = $state<number | undefined>();
   let match = $state<Match>({
     number: 0,
     red1: "",
@@ -48,16 +45,13 @@
   }
 
   export function editMatch(number: number) {
+    const maybeMatch = surveyRecord.matches.find((m) => m.number == number);
+    if (!maybeMatch) {
+      return;
+    }
+
     matchNumber = number;
-    match = structuredClone($state.snapshot(surveyRecord.matches.find((m) => m.number == number))) ?? {
-      number: 0,
-      red1: "",
-      red2: "",
-      red3: "",
-      blue1: "",
-      blue2: "",
-      blue3: "",
-    };
+    match = structuredClone($state.snapshot(maybeMatch));
     dialog.open();
   }
 
@@ -107,6 +101,7 @@
   }
 
   function onclose() {
+    matchNumber = undefined;
     match = {
       number: 0,
       red1: "",
@@ -119,11 +114,6 @@
     error = "";
   }
 </script>
-
-<Button onclick={newMatch}>
-  <Icon name="plus" />
-  New match
-</Button>
 
 <Dialog bind:this={dialog} {onconfirm} {onclose}>
   {#if matchNumber == undefined}
@@ -166,9 +156,6 @@
     </label>
   </div>
 
-  {#if matchNumber != undefined}
-    <DeleteMatchDialog bind:surveyRecord {match} ondelete={() => dialog.close()} />
-  {/if}
   {#if error}
     <span>Error: {error}</span>
   {/if}
