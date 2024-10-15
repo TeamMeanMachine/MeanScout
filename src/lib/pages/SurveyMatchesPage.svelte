@@ -144,14 +144,7 @@
   <h1 class="font-bold">Matches</h1>
 </Header>
 
-<ViewMatchDialog
-  bind:this={viewMatchDialog}
-  bind:surveyRecord
-  {entryRecords}
-  {ranksPerPickList}
-  {upsertMatchDialog}
-  {deleteMatchDialog}
-/>
+<ViewMatchDialog bind:this={viewMatchDialog} bind:surveyRecord {entryRecords} {upsertMatchDialog} {deleteMatchDialog} />
 <UpsertMatchDialog bind:this={upsertMatchDialog} bind:surveyRecord />
 <DeleteMatchDialog bind:this={deleteMatchDialog} bind:surveyRecord ondelete={() => viewMatchDialog?.close()} />
 

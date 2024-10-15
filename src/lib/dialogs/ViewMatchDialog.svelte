@@ -13,13 +13,11 @@
   let {
     surveyRecord = $bindable(),
     entryRecords,
-    ranksPerPickList,
     upsertMatchDialog,
     deleteMatchDialog,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     entryRecords: IDBRecord<MatchEntry>[];
-    ranksPerPickList: Record<string, number>[];
     upsertMatchDialog?: UpsertMatchDialog | undefined;
     deleteMatchDialog?: DeleteMatchDialog | undefined;
   } = $props();
@@ -124,7 +122,7 @@
       <thead class="text-nowrap">
         <tr>
           <th class="w-0 p-2">Team</th>
-          {#if ranksPerPickList.length}
+          {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
             {#each surveyRecord.pickLists as pickList}
               <th class="w-0 p-2">{pickList.name}</th>
             {/each}
