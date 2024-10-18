@@ -3,7 +3,7 @@ import { type Field, fieldTypes, flattenFields } from "./field";
 
 function migrateEntries(entryStore: IDBStore<Entry>, surveyId: number, flattenedFields: any[]) {
   const entryCursorRequest = entryStore.index("surveyId").openCursor(surveyId);
-  entryCursorRequest.onerror = () => {};
+  entryCursorRequest.onerror = () => { };
 
   entryCursorRequest.onsuccess = () => {
     const entryCursor = entryCursorRequest.result;
@@ -69,8 +69,6 @@ function migrateSurveys(transaction: IDBTransaction) {
   const entryStore = transaction.objectStore("entries");
 
   const surveyCursorRequest = surveyStore.openCursor();
-  surveyCursorRequest.onerror = () => {};
-
   surveyCursorRequest.onsuccess = () => {
     const surveyCursor = surveyCursorRequest.result;
     if (!surveyCursor) return;
@@ -89,12 +87,14 @@ function migrateSurveys(transaction: IDBTransaction) {
 
     survey.fields = migrateFields(survey.fields);
 
-    if (!survey.expressions) {
-      survey.expressions = [];
-    }
+    if (survey.type == "match") {
+      if (!survey.expressions) {
+        survey.expressions = [];
+      }
 
-    if (!survey.pickLists) {
-      survey.pickLists = [];
+      if (!survey.pickLists) {
+        survey.pickLists = [];
+      }
     }
 
     surveyCursor.update(survey);

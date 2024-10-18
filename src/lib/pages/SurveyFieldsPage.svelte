@@ -17,7 +17,9 @@
     entryCount: number;
   } = $props();
 
-  const disabled = surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0 || entryCount > 0;
+  const disabled =
+    entryCount > 0 ||
+    (surveyRecord.type == "match" && (surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0));
 
   let preview = $state(disabled);
 

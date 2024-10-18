@@ -24,7 +24,7 @@
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
   const entriesByTeam = getEntriesByTeam();
-  const ranksPerPickList = surveyRecord.pickLists.map(createTeamRanking);
+  const ranksPerPickList = surveyRecord.type == "match" ? surveyRecord.pickLists.map(createTeamRanking) : [];
 
   let sortBy = $state<"team" | number | "done">("team");
 
@@ -73,6 +73,10 @@
   }
 
   function createTeamRanking(pickList: PickList) {
+    if (surveyRecord.type != "match") {
+      return {};
+    }
+    
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
       pickListData[team] = 0;
@@ -177,7 +181,7 @@
     <div class="flex flex-col">
       <span class="mt-2">
         Sorting by
-        {#if typeof sortBy == "number"}
+        {#if surveyRecord.type == "match" && typeof sortBy == "number"}
           {surveyRecord.pickLists[sortBy].name}
         {:else}
           {sortBy}
@@ -194,7 +198,7 @@
                 Team
               </Button>
             </th>
-            {#if ranksPerPickList.length}
+            {#if ranksPerPickList.length && surveyRecord.type == "match"}
               {#each surveyRecord.pickLists as pickList, i}
                 {@const font = sortBy == i ? "font-bold" : "font-light"}
                 <th class="w-0 p-2 px-1">

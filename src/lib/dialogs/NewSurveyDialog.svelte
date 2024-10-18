@@ -42,8 +42,6 @@
         type,
         fields: [],
         teams: [],
-        expressions: [],
-        pickLists: [],
         created: new Date(),
         modified: new Date(),
       };

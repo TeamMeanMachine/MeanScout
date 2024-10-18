@@ -49,6 +49,10 @@
     const ranksPerPickList = surveyRecord.pickLists.map((pickList) => {
       const pickListData = pickList.weights.reduce(
         (acc, weight) => {
+          if (surveyRecord.type != "match") {
+            return acc;
+          }
+
           const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam);
           const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
           for (const team in normalizedTeamData) {
@@ -284,6 +288,10 @@
 </div>
 
 {#if $modeStore == "admin"}
+  {@const shouldHideConfigureText =
+    entryRecords.length > 0 ||
+    (surveyRecord.type == "match" && (surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0))}
+
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Admin</h2>
 
@@ -292,7 +300,7 @@
       <div class="flex grow flex-col">
         Fields
         <small>
-          {#if surveyRecord.expressions.length == 0 && surveyRecord.pickLists.length == 0 && entryRecords.length == 0}
+          {#if !shouldHideConfigureText}
             Configure,
           {/if}
           Preview

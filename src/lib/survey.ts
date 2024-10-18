@@ -11,8 +11,6 @@ const baseSurveySchema = z.object({
   tbaEventKey: z.optional(z.string()),
   fields: z.array(fieldSchema),
   teams: z.array(z.coerce.string()),
-  expressions: z.array(expressionSchema),
-  pickLists: z.array(pickListSchema),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });
@@ -21,6 +19,8 @@ const matchSurveySchema = baseSurveySchema.merge(
   z.object({
     type: z.literal("match"),
     matches: z.array(matchSchema),
+    expressions: z.array(expressionSchema),
+    pickLists: z.array(pickListSchema),
   }),
 );
 export type MatchSurvey = z.infer<typeof matchSurveySchema>;
