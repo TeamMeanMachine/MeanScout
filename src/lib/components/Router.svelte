@@ -12,6 +12,7 @@
   import SurveyPage from "$lib/pages/SurveyPage.svelte";
   import SurveyTeamsPage from "$lib/pages/SurveyTeamsPage.svelte";
   import type { Survey } from "$lib/survey";
+  import { z } from "zod";
 
   let {
     idb,
@@ -19,11 +20,12 @@
     idb: IDBDatabase;
   } = $props();
 
+  const idbIdSchema = z.coerce.number().int().positive();
+  const pageSchema = z.enum(["", "settings", "about", "survey", "entry"]).default("");
+  const surveyPageSchema = z.enum(["", "entries", "analysis", "matches", "teams", "fields", "options"]).default("");
+
   let target: HTMLDivElement;
   let currentPage: Record<string, any>;
-
-  onMount(handleHashChange);
-  onhashchange = handleHashChange;
 
   let surveyRecord = $state<any>();
   let entryRecord = $state<any>();
@@ -40,88 +42,109 @@
     }
   });
 
+  onMount(handleHashChange);
+  onhashchange = handleHashChange;
+
   function handleHashChange() {
     surveyRecord = undefined;
     entryRecord = undefined;
 
     const hash = location.hash.replace(/#\/?/, "").toLowerCase().trim().split("/");
-    const page =
-      hash[0] == "" || hash[0] == "settings" || hash[0] == "about" || hash[0] == "survey" || hash[0] == "entry"
-        ? hash[0]
-        : "";
 
-    if (page == "") {
+    const { success, data: page } = pageSchema.safeParse(hash[0]);
+
+    if (!success || page == "") {
       getMainPage();
-    } else if (page == "settings") {
+      return;
+    }
+
+    if (page == "settings") {
       clearPage();
       currentPage = mount(SettingsPage, { target });
-    } else if (page == "about") {
+      document.title = "Settings - MeanScout";
+      return;
+    }
+
+    if (page == "about") {
       clearPage();
       currentPage = mount(AboutPage, { target });
-    } else if (page == "survey") {
-      const id = Number(hash[1]);
-      if (Number.isNaN(id)) return getMainPage();
+      document.title = "About - MeanScout";
+      return;
+    }
 
-      const transaction = idb.transaction(["surveys", "entries"]);
-      transaction.onabort = () => getMainPage();
+    if (page == "survey") {
+      const { success, data: surveyId } = idbIdSchema.safeParse(hash[1]);
+      if (!success) {
+        getMainPage();
+        return;
+      }
 
-      const surveyRequest = transaction.objectStore("surveys").get(id);
-      surveyRequest.onsuccess = () => {
-        surveyRecord = surveyRequest.result;
+      getSurveyPageData(surveyId, (entryRecords) => {
+        clearPage();
 
-        const entriesRequest = transaction.objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-        entriesRequest.onsuccess = () => {
-          let entryRecords = entriesRequest.result;
+        const { success, data: surveyPage } = surveyPageSchema.safeParse(hash[2]);
 
-          const subpage =
-            hash[2] == "" ||
-            hash[2] == "entries" ||
-            hash[2] == "analysis" ||
-            hash[2] == "matches" ||
-            hash[2] == "teams" ||
-            hash[2] == "fields" ||
-            hash[2] == "options"
-              ? hash[2]
-              : "";
+        if (!success || surveyPage == "") {
+          currentPage = mount(SurveyPage, { target, props: { idb, surveyRecord, entryRecords } });
+          document.title = `${surveyRecord.name} - MeanScout`;
+          return;
+        }
 
-          clearPage();
-          if (subpage == "") {
-            currentPage = mount(SurveyPage, { target, props: { idb, surveyRecord, entryRecords } });
-          } else if (subpage == "entries") {
-            currentPage = mount(SurveyEntriesPage, { target, props: { idb, surveyRecord, entryRecords } });
-          } else if (subpage == "analysis") {
-            currentPage = mount(SurveyAnalysisPage, { target, props: { idb, surveyRecord, entryRecords } });
-          } else if (subpage == "matches") {
-            currentPage = mount(SurveyMatchesPage, { target, props: { idb, surveyRecord, entryRecords } });
-          } else if (subpage == "teams") {
-            currentPage = mount(SurveyTeamsPage, { target, props: { idb, surveyRecord, entryRecords } });
-          } else if (subpage == "fields") {
-            const entryCount = entryRecords.length;
-            currentPage = mount(SurveyFieldsPage, { target, props: { idb, surveyRecord, entryCount } });
-          } else if (subpage == "options") {
-            currentPage = mount(SurveyOptionsPage, { target, props: { idb, surveyRecord } });
-          }
-        };
-      };
-    } else if (page == "entry") {
-      const id = Number(hash[1]);
-      if (Number.isNaN(id)) return getMainPage();
+        if (surveyPage == "entries") {
+          currentPage = mount(SurveyEntriesPage, { target, props: { idb, surveyRecord, entryRecords } });
+          document.title = `Entries - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
 
-      const transaction = idb.transaction(["entries", "surveys"]);
-      transaction.onabort = () => getMainPage();
+        if (surveyPage == "analysis") {
+          currentPage = mount(SurveyAnalysisPage, { target, props: { idb, surveyRecord, entryRecords } });
+          document.title = `Analysis - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
 
-      const entryRequest = transaction.objectStore("entries").get(id);
-      entryRequest.onsuccess = () => {
-        entryRecord = entryRequest.result;
+        if (surveyPage == "matches") {
+          currentPage = mount(SurveyMatchesPage, { target, props: { idb, surveyRecord, entryRecords } });
+          document.title = `Matches - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
 
-        const surveyRequest = transaction.objectStore("surveys").get(entryRecord.surveyId);
-        surveyRequest.onsuccess = () => {
-          surveyRecord = surveyRequest.result;
+        if (surveyPage == "teams") {
+          currentPage = mount(SurveyTeamsPage, { target, props: { idb, surveyRecord, entryRecords } });
+          document.title = `Teams - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
 
-          clearPage();
-          currentPage = mount(EntryPage, { target, props: { idb, surveyRecord, entryRecord } });
-        };
-      };
+        if (surveyPage == "fields") {
+          const entryCount = entryRecords.length;
+          currentPage = mount(SurveyFieldsPage, { target, props: { idb, surveyRecord, entryCount } });
+          document.title = `Fields - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
+
+        if (surveyPage == "options") {
+          currentPage = mount(SurveyOptionsPage, { target, props: { idb, surveyRecord } });
+          document.title = `Options - ${surveyRecord.name} - MeanScout`;
+          return;
+        }
+      });
+
+      return;
+    }
+
+    if (page == "entry") {
+      const { success, data: entryId } = idbIdSchema.safeParse(hash[1]);
+      if (!success) {
+        getMainPage();
+        return;
+      }
+
+      getEntryPageData(entryId, () => {
+        clearPage();
+        currentPage = mount(EntryPage, { target, props: { idb, surveyRecord, entryRecord } });
+        document.title = `Draft - ${surveyRecord.name} - MeanScout`;
+      });
+
+      return;
     }
   }
 
@@ -134,6 +157,32 @@
   function mountMainPage(surveyRecords: IDBRecord<Survey>[] = []) {
     clearPage();
     currentPage = mount(MainPage, { target, props: { idb, surveyRecords } });
+    document.title = "MeanScout";
+  }
+
+  function getSurveyPageData(surveyId: number, onsuccess: (entryRecords: any[]) => void) {
+    const transaction = idb.transaction(["surveys", "entries"]);
+    transaction.onabort = () => getMainPage();
+    const surveyRequest = transaction.objectStore("surveys").get(surveyId);
+    surveyRequest.onsuccess = () => {
+      surveyRecord = surveyRequest.result;
+      const entriesRequest = transaction.objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+      entriesRequest.onsuccess = () => onsuccess(entriesRequest.result);
+    };
+  }
+
+  function getEntryPageData(entryId: number, onsuccess: () => void) {
+    const entryTransaction = idb.transaction(["entries", "surveys"]);
+    entryTransaction.onabort = () => getMainPage();
+    const entryRequest = entryTransaction.objectStore("entries").get(entryId);
+    entryRequest.onsuccess = () => {
+      entryRecord = entryRequest.result;
+      const surveyRequest = entryTransaction.objectStore("surveys").get(entryRecord.surveyId);
+      surveyRequest.onsuccess = () => {
+        surveyRecord = surveyRequest.result;
+        onsuccess();
+      };
+    };
   }
 
   function clearPage() {

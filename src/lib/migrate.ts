@@ -3,7 +3,7 @@ import { type Field, fieldTypes, flattenFields } from "./field";
 
 function migrateEntries(entryStore: IDBStore<Entry>, surveyId: number, flattenedFields: any[]) {
   const entryCursorRequest = entryStore.index("surveyId").openCursor(surveyId);
-  entryCursorRequest.onerror = () => { };
+  entryCursorRequest.onerror = () => {};
 
   entryCursorRequest.onsuccess = () => {
     const entryCursor = entryCursorRequest.result;

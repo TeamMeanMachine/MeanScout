@@ -76,7 +76,7 @@
     if (surveyRecord.type != "match") {
       return {};
     }
-    
+
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
       pickListData[team] = 0;
