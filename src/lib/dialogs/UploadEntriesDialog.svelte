@@ -60,7 +60,7 @@
     };
   }
 
-  function addEntry(entryCSV: string[], entryStore: IDBStore<Entry>, surveyRecord: IDBRecord<Survey>) {
+  function addEntry(entryCSV: string[], entryStore: IDBObjectStore, surveyRecord: IDBRecord<Survey>) {
     let entry: Entry;
     if (surveyRecord.type == "match") {
       entry = {

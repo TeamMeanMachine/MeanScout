@@ -2,6 +2,7 @@
   import Header from "$lib/components/Header.svelte";
   import EditTbaAuthKeyDialog from "$lib/dialogs/EditTbaAuthKeyDialog.svelte";
   import EditTeamSettingDialog from "$lib/dialogs/EditTeamSettingDialog.svelte";
+  import PickCameraDialog from "$lib/dialogs/PickCameraDialog.svelte";
   import { modes, modeStore, targets, targetStore, tbaAuthKeyStore } from "$lib/settings";
 </script>
 
@@ -29,6 +30,11 @@
 </div>
 
 {#if $modeStore == "admin"}
+  <div class="flex flex-col gap-2 p-3">
+    <h2 class="font-bold">Camera</h2>
+    <PickCameraDialog />
+  </div>
+
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">The Blue Alliance</h2>
     {#if $tbaAuthKeyStore}

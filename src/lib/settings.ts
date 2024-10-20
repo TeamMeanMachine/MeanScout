@@ -7,6 +7,13 @@ function localStorageStore<T extends string>(key: string, value: T, subscriber?:
   return store;
 }
 
+// Mode setting
+
+export const modes = ["admin", "scout"] as const;
+export type Mode = (typeof modes)[number];
+
+export const modeStore = localStorageStore<Mode>("mode", "admin");
+
 // Target setting
 
 export const matchTargets = ["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3"] as const;
@@ -42,12 +49,9 @@ export const targetStore = localStorageStore<Target>("target", "red 1", (target)
   document.documentElement.dataset.theme = newTheme;
 });
 
-// Mode setting
+// Camera setting
 
-export const modes = ["admin", "scout"] as const;
-export type Mode = (typeof modes)[number];
-
-export const modeStore = localStorageStore<Mode>("mode", "admin");
+export const cameraStore = localStorageStore<string>("camera", "");
 
 // Team setting
 

@@ -22,7 +22,7 @@
   let importedEntries: IDBRecord<Entry>[] = [];
   let error = $state("");
 
-  function addEntry(entryCSV: string[], entryStore: IDBStore<Entry>) {
+  function addEntry(entryCSV: string[], entryStore: IDBObjectStore) {
     let entry: Entry;
     if (surveyRecord.type == "match") {
       entry = {

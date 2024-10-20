@@ -1,5 +1,6 @@
 <script lang="ts">
   import jsQR from "jsqr";
+  import { cameraStore } from "$lib/settings";
 
   let {
     onread,
@@ -9,17 +10,34 @@
 
   let reading = $state(false);
   let canvas: HTMLCanvasElement;
-  let canvasContext: CanvasRenderingContext2D;
-  let videoElement = document.createElement("video");
-  let cameraStream: MediaStream;
+  let context: CanvasRenderingContext2D;
+  let video: HTMLVideoElement;
+  let stream: MediaStream;
 
-  function tickVideo() {
-    if (videoElement.readyState == videoElement.HAVE_ENOUGH_DATA) {
-      canvas.height = videoElement.videoHeight;
-      canvas.width = videoElement.videoWidth;
+  export async function start() {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: $cameraStore ? { deviceId: { exact: $cameraStore } } : true,
+      audio: false,
+    });
 
-      canvasContext.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-      const image = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+    canvas = document.createElement("canvas");
+    context = canvas.getContext("2d", { willReadFrequently: true })!;
+
+    video.srcObject = stream;
+
+    reading = true;
+
+    if ("requestVideoFrameCallback" in video) {
+      video.requestVideoFrameCallback(update);
+    } else {
+      requestAnimationFrame(update);
+    }
+  }
+
+  function update() {
+    if (video.readyState == video.HAVE_ENOUGH_DATA) {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const image = context.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
 
       if (code) {
@@ -28,40 +46,21 @@
       }
     }
 
-    if (reading) requestAnimationFrame(tickVideo);
-  }
-
-  export function start() {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then((stream) => {
-      cameraStream = stream;
-
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      if (context) {
-        canvasContext = context;
+    if (reading) {
+      if ("requestVideoFrameCallback" in video) {
+        video.requestVideoFrameCallback(update);
+      } else {
+        requestAnimationFrame(update);
       }
-
-      videoElement.srcObject = cameraStream;
-      videoElement.playsInline = true;
-      videoElement.play();
-
-      reading = true;
-
-      requestAnimationFrame(tickVideo);
-    });
+    }
   }
-
   export function stop() {
     reading = false;
 
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
     }
-
-    videoElement.pause();
-    videoElement = document.createElement("video");
   }
 </script>
 
-<canvas bind:this={canvas} class="max-w-full basis-0 {reading ? 'block' : 'hidden'}">
-  Displays the camera when trying to read a QR code.
-</canvas>
+<video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>

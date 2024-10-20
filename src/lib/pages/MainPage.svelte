@@ -40,7 +40,7 @@
     <Icon name="gears" />
     <div class="flex grow flex-col">
       Settings
-      <small>Mode, Target, TBA setup</small>
+      <small>Mode, Target, Camera, TBA</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>
