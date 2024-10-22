@@ -59,6 +59,30 @@
     return details.join(", ");
   });
 
+  let duplicateEntryIds = $derived.by(() => {
+    if (surveyRecord.type != "match") {
+      return [];
+    }
+
+    let duplicates: number[] = [];
+
+    let uniqueStringToId = new Map<string, number>();
+    for (const entry of entryRecords) {
+      if (entry.type != "match") {
+        continue;
+      }
+
+      const uniqueString = `${entry.team}_${entry.match}`;
+      if (uniqueStringToId.has(uniqueString)) {
+        duplicates.push($state.snapshot(entry).id);
+      } else {
+        uniqueStringToId.set(uniqueString, $state.snapshot(entry).id);
+      }
+    }
+
+    return duplicates;
+  });
+
   function filterEntry(entry: IDBRecord<Entry>) {
     if (entry.status == "draft") {
       return false;
@@ -138,6 +162,27 @@
     };
   }
 
+  function fixEntries() {
+    const cursorRequest = idb
+      .transaction("entries", "readwrite")
+      .objectStore("entries")
+      .index("surveyId")
+      .openCursor(surveyRecord.id);
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (cursor == null) {
+        refresh();
+        return;
+      }
+
+      if (duplicateEntryIds.includes(cursor.value.id)) {
+        cursor.delete();
+      }
+
+      cursor.continue();
+    };
+  }
+
   function onscroll() {
     if (displayedCount >= filteredEntries.length) return;
 
@@ -161,6 +206,18 @@
   <ImportEntriesDialog {idb} {surveyRecord} bind:entryRecords />
   <ImportEntryDialog {idb} {surveyRecord} bind:entryRecords />
 </div>
+
+{#if duplicateEntryIds.length}
+  <div class="flex flex-col gap-2 p-3">
+    <Button onclick={fixEntries}>
+      <Icon name="wrench" />
+      <div class="flex flex-col">
+        Fix entries
+        <small>{duplicateEntryIds.length} duplicate entries were found</small>
+      </div>
+    </Button>
+  </div>
+{/if}
 
 <div class="flex flex-col gap-2 p-3">
   <ViewEntryDialog {idb} bind:this={viewEntryDialog} bind:surveyRecord onchange={refresh} />
