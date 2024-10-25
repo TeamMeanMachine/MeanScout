@@ -16,7 +16,7 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let files = $state<FileList | undefined>();
   let importedEntries: IDBRecord<Entry>[] = [];

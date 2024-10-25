@@ -10,7 +10,7 @@
     idb: IDBDatabase;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let name = $state("");
   let type = $state<SurveyType>("match");

@@ -23,8 +23,8 @@
 
   let preview = $state(disabled);
 
-  let viewFieldDialog = $state<ViewFieldDialog | undefined>();
-  let upsertFieldDialog = $state<UpsertFieldDialog | undefined>();
+  let viewFieldDialog = $state<ReturnType<typeof ViewFieldDialog> | undefined>();
+  let upsertFieldDialog = $state<ReturnType<typeof UpsertFieldDialog> | undefined>();
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">

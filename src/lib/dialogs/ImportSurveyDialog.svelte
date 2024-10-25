@@ -12,7 +12,7 @@
     idb: IDBDatabase;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let files = $state<FileList | undefined>(undefined);
   let error = $state("");

@@ -10,11 +10,11 @@
     upsertFieldDialog,
     surveyRecord = $bindable(),
   }: {
-    upsertFieldDialog: UpsertFieldDialog | undefined;
+    upsertFieldDialog: ReturnType<typeof UpsertFieldDialog> | undefined;
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let parentFieldIndex = $state<number | undefined>();
   let parentField = $state<GroupField>({ name: "", type: "group", fields: [] });

@@ -30,12 +30,12 @@
     }
   }
 
-  let viewPickListDialog = $state<ViewPickListDialog | undefined>();
-  let upsertPickListDialog = $state<UpsertPickListDialog | undefined>();
-  let deletePickListDialog = $state<DeletePickListDialog | undefined>();
+  let viewPickListDialog = $state<ReturnType<typeof ViewPickListDialog> | undefined>();
+  let upsertPickListDialog = $state<ReturnType<typeof UpsertPickListDialog> | undefined>();
+  let deletePickListDialog = $state<ReturnType<typeof DeletePickListDialog> | undefined>();
 
-  let viewExpressionDialog = $state<ViewExpressionDialog | undefined>();
-  let upsertExpressionDialog = $state<UpsertExpressionDialog | undefined>();
+  let viewExpressionDialog = $state<ReturnType<typeof ViewExpressionDialog> | undefined>();
+  let upsertExpressionDialog = $state<ReturnType<typeof UpsertExpressionDialog> | undefined>();
 
   let preselectedExpressionNames = $state<string[]>([]);
   let isSelecting = $state(false);

@@ -15,7 +15,7 @@
     onupdate?: () => void;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let pickListIndex = $state<number | undefined>(undefined);
   let pickList = $state<PickList>({ name: "New pick list", weights: [] });

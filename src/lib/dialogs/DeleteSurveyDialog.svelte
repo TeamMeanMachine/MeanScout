@@ -12,7 +12,7 @@
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let entryCount = $state(0);
   let error = $state("");

@@ -18,8 +18,8 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let dialog: Dialog;
-  let qrCodeReader: QRCodeReader;
+  let dialog: ReturnType<typeof Dialog>;
+  let qrCodeReader: ReturnType<typeof QRCodeReader>;
 
   let importedEntry = $state<Entry | undefined>();
   let error = $state("");

@@ -10,7 +10,7 @@
     ondelete?: (() => void) | undefined;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let matchNumber = $state<number | undefined>();
 

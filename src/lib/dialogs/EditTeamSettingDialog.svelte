@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { teamStore } from "$lib/settings";
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
   let teamInput = $state($teamStore);
   let error = $state("");
 

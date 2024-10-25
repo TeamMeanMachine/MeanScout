@@ -15,7 +15,7 @@
     entryRecord: IDBRecord<Entry>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let error = $state("");
 

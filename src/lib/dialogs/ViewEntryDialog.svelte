@@ -19,7 +19,7 @@
     onchange?: (() => void) | undefined;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let entryRecord = $state<IDBRecord<Entry> | undefined>();
   let error = $state("");

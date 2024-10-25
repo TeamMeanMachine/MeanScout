@@ -9,7 +9,7 @@
     surveyRecord: IDBRecord<MatchSurvey>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let error = $state("");
   let matchNumber = $state<number | undefined>();

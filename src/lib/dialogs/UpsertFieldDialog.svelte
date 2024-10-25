@@ -15,7 +15,7 @@
     onupdate?: () => void;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let parentFieldIndex = $state<number | undefined>();
   let parentField = $state<GroupField>({ name: "", type: "group", fields: [] });

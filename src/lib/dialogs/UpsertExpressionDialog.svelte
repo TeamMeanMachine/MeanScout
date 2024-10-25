@@ -20,7 +20,7 @@
 
   const flattenedFields = flattenFields(surveyRecord.fields);
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let expressionIndex = $state<number | undefined>(undefined);
   let expression = $state<Expression>({ name: "", type: "average", inputs: [] });

@@ -21,7 +21,7 @@
 
   const exportFileName = createEntryFileName(surveyRecord, entryRecord);
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
   let entryData = $state("");
   let error = $state("");
 

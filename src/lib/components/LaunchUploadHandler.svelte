@@ -8,8 +8,8 @@
     idb: IDBDatabase;
   } = $props();
 
-  let uploadSurveyDialog = $state<UploadSurveyDialog | undefined>();
-  let uploadEntriesDialog = $state<UploadEntriesDialog | undefined>();
+  let uploadSurveyDialog = $state<ReturnType<typeof UploadSurveyDialog> | undefined>();
+  let uploadEntriesDialog = $state<ReturnType<typeof UploadEntriesDialog> | undefined>();
 
   function handleUpload(type: string, data: string) {
     console.log(type);

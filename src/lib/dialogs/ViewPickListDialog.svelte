@@ -16,12 +16,12 @@
     entriesByTeam,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    upsertPickListDialog?: UpsertPickListDialog | undefined;
-    deletePickListDialog?: DeletePickListDialog | undefined;
+    upsertPickListDialog?: ReturnType<typeof UpsertPickListDialog> | undefined;
+    deletePickListDialog?: ReturnType<typeof DeletePickListDialog> | undefined;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let pickListIndex = $state(-1);
   let pickList = $state<PickList>({ name: "New pick list", weights: [] });

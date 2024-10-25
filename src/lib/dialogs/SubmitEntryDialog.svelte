@@ -19,7 +19,7 @@
 
   const flattenedFields = flattenFields(surveyRecord.fields);
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let isExporting = $state(false);
   let entryCSV = $state("");

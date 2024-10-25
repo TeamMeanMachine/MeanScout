@@ -15,12 +15,12 @@
     usedExpressionNames = undefined,
   }: {
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
-    upsertExpressionDialog: UpsertExpressionDialog | undefined;
+    upsertExpressionDialog: ReturnType<typeof UpsertExpressionDialog> | undefined;
     surveyRecord: IDBRecord<MatchSurvey>;
     usedExpressionNames?: string[] | undefined;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let expressionIndex = $state(-1);
   let expression = $state<Expression>({ name: "", type: "average", inputs: [] });

@@ -29,7 +29,7 @@
     }
   });
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let prefilledMatch = $state(getPrefilledMatch());
   let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));

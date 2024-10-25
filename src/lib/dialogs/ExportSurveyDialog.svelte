@@ -11,7 +11,7 @@
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 

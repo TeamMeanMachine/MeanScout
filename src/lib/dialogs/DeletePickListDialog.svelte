@@ -10,7 +10,7 @@
     ondelete: () => void;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let pickListIndex: number | undefined = undefined;
 

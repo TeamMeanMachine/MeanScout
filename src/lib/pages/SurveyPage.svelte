@@ -22,8 +22,8 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let viewPickListDialog = $state<ViewPickListDialog | undefined>();
-  let viewMatchDialog = $state<ViewMatchDialog | undefined>();
+  let viewPickListDialog = $state<ReturnType<typeof ViewPickListDialog> | undefined>();
+  let viewMatchDialog = $state<ReturnType<typeof ViewMatchDialog> | undefined>();
 
   const drafts = entryRecords
     .filter((entry) => entry.status == "draft")

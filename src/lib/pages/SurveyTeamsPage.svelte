@@ -19,7 +19,7 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let viewTeamDialog = $state<ViewTeamDialog | undefined>();
+  let viewTeamDialog = $state<ReturnType<typeof ViewTeamDialog> | undefined>();
 
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);

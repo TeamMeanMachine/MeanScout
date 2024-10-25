@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { cameraStore } from "$lib/settings";
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let cameras = $state<{ id: string; name: string }[] | undefined>();
   let error = $state("");

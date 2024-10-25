@@ -10,7 +10,7 @@
     idb: IDBDatabase;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let surveyRecords = $state<IDBRecord<Survey>[]>([]);
 

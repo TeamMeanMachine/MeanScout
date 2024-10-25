@@ -5,7 +5,7 @@
   import { tbaAuthKeyStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
   let tbaAuthKey = $state($tbaAuthKeyStore);
   let error = $state("");
 

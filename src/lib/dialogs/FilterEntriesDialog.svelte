@@ -19,7 +19,7 @@
     filterDetails: string;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   function resetFilters() {
     filters = {

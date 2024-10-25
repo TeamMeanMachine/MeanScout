@@ -22,7 +22,7 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let viewEntryDialog = $state<ViewEntryDialog | undefined>();
+  let viewEntryDialog = $state<ReturnType<typeof ViewEntryDialog> | undefined>();
 
   let filters = $state<EntryFilters>({
     team: undefined,

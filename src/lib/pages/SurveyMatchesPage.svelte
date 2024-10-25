@@ -20,9 +20,9 @@
     entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
 
-  let viewMatchDialog: ViewMatchDialog | undefined = $state();
-  let upsertMatchDialog: UpsertMatchDialog | undefined = $state();
-  let deleteMatchDialog: DeleteMatchDialog | undefined = $state();
+  let viewMatchDialog: ReturnType<typeof ViewMatchDialog> | undefined = $state();
+  let upsertMatchDialog: ReturnType<typeof UpsertMatchDialog> | undefined = $state();
+  let deleteMatchDialog: ReturnType<typeof DeleteMatchDialog> | undefined = $state();
 
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);

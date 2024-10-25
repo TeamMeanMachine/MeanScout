@@ -12,7 +12,7 @@
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let event = $state(surveyRecord.tbaEventKey ?? "");
   let error = $state("");

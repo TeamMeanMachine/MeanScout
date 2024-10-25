@@ -18,13 +18,13 @@
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     entryRecords: IDBRecord<MatchEntry>[];
-    upsertMatchDialog?: UpsertMatchDialog | undefined;
-    deleteMatchDialog?: DeleteMatchDialog | undefined;
+    upsertMatchDialog?: ReturnType<typeof UpsertMatchDialog> | undefined;
+    deleteMatchDialog?: ReturnType<typeof DeleteMatchDialog> | undefined;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
-  let viewTeamDialog = $state<ViewTeamDialog | undefined>();
+  let viewTeamDialog = $state<ReturnType<typeof ViewTeamDialog> | undefined>();
 
   let match = $state<Match>({
     number: 0,

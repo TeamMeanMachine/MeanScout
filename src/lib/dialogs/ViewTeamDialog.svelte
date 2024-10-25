@@ -16,7 +16,7 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let teamInfo = $state<TeamInfo>({ team: "", entryCount: 0, matchCount: 0, isCustom: false });
   let entries = $state<IDBRecord<Entry>[]>([]);

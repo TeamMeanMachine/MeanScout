@@ -13,7 +13,7 @@
     allTeams: TeamInfo[];
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   let teamInput = $state("");
   let error = $state("");

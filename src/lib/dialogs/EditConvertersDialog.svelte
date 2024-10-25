@@ -18,7 +18,7 @@
     defaultTo: any;
   } = $props();
 
-  let dialog: Dialog;
+  let dialog: ReturnType<typeof Dialog>;
 
   function onconfirm() {
     expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
