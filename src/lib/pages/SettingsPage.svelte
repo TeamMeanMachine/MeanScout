@@ -1,9 +1,12 @@
 <script lang="ts">
+  import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import EditTbaAuthKeyDialog from "$lib/dialogs/EditTbaAuthKeyDialog.svelte";
   import EditTeamSettingDialog from "$lib/dialogs/EditTeamSettingDialog.svelte";
   import PickCameraDialog from "$lib/dialogs/PickCameraDialog.svelte";
-  import { modes, modeStore, targets, targetStore, tbaAuthKeyStore } from "$lib/settings";
+  import { modes, modeStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
 </script>
 
 <Header backLink="">
@@ -32,14 +35,37 @@
 {#if $modeStore == "admin"}
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Camera</h2>
-    <PickCameraDialog />
+    <Button onclick={() => openDialog(PickCameraDialog, {})}>
+      <Icon name="camera" />
+      Pick camera
+    </Button>
   </div>
 
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">The Blue Alliance</h2>
     {#if $tbaAuthKeyStore}
-      <EditTeamSettingDialog />
+      <Button onclick={() => openDialog(EditTeamSettingDialog, {})}>
+        <Icon name="user-group" />
+        {#if $teamStore}
+          <div class="flex flex-col">
+            {$teamStore}
+            <small>Edit team</small>
+          </div>
+        {:else}
+          Add team
+        {/if}
+      </Button>
     {/if}
-    <EditTbaAuthKeyDialog />
+    <Button onclick={() => openDialog(EditTbaAuthKeyDialog, {})}>
+      <Icon name="key" />
+      {#if $tbaAuthKeyStore}
+        <div class="flex flex-col">
+          ********
+          <small>Edit API auth key</small>
+        </div>
+      {:else}
+        Add API auth key
+      {/if}
+    </Button>
   </div>
 {/if}

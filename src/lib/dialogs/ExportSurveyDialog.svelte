@@ -1,7 +1,6 @@
 <script lang="ts">
   import { download, shareAsFile, shareAsText } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { Survey } from "$lib/survey";
 
@@ -10,8 +9,6 @@
   }: {
     surveyRecord: IDBRecord<Survey>;
   } = $props();
-
-  let dialog: ReturnType<typeof Dialog>;
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
@@ -36,25 +33,19 @@
   }
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="share-from-square" />
-  Export survey
-</Button>
+<span>Export survey</span>
 
-<Dialog bind:this={dialog}>
-  <span>Export survey</span>
-  {#if "canShare" in navigator}
-    <Button onclick={shareSurveyAsFile}>
-      <Icon name="share-from-square" />
-      Share as file
-    </Button>
-    <Button onclick={shareSurveyAsText}>
-      <Icon name="share" />
-      Share as text snippet
-    </Button>
-  {/if}
-  <Button onclick={downloadSurvey}>
-    <Icon name="file-code" />
-    Download as file
+{#if "canShare" in navigator}
+  <Button onclick={shareSurveyAsFile}>
+    <Icon name="share-from-square" />
+    Share as file
   </Button>
-</Dialog>
+  <Button onclick={shareSurveyAsText}>
+    <Icon name="share" />
+    Share as text snippet
+  </Button>
+{/if}
+<Button onclick={downloadSurvey}>
+  <Icon name="file-code" />
+  Download as file
+</Button>

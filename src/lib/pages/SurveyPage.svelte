@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { Match, TeamInfo } from "$lib";
-  import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
+  import type { Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { Entry, MatchEntry } from "$lib/entry";
-  import { modeStore } from "$lib/settings";
+  import { modeStore, targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -22,84 +22,57 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let viewPickListDialog = $state<ReturnType<typeof ViewPickListDialog> | undefined>();
-  let viewMatchDialog = $state<ReturnType<typeof ViewMatchDialog> | undefined>();
-
   const drafts = entryRecords
     .filter((entry) => entry.status == "draft")
     .toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
 
   const entriesByTeam = entryRecords.reduce(
     (acc, entry) => {
+      if (entry.type != "match") return acc;
+
       if (entry.team in acc) {
         acc[entry.team].push(entry);
       } else {
         acc[entry.team] = [entry];
       }
+
       return acc;
     },
-    {} as Record<string, IDBRecord<Entry>[]>,
+    {} as Record<string, IDBRecord<MatchEntry>[]>,
   );
 
-  function getTeamInfosFromMatch(match: Match) {
-    if (surveyRecord.type != "match") {
-      return [];
+  const prefilledMatch = getPrefilledMatch();
+  const prefilledTeam = getPrefilledTeam(prefilledMatch);
+
+  function getPrefilledMatch() {
+    if (surveyRecord.type != "match") return 1;
+
+    const recordedMatches = entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+    return 1 + Math.max(...recordedMatches, 0);
+  }
+
+  function getPrefilledTeam(matchValue: number) {
+    if (surveyRecord.type != "match") return "";
+
+    const matchData = surveyRecord.matches.find((match) => match.number == matchValue);
+    if (!matchData) return "";
+
+    switch ($targetStore) {
+      case "red 1":
+        return matchData.red1;
+      case "red 2":
+        return matchData.red2;
+      case "red 3":
+        return matchData.red3;
+      case "blue 1":
+        return matchData.blue1;
+      case "blue 2":
+        return matchData.blue2;
+      case "blue 3":
+        return matchData.blue3;
+      default:
+        return "";
     }
-
-    const ranksPerPickList = surveyRecord.pickLists.map((pickList) => {
-      const pickListData = pickList.weights.reduce(
-        (acc, weight) => {
-          if (surveyRecord.type != "match") {
-            return acc;
-          }
-
-          const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam);
-          const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
-          for (const team in normalizedTeamData) {
-            if (team in acc) {
-              acc[team] += normalizedTeamData[team];
-            } else {
-              acc[team] = normalizedTeamData[team];
-            }
-          }
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-
-      const normalizedPickListData = normalizeTeamData(pickListData);
-
-      const sortedTeamRankings = Object.keys(pickListData)
-        .map((team) => ({ team, percentage: normalizedPickListData[team] }))
-        .toSorted((a, b) => b.percentage - a.percentage)
-        .map((data, index) => ({ team: data.team, rank: index + 1 }));
-
-      return sortedTeamRankings.reduce(
-        (acc, ranking) => {
-          acc[ranking.team] = ranking.rank;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-    });
-
-    const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-
-    const teamInfos: TeamInfo[] = teams.map((team) => {
-      const matchingEntries = entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
-      const ranks = ranksPerPickList.map((pickList) => pickList[team]);
-      return {
-        team,
-        entryCount: matchingEntries.length,
-        matchCount: 0,
-        isCustom: surveyRecord.teams.includes(team),
-        pickListRanks: ranksPerPickList.length ? ranks : undefined,
-      };
-    });
-
-    return teamInfos.filter((teamInfo) => {
-      return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes(teamInfo.team);
-    });
   }
 </script>
 
@@ -110,7 +83,26 @@
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Entries</h2>
 
-  <NewEntryDialog {idb} bind:surveyRecord {entryRecords} />
+  <Button
+    onclick={() =>
+      openDialog(NewEntryDialog, {
+        idb,
+        surveyRecord,
+        entryRecords,
+        prefilledTeam,
+        prefilledMatch,
+      })}
+  >
+    <Icon name="plus" />
+    <div class="flex flex-col">
+      {#if prefilledTeam.length}
+        <span><small>Team</small> {prefilledTeam}</span>
+      {/if}
+      {#if surveyRecord.type == "match" && prefilledMatch}
+        <span><small>Match</small> {prefilledMatch}</span>
+      {/if}
+    </div>
+  </Button>
 
   {#each drafts as draft (draft.id)}
     <Anchor route="entry/{draft.id}">
@@ -152,19 +144,19 @@
     .toSorted((a, b) => b.number - a.number)
     .slice(0, 3)}
 
-  <ViewPickListDialog
-    bind:this={viewPickListDialog}
-    bind:surveyRecord
-    entriesByTeam={entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>}
-  />
-
-  <ViewMatchDialog bind:this={viewMatchDialog} {surveyRecord} entryRecords={entryRecords as IDBRecord<MatchEntry>[]} />
-
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Analysis</h2>
 
     {#each surveyRecord.pickLists as pickList, index}
-      <Button onclick={() => viewPickListDialog?.open(index)}>
+      <Button
+        onclick={() =>
+          openDialog(ViewPickListDialog, {
+            surveyRecord,
+            entriesByTeam,
+            pickList,
+            index,
+          })}
+      >
         {pickList.name}
       </Button>
     {/each}
@@ -189,14 +181,18 @@
     {#if upcomingMatches.length || previousMatches.length}
       <div class="flex flex-wrap gap-2">
         {#snippet teamRow(match: Match)}
+          {@const onclick = () => {
+            openDialog(ViewMatchDialog, { surveyRecord, entryRecords: entryRecords as IDBRecord<MatchEntry>[], match });
+          }}
+
           <tr
             tabindex="0"
             role="button"
-            onclick={() => viewMatchDialog?.open(match, getTeamInfosFromMatch(match))}
+            {onclick}
             onkeydown={(e) => {
               if (e.key == " " || e.key == "Enter") {
                 e.preventDefault();
-                viewMatchDialog?.open(match, getTeamInfosFromMatch(match));
+                onclick();
               }
             }}
             class="button cursor-pointer bg-neutral-800"

@@ -2,6 +2,7 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
@@ -46,14 +47,33 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  <ExportSurveyDialog {surveyRecord} />
-  <EditSurveyNameDialog bind:surveyRecord />
+  <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord })}>
+    <Icon name="share-from-square" />
+    Export survey
+  </Button>
+  <Button onclick={() => openDialog(EditSurveyNameDialog, { surveyRecord })}>
+    <Icon name="pen" />
+    <div class="flex flex-col">
+      {surveyRecord.name}
+      <small>Edit name</small>
+    </div>
+  </Button>
 </div>
 
 {#if $tbaAuthKeyStore}
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">The Blue Alliance</h2>
-    <EditSurveyTbaEventKeyDialog bind:surveyRecord />
+    <Button onclick={() => openDialog(EditSurveyTbaEventKeyDialog, { surveyRecord })}>
+      <Icon name="calendar-days" />
+      {#if surveyRecord.tbaEventKey}
+        <div class="flex flex-col">
+          {surveyRecord.tbaEventKey}
+          <small>Edit event</small>
+        </div>
+      {:else}
+        Add event
+      {/if}
+    </Button>
     {#if surveyRecord.tbaEventKey}
       <Button onclick={getMatchesFromTBAEvent}>
         <Icon name="table-list" />
@@ -75,5 +95,8 @@
 
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Danger Zone</h2>
-  <DeleteSurveyDialog {idb} {surveyRecord} />
+  <Button onclick={() => openDialog(DeleteSurveyDialog, { idb, surveyRecord })}>
+    <Icon name="trash" />
+    Delete survey
+  </Button>
 </div>

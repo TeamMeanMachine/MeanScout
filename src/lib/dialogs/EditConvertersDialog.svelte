@@ -2,73 +2,60 @@
   import { parseValueFromString } from "$lib";
   import type { ConvertExpression } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
-    expression = $bindable(),
-    converters,
-    defaultTo,
+    expression,
   }: {
     expression: ConvertExpression;
-    converters: {
-      from: any;
-      to: any;
-    }[];
-    defaultTo: any;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
+  let converters = $state(structuredClone($state.snapshot(expression.converters)));
+  let defaultTo = $state(structuredClone($state.snapshot(expression.defaultTo)));
 
-  function onconfirm() {
-    expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
-      from: parseValueFromString(from),
-      to: parseValueFromString(to),
-    }));
-    expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
-    dialog.close();
-  }
-
-  function onclose() {
-    converters = structuredClone($state.snapshot(expression.converters));
-    defaultTo = structuredClone($state.snapshot(expression.defaultTo));
-  }
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
+        from: parseValueFromString(from),
+        to: parseValueFromString(to),
+      }));
+      expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+      closeDialog();
+    },
+  };
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="pen" />
-  Edit Converters
+<span>Converters</span>
+
+{#each converters as converter, converterIndex}
+  <div class="flex flex-wrap items-end gap-2">
+    <Button onclick={() => (converters = converters.toSpliced(converterIndex, 1))}>
+      <Icon name="trash" />
+    </Button>
+    <div class="flex flex-wrap items-end">
+      <label class="flex flex-col">
+        From
+        <input bind:value={converter.from} class="w-36 bg-neutral-800 p-2 text-theme" />
+      </label>
+      <div class="p-2">
+        <Icon name="arrow-right" />
+      </div>
+      <label class="flex flex-col">
+        To
+        <input bind:value={converter.to} class="w-36 bg-neutral-800 p-2 text-theme" />
+      </label>
+    </div>
+  </div>
+{/each}
+
+<Button onclick={() => converters.push({ from: "", to: "" })}>
+  <Icon name="plus" />
+  New converter
 </Button>
 
-<Dialog bind:this={dialog} {onconfirm} {onclose}>
-  Converters
-  {#each converters as converter, converterIndex}
-    <div class="flex flex-wrap items-end gap-2">
-      <Button onclick={() => (converters = converters.toSpliced(converterIndex, 1))}>
-        <Icon name="trash" />
-      </Button>
-      <div class="flex flex-wrap items-end">
-        <label class="flex flex-col">
-          From
-          <input bind:value={converter.from} class="w-36 bg-neutral-800 p-2 text-theme" />
-        </label>
-        <div class="p-2">
-          <Icon name="arrow-right" />
-        </div>
-        <label class="flex flex-col">
-          To
-          <input bind:value={converter.to} class="w-36 bg-neutral-800 p-2 text-theme" />
-        </label>
-      </div>
-    </div>
-  {/each}
-  <Button onclick={() => (converters = [...converters, { from: "", to: "" }])}>
-    <Icon name="plus" />
-    New converter
-  </Button>
-  <label class="flex flex-col">
-    Default to
-    <input bind:value={defaultTo} class="bg-neutral-800 p-2 text-theme" />
-  </label>
+<label class="flex flex-col">
+  Default to
+  <input bind:value={defaultTo} class="bg-neutral-800 p-2 text-theme" />
   <small>Leave blank to keep input</small>
-</Dialog>
+</label>

@@ -1,38 +1,25 @@
 <script lang="ts">
-  import Dialog from "$lib/components/Dialog.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { MatchSurvey } from "$lib/survey";
 
   let {
-    surveyRecord = $bindable(),
+    surveyRecord,
+    number,
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    number: number;
     ondelete?: (() => void) | undefined;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
-  let matchNumber = $state<number | undefined>();
-
-  export function open(number: number) {
-    matchNumber = number;
-    dialog.open();
-  }
-
-  function onconfirm() {
-    if (matchNumber != undefined) {
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
       surveyRecord.modified = new Date();
-      surveyRecord.matches = surveyRecord.matches.filter((m) => m.number != matchNumber);
-    }
-    dialog.close();
-    ondelete?.();
-  }
-
-  function onclose() {
-    matchNumber = undefined;
-  }
+      surveyRecord.matches = surveyRecord.matches.filter((m) => m.number != number);
+      ondelete?.();
+      closeDialog();
+    },
+  };
 </script>
 
-<Dialog bind:this={dialog} {onconfirm} {onclose}>
-  <span>Delete match {matchNumber}?</span>
-</Dialog>
+<span>Delete match {number}?</span>

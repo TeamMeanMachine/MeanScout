@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { countPreviousFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
@@ -11,53 +11,44 @@
 
   let {
     idb,
-    surveyRecord = $bindable(),
+    surveyRecord,
+    entryRecord,
     onchange,
+    data,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
-    onchange?: (() => void) | undefined;
+    entryRecord: IDBRecord<Entry>;
+    onchange?: () => void;
+    data?: IDBRecord<Entry>;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
-  let entryRecord = $state<IDBRecord<Entry> | undefined>();
+  let entry = $state(structuredClone($state.snapshot(data ?? entryRecord)));
   let error = $state("");
 
-  export function open(entry: IDBRecord<Entry>) {
-    entryRecord = structuredClone($state.snapshot(entry));
-    dialog?.open();
+  if (data) {
+    onchange?.();
   }
 
   function editEntry() {
-    if (!entryRecord) return;
-    if (entryRecord.status == "draft") {
-      location.hash = `/entry/${entryRecord.id}`;
+    if (entry.status == "draft") {
+      location.hash = `/entry/${entry.id}`;
       return;
     }
 
-    entryRecord.status = "draft";
-    entryRecord.modified = new Date();
+    entry.status = "draft";
+    entry.modified = new Date();
 
-    const editRequest = idb
-      .transaction("entries", "readwrite")
-      .objectStore("entries")
-      .put($state.snapshot(entryRecord));
+    const editRequest = idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(entry));
 
     editRequest.onerror = () => {
       error = `Could not edit entry: ${editRequest.error?.message}`;
     };
 
     editRequest.onsuccess = () => {
-      if (!entryRecord) return;
       surveyRecord.modified = new Date();
-      location.hash = `/entry/${entryRecord.id}`;
+      location.hash = `/entry/${entry.id}`;
     };
-  }
-
-  function onclose() {
-    entryRecord = undefined;
-    error = "";
   }
 </script>
 
@@ -79,63 +70,85 @@
   {/if}
 {/snippet}
 
-<Dialog bind:this={dialog} {onclose}>
-  {#if entryRecord}
-    <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
-      <table class="w-full text-left">
-        <tbody>
-          <tr><th colspan="2" class="p-2">Entry</th></tr>
-          <tr>
-            <td class="w-0 p-2 text-sm">Team</td>
-            <td class="p-2 font-bold">{entryRecord.team}</td>
-          </tr>
-          {#if entryRecord.type == "match"}
-            <tr>
-              <td class="p-2 text-sm">Match</td>
-              <td class="p-2 font-bold">{entryRecord.match}</td>
-            </tr>
-            <tr>
-              <td class="p-2 text-sm">Absent</td>
-              <td class="p-2 font-bold">{entryRecord.absent}</td>
-            </tr>
-          {/if}
-          <tr><td class="p-2"></td></tr>
-          {#if entryRecord.type != "match" || !entryRecord.absent}
-            {#each surveyRecord.fields as field, i (field)}
-              {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
-              {#if field.type == "group"}
-                <tr><th colspan="2" class="p-2">{field.name}</th></tr>
-                {#each field.fields as innerField, innerFieldIndex (innerField)}
-                  {@render fieldRow(innerField, entryRecord.values[previousFields + innerFieldIndex])}
-                {/each}
-                <tr><td class="p-2"></td></tr>
-              {:else}
-                {@render fieldRow(field, entryRecord.values[previousFields])}
-              {/if}
+<div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+  <table class="w-full text-left">
+    <tbody>
+      <tr><th colspan="2" class="p-2">Entry</th></tr>
+      <tr>
+        <td class="w-0 p-2 text-sm">Team</td>
+        <td class="p-2 font-bold">{entryRecord.team}</td>
+      </tr>
+      {#if entryRecord.type == "match"}
+        <tr>
+          <td class="p-2 text-sm">Match</td>
+          <td class="p-2 font-bold">{entryRecord.match}</td>
+        </tr>
+        <tr>
+          <td class="p-2 text-sm">Absent</td>
+          <td class="p-2 font-bold">{entryRecord.absent}</td>
+        </tr>
+      {/if}
+      <tr><td class="p-2"></td></tr>
+      {#if entryRecord.type != "match" || !entryRecord.absent}
+        {#each surveyRecord.fields as field, i (field)}
+          {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
+          {#if field.type == "group"}
+            <tr><th colspan="2" class="p-2">{field.name}</th></tr>
+            {#each field.fields as innerField, innerFieldIndex (innerField)}
+              {@render fieldRow(innerField, entryRecord.values[previousFields + innerFieldIndex])}
             {/each}
+            <tr><td class="p-2"></td></tr>
+          {:else}
+            {@render fieldRow(field, entryRecord.values[previousFields])}
           {/if}
-        </tbody>
-      </table>
-    </div>
-    <ExportEntryDialog {idb} {surveyRecord} {entryRecord} {onchange} />
-    {#if entryRecord.type != "match" || !entryRecord.absent}
-      <Button onclick={editEntry}>
-        <Icon name="pen" />
-        Convert to draft and edit
-      </Button>
-    {/if}
-    <DeleteEntryDialog
-      {idb}
-      bind:surveyRecord
-      {entryRecord}
-      ondelete={() => {
-        onchange?.();
-        dialog.close();
-      }}
-    />
-  {/if}
+        {/each}
+      {/if}
+    </tbody>
+  </table>
+</div>
 
-  {#if error}
-    <span>{error}</span>
+<Button
+  onclick={() =>
+    openDialog(ExportEntryDialog, {
+      idb,
+      surveyRecord,
+      entryRecord: entry,
+      onexport(newEntry) {
+        entry = newEntry;
+        onchange?.();
+      },
+    })}
+>
+  <Icon name="share-from-square" />
+  {#if entry.status == "exported"}
+    Re-export
+  {:else}
+    Export
   {/if}
-</Dialog>
+</Button>
+
+{#if entry.type != "match" || !entry.absent}
+  <Button onclick={editEntry}>
+    <Icon name="pen" />
+    Convert to draft and edit
+  </Button>
+{/if}
+<Button
+  onclick={() =>
+    openDialog(DeleteEntryDialog, {
+      idb,
+      surveyRecord,
+      entryRecord,
+      ondelete: () => {
+        onchange?.();
+        closeDialog();
+      },
+    })}
+>
+  <Icon name="trash" />
+  Delete
+</Button>
+
+{#if error}
+  <span>{error}</span>
+{/if}

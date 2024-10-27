@@ -1,6 +1,9 @@
 <script lang="ts">
+  import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
@@ -59,18 +62,38 @@
   </div>
 </div>
 
-<footer class="flex flex-wrap gap-2 p-3">
-  <SubmitEntryDialog {idb} bind:surveyRecord {entryRecord} />
-  <DeleteEntryDialog
-    {idb}
-    bind:surveyRecord
-    {entryRecord}
-    ondelete={() => {
-      if (entryRecord.status == "draft") {
-        location.hash = `/survey/${surveyRecord.id}`;
-      } else {
-        location.hash = `/survey/${surveyRecord.id}/entries`;
-      }
-    }}
-  />
-</footer>
+<div class="flex flex-wrap gap-2 p-3">
+  <Button
+    onclick={() =>
+      openDialog(SubmitEntryDialog, {
+        idb,
+        surveyRecord,
+        entryRecord,
+        onexport: () => {
+          location.hash = `/survey/${surveyRecord.id}`;
+        },
+      })}
+  >
+    <Icon name="floppy-disk" />
+    Submit
+  </Button>
+
+  <Button
+    onclick={() =>
+      openDialog(DeleteEntryDialog, {
+        idb,
+        surveyRecord,
+        entryRecord,
+        ondelete: () => {
+          if (entryRecord.status == "draft") {
+            location.hash = `/survey/${surveyRecord.id}`;
+          } else {
+            location.hash = `/survey/${surveyRecord.id}/entries`;
+          }
+        },
+      })}
+  >
+    <Icon name="trash" />
+    Delete
+  </Button>
+</div>

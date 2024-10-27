@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { openDialog } from "$lib/dialog";
   import UploadEntriesDialog from "$lib/dialogs/UploadEntriesDialog.svelte";
   import UploadSurveyDialog from "$lib/dialogs/UploadSurveyDialog.svelte";
 
@@ -8,19 +9,15 @@
     idb: IDBDatabase;
   } = $props();
 
-  let uploadSurveyDialog = $state<ReturnType<typeof UploadSurveyDialog> | undefined>();
-  let uploadEntriesDialog = $state<ReturnType<typeof UploadEntriesDialog> | undefined>();
-
   function handleUpload(type: string, data: string) {
-    console.log(type);
     switch (type) {
       case "application/json":
       case "text/plain":
-        uploadSurveyDialog?.open(data);
+        openDialog(UploadSurveyDialog, { idb, data });
         break;
       case "text/csv":
       case "text/comma-separated-values":
-        uploadEntriesDialog?.open(data);
+        openDialog(UploadEntriesDialog, { idb, data });
         break;
     }
   }
@@ -61,6 +58,3 @@
   checkUploadCache();
   checkLaunchQueue();
 </script>
-
-<UploadSurveyDialog bind:this={uploadSurveyDialog} {idb} />
-<UploadEntriesDialog bind:this={uploadEntriesDialog} {idb} />

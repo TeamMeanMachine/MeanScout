@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { matchTargets } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -10,19 +10,26 @@
   let {
     surveyRecord,
     entryRecords,
-    filters = $bindable(),
-    filterDetails,
+    filters,
+    onfilter,
   }: {
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
     filters: EntryFilters;
-    filterDetails: string;
+    onfilter?: (newFilters: EntryFilters) => void;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
+  let newFilters = $state<EntryFilters>($state.snapshot(filters));
+
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      onfilter?.(newFilters);
+      closeDialog();
+    },
+  };
 
   function resetFilters() {
-    filters = {
+    newFilters = {
       team: undefined,
       match: undefined,
       absent: undefined,
@@ -49,42 +56,77 @@
   }
 </script>
 
-<Button onclick={() => dialog.open()} classes="flex-nowrap">
-  <Icon name="filter" />
-  <div class="flex flex-col">
-    <span>Filter</span>
-    <small>{filterDetails}</small>
-  </div>
+<span>Filter</span>
+
+<Button onclick={resetFilters}>
+  <Icon name="arrow-rotate-left" />
+  Reset
 </Button>
 
-<Dialog bind:this={dialog}>
-  <span>Filter</span>
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+<div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <label class="flex flex-col">
+    Team
+    <select bind:value={newFilters.team} class="bg-neutral-800 p-2 capitalize text-theme">
+      <option value={undefined}>Any</option>
+      {#each getSuggestedTeams() as team}
+        <option>{team}</option>
+      {/each}
+    </select>
+  </label>
+
+  {#if surveyRecord.type == "match"}
     <label class="flex flex-col">
-      Team
-      <select bind:value={filters.team} class="bg-neutral-800 p-2 capitalize text-theme">
+      Match
+      <select bind:value={newFilters.match} class="bg-neutral-800 p-2 text-theme">
         <option value={undefined}>Any</option>
-        {#each getSuggestedTeams() as team}
-          <option>{team}</option>
+        {#each getSuggestedMatches() as match}
+          <option>{match}</option>
         {/each}
       </select>
     </label>
-    {#if surveyRecord.type == "match"}
-      <label class="flex flex-col">
-        Match
-        <select bind:value={filters.match} class="bg-neutral-800 p-2 text-theme">
-          <option value={undefined}>Any</option>
-          {#each getSuggestedMatches() as match}
-            <option>{match}</option>
-          {/each}
-        </select>
-      </label>
+    <div class="flex flex-col">
+      Absent
+      <div class="flex flex-col gap-1">
+        {#each [undefined, true, false] as value}
+          <Button onclick={() => (newFilters.absent = value)} classes="capitalize">
+            {#if newFilters.absent == value}
+              <Icon name="circle-dot" />
+              <strong>{value ?? "Any"}</strong>
+            {:else}
+              <Icon style="regular" name="circle" />
+              {value ?? "Any"}
+            {/if}
+          </Button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <div class="flex flex-col">
+    Exported
+    <div class="flex flex-col gap-1">
+      {#each [undefined, true, false] as value}
+        <Button onclick={() => (newFilters.exported = value)} classes="capitalize">
+          {#if newFilters.exported == value}
+            <Icon name="circle-dot" />
+            <strong>{value ?? "Any"}</strong>
+          {:else}
+            <Icon style="regular" name="circle" />
+            {value ?? "Any"}
+          {/if}
+        </Button>
+      {/each}
+    </div>
+  </div>
+
+  {#if surveyRecord.type == "match"}
+    {#if surveyRecord.matches.length}
       <div class="flex flex-col">
-        Absent
+        Target
         <div class="flex flex-col gap-1">
-          {#each [undefined, true, false] as value}
-            <Button onclick={() => (filters.absent = value)} classes="capitalize">
-              {#if filters.absent == value}
+          {#each [undefined, ...matchTargets] as value}
+            <Button onclick={() => (newFilters.target = value)} classes="capitalize">
+              {#if newFilters.target == value}
                 <Icon name="circle-dot" />
                 <strong>{value ?? "Any"}</strong>
               {:else}
@@ -96,45 +138,5 @@
         </div>
       </div>
     {/if}
-    <div class="flex flex-col">
-      Exported
-      <div class="flex flex-col gap-1">
-        {#each [undefined, true, false] as value}
-          <Button onclick={() => (filters.exported = value)} classes="capitalize">
-            {#if filters.exported == value}
-              <Icon name="circle-dot" />
-              <strong>{value ?? "Any"}</strong>
-            {:else}
-              <Icon style="regular" name="circle" />
-              {value ?? "Any"}
-            {/if}
-          </Button>
-        {/each}
-      </div>
-    </div>
-    {#if surveyRecord.type == "match"}
-      {#if surveyRecord.matches.length}
-        <div class="flex flex-col">
-          Target
-          <div class="flex flex-col gap-1">
-            {#each [undefined, ...matchTargets] as value}
-              <Button onclick={() => (filters.target = value)} classes="capitalize">
-                {#if filters.target == value}
-                  <Icon name="circle-dot" />
-                  <strong>{value ?? "Any"}</strong>
-                {:else}
-                  <Icon style="regular" name="circle" />
-                  {value ?? "Any"}
-                {/if}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-    {/if}
-  </div>
-  <Button onclick={resetFilters}>
-    <Icon name="arrow-rotate-left" />
-    Reset
-  </Button>
-</Dialog>
+  {/if}
+</div>

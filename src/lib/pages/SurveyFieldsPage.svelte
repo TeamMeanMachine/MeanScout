@@ -3,7 +3,8 @@
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import UpsertFieldDialog from "$lib/dialogs/UpsertFieldDialog.svelte";
+  import { openDialog } from "$lib/dialog";
+  import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
   import { fieldIcons, getDefaultFieldValue } from "$lib/field";
   import type { Survey } from "$lib/survey";
@@ -22,9 +23,6 @@
     (surveyRecord.type == "match" && (surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0));
 
   let preview = $state(disabled);
-
-  let viewFieldDialog = $state<ReturnType<typeof ViewFieldDialog> | undefined>();
-  let upsertFieldDialog = $state<ReturnType<typeof UpsertFieldDialog> | undefined>();
 </script>
 
 <Header backLink="survey/{surveyRecord.id}">
@@ -44,18 +42,25 @@
     </Button>
   </div>
   {#if !preview}
-    <ViewFieldDialog bind:this={viewFieldDialog} {upsertFieldDialog} bind:surveyRecord />
     <div class="flex flex-col gap-4 p-3">
-      {#each surveyRecord.fields as field, fieldIndex (field)}
+      {#each surveyRecord.fields as field, index (field)}
         {#if field.type == "group"}
           <div class="flex flex-col gap-2">
             <h2 class="font-bold">{field.name}</h2>
-            <Button onclick={() => viewFieldDialog?.viewField(fieldIndex)}>
+            <Button
+              onclick={() => {
+                openDialog(ViewFieldDialog, { surveyRecord, action: { type: "field", index } });
+              }}
+            >
               <Icon name={fieldIcons[field.type]} />
               Group
             </Button>
-            {#each field.fields as innerField, innerFieldIndex (innerField)}
-              <Button onclick={() => viewFieldDialog?.viewInnerField(fieldIndex, innerFieldIndex)}>
+            {#each field.fields as innerField, innerIndex (innerField)}
+              <Button
+                onclick={() => {
+                  openDialog(ViewFieldDialog, { surveyRecord, action: { type: "inner-field", index, innerIndex } });
+                }}
+              >
                 <Icon name={fieldIcons[innerField.type]} />
                 <div class="flex flex-col">
                   {innerField.name}
@@ -63,13 +68,21 @@
                 </div>
               </Button>
             {/each}
-            <Button onclick={() => upsertFieldDialog?.newInnerField(fieldIndex)}>
+            <Button
+              onclick={() => {
+                openDialog(NewFieldDialog, { surveyRecord, action: { type: "inner-field", index } });
+              }}
+            >
               <Icon name="plus" />
               New {field.name} field
             </Button>
           </div>
         {:else}
-          <Button onclick={() => viewFieldDialog?.viewField(fieldIndex)}>
+          <Button
+            onclick={() => {
+              openDialog(ViewFieldDialog, { surveyRecord, action: { type: "field", index } });
+            }}
+          >
             <Icon name={fieldIcons[field.type]} />
             <div class="flex flex-col">
               {field.name}
@@ -79,7 +92,26 @@
         {/if}
       {/each}
     </div>
-    <UpsertFieldDialog bind:this={upsertFieldDialog} bind:surveyRecord onupdate={() => viewFieldDialog?.refresh()} />
+    <div class="flex flex-wrap gap-2 p-3">
+      <Button
+        {disabled}
+        onclick={() => {
+          openDialog(NewFieldDialog, { surveyRecord, action: { type: "group" } });
+        }}
+      >
+        <Icon name="plus" />
+        New group
+      </Button>
+      <Button
+        {disabled}
+        onclick={() => {
+          openDialog(NewFieldDialog, { surveyRecord, action: { type: "field" } });
+        }}
+      >
+        <Icon name="plus" />
+        New field
+      </Button>
+    </div>
   {/if}
 {/if}
 

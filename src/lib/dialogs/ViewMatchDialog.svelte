@@ -1,50 +1,100 @@
 <script lang="ts">
   import type { Match, TeamInfo } from "$lib";
+  import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import UpsertMatchDialog from "./UpsertMatchDialog.svelte";
+  import EditMatchDialog from "./EditMatchDialog.svelte";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
-    surveyRecord = $bindable(),
+    surveyRecord,
     entryRecords,
-    upsertMatchDialog,
-    deleteMatchDialog,
+    match,
+    canEdit,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     entryRecords: IDBRecord<MatchEntry>[];
-    upsertMatchDialog?: ReturnType<typeof UpsertMatchDialog> | undefined;
-    deleteMatchDialog?: ReturnType<typeof DeleteMatchDialog> | undefined;
+    match: Match;
+    canEdit?: boolean;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
+  const entriesByTeam = entryRecords.reduce(
+    (acc, entry) => {
+      if (entry.type != "match") return acc;
 
-  let viewTeamDialog = $state<ReturnType<typeof ViewTeamDialog> | undefined>();
+      if (entry.team in acc) {
+        acc[entry.team].push(entry);
+      } else {
+        acc[entry.team] = [entry];
+      }
 
-  let match = $state<Match>({
-    number: 0,
-    red1: "",
-    red2: "",
-    red3: "",
-    blue1: "",
-    blue2: "",
-    blue3: "",
-  });
-  let teamInfos = $state<TeamInfo[]>([]);
+      return acc;
+    },
+    {} as Record<string, IDBRecord<MatchEntry>[]>,
+  );
 
-  export function open(newMatch: Match, newTeamInfos: TeamInfo[]) {
-    match = structuredClone($state.snapshot(newMatch));
-    teamInfos = structuredClone($state.snapshot(newTeamInfos));
-    dialog.open();
-  }
+  let teamInfos = $derived(getTeamInfosFromMatch(match));
 
-  export function close() {
-    dialog.close();
+  function getTeamInfosFromMatch(match: Match) {
+    const ranksPerPickList = surveyRecord.pickLists.map((pickList) => {
+      const pickListData = pickList.weights.reduce(
+        (acc, weight) => {
+          if (surveyRecord.type != "match") {
+            return acc;
+          }
+
+          const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam);
+          const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
+          for (const team in normalizedTeamData) {
+            if (team in acc) {
+              acc[team] += normalizedTeamData[team];
+            } else {
+              acc[team] = normalizedTeamData[team];
+            }
+          }
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      const normalizedPickListData = normalizeTeamData(pickListData);
+
+      const sortedTeamRankings = Object.keys(pickListData)
+        .map((team) => ({ team, percentage: normalizedPickListData[team] }))
+        .toSorted((a, b) => b.percentage - a.percentage)
+        .map((data, index) => ({ team: data.team, rank: index + 1 }));
+
+      return sortedTeamRankings.reduce(
+        (acc, ranking) => {
+          acc[ranking.team] = ranking.rank;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+    });
+
+    const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+
+    const teamInfos: TeamInfo[] = teams.map((team) => {
+      const matchingEntries = entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
+      const ranks = ranksPerPickList.map((pickList) => pickList[team]);
+      return {
+        team,
+        entryCount: matchingEntries.length,
+        matchCount: 0,
+        isCustom: surveyRecord.teams.includes(team),
+        pickListRanks: ranksPerPickList.length ? ranks : undefined,
+      };
+    });
+
+    return teamInfos.filter((teamInfo) => {
+      return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes(teamInfo.team);
+    });
   }
 
   function getOrdinal(n: number) {
@@ -62,35 +112,23 @@
 
     return "th";
   }
-
-  function onclose() {
-    match = {
-      number: 0,
-      red1: "",
-      red2: "",
-      red3: "",
-      blue1: "",
-      blue2: "",
-      blue3: "",
-    };
-    teamInfos = [];
-  }
 </script>
-
-<ViewTeamDialog bind:this={viewTeamDialog} {surveyRecord} {entryRecords} />
 
 {#snippet teamRow(team: string, alliance: string)}
   {@const teamInfo = teamInfos.find((teamInfo) => teamInfo.team == team)}
   {@const entry = entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
+
   {#if teamInfo}
+    {@const onclick = () => openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo })}
+
     <tr
       tabindex="0"
       role="button"
-      onclick={() => viewTeamDialog?.open(teamInfo)}
+      {onclick}
       onkeydown={(e) => {
         if (e.key == " " || e.key == "Enter") {
           e.preventDefault();
-          viewTeamDialog?.open(teamInfo);
+          onclick();
         }
       }}
       class="button cursor-pointer bg-neutral-800"
@@ -115,41 +153,39 @@
   {/if}
 {/snippet}
 
-<Dialog bind:this={dialog} {onclose}>
-  <div class="flex flex-col">
-    <span>Match {match.number}</span>
-    <table class="border-separate border-spacing-y-2 text-center">
-      <thead class="text-nowrap">
-        <tr>
-          <th class="w-0 p-2">Team</th>
-          {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
-            {#each surveyRecord.pickLists as pickList}
-              <th class="w-0 p-2">{pickList.name}</th>
-            {/each}
-          {/if}
-          <th class="w-0 p-2">Done</th>
-          <td></td>
-        </tr>
-      </thead>
-      <tbody>
-        {#each [match.red1, match.red2, match.red3] as team}
-          {@render teamRow(team, "red")}
-        {/each}
-        {#each [match.blue1, match.blue2, match.blue3] as team}
-          {@render teamRow(team, "blue")}
-        {/each}
-      </tbody>
-    </table>
-  </div>
+<div class="flex flex-col">
+  <span>Match {match.number}</span>
+  <table class="border-separate border-spacing-y-2 text-center">
+    <thead class="text-nowrap">
+      <tr>
+        <th class="w-0 p-2">Team</th>
+        {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
+          {#each surveyRecord.pickLists as pickList}
+            <th class="w-0 p-2">{pickList.name}</th>
+          {/each}
+        {/if}
+        <th class="w-0 p-2">Done</th>
+        <td></td>
+      </tr>
+    </thead>
+    <tbody>
+      {#each [match.red1, match.red2, match.red3] as team}
+        {@render teamRow(team, "red")}
+      {/each}
+      {#each [match.blue1, match.blue2, match.blue3] as team}
+        {@render teamRow(team, "blue")}
+      {/each}
+    </tbody>
+  </table>
+</div>
 
-  {#if $modeStore == "admin" && upsertMatchDialog && deleteMatchDialog}
-    <Button onclick={() => upsertMatchDialog.editMatch(match.number)}>
-      <Icon name="pen" />
-      Edit
-    </Button>
-    <Button onclick={() => deleteMatchDialog.open(match.number)}>
-      <Icon name="trash" />
-      Delete
-    </Button>
-  {/if}
-</Dialog>
+{#if $modeStore == "admin" && canEdit}
+  <Button onclick={() => openDialog(EditMatchDialog, { surveyRecord, match })}>
+    <Icon name="pen" />
+    Edit
+  </Button>
+  <Button onclick={() => openDialog(DeleteMatchDialog, { surveyRecord, number: match.number, ondelete: closeDialog })}>
+    <Icon name="trash" />
+    Delete
+  </Button>
+{/if}

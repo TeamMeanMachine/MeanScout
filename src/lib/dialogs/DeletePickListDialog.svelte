@@ -1,38 +1,25 @@
 <script lang="ts">
-  import Dialog from "$lib/components/Dialog.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { MatchSurvey } from "$lib/survey";
 
   let {
-    surveyRecord = $bindable(),
+    surveyRecord,
+    index,
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    index: number;
     ondelete: () => void;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
-  let pickListIndex: number | undefined = undefined;
-
-  export function open(index: number) {
-    pickListIndex = index;
-    dialog.open();
-  }
-
-  function onconfirm() {
-    if (pickListIndex !== undefined) {
-      surveyRecord.pickLists = surveyRecord.pickLists.toSpliced(pickListIndex, 1);
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      surveyRecord.pickLists = surveyRecord.pickLists.toSpliced(index, 1);
       surveyRecord.modified = new Date();
-    }
-    dialog.close();
-    ondelete();
-  }
-
-  function onclose() {
-    pickListIndex = undefined;
-  }
+      ondelete();
+      closeDialog();
+    },
+  };
 </script>
 
-<Dialog bind:this={dialog} {onconfirm} {onclose}>
-  <span>Delete pick list?</span>
-</Dialog>
+<span>Delete pick list?</span>

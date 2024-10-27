@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import { parseValueFromString, type Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { countPreviousFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
@@ -11,22 +12,55 @@
   let {
     idb,
     surveyRecord,
-    entryRecords = $bindable(),
+    entryRecords,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
   let qrCodeReader: ReturnType<typeof QRCodeReader>;
 
   let importedEntry = $state<Entry | undefined>();
   let error = $state("");
 
-  function onopen() {
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      if (!importedEntry) {
+        error = "No input";
+        return;
+      }
+
+      const addRequest = idb
+        .transaction("entries", "readwrite")
+        .objectStore("entries")
+        .add($state.snapshot(importedEntry));
+
+      addRequest.onsuccess = () => {
+        const id = addRequest.result;
+        if (!id || !importedEntry) {
+          error = "Could not add entry!";
+          return;
+        }
+
+        entryRecords = [{ ...importedEntry, id: id as number }, ...entryRecords];
+        closeDialog();
+      };
+
+      addRequest.onerror = (e) => {
+        e.preventDefault();
+        error = "Could not add entry!";
+      };
+    },
+  };
+
+  onMount(() => {
     qrCodeReader.start();
-  }
+  });
+
+  onDestroy(() => {
+    qrCodeReader.stop();
+  });
 
   function onread(data: string) {
     const entryCSV = data
@@ -74,49 +108,7 @@
     qrCodeReader.stop();
     qrCodeReader.start();
   }
-
-  function onconfirm() {
-    if (!importedEntry) {
-      error = "No input";
-      return;
-    }
-
-    const addRequest = idb
-      .transaction("entries", "readwrite")
-      .objectStore("entries")
-      .add($state.snapshot(importedEntry));
-
-    addRequest.onsuccess = () => {
-      const id = addRequest.result;
-      if (!id || !importedEntry) {
-        error = "Could not add entry!";
-        return;
-      }
-
-      entryRecords = [{ ...importedEntry, id: id as number }, ...entryRecords];
-      dialog.close();
-    };
-
-    addRequest.onerror = (e) => {
-      e.preventDefault();
-      error = "Could not add entry!";
-    };
-  }
-
-  function onclose() {
-    qrCodeReader.stop();
-    importedEntry = undefined;
-    error = "";
-  }
 </script>
-
-<Button onclick={() => dialog.open()}>
-  <Icon name="qrcode" />
-  <div class="flex flex-col">
-    Import
-    <small>QR code</small>
-  </div>
-</Button>
 
 {#snippet fieldRow(field: SingleField, value: Value)}
   {#if field.type == "text"}
@@ -136,52 +128,54 @@
   {/if}
 {/snippet}
 
-<Dialog bind:this={dialog} {onconfirm} {onopen} {onclose}>
-  <span>Import from QR code</span>
-  <QRCodeReader bind:this={qrCodeReader} {onread} />
-  {#if importedEntry}
-    <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
-      <table class="w-full text-left">
-        <tbody>
-          <tr><th colspan="2" class="p-2">Entry</th></tr>
+<span>Import from QR code</span>
+
+<QRCodeReader bind:this={qrCodeReader} {onread} />
+
+{#if importedEntry}
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+    <table class="w-full text-left">
+      <tbody>
+        <tr><th colspan="2" class="p-2">Entry</th></tr>
+        <tr>
+          <td class="w-0 p-2 text-sm">Team</td>
+          <td class="p-2 font-bold">{importedEntry.team}</td>
+        </tr>
+        {#if importedEntry.type == "match"}
           <tr>
-            <td class="w-0 p-2 text-sm">Team</td>
-            <td class="p-2 font-bold">{importedEntry.team}</td>
+            <td class="p-2 text-sm">Match</td>
+            <td class="p-2 font-bold">{importedEntry.match}</td>
           </tr>
-          {#if importedEntry.type == "match"}
-            <tr>
-              <td class="p-2 text-sm">Match</td>
-              <td class="p-2 font-bold">{importedEntry.match}</td>
-            </tr>
-            <tr>
-              <td class="p-2 text-sm">Absent</td>
-              <td class="p-2 font-bold">{importedEntry.absent}</td>
-            </tr>
-          {/if}
-          <tr><td class="p-2"></td></tr>
-          {#if importedEntry.type != "match" || !importedEntry.absent}
-            {#each surveyRecord.fields as field, i (field)}
-              {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
-              {#if field.type == "group"}
-                <tr><th colspan="2" class="p-2">{field.name}</th></tr>
-                {#each field.fields as innerField, innerFieldIndex (innerField)}
-                  {@render fieldRow(innerField, importedEntry.values[previousFields + innerFieldIndex])}
-                {/each}
-                <tr><td class="p-2"></td></tr>
-              {:else}
-                {@render fieldRow(field, importedEntry.values[previousFields])}
-              {/if}
-            {/each}
-          {/if}
-        </tbody>
-      </table>
-    </div>
-  {/if}
-  <Button onclick={retry}>
-    <Icon name="arrow-rotate-left" />
-    Retry
-  </Button>
-  {#if error}
-    <span>{error}</span>
-  {/if}
-</Dialog>
+          <tr>
+            <td class="p-2 text-sm">Absent</td>
+            <td class="p-2 font-bold">{importedEntry.absent}</td>
+          </tr>
+        {/if}
+        <tr><td class="p-2"></td></tr>
+        {#if importedEntry.type != "match" || !importedEntry.absent}
+          {#each surveyRecord.fields as field, i (field)}
+            {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
+            {#if field.type == "group"}
+              <tr><th colspan="2" class="p-2">{field.name}</th></tr>
+              {#each field.fields as innerField, innerFieldIndex (innerField)}
+                {@render fieldRow(innerField, importedEntry.values[previousFields + innerFieldIndex])}
+              {/each}
+              <tr><td class="p-2"></td></tr>
+            {:else}
+              {@render fieldRow(field, importedEntry.values[previousFields])}
+            {/if}
+          {/each}
+        {/if}
+      </tbody>
+    </table>
+  </div>
+{/if}
+
+<Button onclick={retry}>
+  <Icon name="arrow-rotate-left" />
+  Retry
+</Button>
+
+{#if error}
+  <span>{error}</span>
+{/if}

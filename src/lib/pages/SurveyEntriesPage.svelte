@@ -11,6 +11,7 @@
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
+  import { openDialog } from "$lib/dialog";
 
   let {
     idb,
@@ -22,8 +23,6 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
-  let viewEntryDialog = $state<ReturnType<typeof ViewEntryDialog> | undefined>();
-
   let filters = $state<EntryFilters>({
     team: undefined,
     match: undefined,
@@ -31,6 +30,7 @@
     target: undefined,
     exported: undefined,
   });
+
   let filteredEntries = $derived(entryRecords.filter(filterEntry).toSorted(sortEntries));
 
   let displayedCount = $state(10);
@@ -203,8 +203,20 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  <ImportEntriesDialog {idb} {surveyRecord} bind:entryRecords />
-  <ImportEntryDialog {idb} {surveyRecord} bind:entryRecords />
+  <Button onclick={() => openDialog(ImportEntriesDialog, { idb, surveyRecord, entryRecords })}>
+    <Icon name="paste" />
+    <div class="flex flex-col">
+      Import
+      <small>File</small>
+    </div>
+  </Button>
+  <Button onclick={() => openDialog(ImportEntryDialog, { idb, surveyRecord, entryRecords })}>
+    <Icon name="qrcode" />
+    <div class="flex flex-col">
+      Import
+      <small>QR code</small>
+    </div>
+  </Button>
 </div>
 
 {#if duplicateEntryIds.length}
@@ -220,15 +232,43 @@
 {/if}
 
 <div class="flex flex-col gap-2 p-3">
-  <ViewEntryDialog {idb} bind:this={viewEntryDialog} bind:surveyRecord onchange={refresh} />
   <h2 class="font-bold">Entries</h2>
-  <FilterEntriesDialog {surveyRecord} {entryRecords} bind:filters {filterDetails} />
+  <Button
+    onclick={() =>
+      openDialog(FilterEntriesDialog, {
+        surveyRecord,
+        entryRecords,
+        filters,
+        onfilter: (newFilters) => (filters = newFilters),
+      })}
+    classes="flex-nowrap"
+  >
+    <Icon name="filter" />
+    <div class="flex flex-col">
+      <span>Filter</span>
+      <small>{filterDetails}</small>
+    </div>
+  </Button>
   <span class="mt-2">
     {filteredEntries.length}
     {filteredEntries.length == 1 ? "result" : "results"}
   </span>
   {#if filteredEntries.length}
-    <ExportEntriesDialog {idb} {surveyRecord} {filteredEntries} onexport={refresh} />
+    <Button
+      onclick={() =>
+        openDialog(ExportEntriesDialog, {
+          idb,
+          surveyRecord,
+          filteredEntries,
+          onexport: refresh,
+        })}
+    >
+      <Icon name="share-from-square" />
+      <div class="flex flex-col">
+        Export
+        <small>Share, download</small>
+      </div>
+    </Button>
     <table class="w-full border-separate border-spacing-y-2 text-left">
       <thead class="sticky top-0 bg-neutral-900">
         <tr>
@@ -243,14 +283,22 @@
       </thead>
       <tbody>
         {#each displayedEntries as entry (entry.id)}
+          {@const onclick = () => {
+            openDialog(ViewEntryDialog, {
+              idb,
+              surveyRecord,
+              entryRecord: entry,
+              onchange: refresh,
+            });
+          }}
           <tr
             tabindex="0"
             role="button"
-            onclick={() => viewEntryDialog?.open(entry)}
+            {onclick}
             onkeydown={(e) => {
               if (e.key == " " || e.key == "Enter") {
                 e.preventDefault();
-                viewEntryDialog?.open(entry);
+                onclick();
               }
             }}
             class="button cursor-pointer bg-neutral-800"

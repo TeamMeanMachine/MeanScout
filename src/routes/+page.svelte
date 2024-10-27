@@ -1,7 +1,9 @@
 <script lang="ts">
+  import DialogBox from "$lib/components/DialogBox.svelte";
   import Header from "$lib/components/Header.svelte";
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import Router from "$lib/components/Router.svelte";
+  import { subscribeDialog, type DialogState } from "$lib/dialog";
   import { migrateIDB } from "$lib/migrate";
   import "../app.css";
 
@@ -32,7 +34,14 @@
       })
       .catch(console.error);
   }
+
+  let dialogStack = $state<DialogState[]>([]);
+  subscribeDialog((state) => (dialogStack = state));
 </script>
+
+{#each dialogStack as { component, props }}
+  <DialogBox {component} {props} />
+{/each}
 
 {#if idb}
   <LaunchUploadHandler {idb} />

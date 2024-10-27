@@ -1,13 +1,11 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
-  import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
 
   let {
     idb,
-    surveyRecord = $bindable(),
+    surveyRecord,
     entryRecord,
     ondelete,
   }: {
@@ -17,36 +15,25 @@
     ondelete?: (() => void) | undefined;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
   let error = $state("");
 
-  function onconfirm() {
-    const deleteRequest = idb.transaction("entries", "readwrite").objectStore("entries").delete(entryRecord.id);
-    deleteRequest.onerror = () => {
-      error = `Could not delete entry: ${deleteRequest.error?.message}`;
-    };
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      const deleteRequest = idb.transaction("entries", "readwrite").objectStore("entries").delete(entryRecord.id);
+      deleteRequest.onerror = () => {
+        error = `Could not delete entry: ${deleteRequest.error?.message}`;
+      };
 
-    deleteRequest.onsuccess = () => {
-      surveyRecord.modified = new Date();
-      ondelete?.();
-      dialog.close();
-    };
-  }
-
-  function onclose() {
-    error = "";
-  }
+      deleteRequest.onsuccess = () => {
+        surveyRecord.modified = new Date();
+        ondelete?.();
+        closeDialog();
+      };
+    },
+  };
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="trash" />
-  Delete
-</Button>
-
-<Dialog bind:this={dialog} {onconfirm} {onclose}>
-  <span>Delete this entry?</span>
-  {#if error}
-    <span>{error}</span>
-  {/if}
-</Dialog>
+<span>Delete this entry?</span>
+{#if error}
+  <span>{error}</span>
+{/if}

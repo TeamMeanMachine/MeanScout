@@ -1,40 +1,39 @@
 <script lang="ts">
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
-  import UpsertPickListDialog from "./UpsertPickListDialog.svelte";
+  import EditPickListDialog from "./EditPickListDialog.svelte";
 
   let {
-    surveyRecord = $bindable(),
-    upsertPickListDialog,
-    deletePickListDialog,
+    surveyRecord,
     entriesByTeam,
+    pickList,
+    index,
+    canEdit = false,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    upsertPickListDialog?: ReturnType<typeof UpsertPickListDialog> | undefined;
-    deletePickListDialog?: ReturnType<typeof DeletePickListDialog> | undefined;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
+    pickList: PickList;
+    index: number;
+    canEdit?: boolean;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
-  let pickListIndex = $state(-1);
-  let pickList = $state<PickList>({ name: "New pick list", weights: [] });
   let sortedTeamData = $state<{ team: string; percentage: number }[]>([]);
 
-  export function open(index: number) {
-    pickListIndex = index;
-    refresh();
-    dialog.open();
-  }
+  export const { onopen }: DialogExports = {
+    onopen(open) {
+      refresh();
+      open();
+    },
+  };
 
-  export function refresh() {
-    pickList = surveyRecord.pickLists[pickListIndex];
+  function refresh() {
+    pickList = surveyRecord.pickLists[index];
 
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
@@ -56,52 +55,48 @@
       .map((team) => ({ team, percentage: normalizedPickListData[team] }))
       .toSorted((a, b) => b.percentage - a.percentage);
   }
-
-  export function close() {
-    dialog.close();
-  }
-
-  function onclose() {
-    pickListIndex = -1;
-    pickList = { name: "New pick list", weights: [] };
-    sortedTeamData = [];
-  }
 </script>
 
-<Dialog bind:this={dialog} {onclose}>
-  <span>{pickList.name}</span>
+<span>{pickList.name}</span>
 
-  {#if sortedTeamData.length}
-    <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
-      <table class="w-full text-right">
-        <thead>
+{#if sortedTeamData.length}
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+    <table class="w-full text-right">
+      <thead>
+        <tr>
+          <th class="p-2">Rank</th>
+          <th class="p-2">Team</th>
+          <th class="p-2">Percent</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each sortedTeamData as teamValue, i}
           <tr>
-            <th class="p-2">Rank</th>
-            <th class="p-2">Team</th>
-            <th class="p-2">Percent</th>
+            <td class="p-2">{i + 1}</td>
+            <td class="p-2">{teamValue.team}</td>
+            <td class="p-2">{teamValue.percentage.toFixed(2)}%</td>
           </tr>
-        </thead>
-        <tbody>
-          {#each sortedTeamData as teamValue, i}
-            <tr>
-              <td class="p-2">{i + 1}</td>
-              <td class="p-2">{teamValue.team}</td>
-              <td class="p-2">{teamValue.percentage.toFixed(2)}%</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
+        {/each}
+      </tbody>
+    </table>
+  </div>
+{/if}
 
-  {#if $modeStore == "admin" && upsertPickListDialog && deletePickListDialog}
-    <Button onclick={() => upsertPickListDialog.editPickList(pickListIndex)}>
-      <Icon name="pen" />
-      Edit
-    </Button>
-    <Button onclick={() => deletePickListDialog.open(pickListIndex)}>
-      <Icon name="trash" />
-      Delete
-    </Button>
-  {/if}
-</Dialog>
+{#if $modeStore == "admin" && canEdit}
+  <Button
+    onclick={() => {
+      openDialog(EditPickListDialog, { surveyRecord, index, onupdate: refresh });
+    }}
+  >
+    <Icon name="pen" />
+    Edit
+  </Button>
+  <Button
+    onclick={() => {
+      openDialog(DeletePickListDialog, { surveyRecord, index, ondelete: closeDialog });
+    }}
+  >
+    <Icon name="trash" />
+    Delete
+  </Button>
+{/if}

@@ -4,6 +4,7 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import AddTeamsDialog from "$lib/dialogs/AddTeamsDialog.svelte";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import type { Entry } from "$lib/entry";
@@ -18,8 +19,6 @@
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
-
-  let viewTeamDialog = $state<ReturnType<typeof ViewTeamDialog> | undefined>();
 
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
@@ -164,7 +163,16 @@
 
 <div class="flex flex-col gap-2 p-3">
   {#if $modeStore == "admin"}
-    <AddTeamsDialog bind:surveyRecord allTeams={teamInfos} />
+    <Button
+      onclick={() =>
+        openDialog(AddTeamsDialog, {
+          surveyRecord,
+          allTeams: teamInfos,
+        })}
+    >
+      <Icon name="plus" />
+      Add custom team(s)
+    </Button>
     {#if conflictingTeams.length}
       <Button onclick={fixTeams}>
         <Icon name="wrench" />
@@ -177,7 +185,6 @@
   {/if}
 
   {#if teamInfos.length}
-    <ViewTeamDialog bind:this={viewTeamDialog} bind:surveyRecord {entryRecords} />
     <div class="flex flex-col">
       <span class="mt-2">
         Sorting by
@@ -221,14 +228,23 @@
         </thead>
         <tbody>
           {#each teamInfos as teamInfo (teamInfo.team)}
+            {@const onclick = () => {
+              openDialog(ViewTeamDialog, {
+                surveyRecord,
+                entryRecords,
+                teamInfo,
+                canEdit: true,
+              });
+            }}
+
             <tr
               tabindex="0"
               role="button"
-              onclick={() => viewTeamDialog?.open(teamInfo)}
+              {onclick}
               onkeydown={(e) => {
                 if (e.key == " " || e.key == "Enter") {
                   e.preventDefault();
-                  viewTeamDialog?.open(teamInfo);
+                  onclick();
                 }
               }}
               class="button cursor-pointer bg-neutral-800"

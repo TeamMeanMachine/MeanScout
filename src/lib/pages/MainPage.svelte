@@ -1,7 +1,9 @@
 <script lang="ts">
   import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
   import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { modeStore } from "$lib/settings";
@@ -33,8 +35,20 @@
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Options</h2>
   {#if $modeStore == "admin"}
-    <NewSurveyDialog {idb} />
-    <ImportSurveyDialog {idb} />
+    <Button onclick={() => openDialog(NewSurveyDialog, { idb })}>
+      <Icon name="plus" />
+      <div class="flex flex-col">
+        New survey
+        <small>From scratch</small>
+      </div>
+    </Button>
+    <Button onclick={() => openDialog(ImportSurveyDialog, { idb })}>
+      <Icon name="paste" />
+      <div class="flex flex-col">
+        Import survey
+        <small>From a file</small>
+      </div>
+    </Button>
   {/if}
   <Anchor route="settings">
     <Icon name="gears" />

@@ -1,20 +1,18 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { type Field, type GroupField } from "$lib/field";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { type Field, type GroupField, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import UpsertFieldDialog from "./UpsertFieldDialog.svelte";
+  import EditFieldDialog from "./EditFieldDialog.svelte";
 
   let {
-    upsertFieldDialog,
     surveyRecord = $bindable(),
+    action,
   }: {
-    upsertFieldDialog: ReturnType<typeof UpsertFieldDialog> | undefined;
     surveyRecord: IDBRecord<Survey>;
+    action: { type: "field"; index: number } | { type: "inner-field"; index: number; innerIndex: number };
   } = $props();
-
-  let dialog: ReturnType<typeof Dialog>;
 
   let parentFieldIndex = $state<number | undefined>();
   let parentField = $state<GroupField>({ name: "", type: "group", fields: [] });
@@ -24,28 +22,22 @@
 
   let error = $state("");
 
-  export function viewField(index: number) {
-    parentFieldIndex = undefined;
-    parentField = { name: "", type: "group", fields: [] };
-    fieldIndex = index;
-    field = structuredClone($state.snapshot(surveyRecord.fields[fieldIndex]));
-    dialog.open();
-  }
+  export const { onopen }: DialogExports = {
+    onopen(open) {
+      if (action.type == "field") {
+        fieldIndex = action.index;
+        field = structuredClone($state.snapshot(surveyRecord.fields[fieldIndex]));
+      } else if (action.type == "inner-field") {
+        parentFieldIndex = action.index;
+        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentFieldIndex] as GroupField));
+        fieldIndex = action.innerIndex;
+        field = structuredClone($state.snapshot(parentField.fields[fieldIndex]));
+      }
+      open();
+    },
+  };
 
-  export function viewInnerField(index: number, innerIndex: number) {
-    const maybeParent = structuredClone($state.snapshot(surveyRecord.fields[index]));
-    if (maybeParent.type != "group") {
-      return;
-    }
-
-    parentFieldIndex = index;
-    parentField = maybeParent;
-    fieldIndex = innerIndex;
-    field = structuredClone($state.snapshot(parentField.fields[fieldIndex]));
-    dialog.open();
-  }
-
-  export function refresh() {
+  function refresh() {
     if (fieldIndex < 0) return;
 
     if (parentFieldIndex == undefined) {
@@ -59,14 +51,6 @@
       parentField = maybeParent;
       field = structuredClone($state.snapshot(parentField.fields[fieldIndex]));
     }
-  }
-
-  function onclose() {
-    parentFieldIndex = undefined;
-    parentField = { name: "", type: "group", fields: [] };
-    fieldIndex = -1;
-    field = { name: "", type: "toggle" };
-    error = "";
   }
 
   function moveField(by: number) {
@@ -84,25 +68,23 @@
       );
       surveyRecord.fields[parentFieldIndex] = structuredClone($state.snapshot(parentField));
     }
-    dialog.close();
-  }
 
-  function editField() {
-    if (parentFieldIndex == undefined) {
-      upsertFieldDialog?.editField(fieldIndex);
-    } else {
-      upsertFieldDialog?.editInnerField(parentFieldIndex, fieldIndex);
-    }
+    closeDialog();
   }
 
   function duplicateField() {
     if (parentFieldIndex == undefined) {
       surveyRecord.fields = surveyRecord.fields.toSpliced(fieldIndex, 0, structuredClone($state.snapshot(field)));
-    } else if (field.type != "group") {
-      parentField.fields = parentField.fields.toSpliced(fieldIndex, 0, structuredClone($state.snapshot(field)));
+    } else {
+      parentField.fields = parentField.fields.toSpliced(
+        fieldIndex,
+        0,
+        structuredClone($state.snapshot(field as SingleField)),
+      );
       surveyRecord.fields[parentFieldIndex] = structuredClone($state.snapshot(parentField));
     }
-    dialog.close();
+
+    closeDialog();
   }
 
   function deleteField() {
@@ -112,44 +94,47 @@
       parentField.fields = parentField.fields.filter((_, i) => i != fieldIndex);
       surveyRecord.fields[parentFieldIndex] = structuredClone($state.snapshot(parentField));
     }
-    dialog.close();
+
+    closeDialog();
   }
 </script>
 
-<Dialog bind:this={dialog} {onclose}>
-  <span>
-    {#if parentFieldIndex != undefined}
-      {parentField.name} -
-    {/if}
-    {field.name}
-  </span>
+<span>
+  {#if parentFieldIndex != undefined}
+    {parentField.name} -
+  {/if}
+  {field.name}
+</span>
 
-  <Button onclick={editField}>
-    <Icon name="pen" />
-    Edit {field.type}
+<Button
+  onclick={() => {
+    openDialog(EditFieldDialog, { surveyRecord, action, onupdate: refresh });
+  }}
+>
+  <Icon name="pen" />
+  Edit {field.type}
+</Button>
+{#if fieldIndex > 0}
+  <Button onclick={() => moveField(-1)}>
+    <Icon name="arrow-up" />
+    Move up
   </Button>
-  {#if fieldIndex > 0}
-    <Button onclick={() => moveField(-1)}>
-      <Icon name="arrow-up" />
-      Move up
-    </Button>
-  {/if}
-  {#if fieldIndex < (parentFieldIndex == undefined ? surveyRecord.fields.length : parentField.fields.length) - 1}
-    <Button onclick={() => moveField(1)}>
-      <Icon name="arrow-down" />
-      Move down
-    </Button>
-  {/if}
-  <Button onclick={duplicateField}>
-    <Icon name="clone" />
-    Duplicate
+{/if}
+{#if fieldIndex < (parentFieldIndex == undefined ? surveyRecord.fields.length : parentField.fields.length) - 1}
+  <Button onclick={() => moveField(1)}>
+    <Icon name="arrow-down" />
+    Move down
   </Button>
-  <Button onclick={deleteField}>
-    <Icon name="trash" />
-    Delete
-  </Button>
+{/if}
+<Button onclick={duplicateField}>
+  <Icon name="clone" />
+  Duplicate
+</Button>
+<Button onclick={deleteField}>
+  <Icon name="trash" />
+  Delete
+</Button>
 
-  {#if error}
-    <span>{error}</span>
-  {/if}
-</Dialog>
+{#if error}
+  <span>{error}</span>
+{/if}

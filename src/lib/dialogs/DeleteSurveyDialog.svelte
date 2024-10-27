@@ -1,7 +1,5 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import Dialog from "$lib/components/Dialog.svelte";
-  import Icon from "$lib/components/Icon.svelte";
+  import type { DialogExports } from "$lib/dialog";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -12,73 +10,72 @@
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
-  let dialog: ReturnType<typeof Dialog>;
-
   let entryCount = $state(0);
   let error = $state("");
 
-  const entryCountRequest = idb.transaction("entries").objectStore("entries").index("surveyId").count(surveyRecord.id);
-  entryCountRequest.onsuccess = () => {
-    if (typeof entryCountRequest.result == "number") {
-      entryCount = entryCountRequest.result;
-    }
-  };
+  export const { onopen, onconfirm }: DialogExports = {
+    onopen(open) {
+      const entryCountRequest = idb
+        .transaction("entries")
+        .objectStore("entries")
+        .index("surveyId")
+        .count(surveyRecord.id);
+      entryCountRequest.onerror = () => open();
 
-  function onconfirm() {
-    const deleteTransaction = idb.transaction(["surveys", "entries"], "readwrite");
-    deleteTransaction.onabort = () => {
-      error ||= `Could not delete survey: ${deleteTransaction.error?.message}`;
-    };
+      entryCountRequest.onsuccess = () => {
+        if (typeof entryCountRequest.result == "number") {
+          entryCount = entryCountRequest.result;
+        }
+        open();
+      };
+    },
+    onconfirm() {
+      const deleteTransaction = idb.transaction(["surveys", "entries"], "readwrite");
+      deleteTransaction.onabort = () => {
+        error ||= `Could not delete survey: ${deleteTransaction.error?.message}`;
+      };
 
-    deleteTransaction.oncomplete = () => {
-      location.hash = "/";
-    };
+      deleteTransaction.oncomplete = () => {
+        location.hash = "/";
+      };
 
-    const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);
-    surveyRequest.onerror = () => {
-      error = `Could not delete survey: ${surveyRequest.error?.message}`;
-      deleteTransaction.abort();
-    };
-
-    const cursorRequest = deleteTransaction.objectStore("entries").index("surveyId").openCursor(surveyRecord.id);
-    cursorRequest.onerror = () => {
-      error = `Could not delete survey's entries: ${cursorRequest.error?.message}`;
-      deleteTransaction.abort();
-    };
-
-    cursorRequest.onsuccess = () => {
-      const cursor = cursorRequest.result;
-      if (cursor === undefined) {
-        error = "Could not delete survey's entries";
+      const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);
+      surveyRequest.onerror = () => {
+        error = `Could not delete survey: ${surveyRequest.error?.message}`;
         deleteTransaction.abort();
-        return;
-      }
+      };
 
-      if (cursor === null) {
-        return;
-      }
+      const cursorRequest = deleteTransaction.objectStore("entries").index("surveyId").openCursor(surveyRecord.id);
+      cursorRequest.onerror = () => {
+        error = `Could not delete survey's entries: ${cursorRequest.error?.message}`;
+        deleteTransaction.abort();
+      };
 
-      cursor.delete();
-      cursor.continue();
-    };
-  }
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor === undefined) {
+          error = "Could not delete survey's entries";
+          deleteTransaction.abort();
+          return;
+        }
 
-  function onclose() {
-    error = "";
-  }
+        if (cursor === null) {
+          return;
+        }
+
+        cursor.delete();
+        cursor.continue();
+      };
+    },
+  };
 </script>
 
-<Button onclick={() => dialog.open()}>
-  <Icon name="trash" />
-  Delete survey
-</Button>
+<span>Delete "{surveyRecord.name}"?</span>
 
-<Dialog bind:this={dialog} {onconfirm} {onclose}>
-  <span>Delete "{surveyRecord.name}"?</span>
-  {#if entryCount}
-    <span>{entryCount} {entryCount > 1 ? "entries" : "entry"} will be lost!</span>
-  {/if}
-  {#if error}
-    <span>{error}</span>
-  {/if}
-</Dialog>
+{#if entryCount}
+  <span>{entryCount} {entryCount > 1 ? "entries" : "entry"} will be lost!</span>
+{/if}
+
+{#if error}
+  <span>{error}</span>
+{/if}

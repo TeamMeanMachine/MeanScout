@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mount, onMount, unmount } from "svelte";
+  import { closeAllDialogs } from "$lib/dialog";
   import AboutPage from "$lib/pages/AboutPage.svelte";
   import EntryPage from "$lib/pages/EntryPage.svelte";
   import MainPage from "$lib/pages/MainPage.svelte";
@@ -46,6 +47,8 @@
   onhashchange = handleHashChange;
 
   function handleHashChange() {
+    closeAllDialogs();
+
     surveyRecord = undefined;
     entryRecord = undefined;
 
