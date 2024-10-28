@@ -43,6 +43,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <dialog
   bind:this={box}
+  onclose={closeDialog}
   onmouseup={onboxmouseup}
   class="max-h-dvh w-[540px] bg-neutral-900 shadow-2xl [max-width:100vw] backdrop:backdrop-blur"
 >
