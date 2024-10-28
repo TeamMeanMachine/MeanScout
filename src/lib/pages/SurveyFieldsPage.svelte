@@ -49,7 +49,7 @@
             <h2 class="font-bold">{field.name}</h2>
             <Button
               onclick={() => {
-                openDialog(ViewFieldDialog, { surveyRecord, action: { type: "field", index } });
+                openDialog(ViewFieldDialog, { surveyRecord, index });
               }}
             >
               <Icon name={fieldIcons[field.type]} />
@@ -58,7 +58,7 @@
             {#each field.fields as innerField, innerIndex (innerField)}
               <Button
                 onclick={() => {
-                  openDialog(ViewFieldDialog, { surveyRecord, action: { type: "inner-field", index, innerIndex } });
+                  openDialog(ViewFieldDialog, { surveyRecord, index: innerIndex, parentIndex: index });
                 }}
               >
                 <Icon name={fieldIcons[innerField.type]} />
@@ -70,7 +70,7 @@
             {/each}
             <Button
               onclick={() => {
-                openDialog(NewFieldDialog, { surveyRecord, action: { type: "inner-field", index } });
+                openDialog(NewFieldDialog, { surveyRecord, parentIndex: index });
               }}
             >
               <Icon name="plus" />
@@ -80,7 +80,7 @@
         {:else}
           <Button
             onclick={() => {
-              openDialog(ViewFieldDialog, { surveyRecord, action: { type: "field", index } });
+              openDialog(ViewFieldDialog, { surveyRecord, index });
             }}
           >
             <Icon name={fieldIcons[field.type]} />
@@ -96,7 +96,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord, action: { type: "group" } });
+          openDialog(NewFieldDialog, { surveyRecord, type: "group" });
         }}
       >
         <Icon name="plus" />
@@ -105,7 +105,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord, action: { type: "field" } });
+          openDialog(NewFieldDialog, { surveyRecord });
         }}
       >
         <Icon name="plus" />

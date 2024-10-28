@@ -2,47 +2,38 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField, type SingleField } from "$lib/field";
+  import { singleFieldTypes, type Field, type GroupField, type SingleField, type SingleFieldType } from "$lib/field";
   import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord = $bindable(),
-    action,
+    surveyRecord,
+    index,
+    parentIndex,
     onupdate,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    action: { type: "field"; index: number } | { type: "inner-field"; index: number; innerIndex: number };
+    index: number;
+    parentIndex?: number | undefined;
     onupdate?: () => void;
   } = $props();
 
-  let parentFieldIndex = $state<number | undefined>();
-  let parentField = $state<GroupField>({ name: "", type: "group", fields: [] });
-
-  let fieldIndex = $state<number | undefined>();
   let field = $state<Field>({ name: "", type: "toggle" });
-
+  let parentField = $state<GroupField | undefined>();
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
     onopen(open) {
-      if (action.type == "field") {
-        fieldIndex = action.index;
-        field = structuredClone($state.snapshot(surveyRecord.fields[fieldIndex]));
-      } else if (action.type == "inner-field") {
-        parentFieldIndex = action.index;
-        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentFieldIndex] as GroupField));
-        fieldIndex = action.innerIndex;
-        field = structuredClone($state.snapshot(parentField.fields[fieldIndex]));
+      if (parentIndex == undefined) {
+        parentField = undefined;
+        field = structuredClone($state.snapshot(surveyRecord.fields[index]));
+      } else {
+        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentIndex] as GroupField));
+        field = structuredClone($state.snapshot(parentField.fields[index]));
       }
 
       open();
     },
     onconfirm() {
-      if (!field) {
-        error = "Something weird happened";
-        return;
-      }
-
       field.name = field.name.trim();
 
       if (!field.name) {
@@ -62,16 +53,11 @@
         }
       }
 
-      if (fieldIndex == undefined) {
-        error = "Something weird happened";
-        return;
-      }
-
-      if (parentFieldIndex == undefined) {
-        surveyRecord.fields[fieldIndex] = structuredClone($state.snapshot(field));
+      if (parentIndex == undefined || parentField == undefined) {
+        surveyRecord.fields[index] = structuredClone($state.snapshot(field));
       } else {
-        parentField.fields[fieldIndex] = structuredClone($state.snapshot(field as SingleField));
-        surveyRecord.fields[parentFieldIndex] = structuredClone($state.snapshot(parentField));
+        parentField.fields[index] = structuredClone($state.snapshot(field as SingleField));
+        surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
       }
 
       surveyRecord.modified = new Date();
@@ -80,7 +66,7 @@
     },
   };
 
-  function changeType(to: string) {
+  function changeType(to: SingleFieldType) {
     switch (to) {
       case "select":
         field = {
@@ -99,6 +85,9 @@
           type: to,
         };
         break;
+      default:
+        const unhandledType: never = to;
+        throw new Error(`Unhandled type for field ${unhandledType}`);
     }
   }
 
@@ -129,7 +118,7 @@
 
 <span>
   Edit
-  {#if parentFieldIndex != undefined}
+  {#if parentField}
     {parentField.name}
   {/if}
   {field.type == "group" ? "group" : "field"}
@@ -145,7 +134,7 @@
     Type
     <select
       value={field.type}
-      onchange={(e) => changeType(e.currentTarget.value)}
+      onchange={(e) => changeType(e.currentTarget.value as SingleFieldType)}
       class="bg-neutral-800 p-2 capitalize text-theme"
     >
       {#each singleFieldTypes as fieldType}

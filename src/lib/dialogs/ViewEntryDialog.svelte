@@ -14,21 +14,15 @@
     surveyRecord,
     entryRecord,
     onchange,
-    data,
   }: {
     idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
     onchange?: () => void;
-    data?: IDBRecord<Entry>;
   } = $props();
 
-  let entry = $state(structuredClone($state.snapshot(data ?? entryRecord)));
+  let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
-
-  if (data) {
-    onchange?.();
-  }
 
   function editEntry() {
     if (entry.status == "draft") {

@@ -6,43 +6,32 @@
   import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord = $bindable(),
-    action,
+    surveyRecord,
+    type = "field",
+    parentIndex,
     onupdate,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    action: { type: "field" } | { type: "group" } | { type: "inner-field"; index: number };
+    type?: "field" | "group";
+    parentIndex?: number;
     onupdate?: () => void;
   } = $props();
 
-  let parentFieldIndex = $state<number | undefined>();
-  let parentField = $state<GroupField>({ name: "", type: "group", fields: [] });
-
-  let fieldIndex = $state<number | undefined>();
-  let field = $state<Field>({ name: "", type: "toggle" });
-
+  let field = $state<Field>({ name: "", type: "number" });
+  let parentField = $state<GroupField | undefined>();
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
     onopen(open) {
-      if (action.type == "field") {
-        field = { name: "", type: "toggle" };
-      } else if (action.type == "group") {
+      if (parentIndex != undefined) {
+        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentIndex])) as GroupField;
+      } else if (type == "group") {
         field = { name: "", type: "group", fields: [] };
-      } else if (action.type == "inner-field") {
-        parentFieldIndex = action.index;
-        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentFieldIndex] as GroupField));
-        field = { name: "", type: "toggle" };
       }
 
       open();
     },
     onconfirm() {
-      if (!field) {
-        error = "Something weird happened";
-        return;
-      }
-
       field.name = field.name.trim();
 
       if (!field.name) {
@@ -62,11 +51,11 @@
         }
       }
 
-      if (parentFieldIndex == undefined) {
+      if (parentIndex == undefined || parentField == undefined) {
         surveyRecord.fields.push(structuredClone($state.snapshot(field)));
       } else {
-        parentField.fields.push(structuredClone($state.snapshot(field as SingleField)));
-        surveyRecord.fields[parentFieldIndex] = structuredClone($state.snapshot(parentField));
+        parentField.fields.push(structuredClone($state.snapshot(field)) as SingleField);
+        surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
       }
 
       surveyRecord.modified = new Date();
@@ -105,13 +94,13 @@
 
   function deleteSelectValue(index: number) {
     if (field.type == "select") {
-      field.values = field.values.filter((_, i) => i != index);
+      field.values.splice(index, 1);
     }
   }
 
   function newSelectValue() {
     if (field.type == "select") {
-      field.values = [...field.values, ""];
+      field.values.push("");
     }
   }
 
@@ -122,13 +111,7 @@
   }
 </script>
 
-<span>
-  {fieldIndex == undefined ? "New" : "Edit"}
-  {#if parentFieldIndex != undefined}
-    {parentField.name}
-  {/if}
-  {field.type == "group" ? "group" : "field"}
-</span>
+<span>New {parentField?.name} {type}</span>
 
 <label class="flex flex-col">
   Name
