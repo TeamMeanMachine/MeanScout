@@ -34,8 +34,27 @@
     return b.match - a.match;
   }
 
+  function toggleSkipped() {
+    if (surveyRecord.type != "match") return;
+
+    if (!surveyRecord.skippedTeams) {
+      surveyRecord.skippedTeams = [teamInfo.team];
+    } else if (surveyRecord.skippedTeams.includes(teamInfo.team)) {
+      surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => team != teamInfo.team);
+    } else {
+      surveyRecord.skippedTeams.push(teamInfo.team);
+    }
+
+    closeDialog();
+  }
+
   function removeTeam() {
     surveyRecord.teams = surveyRecord.teams.filter((team) => teamInfo.team != team);
+
+    if (surveyRecord.type == "match" && surveyRecord.skippedTeams?.length) {
+      surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => teamInfo.team != team);
+    }
+
     closeDialog();
   }
 </script>
@@ -102,6 +121,18 @@
       </tbody>
     </table>
   </div>
+{/if}
+
+{#if $modeStore == "admin" && surveyRecord.type == "match" && canEdit}
+  <Button onclick={toggleSkipped}>
+    {#if teamInfo.skipped}
+      <Icon name="xmark" />
+      Unskip
+    {:else}
+      <Icon name="forward" />
+      Skip
+    {/if}
+  </Button>
 {/if}
 
 {#if $modeStore == "admin" && teamInfo.isCustom && canEdit}

@@ -65,7 +65,6 @@
           openDialog(ViewPickListDialog, { surveyRecord, entriesByTeam, pickList, index, canEdit: true });
         }}
       >
-        <Icon name="list-ol" />
         {pickList.name}
       </Button>
     {/each}
@@ -103,7 +102,6 @@
         });
       }}
     >
-      <Icon name="percent" />
       {expression.name}
     </Button>
   {/each}

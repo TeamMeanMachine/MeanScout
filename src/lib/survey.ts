@@ -21,6 +21,7 @@ const matchSurveySchema = baseSurveySchema.merge(
     matches: z.array(matchSchema),
     expressions: z.array(expressionSchema),
     pickLists: z.array(pickListSchema),
+    skippedTeams: z.optional(z.array(z.coerce.string())),
   }),
 );
 export type MatchSurvey = z.infer<typeof matchSurveySchema>;
