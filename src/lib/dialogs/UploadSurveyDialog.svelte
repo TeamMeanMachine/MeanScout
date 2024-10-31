@@ -1,14 +1,13 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
+  import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let {
-    idb,
     data,
   }: {
-    idb: IDBDatabase;
     data: string;
   } = $props();
 
@@ -46,7 +45,7 @@
     async onconfirm() {
       if (!survey) return;
 
-      const addRequest = idb.transaction("surveys", "readwrite").objectStore("surveys").add($state.snapshot(survey));
+      const addRequest = objectStore("surveys", "readwrite").add($state.snapshot(survey));
       addRequest.onerror = () => {
         error = `Could not upload survey: ${addRequest.error?.message}`;
       };

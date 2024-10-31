@@ -15,7 +15,6 @@
     surveyRecord,
     entryRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
@@ -292,12 +291,7 @@
                   surveyRecord.skippedTeams.push(teamInfo.team);
                 }
               } else {
-                openDialog(ViewTeamDialog, {
-                  surveyRecord,
-                  entryRecords,
-                  teamInfo,
-                  canEdit: true,
-                });
+                openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo, canEdit: true });
               }
             }}
 

@@ -13,7 +13,6 @@
     surveyRecord,
     entryCount,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryCount: number;
   } = $props();

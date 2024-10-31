@@ -5,17 +5,16 @@
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { countPreviousFields, type SingleField } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntryDialog from "./ExportEntryDialog.svelte";
 
   let {
-    idb,
     surveyRecord,
     entryRecord,
     onchange,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
     onchange?: () => void;
@@ -33,7 +32,7 @@
     entry.status = "draft";
     entry.modified = new Date();
 
-    const editRequest = idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(entry));
+    const editRequest = objectStore("entries", "readwrite").put($state.snapshot(entry));
 
     editRequest.onerror = () => {
       error = `Could not edit entry: ${editRequest.error?.message}`;
@@ -104,7 +103,6 @@
 <Button
   onclick={() =>
     openDialog(ExportEntryDialog, {
-      idb,
       surveyRecord,
       entryRecord: entry,
       onexport(newEntry) {
@@ -130,7 +128,6 @@
 <Button
   onclick={() =>
     openDialog(DeleteEntryDialog, {
-      idb,
       surveyRecord,
       entryRecord,
       ondelete: () => {

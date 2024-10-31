@@ -1,6 +1,7 @@
 <script lang="ts">
   import { mount, onMount, unmount } from "svelte";
   import { closeAllDialogs } from "$lib/dialog";
+  import { objectStore, transaction } from "$lib/idb";
   import AboutPage from "$lib/pages/AboutPage.svelte";
   import EntryPage from "$lib/pages/EntryPage.svelte";
   import MainPage from "$lib/pages/MainPage.svelte";
@@ -15,12 +16,6 @@
   import type { Survey } from "$lib/survey";
   import { z } from "zod";
 
-  let {
-    idb,
-  }: {
-    idb: IDBDatabase;
-  } = $props();
-
   const idbIdSchema = z.coerce.number().int().positive();
   const pageSchema = z.enum(["", "settings", "about", "survey", "entry"]).default("");
   const surveyPageSchema = z.enum(["", "entries", "analysis", "matches", "teams", "fields", "options"]).default("");
@@ -33,13 +28,13 @@
 
   $effect(() => {
     if (surveyRecord) {
-      idb.transaction("surveys", "readwrite").objectStore("surveys").put($state.snapshot(surveyRecord));
+      objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
     }
   });
 
   $effect(() => {
     if (entryRecord) {
-      idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(entryRecord));
+      objectStore("entries", "readwrite").put($state.snapshot(entryRecord));
     }
   });
 
@@ -88,44 +83,44 @@
         const { success, data: surveyPage } = surveyPageSchema.safeParse(hash[2]);
 
         if (!success || surveyPage == "") {
-          currentPage = mount(SurveyPage, { target, props: { idb, surveyRecord, entryRecords } });
+          currentPage = mount(SurveyPage, { target, props: { surveyRecord, entryRecords } });
           document.title = `${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "entries") {
-          currentPage = mount(SurveyEntriesPage, { target, props: { idb, surveyRecord, entryRecords } });
+          currentPage = mount(SurveyEntriesPage, { target, props: { surveyRecord, entryRecords } });
           document.title = `Entries - ${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "analysis") {
-          currentPage = mount(SurveyAnalysisPage, { target, props: { idb, surveyRecord, entryRecords } });
+          currentPage = mount(SurveyAnalysisPage, { target, props: { surveyRecord, entryRecords } });
           document.title = `Analysis - ${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "matches") {
-          currentPage = mount(SurveyMatchesPage, { target, props: { idb, surveyRecord, entryRecords } });
+          currentPage = mount(SurveyMatchesPage, { target, props: { surveyRecord, entryRecords } });
           document.title = `Matches - ${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "teams") {
-          currentPage = mount(SurveyTeamsPage, { target, props: { idb, surveyRecord, entryRecords } });
+          currentPage = mount(SurveyTeamsPage, { target, props: { surveyRecord, entryRecords } });
           document.title = `Teams - ${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "fields") {
           const entryCount = entryRecords.length;
-          currentPage = mount(SurveyFieldsPage, { target, props: { idb, surveyRecord, entryCount } });
+          currentPage = mount(SurveyFieldsPage, { target, props: { surveyRecord, entryCount } });
           document.title = `Fields - ${surveyRecord.name} - MeanScout`;
           return;
         }
 
         if (surveyPage == "options") {
-          currentPage = mount(SurveyOptionsPage, { target, props: { idb, surveyRecord } });
+          currentPage = mount(SurveyOptionsPage, { target, props: { surveyRecord } });
           document.title = `Options - ${surveyRecord.name} - MeanScout`;
           return;
         }
@@ -143,7 +138,7 @@
 
       getEntryPageData(entryId, () => {
         clearPage();
-        currentPage = mount(EntryPage, { target, props: { idb, surveyRecord, entryRecord } });
+        currentPage = mount(EntryPage, { target, props: { surveyRecord, entryRecord } });
         document.title = `Draft - ${surveyRecord.name} - MeanScout`;
       });
 
@@ -152,30 +147,30 @@
   }
 
   function getMainPage() {
-    const surveysRequest = idb.transaction("surveys").objectStore("surveys").getAll();
+    const surveysRequest = objectStore("surveys").getAll();
     surveysRequest.onerror = () => mountMainPage();
     surveysRequest.onsuccess = () => mountMainPage(surveysRequest.result);
   }
 
   function mountMainPage(surveyRecords: IDBRecord<Survey>[] = []) {
     clearPage();
-    currentPage = mount(MainPage, { target, props: { idb, surveyRecords } });
+    currentPage = mount(MainPage, { target, props: { surveyRecords } });
     document.title = "MeanScout";
   }
 
   function getSurveyPageData(surveyId: number, onsuccess: (entryRecords: any[]) => void) {
-    const transaction = idb.transaction(["surveys", "entries"]);
-    transaction.onabort = () => getMainPage();
-    const surveyRequest = transaction.objectStore("surveys").get(surveyId);
+    const surveyTransaction = transaction(["surveys", "entries"]);
+    surveyTransaction.onabort = () => getMainPage();
+    const surveyRequest = surveyTransaction.objectStore("surveys").get(surveyId);
     surveyRequest.onsuccess = () => {
       surveyRecord = surveyRequest.result;
-      const entriesRequest = transaction.objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+      const entriesRequest = surveyTransaction.objectStore("entries").index("surveyId").getAll(surveyRecord.id);
       entriesRequest.onsuccess = () => onsuccess(entriesRequest.result);
     };
   }
 
   function getEntryPageData(entryId: number, onsuccess: () => void) {
-    const entryTransaction = idb.transaction(["entries", "surveys"]);
+    const entryTransaction = transaction(["entries", "surveys"]);
     entryTransaction.onabort = () => getMainPage();
     const entryRequest = entryTransaction.objectStore("entries").get(entryId);
     entryRequest.onsuccess = () => {

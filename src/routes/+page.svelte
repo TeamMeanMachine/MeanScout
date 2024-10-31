@@ -4,26 +4,8 @@
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import Router from "$lib/components/Router.svelte";
   import { subscribeDialog, type DialogState } from "$lib/dialog";
-  import { migrateIDB } from "$lib/migrate";
+  import { initIDB } from "$lib/idb";
   import "../app.css";
-
-  let idb = $state<IDBDatabase | undefined>();
-  let idbError = $state<string | undefined>();
-
-  const latestVersion = 8;
-
-  const request = indexedDB.open("MeanScout", latestVersion);
-  request.onerror = () => (idbError = `${request.error?.message}`);
-  request.onupgradeneeded = (e) => migrateIDB(request, e.oldVersion, latestVersion);
-
-  request.onsuccess = () => {
-    if (!request.result) {
-      idbError = "Could not open IDB";
-      return;
-    }
-
-    idb = request.result;
-  };
 
   if (navigator.storage) {
     navigator.storage
@@ -36,17 +18,21 @@
   }
 
   let dialogStack = $state<DialogState[]>([]);
-  subscribeDialog((state) => (dialogStack = state));
+  subscribeDialog((state) => {
+    dialogStack = state;
+  });
+
+  let idbError = $state<undefined | false | string>();
+  initIDB((error) => {
+    idbError = error ?? false;
+  });
 </script>
 
 {#each dialogStack as { component, props }}
   <DialogBox {component} {props} />
 {/each}
 
-{#if idb}
-  <LaunchUploadHandler {idb} />
-  <Router {idb} />
-{:else if idbError?.length}
+{#if idbError}
   <Header />
   <div class="flex flex-col gap-3 p-3">
     <h2>Error</h2>
@@ -56,4 +42,7 @@
     </p>
     <p>Error: {idbError}</p>
   </div>
+{:else if idbError == false}
+  <LaunchUploadHandler />
+  <Router />
 {/if}

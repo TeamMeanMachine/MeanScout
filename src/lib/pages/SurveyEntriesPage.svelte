@@ -12,13 +12,12 @@
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
   import { openDialog } from "$lib/dialog";
+  import { objectStore } from "$lib/idb";
 
   let {
-    idb,
     surveyRecord,
     entryRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
@@ -146,7 +145,7 @@
   }
 
   function refresh() {
-    const entriesRequest = idb.transaction("entries").objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+    const entriesRequest = objectStore("entries").index("surveyId").getAll(surveyRecord.id);
 
     entriesRequest.onerror = () => {
       location.reload();
@@ -163,11 +162,7 @@
   }
 
   function fixEntries() {
-    const cursorRequest = idb
-      .transaction("entries", "readwrite")
-      .objectStore("entries")
-      .index("surveyId")
-      .openCursor(surveyRecord.id);
+    const cursorRequest = objectStore("entries", "readwrite").index("surveyId").openCursor(surveyRecord.id);
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor == null) {
@@ -203,14 +198,14 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  <Button onclick={() => openDialog(ImportEntriesDialog, { idb, surveyRecord, entryRecords })}>
+  <Button onclick={() => openDialog(ImportEntriesDialog, { surveyRecord, entryRecords })}>
     <Icon name="paste" />
     <div class="flex flex-col">
       Import
       <small>File</small>
     </div>
   </Button>
-  <Button onclick={() => openDialog(ImportEntryDialog, { idb, surveyRecord, entryRecords })}>
+  <Button onclick={() => openDialog(ImportEntryDialog, { surveyRecord, entryRecords })}>
     <Icon name="qrcode" />
     <div class="flex flex-col">
       Import
@@ -234,13 +229,14 @@
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Entries</h2>
   <Button
-    onclick={() =>
+    onclick={() => {
       openDialog(FilterEntriesDialog, {
         surveyRecord,
         entryRecords,
         filters,
         onfilter: (newFilters) => (filters = newFilters),
-      })}
+      });
+    }}
     classes="flex-nowrap"
   >
     <Icon name="filter" />
@@ -254,15 +250,7 @@
     {filteredEntries.length == 1 ? "result" : "results"}
   </span>
   {#if filteredEntries.length}
-    <Button
-      onclick={() =>
-        openDialog(ExportEntriesDialog, {
-          idb,
-          surveyRecord,
-          filteredEntries,
-          onexport: refresh,
-        })}
-    >
+    <Button onclick={() => openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, onexport: refresh })}>
       <Icon name="share-from-square" />
       <div class="flex flex-col">
         Export
@@ -283,14 +271,7 @@
       </thead>
       <tbody>
         {#each displayedEntries as entry (entry.id)}
-          {@const onclick = () => {
-            openDialog(ViewEntryDialog, {
-              idb,
-              surveyRecord,
-              entryRecord: entry,
-              onchange: refresh,
-            });
-          }}
+          {@const onclick = () => openDialog(ViewEntryDialog, { surveyRecord, entryRecord: entry, onchange: refresh })}
           <tr
             tabindex="0"
             role="button"

@@ -14,7 +14,6 @@
     surveyRecord,
     entryRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<MatchSurvey>;
     entryRecords: IDBRecord<MatchEntry>[];
   } = $props();

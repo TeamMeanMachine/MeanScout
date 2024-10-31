@@ -1,12 +1,7 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
+  import { objectStore } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
-
-  let {
-    idb,
-  }: {
-    idb: IDBDatabase;
-  } = $props();
 
   let name = $state("");
   let type = $state<SurveyType>("match");
@@ -47,7 +42,7 @@
         return;
       }
 
-      const addRequest = idb.transaction("surveys", "readwrite").objectStore("surveys").add(survey);
+      const addRequest = objectStore("surveys", "readwrite").add(survey);
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };

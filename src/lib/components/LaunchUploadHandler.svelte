@@ -3,21 +3,15 @@
   import UploadEntriesDialog from "$lib/dialogs/UploadEntriesDialog.svelte";
   import UploadSurveyDialog from "$lib/dialogs/UploadSurveyDialog.svelte";
 
-  let {
-    idb,
-  }: {
-    idb: IDBDatabase;
-  } = $props();
-
   function handleUpload(type: string, data: string) {
     switch (type) {
       case "application/json":
       case "text/plain":
-        openDialog(UploadSurveyDialog, { idb, data });
+        openDialog(UploadSurveyDialog, { data });
         break;
       case "text/csv":
       case "text/comma-separated-values":
-        openDialog(UploadEntriesDialog, { idb, data });
+        openDialog(UploadEntriesDialog, { data });
         break;
     }
   }

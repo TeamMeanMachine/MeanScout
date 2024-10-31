@@ -10,10 +10,8 @@
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecords: IDBRecord<Survey>[];
   } = $props();
 </script>
@@ -35,14 +33,14 @@
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Options</h2>
   {#if $modeStore == "admin"}
-    <Button onclick={() => openDialog(NewSurveyDialog, { idb })}>
+    <Button onclick={() => openDialog(NewSurveyDialog, {})}>
       <Icon name="plus" />
       <div class="flex flex-col">
         New survey
         <small>From scratch</small>
       </div>
     </Button>
-    <Button onclick={() => openDialog(ImportSurveyDialog, { idb })}>
+    <Button onclick={() => openDialog(ImportSurveyDialog, {})}>
       <Icon name="paste" />
       <div class="flex flex-col">
         Import survey

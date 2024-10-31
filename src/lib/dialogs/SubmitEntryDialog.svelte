@@ -5,15 +5,14 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryAsCSV, type Entry } from "$lib/entry";
   import { flattenFields, getDefaultFieldValue } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     entryRecord,
     onexport,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
     onexport?: () => void;
@@ -50,7 +49,7 @@
         modified: new Date(),
       };
 
-      const submitRequest = idb.transaction("entries", "readwrite").objectStore("entries").put(submittedEntry);
+      const submitRequest = objectStore("entries", "readwrite").put(submittedEntry);
       submitRequest.onerror = () => {
         error = `Could not submit entry: ${submitRequest.error?.message}`;
       };

@@ -8,13 +8,12 @@
   import type { Entry } from "$lib/entry";
   import { countPreviousFields, type SingleField } from "$lib/field";
   import type { Survey } from "$lib/survey";
+  import { objectStore } from "$lib/idb";
 
   let {
-    idb,
     surveyRecord,
     entryRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
@@ -31,10 +30,7 @@
         return;
       }
 
-      const addRequest = idb
-        .transaction("entries", "readwrite")
-        .objectStore("entries")
-        .add($state.snapshot(importedEntry));
+      const addRequest = objectStore("entries", "readwrite").add($state.snapshot(importedEntry));
 
       addRequest.onsuccess = () => {
         const id = addRequest.result;

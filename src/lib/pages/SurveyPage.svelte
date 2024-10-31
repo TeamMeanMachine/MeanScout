@@ -13,11 +13,9 @@
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     entryRecords,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
   } = $props();
@@ -83,16 +81,7 @@
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Entries</h2>
 
-  <Button
-    onclick={() =>
-      openDialog(NewEntryDialog, {
-        idb,
-        surveyRecord,
-        entryRecords,
-        prefilledTeam,
-        prefilledMatch,
-      })}
-  >
+  <Button onclick={() => openDialog(NewEntryDialog, { surveyRecord, entryRecords, prefilledTeam, prefilledMatch })}>
     <Icon name="plus" />
     <div class="flex flex-col">
       {#if prefilledTeam.length}

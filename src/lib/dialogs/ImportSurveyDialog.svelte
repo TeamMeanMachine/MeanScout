@@ -1,16 +1,11 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
+  import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { surveySchema } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
-  let {
-    idb,
-  }: {
-    idb: IDBDatabase;
-  } = $props();
-
-  let files = $state<FileList | undefined>(undefined);
+  let files = $state<FileList | undefined>();
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -48,7 +43,7 @@
         return;
       }
 
-      const addRequest = idb.transaction("surveys", "readwrite").objectStore("surveys").add(result.data);
+      const addRequest = objectStore("surveys", "readwrite").add(result.data);
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };

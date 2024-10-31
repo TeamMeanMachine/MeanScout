@@ -12,10 +12,8 @@
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
 
   let {
-    idb,
     surveyRecord,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
@@ -95,7 +93,7 @@
 
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Danger Zone</h2>
-  <Button onclick={() => openDialog(DeleteSurveyDialog, { idb, surveyRecord })}>
+  <Button onclick={() => openDialog(DeleteSurveyDialog, { surveyRecord })}>
     <Icon name="trash" />
     Delete survey
   </Button>

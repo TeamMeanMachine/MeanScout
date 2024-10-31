@@ -5,17 +5,16 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryAsCSV, type Entry } from "$lib/entry";
   import { flattenFields, getDefaultFieldValue } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     entryRecords,
     prefilledTeam,
     prefilledMatch,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecords: IDBRecord<Entry>[];
     prefilledTeam: string;
@@ -96,7 +95,7 @@
         };
       }
 
-      const addRequest = idb.transaction("entries", "readwrite").objectStore("entries").add($state.snapshot(entry));
+      const addRequest = objectStore("entries", "readwrite").add($state.snapshot(entry));
       addRequest.onerror = () => {
         error = "Could not create new entry";
       };

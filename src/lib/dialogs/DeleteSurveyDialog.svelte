@@ -1,12 +1,11 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
+  import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
   } = $props();
 
@@ -15,11 +14,7 @@
 
   export const { onopen, onconfirm }: DialogExports = {
     onopen(open) {
-      const entryCountRequest = idb
-        .transaction("entries")
-        .objectStore("entries")
-        .index("surveyId")
-        .count(surveyRecord.id);
+      const entryCountRequest = objectStore("entries").index("surveyId").count(surveyRecord.id);
       entryCountRequest.onerror = () => open();
 
       entryCountRequest.onsuccess = () => {
@@ -30,7 +25,7 @@
       };
     },
     onconfirm() {
-      const deleteTransaction = idb.transaction(["surveys", "entries"], "readwrite");
+      const deleteTransaction = transaction(["surveys", "entries"], "readwrite");
       deleteTransaction.onabort = () => {
         error ||= `Could not delete survey: ${deleteTransaction.error?.message}`;
       };

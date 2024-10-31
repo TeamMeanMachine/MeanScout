@@ -5,15 +5,14 @@
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryAsCSV, type Entry } from "$lib/entry";
+  import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     entryRecord,
     onexport,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
     onexport?: (entry: IDBRecord<Entry>) => void;
@@ -34,7 +33,7 @@
 
       entry.status = "exported";
 
-      const request = idb.transaction("entries", "readwrite").objectStore("entries").put($state.snapshot(entry));
+      const request = objectStore("entries", "readwrite").put($state.snapshot(entry));
       request.onerror = () => {
         error = `Could not update entry status`;
       };

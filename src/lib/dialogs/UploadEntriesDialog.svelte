@@ -2,13 +2,12 @@
   import { parseValueFromString } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
+  import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     data,
   }: {
-    idb: IDBDatabase;
     data: string;
   } = $props();
 
@@ -39,7 +38,7 @@
         return open();
       }
 
-      const surveysRequest = idb.transaction("surveys").objectStore("surveys").getAll();
+      const surveysRequest = objectStore("surveys").getAll();
       surveysRequest.onerror = () => {
         error = "No surveys found";
         open();
@@ -61,7 +60,7 @@
       if (!csvEntries?.length) return;
       if (!selectedSurveyRecord) return;
 
-      const addTransaction = idb.transaction("entries", "readwrite");
+      const addTransaction = transaction("entries", "readwrite");
       const entryStore = addTransaction.objectStore("entries");
       addTransaction.onabort = () => {
         error = "Could not upload entries";

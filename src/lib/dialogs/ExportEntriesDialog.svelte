@@ -4,16 +4,15 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryAsCSV, type Entry } from "$lib/entry";
+  import { transaction } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     filteredEntries,
     onexport,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     filteredEntries: IDBRecord<Entry>[];
     onexport?: (() => void) | undefined;
@@ -25,14 +24,14 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      const transaction = idb.transaction("entries", "readwrite");
-      const entryStore = transaction.objectStore("entries");
+      const entriesTransaction = transaction("entries", "readwrite");
+      const entryStore = entriesTransaction.objectStore("entries");
 
-      transaction.onabort = () => {
+      entriesTransaction.onabort = () => {
         error = "Could not mark entries as exported";
       };
 
-      transaction.onerror = () => {
+      entriesTransaction.onerror = () => {
         error = "Could not mark entries as exported";
       };
 
@@ -45,7 +44,7 @@
         entryStore.put($state.snapshot(entryRecord));
       }
 
-      transaction.oncomplete = () => {
+      entriesTransaction.oncomplete = () => {
         onexport?.();
         closeDialog();
       };

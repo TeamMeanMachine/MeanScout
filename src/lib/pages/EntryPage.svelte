@@ -11,11 +11,9 @@
   import type { Survey } from "$lib/survey";
 
   let {
-    idb,
     surveyRecord,
     entryRecord,
   }: {
-    idb: IDBDatabase;
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
   } = $props();
@@ -66,7 +64,6 @@
   <Button
     onclick={() =>
       openDialog(SubmitEntryDialog, {
-        idb,
         surveyRecord,
         entryRecord,
         onexport: () => {
@@ -81,7 +78,6 @@
   <Button
     onclick={() =>
       openDialog(DeleteEntryDialog, {
-        idb,
         surveyRecord,
         entryRecord,
         ondelete: () => {
