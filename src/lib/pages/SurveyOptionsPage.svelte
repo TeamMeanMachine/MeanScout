@@ -6,7 +6,6 @@
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
-  import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import { tbaAuthKeyStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
@@ -45,10 +44,6 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord })}>
-    <Icon name="share-from-square" />
-    Export survey
-  </Button>
   <Button onclick={() => openDialog(EditSurveyNameDialog, { surveyRecord })}>
     <Icon name="pen" />
     <div class="flex flex-col">

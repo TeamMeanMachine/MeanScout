@@ -7,10 +7,10 @@
 
   let {
     surveyRecord,
-    entryRecords,
+    onimport,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    entryRecords: IDBRecord<Entry>[];
+    onimport?: () => void;
   } = $props();
 
   let files = $state<FileList | undefined>();
@@ -52,7 +52,7 @@
       }
 
       addTransaction.oncomplete = () => {
-        entryRecords = [...importedEntries, ...entryRecords];
+        onimport?.();
         closeDialog();
       };
     },

@@ -6,8 +6,8 @@
   import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
   import FilterEntriesDialog from "$lib/dialogs/FilterEntriesDialog.svelte";
-  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import ImportEntryDialog from "$lib/dialogs/ImportEntryDialog.svelte";
+  import ImportEntriesFromFileDialog from "$lib/dialogs/ImportEntriesFromFileDialog.svelte";
+  import ImportEntriesFromQRCodeDialog from "$lib/dialogs/ImportEntriesFromQRCodeDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import type { Survey } from "$lib/survey";
@@ -198,14 +198,14 @@
 </Header>
 
 <div class="flex flex-col gap-2 p-3">
-  <Button onclick={() => openDialog(ImportEntriesDialog, { surveyRecord, entryRecords })}>
+  <Button onclick={() => openDialog(ImportEntriesFromFileDialog, { surveyRecord, onimport: refresh })}>
     <Icon name="paste" />
     <div class="flex flex-col">
       Import
       <small>File</small>
     </div>
   </Button>
-  <Button onclick={() => openDialog(ImportEntryDialog, { surveyRecord, entryRecords })}>
+  <Button onclick={() => openDialog(ImportEntriesFromQRCodeDialog, { surveyRecord, onimport: refresh })}>
     <Icon name="qrcode" />
     <div class="flex flex-col">
       Import

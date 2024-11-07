@@ -5,6 +5,7 @@
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
+  import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
@@ -279,6 +280,14 @@
 
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Admin</h2>
+
+    <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord })}>
+      <Icon name="share-from-square" />
+      <div class="flex flex-col">
+        Export
+        <small>QR code, file</small>
+      </div>
+    </Button>
 
     <Anchor route="survey/{surveyRecord.id}/fields">
       <Icon name="list-check" />

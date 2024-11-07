@@ -4,7 +4,8 @@
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
-  import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
+  import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
+  import ImportSurveyFromQRCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -30,24 +31,35 @@
   </div>
 {/if}
 
-<div class="flex flex-col gap-2 p-3">
-  <h2 class="font-bold">Options</h2>
-  {#if $modeStore == "admin"}
+{#if $modeStore == "admin"}
+  <div class="flex flex-col gap-2 p-3">
+    <h2 class="font-bold">Add survey</h2>
     <Button onclick={() => openDialog(NewSurveyDialog, {})}>
       <Icon name="plus" />
       <div class="flex flex-col">
-        New survey
+        Create new
         <small>From scratch</small>
       </div>
     </Button>
-    <Button onclick={() => openDialog(ImportSurveyDialog, {})}>
-      <Icon name="paste" />
+    <Button onclick={() => openDialog(ImportSurveyFromQRCodeDialog, {})}>
+      <Icon name="qrcode" />
       <div class="flex flex-col">
-        Import survey
-        <small>From a file</small>
+        Import
+        <small>From QR code</small>
       </div>
     </Button>
-  {/if}
+    <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})}>
+      <Icon name="paste" />
+      <div class="flex flex-col">
+        Import
+        <small>From file</small>
+      </div>
+    </Button>
+  </div>
+{/if}
+
+<div class="flex flex-col gap-2 p-3">
+  <h2 class="font-bold">Options</h2>
   <Anchor route="settings">
     <Icon name="gears" />
     <div class="flex grow flex-col">

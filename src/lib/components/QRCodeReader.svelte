@@ -1,6 +1,8 @@
 <script lang="ts">
-  import jsQR from "jsqr";
+  import { onDestroy, onMount } from "svelte";
+  import { FountainDecoder } from "$lib/fountain";
   import { cameraStore } from "$lib/settings";
+  import jsQR from "jsqr";
 
   let {
     onread,
@@ -13,8 +15,17 @@
   let context: CanvasRenderingContext2D;
   let video: HTMLVideoElement;
   let stream: MediaStream;
+  let fountainDecoder: FountainDecoder;
 
-  export async function start() {
+  onMount(async () => {
+    if (reading) stop();
+
+    fountainDecoder = new FountainDecoder();
+    fountainDecoder.ondecode = (message) => {
+      onread(message);
+      stop();
+    };
+
     stream = await navigator.mediaDevices.getUserMedia({
       video: $cameraStore ? { deviceId: { exact: $cameraStore } } : true,
       audio: false,
@@ -32,29 +43,33 @@
     } else {
       requestAnimationFrame(update);
     }
-  }
+  });
+
+  onDestroy(() => stop());
 
   function update() {
+    if (!reading) return;
+
     if (video.readyState == video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const image = context.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
 
       if (code) {
-        onread(code.data);
-        stop();
+        fountainDecoder.decode(code);
       }
     }
 
-    if (reading) {
-      if ("requestVideoFrameCallback" in video) {
-        video.requestVideoFrameCallback(update);
-      } else {
-        requestAnimationFrame(update);
-      }
+    if ("requestVideoFrameCallback" in video) {
+      video.requestVideoFrameCallback(update);
+    } else {
+      requestAnimationFrame(update);
     }
   }
-  export function stop() {
+
+  function stop() {
     reading = false;
 
     if (stream) {

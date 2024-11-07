@@ -1,5 +1,5 @@
 <script lang="ts" generics="Props extends Record<string, any>">
-  import { mount, onMount, type Component } from "svelte";
+  import { flushSync, mount, onDestroy, onMount, unmount, type Component } from "svelte";
   import Button from "./Button.svelte";
   import Icon from "./Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
@@ -30,11 +30,18 @@
 
   onMount(() => {
     dialog = mount(component, { target, props });
+    flushSync();
 
     if (dialog.onopen) {
       dialog.onopen(() => box.showModal());
     } else {
       box.showModal();
+    }
+  });
+
+  onDestroy(() => {
+    if (dialog) {
+      unmount(dialog);
     }
   });
 </script>
@@ -60,7 +67,7 @@
     <div bind:this={target} class="flex flex-col gap-3"></div>
 
     <div class="flex flex-wrap justify-between gap-3">
-      <Button onclick={closeDialog}>
+      <Button onclick={() => box.close()}>
         <Icon name="xmark" />
         {#if dialog?.onconfirm}
           Cancel

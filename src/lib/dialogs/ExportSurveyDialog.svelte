@@ -2,6 +2,7 @@
   import { download, shareAsFile, shareAsText } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -11,6 +12,8 @@
   } = $props();
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
+
+  let qrCodeData = $state<string | undefined>();
 
   function surveyAsJSON() {
     const survey = structuredClone($state.snapshot(surveyRecord)) as Survey & { id?: number };
@@ -31,21 +34,34 @@
   function shareSurveyAsText() {
     shareAsText(surveyAsJSON(), `${cleanedSurveyName}-survey`);
   }
+
+  function shareSurveyAsQRCode() {
+    qrCodeData = surveyAsJSON();
+  }
 </script>
 
 <span>Export survey</span>
 
+{#if qrCodeData}
+  <QrCodeDisplay data={qrCodeData} />
+{:else}
+  <Button onclick={shareSurveyAsQRCode}>
+    <Icon name="qrcode" />
+    QR code
+  </Button>
+{/if}
+
 {#if "canShare" in navigator}
   <Button onclick={shareSurveyAsFile}>
     <Icon name="share-from-square" />
-    Share as file
+    Share file
   </Button>
   <Button onclick={shareSurveyAsText}>
     <Icon name="share" />
-    Share as text snippet
+    Share text snippet
   </Button>
 {/if}
 <Button onclick={downloadSurvey}>
   <Icon name="file-code" />
-  Download as file
+  Download file
 </Button>
