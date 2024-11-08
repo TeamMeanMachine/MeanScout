@@ -16,14 +16,15 @@
   let video: HTMLVideoElement;
   let stream: MediaStream;
   let fountainDecoder: FountainDecoder;
+  let scanned = $state<number[] | string>("--");
 
   onMount(async () => {
     if (reading) stop();
 
     fountainDecoder = new FountainDecoder();
     fountainDecoder.ondecode = (message) => {
-      onread(message);
       stop();
+      onread(message);
     };
 
     stream = await navigator.mediaDevices.getUserMedia({
@@ -49,6 +50,7 @@
 
   function update() {
     if (!reading) return;
+    scanned = "--";
 
     if (video.readyState == video.HAVE_ENOUGH_DATA) {
       canvas.width = video.videoWidth;
@@ -58,7 +60,7 @@
       const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
 
       if (code) {
-        fountainDecoder.decode(code);
+        scanned = fountainDecoder.decode(code) ?? "skip";
       }
     }
 
@@ -79,3 +81,4 @@
 </script>
 
 <video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>
+<span class="overflow-hidden overflow-ellipsis whitespace-nowrap text-nowrap">scanned: {scanned}</span>

@@ -5,15 +5,15 @@
 
   let {
     data,
-    framesPerSecond = 10,
-    bytesPerFrame = 500,
+    framesPerSecond = 15,
+    bytesPerFrame = 400,
   }: {
     data: string;
     framesPerSecond?: number;
     bytesPerFrame?: number;
   } = $props();
 
-  const fountainEncoder = new FountainEncoder(data, bytesPerFrame, "robust");
+  const fountainEncoder = new FountainEncoder(data, bytesPerFrame);
 
   let canvas: HTMLCanvasElement;
   let interval: NodeJS.Timeout | undefined = undefined;
@@ -36,11 +36,13 @@
     if (!drawing) return;
 
     QRCode.toCanvas(canvas, [{ data: fountainEncoder.encode() }], {
-      width: 1000,
+      width: 516,
       margin: 4,
       errorCorrectionLevel: "L",
     });
   }
 </script>
 
-<canvas bind:this={canvas} class="aspect-square max-w-full basis-0">Displays a QR code to scan.</canvas>
+<canvas bind:this={canvas} class="aspect-square max-w-full basis-0" style="image-rendering:pixelated;">
+  Displays a QR code to scan.
+</canvas>

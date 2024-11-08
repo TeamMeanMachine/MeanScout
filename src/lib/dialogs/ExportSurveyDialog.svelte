@@ -18,7 +18,7 @@
   function surveyAsJSON() {
     const survey = structuredClone($state.snapshot(surveyRecord)) as Survey & { id?: number };
     delete survey.id;
-    return JSON.stringify(survey, undefined, "  ");
+    return JSON.stringify(survey);
   }
 
   function downloadSurvey() {
