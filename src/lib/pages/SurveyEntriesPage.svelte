@@ -197,19 +197,25 @@
   <h1 class="font-bold">Entries</h1>
 </Header>
 
-<div class="flex flex-col gap-2 p-3">
-  <Button onclick={() => openDialog(ImportEntriesFromFileDialog, { surveyRecord, onimport: refresh })}>
-    <Icon name="paste" />
-    <div class="flex flex-col">
-      Import
-      <small>File</small>
-    </div>
-  </Button>
-  <Button onclick={() => openDialog(ImportEntriesFromQRCodeDialog, { surveyRecord, onimport: refresh })}>
+<div class="flex flex-wrap gap-2 p-3">
+  <Button
+    onclick={() => openDialog(ImportEntriesFromQRCodeDialog, { surveyRecord, onimport: refresh })}
+    classes="grow basis-0"
+  >
     <Icon name="qrcode" />
     <div class="flex flex-col">
       Import
       <small>QR code</small>
+    </div>
+  </Button>
+  <Button
+    onclick={() => openDialog(ImportEntriesFromFileDialog, { surveyRecord, onimport: refresh })}
+    classes="grow basis-0"
+  >
+    <Icon name="paste" />
+    <div class="flex flex-col">
+      Import
+      <small>File</small>
     </div>
   </Button>
 </div>
@@ -250,13 +256,30 @@
     {filteredEntries.length == 1 ? "result" : "results"}
   </span>
   {#if filteredEntries.length}
-    <Button onclick={() => openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, onexport: refresh })}>
-      <Icon name="share-from-square" />
-      <div class="flex flex-col">
-        Export
-        <small>Share, download</small>
-      </div>
-    </Button>
+    <div class="flex flex-wrap gap-2">
+      <Button
+        onclick={() =>
+          openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, type: "qrcode", onexport: refresh })}
+        classes="grow basis-0"
+      >
+        <Icon name="qrcode" />
+        <div class="flex flex-col">
+          Export
+          <small>QR code</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() =>
+          openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, type: "file", onexport: refresh })}
+        classes="grow basis-0"
+      >
+        <Icon name="copy" />
+        <div class="flex flex-col">
+          Export
+          <small>File</small>
+        </div>
+      </Button>
+    </div>
     <table class="w-full border-separate border-spacing-y-2 text-left">
       <thead class="sticky top-0 bg-neutral-900">
         <tr>

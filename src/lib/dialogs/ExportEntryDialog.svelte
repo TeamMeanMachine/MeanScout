@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEntryFileName, download, shareAsFile, shareAsText } from "$lib";
+  import { createEntryFileName, download, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -20,8 +20,7 @@
 
   const exportFileName = createEntryFileName(surveyRecord, entryRecord);
 
-  let entry = $state(structuredClone($state.snapshot(entryRecord)));
-  let entryData = $state(entryAsCSV(entry));
+  let entry = $state.snapshot(entryRecord);
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -33,7 +32,7 @@
 
       entry.status = "exported";
 
-      const request = objectStore("entries", "readwrite").put($state.snapshot(entry));
+      const request = objectStore("entries", "readwrite").put(entry);
       request.onerror = () => {
         error = `Could not update entry status`;
       };
@@ -46,38 +45,32 @@
   };
 
   function shareEntryAsFile() {
-    shareAsFile(entryData, exportFileName, "text/csv");
+    share(entryAsCSV(entry), exportFileName, "text/csv");
   }
 
-  function shareEntryAsText() {
-    shareAsText(entryData, exportFileName);
-  }
-
-  function downloadEntry() {
-    download(entryData, exportFileName, "text/csv");
+  function saveEntryAsFile() {
+    download(entryAsCSV(entry), exportFileName, "text/csv");
   }
 </script>
 
 <span>Export entry</span>
 
-{#if entryData}
-  <QRCodeDisplay data={entryData} />
-{/if}
+<QRCodeDisplay data={entryAsCSV(entry)} />
 
 {#if "canShare" in navigator}
   <Button onclick={shareEntryAsFile}>
     <Icon name="share-from-square" />
-    Share as file
-  </Button>
-  <Button onclick={shareEntryAsText}>
-    <Icon name="share" />
-    Share as text snippet
+    Share
   </Button>
 {/if}
-<Button onclick={downloadEntry}>
-  <Icon name="download" />
-  Download as file
+<Button onclick={saveEntryAsFile}>
+  <Icon name="file-code" />
+  Save
 </Button>
+
+{#if entry.status != "exported"}
+  <span>Mark as exported?</span>
+{/if}
 
 {#if error}
   <span>{error}</span>

@@ -82,11 +82,7 @@ export function download(data: string, name: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-export function shareAsFile(data: string, name: string, type: string) {
+export function share(data: string, name: string, type: string) {
   const file = new File([data], name, { type });
   navigator.share({ files: [file], title: file.name });
-}
-
-export function shareAsText(data: string, name: string) {
-  navigator.share({ text: data, title: name });
 }

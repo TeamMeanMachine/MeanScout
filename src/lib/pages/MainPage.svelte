@@ -31,35 +31,35 @@
   </div>
 {/if}
 
-{#if $modeStore == "admin"}
-  <div class="flex flex-col gap-2 p-3">
-    <h2 class="font-bold">Add survey</h2>
-    <Button onclick={() => openDialog(NewSurveyDialog, {})}>
-      <Icon name="plus" />
-      <div class="flex flex-col">
-        Create new
-        <small>From scratch</small>
-      </div>
-    </Button>
-    <Button onclick={() => openDialog(ImportSurveyFromQRCodeDialog, {})}>
-      <Icon name="qrcode" />
-      <div class="flex flex-col">
-        Import
-        <small>From QR code</small>
-      </div>
-    </Button>
-    <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})}>
-      <Icon name="paste" />
-      <div class="flex flex-col">
-        Import
-        <small>From file</small>
-      </div>
-    </Button>
-  </div>
-{/if}
-
 <div class="flex flex-col gap-2 p-3">
   <h2 class="font-bold">Options</h2>
+
+  {#if $modeStore == "admin"}
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => openDialog(ImportSurveyFromQRCodeDialog, {})} classes="grow basis-0">
+        <Icon name="qrcode" />
+        <div class="flex flex-col">
+          Import
+          <small>QR code</small>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} classes="grow basis-0">
+        <Icon name="paste" />
+        <div class="flex flex-col">
+          Import
+          <small>File</small>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(NewSurveyDialog, {})} classes="grow basis-0">
+        <Icon name="plus" />
+        <div class="flex flex-col">
+          Create
+          <small>New</small>
+        </div>
+      </Button>
+    </div>
+  {/if}
+
   <Anchor route="settings">
     <Icon name="gears" />
     <div class="flex grow flex-col">

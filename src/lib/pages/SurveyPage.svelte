@@ -281,13 +281,22 @@
   <div class="flex flex-col gap-2 p-3">
     <h2 class="font-bold">Admin</h2>
 
-    <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord })}>
-      <Icon name="share-from-square" />
-      <div class="flex flex-col">
-        Export
-        <small>QR code, file</small>
-      </div>
-    </Button>
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "qrcode" })} classes="grow basis-0">
+        <Icon name="qrcode" />
+        <div class="flex flex-col">
+          Export
+          <small>QR code</small>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "file" })} classes="grow basis-0">
+        <Icon name="copy" />
+        <div class="flex flex-col">
+          Export
+          <small>File</small>
+        </div>
+      </Button>
+    </div>
 
     <Anchor route="survey/{surveyRecord.id}/fields">
       <Icon name="list-check" />
@@ -307,7 +316,7 @@
       <Icon name="gears" />
       <div class="flex grow flex-col">
         Options
-        <small>Export, TBA event</small>
+        <small>Name, TBA event</small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>

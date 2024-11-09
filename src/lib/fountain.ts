@@ -129,7 +129,6 @@ export class FountainEncoder {
   }
 }
 
-
 export type EncodedBlock = {
   ids: Set<number>;
   data: Uint8Array;
@@ -179,7 +178,7 @@ export class FountainDecoder {
       return;
     }
 
-    this.buffer.push({ids, data});
+    this.buffer.push({ ids, data });
     this.decodeBuffer();
     return headerData.slice(1);
   }
@@ -204,14 +203,14 @@ export class FountainDecoder {
         if (this.decoded.has(id)) {
           continue;
         }
-        
+
         this.decoded.set(id, block.data);
 
         if (this.totalSources == this.decoded.size) {
           this.constructMessage();
           return;
         }
-        
+
         this.decodeBuffer();
       }
     }
