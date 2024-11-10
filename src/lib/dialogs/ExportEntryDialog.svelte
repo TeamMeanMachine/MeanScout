@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryAsCSV, type Entry } from "$lib/entry";
+  import { entryToCSV, type Entry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -45,17 +45,17 @@
   };
 
   function shareEntryAsFile() {
-    share(entryAsCSV(entry), exportFileName, "text/csv");
+    share(entryToCSV(entry), exportFileName, "text/csv");
   }
 
   function saveEntryAsFile() {
-    download(entryAsCSV(entry), exportFileName, "text/csv");
+    download(entryToCSV(entry), exportFileName, "text/csv");
   }
 </script>
 
 <span>Export entry</span>
 
-<QRCodeDisplay data={entryAsCSV(entry)} />
+<QRCodeDisplay data={entryToCSV(entry)} />
 
 {#if "canShare" in navigator}
   <Button onclick={shareEntryAsFile}>

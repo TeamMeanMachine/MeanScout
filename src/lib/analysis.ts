@@ -51,6 +51,8 @@ const mapExpressionSchema = z.discriminatedUnion("type", [
 ]);
 export type MapExpression = z.infer<typeof mapExpressionSchema>;
 
+export const expressionTypes = [...reduceExpressionTypes, ...mapExpressionTypes] as const;
+
 export const expressionSchema = z.discriminatedUnion("type", [
   ...reduceExpressionSchema.options,
   ...mapExpressionSchema.options,

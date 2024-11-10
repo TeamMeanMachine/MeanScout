@@ -5,7 +5,7 @@
   import type { DialogExports } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import { surveySchema, type Survey } from "$lib/survey";
+  import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let importedSurvey = $state<Survey | undefined>();
@@ -27,7 +27,7 @@
         return;
       }
 
-      const addRequest = objectStore("surveys", "readwrite").add(importedSurvey);
+      const addRequest = objectStore("surveys", "readwrite").add($state.snapshot(importedSurvey));
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };
@@ -45,25 +45,19 @@
   };
 
   function onread(data: string) {
-    let survey: any;
-
-    try {
-      survey = JSON.parse(data.trim());
-    } catch (e) {
-      error = "Invalid input";
+    const jsonResult = jsonToSurvey(data);
+    if (!jsonResult.success) {
+      error = jsonResult.error;
       return;
     }
 
-    delete survey.id;
-    delete survey.entries;
-
-    const result = surveySchema.safeParse(survey);
-    if (!result.success) {
-      error = result.error.toString();
+    const schemaResult = surveySchema.safeParse(jsonResult.survey);
+    if (!schemaResult.success) {
+      error = schemaResult.error.toString();
       return;
     }
 
-    importedSurvey = result.data;
+    importedSurvey = schemaResult.data;
   }
 
   function retry() {

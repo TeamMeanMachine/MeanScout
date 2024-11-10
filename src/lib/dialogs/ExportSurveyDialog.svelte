@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
-  import type { Survey } from "$lib/survey";
+  import { surveyToJSON, type Survey } from "$lib/survey";
 
   let {
     surveyRecord,
@@ -16,9 +16,7 @@
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
   function surveyAsJSON() {
-    const survey = structuredClone($state.snapshot(surveyRecord)) as Survey & { id?: number };
-    delete survey.id;
-    return JSON.stringify(survey);
+    return surveyToJSON($state.snapshot(surveyRecord));
   }
 
   function shareSurveyAsFile() {

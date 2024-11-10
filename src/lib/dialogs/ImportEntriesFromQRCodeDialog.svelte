@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { parseValueFromString } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
+  import { csvToEntries, type Entry } from "$lib/entry";
   import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -33,12 +32,7 @@
       };
 
       for (const entry of importedEntries) {
-        const addRequest = entryStore.add(entry);
-        addRequest.onerror = (e) => e.preventDefault();
-        addRequest.onsuccess = () => {
-          const id = addRequest.result;
-          if (typeof id != "number") return;
-        };
+        entryStore.add($state.snapshot(entry));
       }
 
       addTransaction.oncomplete = () => {
@@ -49,43 +43,12 @@
   };
 
   function onread(data: string) {
-    const csv = data.split("\n").map((line) => {
-      return line
-        .trim()
-        .split(",")
-        .map((value) => value.trim());
-    });
-
-    if (!csv.length || !csv[0].length) {
+    if (!data.length) {
       error = "No input";
       return;
     }
 
-    importedEntries = csv.map((entryCSV) => {
-      if (surveyRecord.type == "match") {
-        return {
-          surveyId: surveyRecord.id,
-          type: surveyRecord.type,
-          status: "exported",
-          team: entryCSV[0],
-          match: parseInt(entryCSV[1]),
-          absent: entryCSV[2].toLowerCase() == "true" ? true : false,
-          values: entryCSV.slice(3).map(parseValueFromString),
-          created: new Date(),
-          modified: new Date(),
-        };
-      } else {
-        return {
-          surveyId: surveyRecord.id,
-          type: surveyRecord.type,
-          status: "exported",
-          team: entryCSV[0],
-          values: entryCSV.slice(1).map(parseValueFromString),
-          created: new Date(),
-          modified: new Date(),
-        };
-      }
-    });
+    importedEntries = csvToEntries(data, surveyRecord);
   }
 
   function retry() {

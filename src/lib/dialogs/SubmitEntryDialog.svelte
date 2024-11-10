@@ -3,7 +3,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryAsCSV, type Entry } from "$lib/entry";
+  import { entryToCSV, type Entry } from "$lib/entry";
   import { flattenFields, getDefaultFieldValue } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
@@ -35,7 +35,7 @@
         }
       }
 
-      entryCSV = entryAsCSV(entryRecord);
+      entryCSV = entryToCSV(entryRecord);
       open();
     },
     onconfirm() {

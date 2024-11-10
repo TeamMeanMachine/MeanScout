@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryAsCSV, type Entry } from "$lib/entry";
+  import { entryToCSV, type Entry } from "$lib/entry";
   import { transaction } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -55,7 +55,7 @@
   };
 
   function entriesAsCSV() {
-    return filteredEntries.map(entryAsCSV).join("\n");
+    return filteredEntries.map(entryToCSV).join("\n");
   }
 
   function shareEntriesAsFile() {

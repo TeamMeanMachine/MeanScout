@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { parseValueFromString } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
+  import { csvToEntries, type Entry } from "$lib/entry";
   import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -14,41 +13,24 @@
   } = $props();
 
   let files = $state<FileList | undefined>();
-  let importedEntries: IDBRecord<Entry>[] = [];
+  let importedEntries = $state<Entry[]>([]);
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     async onconfirm() {
-      if (!files?.length) {
-        error = "No input";
-        return;
-      }
-
-      const allFiles = await Promise.all([...files].map((file) => file.text()));
-      const csv = allFiles
-        .join("\n")
-        .split("\n")
-        .map((line) =>
-          line
-            .trim()
-            .split(",")
-            .map((value) => value.trim()),
-        );
-
-      if (!csv.length || !csv[0].length) {
+      if (!importedEntries.length) {
         error = "No input";
         return;
       }
 
       const addTransaction = transaction("entries", "readwrite");
-      const entryStore = addTransaction.objectStore("entries");
       addTransaction.onabort = () => {
         error = "Could not add entries!";
       };
 
-      for (const entryCSV of csv) {
-        if (entryCSV[0] == "Team") continue;
-        addEntry(entryCSV, entryStore);
+      const entryStore = addTransaction.objectStore("entries");
+      for (const entry of importedEntries) {
+        entryStore.add($state.snapshot(entry));
       }
 
       addTransaction.oncomplete = () => {
@@ -58,39 +40,20 @@
     },
   };
 
-  function addEntry(entryCSV: string[], entryStore: IDBObjectStore) {
-    let entry: Entry;
-    if (surveyRecord.type == "match") {
-      entry = {
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
-        status: "exported",
-        team: entryCSV[0],
-        match: parseInt(entryCSV[1]),
-        absent: entryCSV[2].toLowerCase() == "true" ? true : false,
-        values: entryCSV.slice(3).map(parseValueFromString),
-        created: new Date(),
-        modified: new Date(),
-      };
-    } else {
-      entry = {
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
-        status: "exported",
-        team: entryCSV[0],
-        values: entryCSV.slice(1).map(parseValueFromString),
-        created: new Date(),
-        modified: new Date(),
-      };
+  async function onchange() {
+    if (!files?.length) {
+      return;
     }
 
-    const addRequest = entryStore.add(entry);
-    addRequest.onerror = (e) => e.preventDefault();
-    addRequest.onsuccess = () => {
-      const id = addRequest.result;
-      if (typeof id != "number") return;
-      importedEntries = [{ id, ...entry }, ...importedEntries];
-    };
+    const allFiles = await Promise.all([...files].map((file) => file.text()));
+    const csv = allFiles.join("\n");
+
+    if (!csv.length || !csv[0].length) {
+      error = "No input";
+      return;
+    }
+
+    importedEntries = csvToEntries(csv, surveyRecord);
   }
 </script>
 
@@ -100,8 +63,39 @@
   type="file"
   accept=".csv"
   bind:files
+  {onchange}
   class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
 />
+
+{#if importedEntries.length}
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+    <table class="w-full text-left">
+      <thead>
+        <tr>
+          <th class="w-0 p-2">Team</th>
+          {#if surveyRecord.type == "match"}
+            <th class="w-0 p-2">Match</th>
+            <th class="w-0 p-2">Absent</th>
+          {/if}
+          <td></td>
+        </tr>
+      </thead>
+      <tbody>
+        {#each importedEntries as entry}
+          <tr>
+            <td class="p-2">{entry.team}</td>
+            {#if entry.type == "match"}
+              <td class="p-2">{entry.match}</td>
+              <td class="p-2">{entry.absent}</td>
+            {/if}
+            <td></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+  <span>Entries: {importedEntries.length}</span>
+{/if}
 
 {#if error}
   <span>{error}</span>
