@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { mount, onMount, unmount } from "svelte";
+  import { flushSync, mount, onMount, unmount, type Component } from "svelte";
   import { closeAllDialogs } from "$lib/dialog";
   import { objectStore, transaction } from "$lib/idb";
   import AboutPage from "$lib/pages/AboutPage.svelte";
@@ -52,77 +52,84 @@
     const { success, data: page } = pageSchema.safeParse(hash[0]);
 
     if (!success || page == "") {
-      getMainPage();
-      return;
+      return getMainPage();
     }
 
     if (page == "settings") {
-      clearPage();
-      currentPage = mount(SettingsPage, { target });
-      document.title = "Settings - MeanScout";
-      return;
+      return loadPage(SettingsPage, {
+        title: "Settings - MeanScout",
+      });
     }
 
     if (page == "about") {
-      clearPage();
-      currentPage = mount(AboutPage, { target });
-      document.title = "About - MeanScout";
-      return;
+      return loadPage(AboutPage, {
+        title: "About - MeanScout",
+      });
     }
 
     if (page == "survey") {
       const { success, data: surveyId } = idbIdSchema.safeParse(hash[1]);
       if (!success) {
-        getMainPage();
-        return;
+        return getMainPage();
       }
 
       getSurveyPageData(surveyId, (entryRecords) => {
-        clearPage();
-
         const { success, data: surveyPage } = surveyPageSchema.safeParse(hash[2]);
 
         if (!success || surveyPage == "") {
-          currentPage = mount(SurveyPage, { target, props: { surveyRecord, entryRecords } });
-          document.title = `${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyPage, {
+            surveyRecord,
+            entryRecords,
+            title: `${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "entries") {
-          currentPage = mount(SurveyEntriesPage, { target, props: { surveyRecord, entryRecords } });
-          document.title = `Entries - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyEntriesPage, {
+            surveyRecord,
+            entryRecords,
+            title: `Entries - ${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "analysis") {
-          currentPage = mount(SurveyAnalysisPage, { target, props: { surveyRecord, entryRecords } });
-          document.title = `Analysis - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyAnalysisPage, {
+            surveyRecord,
+            entryRecords,
+            title: `Analysis - ${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "matches") {
-          currentPage = mount(SurveyMatchesPage, { target, props: { surveyRecord, entryRecords } });
-          document.title = `Matches - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyMatchesPage, {
+            surveyRecord,
+            entryRecords,
+            title: `Matches - ${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "teams") {
-          currentPage = mount(SurveyTeamsPage, { target, props: { surveyRecord, entryRecords } });
-          document.title = `Teams - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyTeamsPage, {
+            surveyRecord,
+            entryRecords,
+            title: `Teams - ${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "fields") {
           const entryCount = entryRecords.length;
-          currentPage = mount(SurveyFieldsPage, { target, props: { surveyRecord, entryCount } });
-          document.title = `Fields - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyFieldsPage, {
+            surveyRecord,
+            entryCount,
+            title: `Fields - ${surveyRecord.name} - MeanScout`,
+          });
         }
 
         if (surveyPage == "options") {
-          currentPage = mount(SurveyOptionsPage, { target, props: { surveyRecord } });
-          document.title = `Options - ${surveyRecord.name} - MeanScout`;
-          return;
+          return loadPage(SurveyOptionsPage, {
+            surveyRecord,
+            title: `Options - ${surveyRecord.name} - MeanScout`,
+          });
         }
       });
 
@@ -132,14 +139,15 @@
     if (page == "entry") {
       const { success, data: entryId } = idbIdSchema.safeParse(hash[1]);
       if (!success) {
-        getMainPage();
-        return;
+        return getMainPage();
       }
 
       getEntryPageData(entryId, () => {
-        clearPage();
-        currentPage = mount(EntryPage, { target, props: { surveyRecord, entryRecord } });
-        document.title = `Draft - ${surveyRecord.name} - MeanScout`;
+        loadPage(EntryPage, {
+          surveyRecord,
+          entryRecord,
+          title: `Draft - ${surveyRecord.name} - MeanScout`,
+        });
       });
 
       return;
@@ -153,9 +161,10 @@
   }
 
   function mountMainPage(surveyRecords: IDBRecord<Survey>[] = []) {
-    clearPage();
-    currentPage = mount(MainPage, { target, props: { surveyRecords } });
-    document.title = "MeanScout";
+    loadPage(MainPage, {
+      surveyRecords,
+      title: "MeanScout",
+    });
   }
 
   function getSurveyPageData(surveyId: number, onsuccess: (entryRecords: any[]) => void) {
@@ -183,9 +192,16 @@
     };
   }
 
-  function clearPage() {
-    currentPage && unmount(currentPage);
-    window.scrollTo(0, 0);
+  function loadPage<Props extends Record<string, any>>(page: Component<Props>, props: Props & { title: string }) {
+    if (currentPage) {
+      unmount(currentPage);
+      window.scrollTo(0, 0);
+    }
+
+    document.title = props.title;
+    delete (props as any).title;
+    currentPage = mount(page, { target, props });
+    flushSync();
   }
 </script>
 
