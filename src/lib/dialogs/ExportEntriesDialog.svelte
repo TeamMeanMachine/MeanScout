@@ -67,7 +67,7 @@
   }
 </script>
 
-<span>{filteredEntries.length} {filteredEntries.length == 1 ? "entry" : "entries"}</span>
+<span>Export {filteredEntries.length} {filteredEntries.length == 1 ? "entry" : "entries"}</span>
 
 {#if type == "qrcode"}
   <QRCodeDisplay data={entriesAsCSV()} />

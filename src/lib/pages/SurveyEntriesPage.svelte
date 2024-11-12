@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { flushSync, onMount } from "svelte";
   import type { EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
-  import FilterEntriesDialog from "$lib/dialogs/FilterEntriesDialog.svelte";
   import ImportEntriesFromFileDialog from "$lib/dialogs/ImportEntriesFromFileDialog.svelte";
   import ImportEntriesFromQRCodeDialog from "$lib/dialogs/ImportEntriesFromQRCodeDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
@@ -13,6 +12,7 @@
   import type { Survey } from "$lib/survey";
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
+  import { matchTargets } from "$lib/settings";
 
   let {
     surveyRecord,
@@ -30,32 +30,25 @@
     exported: undefined,
   });
 
+  let filtersApplied = $derived.by(() => {
+    return Object.values(filters).filter((val) => val !== undefined).length;
+  });
+
   let filteredEntries = $derived(entryRecords.filter(filterEntry).toSorted(sortEntries));
 
   let displayedCount = $state(10);
   let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
 
-  let filterDetails = $derived.by(() => {
-    let details = [];
-    if (filters.team != undefined) {
-      details.push(`Team: ${filters.team}`);
+  $effect(() => {
+    filters.team;
+    filters.match;
+    filters.absent;
+    filters.target;
+    filters.exported;
+
+    if (window.scrollY > window.innerHeight / 2) {
+      window.scroll({ top: 0, left: 0 });
     }
-    if (filters.match != undefined) {
-      details.push(`Match: ${filters.match}`);
-    }
-    if (filters.absent != undefined) {
-      details.push(`Absent: ${filters.absent}`);
-    }
-    if (filters.target != undefined) {
-      details.push(`Target: ${filters.target}`);
-    }
-    if (filters.exported != undefined) {
-      details.push(`Exported: ${filters.exported}`);
-    }
-    if (details.length == 0) {
-      return "Any";
-    }
-    return details.join(", ");
   });
 
   let duplicateEntryIds = $derived.by(() => {
@@ -63,9 +56,9 @@
       return [];
     }
 
-    let duplicates: number[] = [];
+    const duplicates: number[] = [];
 
-    let uniqueStringToId = new Map<string, number>();
+    const uniqueStringToId = new Set<string>();
     for (const entry of entryRecords) {
       if (entry.type != "match") {
         continue;
@@ -75,7 +68,7 @@
       if (uniqueStringToId.has(uniqueString)) {
         duplicates.push($state.snapshot(entry).id);
       } else {
-        uniqueStringToId.set(uniqueString, $state.snapshot(entry).id);
+        uniqueStringToId.add(uniqueString);
       }
     }
 
@@ -178,12 +171,40 @@
     };
   }
 
+  function resetFilters() {
+    filters = {
+      team: undefined,
+      match: undefined,
+      absent: undefined,
+      target: undefined,
+      exported: undefined,
+    };
+  }
+
+  function getFilterableTeams() {
+    const teamSet = new Set(entryRecords.map((entry) => entry.team));
+    return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
+  }
+
+  function getFilterableMatches() {
+    if (surveyRecord.type != "match") return [];
+
+    const matchSet = new Set<number>();
+    for (const entry of entryRecords) {
+      if (entry.type != "match") continue;
+      matchSet.add(entry.match);
+    }
+
+    return [...matchSet].toSorted((a, b) => b - a);
+  }
+
   function onscroll() {
     if (displayedCount >= filteredEntries.length) return;
 
-    if (window.scrollY + window.innerHeight * 2 >= document.body.offsetHeight) {
+    if (document.body.offsetHeight <= window.scrollY + window.innerHeight * 2) {
       displayedCount = Math.min(displayedCount + 10, filteredEntries.length);
-    } else {
+      flushSync();
+      onscroll();
     }
   }
 
@@ -197,140 +218,227 @@
   <h1 class="font-bold">Entries</h1>
 </Header>
 
-<div class="flex flex-wrap gap-2 p-3">
-  <Button
-    onclick={() => openDialog(ImportEntriesFromQRCodeDialog, { surveyRecord, onimport: refresh })}
-    classes="grow basis-0"
-  >
-    <Icon name="qrcode" />
-    <div class="flex flex-col">
-      Import
-      <small>QR code</small>
-    </div>
-  </Button>
-  <Button
-    onclick={() => openDialog(ImportEntriesFromFileDialog, { surveyRecord, onimport: refresh })}
-    classes="grow basis-0"
-  >
-    <Icon name="paste" />
-    <div class="flex flex-col">
-      Import
-      <small>File</small>
-    </div>
-  </Button>
-</div>
-
-{#if duplicateEntryIds.length}
-  <div class="flex flex-col gap-2 p-3">
-    <Button onclick={fixEntries}>
-      <Icon name="wrench" />
-      <div class="flex flex-col">
-        Fix entries
-        <small>{duplicateEntryIds.length} duplicate entries were found</small>
-      </div>
-    </Button>
-  </div>
-{/if}
-
-<div class="flex flex-col gap-2 p-3">
-  <h2 class="font-bold">Entries</h2>
-  <Button
-    onclick={() => {
-      openDialog(FilterEntriesDialog, {
-        surveyRecord,
-        entryRecords,
-        filters,
-        onfilter: (newFilters) => (filters = newFilters),
-      });
-    }}
-    classes="flex-nowrap"
-  >
-    <Icon name="filter" />
-    <div class="flex flex-col">
-      <span>Filter</span>
-      <small>{filterDetails}</small>
-    </div>
-  </Button>
-  <span class="mt-2">
-    {filteredEntries.length}
-    {filteredEntries.length == 1 ? "result" : "results"}
-  </span>
-  {#if filteredEntries.length}
+<div class="flex flex-wrap gap-x-3 px-3">
+  <div class="grow basis-0 pt-3">
     <div class="flex flex-wrap gap-2">
       <Button
-        onclick={() =>
-          openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, type: "qrcode", onexport: refresh })}
-        classes="grow basis-0"
+        onclick={() => {
+          openDialog(ImportEntriesFromQRCodeDialog, {
+            surveyRecord,
+            onimport: refresh,
+          });
+        }}
+        classes="grow"
       >
         <Icon name="qrcode" />
         <div class="flex flex-col">
-          Export
+          Import
           <small>QR code</small>
         </div>
       </Button>
       <Button
-        onclick={() =>
-          openDialog(ExportEntriesDialog, { surveyRecord, filteredEntries, type: "file", onexport: refresh })}
-        classes="grow basis-0"
+        onclick={() => {
+          openDialog(ImportEntriesFromFileDialog, {
+            surveyRecord,
+            onimport: refresh,
+          });
+        }}
+        classes="grow"
       >
-        <Icon name="copy" />
+        <Icon name="paste" />
         <div class="flex flex-col">
-          Export
+          Import
           <small>File</small>
         </div>
       </Button>
     </div>
-    <table class="w-full border-separate border-spacing-y-2 text-left">
-      <thead class="sticky top-0 bg-neutral-900">
-        <tr>
-          <th class="w-0 p-2">Team</th>
-          {#if surveyRecord.type == "match"}
-            <th class="w-0 p-2">Match</th>
-            <th class="w-0 p-2">Absent</th>
-          {/if}
-          <th class="w-0 p-2">Exported</th>
-          <td></td>
-        </tr>
-      </thead>
-      <tbody>
-        {#each displayedEntries as entry (entry.id)}
-          {@const onclick = () => openDialog(ViewEntryDialog, { surveyRecord, entryRecord: entry, onchange: refresh })}
-          <tr
-            tabindex="0"
-            role="button"
-            {onclick}
-            onkeydown={(e) => {
-              if (e.key == " " || e.key == "Enter") {
-                e.preventDefault();
-                onclick();
-              }
-            }}
-            class="button cursor-pointer bg-neutral-800"
+
+    <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-3">
+      <div class="flex flex-wrap items-center">
+        <h2 class="grow font-bold">Filter</h2>
+        <Button onclick={resetFilters} disabled={!filtersApplied}>
+          <Icon name="arrow-rotate-left" />
+        </Button>
+      </div>
+
+      <div class="mb-2 flex flex-wrap gap-2">
+        <label class="flex grow flex-col">
+          Team
+          <select
+            bind:value={filters.team}
+            class="bg-neutral-800 p-2 capitalize text-theme"
+            class:font-bold={filters.team !== undefined}
           >
-            <td class="p-2 text-right">{entry.team}</td>
-            {#if entry.type == "match"}
-              <td class="p-2 text-right">{entry.match}</td>
-              <td class="p-2 text-center">
-                {#if entry.absent}
-                  <Icon name="check" />
-                {/if}
-              </td>
-            {/if}
-            <td class="p-2 text-center">
-              {#if entry.status == "exported"}
+            <option value={undefined}>--</option>
+            {#each getFilterableTeams() as team}
+              <option>{team}</option>
+            {/each}
+          </select>
+        </label>
+
+        {#if surveyRecord.type == "match"}
+          <label class="flex grow flex-col">
+            Match
+            <select
+              bind:value={filters.match}
+              class="bg-neutral-800 p-2 text-theme"
+              class:font-bold={filters.match !== undefined}
+            >
+              <option value={undefined}>--</option>
+              {#each getFilterableMatches() as match}
+                <option>{match}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="flex grow flex-col">
+            Absent
+            <select
+              bind:value={filters.absent}
+              class="bg-neutral-800 p-2 text-theme"
+              class:font-bold={filters.absent !== undefined}
+            >
+              <option value={undefined}>--</option>
+              <option value={true}>True</option>
+              <option value={false}>False</option>
+            </select>
+          </label>
+        {/if}
+
+        <label class="flex grow flex-col">
+          Exported
+          <select
+            bind:value={filters.exported}
+            class="bg-neutral-800 p-2 text-theme"
+            class:font-bold={filters.exported !== undefined}
+          >
+            <option value={undefined}>--</option>
+            <option value={true}>True</option>
+            <option value={false}>False</option>
+          </select>
+        </label>
+
+        {#if surveyRecord.type == "match" && surveyRecord.matches.length}
+          <label class="flex grow flex-col">
+            Target
+            <select
+              bind:value={filters.target}
+              class="bg-neutral-800 p-2 capitalize text-theme"
+              class:font-bold={filters.target !== undefined}
+            >
+              <option value={undefined}>--</option>
+              {#each matchTargets as value}
+                <option>{value}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+      </div>
+
+      {#if filteredEntries.length}
+        <div class="flex flex-wrap gap-2">
+          <Button
+            onclick={() => {
+              openDialog(ExportEntriesDialog, {
+                surveyRecord,
+                filteredEntries,
+                type: "qrcode",
+                onexport: refresh,
+              });
+            }}
+            classes="grow"
+          >
+            <Icon name="qrcode" />
+            <div class="flex flex-col">
+              Export
+              <small>QR code</small>
+            </div>
+          </Button>
+          <Button
+            onclick={() => {
+              openDialog(ExportEntriesDialog, {
+                surveyRecord,
+                filteredEntries,
+                type: "file",
+                onexport: refresh,
+              });
+            }}
+            classes="grow"
+          >
+            <Icon name="copy" />
+            <div class="flex flex-col">
+              Export
+              <small>File</small>
+            </div>
+          </Button>
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  <div class="flex grow flex-col pt-3">
+    {#if duplicateEntryIds.length}
+      <Button onclick={fixEntries}>
+        <Icon name="wrench" />
+        <div class="flex flex-col">
+          Fix entries
+          <small>{duplicateEntryIds.length} duplicate entries were found</small>
+        </div>
+      </Button>
+    {/if}
+
+    <span>
+      {filteredEntries.length}
+      {filteredEntries.length == 1 ? "result" : "results"}
+      {#if filtersApplied}
+        - {filtersApplied} {filtersApplied == 1 ? "filter" : "filters"}
+      {/if}
+    </span>
+
+    <div class="grid grid-cols-[repeat({surveyRecord.type == 'match' ? 4 : 2},min-content)_auto] gap-x-3 gap-y-2">
+      <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 p-2">
+        <div>Team</div>
+        {#if surveyRecord.type == "match"}
+          <div>Match</div>
+          <div>Absent</div>
+        {/if}
+        <div>Exported</div>
+      </div>
+
+      {#each displayedEntries as entry (entry.id)}
+        <Button
+          onclick={() => {
+            openDialog(ViewEntryDialog, {
+              surveyRecord,
+              entryRecord: entry,
+              onchange: refresh,
+            });
+          }}
+          classes="col-span-full grid grid-cols-subgrid text-center"
+        >
+          <div>{entry.team}</div>
+          {#if entry.type == "match"}
+            <div>{entry.match}</div>
+            <div>
+              {#if entry.absent}
                 <Icon name="check" />
               {/if}
-            </td>
-            <td></td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {/if}
-  {#if displayedEntries.length < filteredEntries.length}
-    <Button onclick={() => (displayedCount += 10)}>
-      <Icon name="arrow-down" />
-      Show more
-    </Button>
-  {/if}
+            </div>
+          {/if}
+          <div>
+            {#if entry.status == "exported"}
+              <Icon name="check" />
+            {/if}
+          </div>
+        </Button>
+      {/each}
+    </div>
+
+    {#if displayedEntries.length < filteredEntries.length}
+      <Button onclick={() => (displayedCount += 10)}>
+        <Icon name="arrow-down" />
+        Show more
+      </Button>
+    {/if}
+  </div>
 </div>

@@ -57,7 +57,7 @@
   }
 </script>
 
-<span>Import from QR code</span>
+<span>Import entries</span>
 
 {#if importedEntries.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
