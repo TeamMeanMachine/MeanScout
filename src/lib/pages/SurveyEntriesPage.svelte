@@ -395,7 +395,10 @@
       {/if}
     </span>
 
-    <div class="grid grid-cols-[repeat({surveyRecord.type == 'match' ? 4 : 2},min-content)_auto] gap-x-3 gap-y-2">
+    <div
+      class="grid gap-x-3 gap-y-2"
+      style="grid-template-columns: repeat({surveyRecord.type == 'match' ? 4 : 2}, min-content) auto;"
+    >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 p-2">
         <div>Team</div>
         {#if surveyRecord.type == "match"}
