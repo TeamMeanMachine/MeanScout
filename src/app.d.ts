@@ -36,6 +36,18 @@ declare global {
       setConsumer(callback: (launchParams: LaunchParams) => void): undefined;
     };
   }
+
+  type DetectedBarcode = {
+    boundingBox: DOMRectReadOnly;
+    cornerPoints: any;
+    format: "qr_code";
+    rawValue: string;
+  };
+
+  declare class BarcodeDetector {
+    constructor({ formats }: { formats: ["qr_code"] });
+    detect(imageBitmapSource: ImageBitmapSource): Promise<DetectedBarcode[]>;
+  }
 }
 
 export {};

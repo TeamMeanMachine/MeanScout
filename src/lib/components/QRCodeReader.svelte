@@ -10,16 +10,34 @@
     onread: (data: string) => void;
   } = $props();
 
+  let reader = $state<
+    | { using: "api"; detector: BarcodeDetector }
+    | { using: "library"; canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }
+    | undefined
+  >();
+
   let reading = $state(false);
-  let canvas: HTMLCanvasElement;
-  let context: CanvasRenderingContext2D;
+  let scanned = $state<number[] | string>("--");
+  let textEncoder = new TextEncoder();
+
   let video: HTMLVideoElement;
   let stream: MediaStream;
   let fountainDecoder: FountainDecoder;
-  let scanned = $state<number[] | string>("--");
 
   onMount(async () => {
-    if (reading) stop();
+    if ("BarcodeDetector" in globalThis) {
+      reader = {
+        using: "api",
+        detector: new BarcodeDetector({ formats: ["qr_code"] }),
+      };
+    } else {
+      const canvas = document.createElement("canvas");
+      reader = {
+        using: "library",
+        canvas,
+        context: canvas.getContext("2d", { willReadFrequently: true })!,
+      };
+    }
 
     fountainDecoder = new FountainDecoder();
     fountainDecoder.ondecode = (message) => {
@@ -28,12 +46,12 @@
     };
 
     stream = await navigator.mediaDevices.getUserMedia({
-      video: $cameraStore ? { deviceId: { exact: $cameraStore } } : true,
+      video: {
+        deviceId: $cameraStore ? { exact: $cameraStore } : undefined,
+        aspectRatio: { ideal: 1 },
+      },
       audio: false,
     });
-
-    canvas = document.createElement("canvas");
-    context = canvas.getContext("2d", { willReadFrequently: true })!;
 
     video.srcObject = stream;
 
@@ -48,22 +66,34 @@
 
   onDestroy(() => stop());
 
-  function update() {
+  async function update() {
     if (!reading) return;
     scanned = "--";
 
     if (video.readyState == video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const image = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
-
-      if (code) {
-        scanned = fountainDecoder.decode(code) ?? "skip";
+      if (reader?.using == "api") {
+        try {
+          const [data] = await reader.detector.detect(video);
+          if (data) {
+            const bytes = textEncoder.encode(data.rawValue);
+            scanned = fountainDecoder.decode(data.rawValue, bytes) ?? "skip";
+          }
+        } catch (e) {
+          scanned = "--";
+        }
+      } else if (reader?.using == "library") {
+        reader.canvas.width = video.videoWidth;
+        reader.canvas.height = video.videoHeight;
+        reader.context.drawImage(video, 0, 0, reader.canvas.width, reader.canvas.height);
+        const image = reader.context.getImageData(0, 0, reader.canvas.width, reader.canvas.height);
+        const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
+        if (code) {
+          scanned = fountainDecoder.decode(code.data, code.binaryData) ?? "skip";
+        }
       }
     }
 
+    if (!reading) return;
     if ("requestVideoFrameCallback" in video) {
       video.requestVideoFrameCallback(update);
     } else {
@@ -81,4 +111,5 @@
 </script>
 
 <video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>
+<span>using: {reader?.using}</span>
 <span class="overflow-hidden overflow-ellipsis whitespace-nowrap text-nowrap">scanned: {scanned}</span>

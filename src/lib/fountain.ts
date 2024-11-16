@@ -155,8 +155,8 @@ export class FountainDecoder {
     this.ondecode = undefined;
   }
 
-  decode(code: QRCode) {
-    const [headerString] = code.data.split("|", 1);
+  decode(string: string, bytes: number[] | Uint8Array) {
+    const [headerString] = string.split("|", 1);
 
     if (this.lastHeader == headerString || !headerString.length) {
       return;
@@ -168,7 +168,7 @@ export class FountainDecoder {
     this.totalSources = headerData[0];
 
     const ids = new Set(headerData.slice(1));
-    const data = new Uint8Array(code.binaryData.slice(headerString.length + 1));
+    const data = new Uint8Array(bytes.slice(headerString.length + 1));
 
     if (!ids.size || ids.size > this.totalSources) {
       return;
