@@ -22,6 +22,8 @@
     entryRecords: IDBRecord<Entry>[];
   } = $props();
 
+  let dataGrid: HTMLDivElement;
+
   let filters = $state<EntryFilters>({
     team: undefined,
     match: undefined,
@@ -34,22 +36,12 @@
     return Object.values(filters).filter((val) => val !== undefined).length;
   });
 
+  let sortBy = $state<"team" | "match" | "absent" | "exported">(surveyRecord.type == "match" ? "match" : "team");
+
   let filteredEntries = $derived(entryRecords.filter(filterEntry).toSorted(sortEntries));
 
   let displayedCount = $state(10);
   let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
-
-  $effect(() => {
-    filters.team;
-    filters.match;
-    filters.absent;
-    filters.target;
-    filters.exported;
-
-    if (window.scrollY > window.innerHeight / 2) {
-      window.scroll({ top: 0, left: 0 });
-    }
-  });
 
   let duplicateEntryIds = $derived.by(() => {
     if (surveyRecord.type != "match") {
@@ -73,6 +65,21 @@
     }
 
     return duplicates;
+  });
+
+  onMount(() => onscroll());
+
+  $effect(() => {
+    filters.team;
+    filters.match;
+    filters.absent;
+    filters.target;
+    filters.exported;
+    sortBy;
+
+    if (window.scrollY > dataGrid.getBoundingClientRect().top) {
+      dataGrid.scrollIntoView();
+    }
   });
 
   function filterEntry(entry: IDBRecord<Entry>) {
@@ -131,10 +138,24 @@
   }
 
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
-    if (a.type == "match" && b.type == "match") {
-      return b.match - a.match || a.team.localeCompare(b.team, undefined, { numeric: true });
+    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
+    const absentCompare = a.type == "match" && b.type == "match" ? Number(b.absent) - Number(a.absent) : 0;
+    const exportedCompare = Number(a.status == "exported") - Number(b.status == "exported");
+
+    if (sortBy == "match") {
+      return matchCompare || teamCompare;
     }
-    return a.team.localeCompare(b.team, undefined, { numeric: true });
+
+    if (sortBy == "absent") {
+      return absentCompare || matchCompare || teamCompare;
+    }
+
+    if (sortBy == "exported") {
+      return exportedCompare || matchCompare || teamCompare;
+    }
+
+    return teamCompare || matchCompare;
   }
 
   function refresh() {
@@ -207,8 +228,6 @@
       onscroll();
     }
   }
-
-  onMount(() => onscroll());
 </script>
 
 <svelte:window {onscroll} />
@@ -387,25 +406,35 @@
       </Button>
     {/if}
 
-    <span>
-      {filteredEntries.length}
-      {filteredEntries.length == 1 ? "result" : "results"}
+    <small>
       {#if filtersApplied}
-        - {filtersApplied} {filtersApplied == 1 ? "filter" : "filters"}
+        {filteredEntries.length} / {entryRecords.length}
+        - {filtersApplied}
+        {filtersApplied == 1 ? "filter" : "filters"}
+      {:else}
+        {entryRecords.length} {entryRecords.length == 1 ? "entry" : "entries"}
       {/if}
-    </span>
+    </small>
+    <small>Sorting by {sortBy}</small>
 
     <div
-      class="grid gap-x-3 gap-y-2"
+      bind:this={dataGrid}
+      class="grid gap-2 pt-1"
       style="grid-template-columns: repeat({surveyRecord.type == 'match' ? 4 : 2}, min-content) auto;"
     >
-      <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 p-2">
-        <div>Team</div>
+      <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
+        <Button onclick={() => (sortBy = "team")} classes="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
         {#if surveyRecord.type == "match"}
-          <div>Match</div>
-          <div>Absent</div>
+          <Button onclick={() => (sortBy = "match")} classes="font-{sortBy == 'match' ? 'bold' : 'light'}">
+            Match
+          </Button>
+          <Button onclick={() => (sortBy = "absent")} classes="font-{sortBy == 'absent' ? 'bold' : 'light'}">
+            Absent
+          </Button>
         {/if}
-        <div>Exported</div>
+        <Button onclick={() => (sortBy = "exported")} classes="font-{sortBy == 'exported' ? 'bold' : 'light'}">
+          Exported
+        </Button>
       </div>
 
       {#each displayedEntries as entry (entry.id)}
