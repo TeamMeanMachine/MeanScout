@@ -247,7 +247,7 @@
             onimport: refresh,
           });
         }}
-        classes="grow"
+        class="grow"
       >
         <Icon name="qrcode" />
         <div class="flex flex-col">
@@ -262,7 +262,7 @@
             onimport: refresh,
           });
         }}
-        classes="grow"
+        class="grow"
       >
         <Icon name="paste" />
         <div class="flex flex-col">
@@ -365,7 +365,7 @@
                 onexport: refresh,
               });
             }}
-            classes="grow"
+            class="grow"
           >
             <Icon name="qrcode" />
             <div class="flex flex-col">
@@ -382,7 +382,7 @@
                 onexport: refresh,
               });
             }}
-            classes="grow"
+            class="grow"
           >
             <Icon name="copy" />
             <div class="flex flex-col">
@@ -423,16 +423,14 @@
       style="grid-template-columns: repeat({surveyRecord.type == 'match' ? 4 : 2}, min-content) auto;"
     >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-        <Button onclick={() => (sortBy = "team")} classes="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
+        <Button onclick={() => (sortBy = "team")} class="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
         {#if surveyRecord.type == "match"}
-          <Button onclick={() => (sortBy = "match")} classes="font-{sortBy == 'match' ? 'bold' : 'light'}">
-            Match
-          </Button>
-          <Button onclick={() => (sortBy = "absent")} classes="font-{sortBy == 'absent' ? 'bold' : 'light'}">
+          <Button onclick={() => (sortBy = "match")} class="font-{sortBy == 'match' ? 'bold' : 'light'}">Match</Button>
+          <Button onclick={() => (sortBy = "absent")} class="font-{sortBy == 'absent' ? 'bold' : 'light'}">
             Absent
           </Button>
         {/if}
-        <Button onclick={() => (sortBy = "exported")} classes="font-{sortBy == 'exported' ? 'bold' : 'light'}">
+        <Button onclick={() => (sortBy = "exported")} class="font-{sortBy == 'exported' ? 'bold' : 'light'}">
           Exported
         </Button>
       </div>
@@ -446,7 +444,7 @@
               onchange: refresh,
             });
           }}
-          classes="col-span-full grid grid-cols-subgrid text-center"
+          class="col-span-full grid grid-cols-subgrid text-center"
         >
           <div>{entry.team}</div>
           {#if entry.type == "match"}

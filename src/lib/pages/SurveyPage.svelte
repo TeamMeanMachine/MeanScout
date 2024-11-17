@@ -282,14 +282,14 @@
     <h2 class="font-bold">Admin</h2>
 
     <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "qrcode" })} classes="grow basis-0">
+      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "qrcode" })} class="grow basis-0">
         <Icon name="qrcode" />
         <div class="flex flex-col">
           Export
           <small>QR code</small>
         </div>
       </Button>
-      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "file" })} classes="grow basis-0">
+      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "file" })} class="grow basis-0">
         <Icon name="copy" />
         <div class="flex flex-col">
           Export

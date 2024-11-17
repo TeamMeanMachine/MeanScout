@@ -31,7 +31,7 @@
 <span>Pick camera</span>
 
 <div class="flex flex-col gap-1">
-  <Button onclick={() => ($cameraStore = "")} classes="capitalize">
+  <Button onclick={() => ($cameraStore = "")} class="capitalize">
     {#if $cameraStore == ""}
       <Icon name="circle-dot" />
       <strong>Default</strong>
@@ -42,7 +42,7 @@
   </Button>
 
   {#each cameras as camera}
-    <Button onclick={() => ($cameraStore = camera.id)} classes="capitalize">
+    <Button onclick={() => ($cameraStore = camera.id)} class="capitalize">
       {#if $cameraStore == camera.id}
         <Icon name="circle-dot" />
         <strong>{camera.name}</strong>

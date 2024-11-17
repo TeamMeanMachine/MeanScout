@@ -20,7 +20,7 @@
 </script>
 
 <div class="flex flex-col">
-  <Button onclick={toggle} classes="self-start">
+  <Button onclick={toggle} class="self-start">
     {#if value}
       <Icon name="square-check" />
     {:else}

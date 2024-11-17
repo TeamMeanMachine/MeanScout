@@ -7,14 +7,14 @@
     disabled = false,
     autofocus,
     onclick,
-    classes = "",
+    class: classes = "",
     children,
   }: {
     type?: HTMLButtonAttributes["type"];
     disabled?: boolean;
     autofocus?: HTMLButtonAttributes["autofocus"];
     onclick?: HTMLButtonAttributes["onclick"];
-    classes?: string;
+    class?: string;
     children: Snippet;
   } = $props();
 </script>

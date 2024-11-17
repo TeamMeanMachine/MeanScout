@@ -27,7 +27,7 @@
   {field.name}
   <div class="flex flex-wrap">
     {#each Array(5) as _, i}
-      <Button onclick={() => rate(i)} classes="px-1.5">
+      <Button onclick={() => rate(i)} class="px-1.5">
         <Icon style={value > i ? "solid" : "regular"} name="star" />
       </Button>
     {/each}

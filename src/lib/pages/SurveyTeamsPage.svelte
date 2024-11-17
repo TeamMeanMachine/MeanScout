@@ -250,7 +250,7 @@
               <td class="w-0"></td>
             {/if}
             <th class="w-0 p-2 pl-0 pr-1">
-              <Button onclick={() => (sortBy = "team")} classes="w-full font-{sortBy == 'team' ? 'bold' : 'light'}">
+              <Button onclick={() => (sortBy = "team")} class="w-full font-{sortBy == 'team' ? 'bold' : 'light'}">
                 Team
               </Button>
             </th>
@@ -258,7 +258,7 @@
               {#each surveyRecord.pickLists as pickList, i}
                 {@const font = sortBy == i ? "font-bold" : "font-light"}
                 <th class="w-0 p-2 px-1">
-                  <Button onclick={() => (sortBy = i)} classes="w-full justify-center {font}">
+                  <Button onclick={() => (sortBy = i)} class="w-full justify-center {font}">
                     {pickList.name}
                   </Button>
                 </th>
@@ -267,7 +267,7 @@
             <th class="w-0 p-2 pl-1 pr-0">
               <Button
                 onclick={() => (sortBy = "done")}
-                classes="w-full justify-end font-{sortBy == 'done' ? 'bold' : 'light'}"
+                class="w-full justify-end font-{sortBy == 'done' ? 'bold' : 'light'}"
               >
                 Done
               </Button>

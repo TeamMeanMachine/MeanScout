@@ -38,7 +38,7 @@
 
 <div class="flex flex-col gap-2 p-3">
   {#if $modeStore == "admin"}
-    <Button onclick={() => openDialog(NewMatchDialog, { surveyRecord })} classes="mb-2">
+    <Button onclick={() => openDialog(NewMatchDialog, { surveyRecord })} class="mb-2">
       <Icon name="plus" />
       New match
     </Button>

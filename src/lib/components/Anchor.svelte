@@ -3,11 +3,11 @@
 
   let {
     route = "",
-    classes = "",
+    class: classes = "",
     children,
   }: {
     route?: string;
-    classes?: string;
+    class?: string;
     children: Snippet;
   } = $props();
 </script>

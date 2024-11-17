@@ -36,21 +36,21 @@
 
   {#if $modeStore == "admin"}
     <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ImportSurveyFromQRCodeDialog, {})} classes="grow basis-0">
+      <Button onclick={() => openDialog(ImportSurveyFromQRCodeDialog, {})} class="grow basis-0">
         <Icon name="qrcode" />
         <div class="flex flex-col">
           Import
           <small>QR code</small>
         </div>
       </Button>
-      <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} classes="grow basis-0">
+      <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} class="grow basis-0">
         <Icon name="paste" />
         <div class="flex flex-col">
           Import
           <small>File</small>
         </div>
       </Button>
-      <Button onclick={() => openDialog(NewSurveyDialog, {})} classes="grow basis-0">
+      <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
         <Icon name="plus" />
         <div class="flex flex-col">
           Create
