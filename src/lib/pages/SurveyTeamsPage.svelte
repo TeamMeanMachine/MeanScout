@@ -6,10 +6,13 @@
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import AddTeamsDialog from "$lib/dialogs/AddTeamsDialog.svelte";
+  import DeleteTeamsDialog from "$lib/dialogs/DeleteTeamsDialog.svelte";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
+  import { flushSync, onMount } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   let {
     surveyRecord,
@@ -23,6 +26,8 @@
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
   const entriesByTeam = getEntriesByTeam();
 
+  let dataGrid = $state<HTMLDivElement | undefined>();
+
   let ranksPerPickList = $derived.by(() => {
     if (surveyRecord.type != "match") return [];
     surveyRecord.skippedTeams;
@@ -31,21 +36,42 @@
 
   let sortBy = $state<"team" | number | "done">("team");
 
-  let skippingTeams = $state(false);
+  let selecting = $state(false);
+  let selectedTeams = new SvelteSet<string>();
+
+  let columns = $derived(surveyRecord.type == "match" ? surveyRecord.pickLists.length + 3 : 3);
 
   let teamInfos = $derived.by(() => {
-    sortBy;
     const uniqueTeams = [...new Set([...surveyRecord.teams, ...teamsFromMatches])];
     return uniqueTeams.map(createTeamInfo).toSorted(sortTeamInfo);
   });
 
   let conflictingTeams = $derived([...new Set(surveyRecord.teams).intersection(new Set(teamsFromMatches))]);
 
-  function getTeamsFromMatches() {
-    if (surveyRecord.type != "match" || !surveyRecord.matches.length) {
-      return [];
-    }
+  let displayedCount = $state(10);
+  let displayedTeams = $derived(teamInfos.slice(0, displayedCount));
 
+  onMount(() => onscroll());
+
+  $effect(() => {
+    if (!dataGrid) return;
+    sortBy;
+    if (window.scrollY > dataGrid.getBoundingClientRect().top) {
+      dataGrid.scrollIntoView();
+    }
+  });
+
+  function onscroll() {
+    if (displayedCount >= teamInfos.length) return;
+    if (document.body.offsetHeight <= window.scrollY + window.innerHeight * 2) {
+      displayedCount = Math.min(displayedCount + 10, teamInfos.length);
+      flushSync();
+      onscroll();
+    }
+  }
+
+  function getTeamsFromMatches() {
+    if (surveyRecord.type != "match" || !surveyRecord.matches.length) return [];
     const teamsFromMatches: string[] = [];
     for (const match of surveyRecord.matches) {
       teamsFromMatches.push(match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3);
@@ -78,16 +104,11 @@
   }
 
   function createTeamRanking(pickList: PickList) {
-    if (surveyRecord.type != "match") {
-      return {};
-    }
+    if (surveyRecord.type != "match") return {};
 
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
-      if (surveyRecord.skippedTeams?.includes(team)) {
-        continue;
-      }
-
+      if (surveyRecord.skippedTeams?.includes(team)) continue;
       pickListData[team] = 0;
     }
 
@@ -96,10 +117,7 @@
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
-        if (surveyRecord.skippedTeams?.includes(team)) {
-          continue;
-        }
-
+        if (surveyRecord.skippedTeams?.includes(team)) continue;
         pickListData[team] += normalizedTeamData[team];
       }
     }
@@ -121,12 +139,12 @@
   function createTeamInfo(team: string): TeamInfo {
     const matchingEntries = entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
 
-    let skipped = undefined;
+    let skipped: boolean | undefined = undefined;
     if (surveyRecord.type == "match" && surveyRecord.skippedTeams?.includes(team)) {
       skipped = true;
     }
 
-    let pickListRanks = undefined;
+    let pickListRanks: number[] | undefined = undefined;
     if (ranksPerPickList.length) {
       pickListRanks = ranksPerPickList.map((pickList) => (skipped ? 0 : pickList[team]));
     }
@@ -142,7 +160,8 @@
   }
 
   function sortTeamInfo(a: TeamInfo, b: TeamInfo) {
-    const teamNumberCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const doneCompare = a.entryCount / a.matchCount - b.entryCount / b.matchCount;
 
     if (typeof sortBy == "number" && a.pickListRanks?.length && b.pickListRanks?.length) {
       const aRank = a.pickListRanks[sortBy];
@@ -153,200 +172,253 @@
       return aRank - bRank;
     }
 
-    if (sortBy == "done") {
-      return a.entryCount / a.matchCount - b.entryCount / b.matchCount || teamNumberCompare;
-    }
-
-    return teamNumberCompare;
+    if (sortBy == "done") return doneCompare || teamCompare;
+    return teamCompare;
   }
 
   function fixTeams() {
     surveyRecord.teams = surveyRecord.teams.filter((team) => !conflictingTeams.includes(team));
   }
 
+  function skipTeams() {
+    if (!selectedTeams.size || surveyRecord.type != "match") return;
+    if (surveyRecord.skippedTeams == undefined) surveyRecord.skippedTeams = [...selectedTeams];
+    else surveyRecord.skippedTeams.push(...selectedTeams);
+  }
+
+  function unskipTeams() {
+    if (!selectedTeams.size || surveyRecord.type != "match") return;
+    const remainingTeams = surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
+    if (!remainingTeams || remainingTeams.length == 0) surveyRecord.skippedTeams = undefined;
+    surveyRecord.skippedTeams = remainingTeams;
+  }
+
   function getOrdinal(n: number) {
-    if (n % 10 == 1 && n % 100 != 11) {
-      return "st";
-    }
-
-    if (n % 10 == 2 && n % 100 != 12) {
-      return "nd";
-    }
-
-    if (n % 10 == 3 && n % 100 != 13) {
-      return "rd";
-    }
-
+    if (n % 10 == 1 && n % 100 != 11) return "st";
+    if (n % 10 == 2 && n % 100 != 12) return "nd";
+    if (n % 10 == 3 && n % 100 != 13) return "rd";
     return "th";
   }
-
-  function unskipAllTeams() {
-    if (surveyRecord.type != "match") return;
-    surveyRecord.skippedTeams = undefined;
-  }
 </script>
+
+<svelte:window {onscroll} />
 
 <Header backLink="survey/{surveyRecord.id}">
   <small>{surveyRecord.name}</small>
   <h1 class="font-bold">Teams</h1>
 </Header>
 
-{#if $modeStore == "admin"}
-  <div class="flex flex-col gap-2 p-3">
-    <Button onclick={() => openDialog(AddTeamsDialog, { surveyRecord, allTeams: teamInfos })}>
-      <Icon name="plus" />
-      Add custom team(s)
-    </Button>
-  </div>
-{/if}
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-wrap gap-x-3 px-3">
   {#if $modeStore == "admin"}
-    {#if conflictingTeams.length}
-      <Button onclick={fixTeams}>
-        <Icon name="wrench" />
-        <div class="flex flex-col">
-          Fix teams
-          <small>{conflictingTeams.length} custom teams were found in matches</small>
-        </div>
-      </Button>
-    {/if}
-    <div class="flex flex-wrap gap-2">
-      <Button onclick={() => (skippingTeams = !skippingTeams)}>
-        {#if skippingTeams}
-          <Icon name="xmark" />
-          Stop
-        {:else}
-          <Icon name="forward" />
-          Skip teams
-        {/if}
-      </Button>
-      {#if skippingTeams && surveyRecord.type == "match" && surveyRecord.skippedTeams?.length}
-        <Button onclick={unskipAllTeams}>
-          <Icon name="arrow-rotate-left" />
-          Reset
+    <div class="grow basis-0">
+      <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
+        <Button
+          onclick={() => openDialog(AddTeamsDialog, { surveyRecord, allTeams: teamInfos })}
+          class="flex-nowrap text-nowrap"
+        >
+          <Icon name="plus" />
+          Add team(s)
         </Button>
-      {/if}
+
+        {#if conflictingTeams.length}
+          <Button onclick={fixTeams} class="flex-nowrap text-nowrap">
+            <Icon name="wrench" />
+            <div class="flex flex-col">
+              Fix teams
+              <small class="text-wrap">{conflictingTeams.length} custom teams were found in matches</small>
+            </div>
+          </Button>
+        {/if}
+
+        <div class="flex flex-col gap-2 pt-2">
+          {#if selecting}
+            {@const deletableTeams = [...selectedTeams].filter((team) => surveyRecord.teams.includes(team))}
+
+            <span>{selectedTeams.size} <small>selected</small></span>
+
+            {#if surveyRecord.type == "match"}
+              {@const canSkipTeams = [...selectedTeams].filter((team) => !surveyRecord.skippedTeams?.includes(team))}
+              {@const canUnskipTeams = [...selectedTeams].filter((team) => surveyRecord.skippedTeams?.includes(team))}
+
+              {#if canUnskipTeams.length}
+                <Button onclick={unskipTeams} class="flex-nowrap text-nowrap">
+                  <Icon name="backward" />
+                  Unskip {canUnskipTeams.length || ""}
+                </Button>
+              {:else}
+                <Button disabled={!canSkipTeams.length} onclick={skipTeams} class="flex-nowrap text-nowrap">
+                  <Icon name="forward" />
+                  Skip {canSkipTeams.length || ""}
+                </Button>
+              {/if}
+            {/if}
+
+            <Button
+              disabled={deletableTeams.length == 0}
+              onclick={() => {
+                openDialog(DeleteTeamsDialog, { surveyRecord, teams: deletableTeams });
+              }}
+              class="flex-nowrap text-nowrap"
+            >
+              <Icon name="trash" />
+              Delete {deletableTeams.length || ""}
+            </Button>
+
+            <Button
+              onclick={() => {
+                selecting = false;
+                selectedTeams.clear();
+              }}
+              class="flex-nowrap text-nowrap"
+            >
+              <Icon name="xmark" />
+              Cancel
+            </Button>
+          {:else}
+            <Button onclick={() => (selecting = true)} class="flex-nowrap text-nowrap">
+              <Icon name="check" />
+              Select
+            </Button>
+          {/if}
+        </div>
+      </div>
     </div>
   {/if}
-  {#if teamInfos.length}
-    <div class="flex flex-col">
-      <span>
-        {#if skippingTeams && surveyRecord.type == "match"}
-          {surveyRecord.skippedTeams?.length || 0} skipped
-        {:else}
+
+  <div class="flex grow flex-col gap-2 pt-3">
+    {#if teamInfos.length}
+      <div class="flex flex-col">
+        {#if surveyRecord.type == "match"}
+          <small>{surveyRecord.skippedTeams?.length || 0} skipped</small>
+        {/if}
+        <small>
           Sorting by
           {#if surveyRecord.type == "match" && typeof sortBy == "number"}
             {surveyRecord.pickLists[sortBy].name}
           {:else}
             {sortBy}
           {/if}
-        {/if}
-      </span>
-      <table class="w-full border-separate border-spacing-y-2">
-        <thead class="sticky top-0 text-nowrap bg-neutral-900 align-bottom">
-          <tr>
-            {#if skippingTeams}
-              <td class="w-0"></td>
+        </small>
+
+        <div
+          bind:this={dataGrid}
+          class="grid gap-y-2 pt-1"
+          style="grid-template-columns: repeat({columns}, min-content) auto;"
+        >
+          <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
+            {#if selecting}
+              <Button
+                onclick={() => {
+                  if (selectedTeams.size == teamInfos.length) {
+                    selectedTeams.clear();
+                  } else {
+                    for (const { team } of teamInfos) {
+                      selectedTeams.add(team);
+                    }
+                  }
+                }}
+              >
+                {#if selectedTeams.size == teamInfos.length}
+                  <Icon name="square-check" />
+                {:else}
+                  <Icon style="regular" name="square" />
+                {/if}
+              </Button>
+            {:else}
+              <div class="w-[41px]"></div>
             {/if}
-            <th class="w-0 p-2 pl-0 pr-1">
-              <Button onclick={() => (sortBy = "team")} class="w-full font-{sortBy == 'team' ? 'bold' : 'light'}">
+
+            <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
+              <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
                 Team
               </Button>
-            </th>
-            {#if ranksPerPickList.length && surveyRecord.type == "match"}
-              {#each surveyRecord.pickLists as pickList, i}
-                {@const font = sortBy == i ? "font-bold" : "font-light"}
-                <th class="w-0 p-2 px-1">
-                  <Button onclick={() => (sortBy = i)} class="w-full justify-center {font}">
+
+              {#if ranksPerPickList.length && surveyRecord.type == "match"}
+                {#each surveyRecord.pickLists as pickList, i}
+                  <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
                     {pickList.name}
                   </Button>
-                </th>
-              {/each}
-            {/if}
-            <th class="w-0 p-2 pl-1 pr-0">
-              <Button
-                onclick={() => (sortBy = "done")}
-                class="w-full justify-end font-{sortBy == 'done' ? 'bold' : 'light'}"
-              >
-                Done
-              </Button>
-            </th>
-            <td></td>
-          </tr>
-        </thead>
-        <tbody>
-          {#each teamInfos as teamInfo (teamInfo.team)}
-            {@const onclick = () => {
-              if (skippingTeams) {
-                if (surveyRecord.type != "match") return;
-
-                teamInfo.skipped = !teamInfo.skipped;
-
-                if (!surveyRecord.skippedTeams) {
-                  surveyRecord.skippedTeams = [teamInfo.team];
-                } else if (surveyRecord.skippedTeams.includes(teamInfo.team)) {
-                  surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => team != teamInfo.team);
-                } else {
-                  surveyRecord.skippedTeams.push(teamInfo.team);
-                }
-              } else {
-                openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo, canEdit: true });
-              }
-            }}
-
-            <tr
-              tabindex="0"
-              role="button"
-              {onclick}
-              onkeydown={(e) => {
-                if (e.key == " " || e.key == "Enter") {
-                  e.preventDefault();
-                  onclick();
-                }
-              }}
-              class="button cursor-pointer bg-neutral-800"
-            >
-              {#if skippingTeams}
-                <td class="p-2">
-                  {#if teamInfo.skipped}
-                    <Icon name="forward" />
-                  {:else}
-                    <div class="h-[26px] w-[25px]"></div>
-                  {/if}
-                </td>
-              {/if}
-              <td class="p-2">{teamInfo.team}</td>
-              {#if teamInfo.pickListRanks?.length}
-                {#each teamInfo.pickListRanks as pickListRank}
-                  <td class="p-2 text-center">
-                    {#if pickListRank > 0}
-                      {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
-                    {:else if teamInfo.skipped}
-                      <span class="text-neutral-500">----</span>
-                    {/if}
-                  </td>
                 {/each}
               {/if}
-              <td class="p-2 text-right">
-                {teamInfo.entryCount}{#if surveyRecord.type == "match" && surveyRecord.matches.length && teamInfo.matchCount}
-                  <small class="font-light">/{teamInfo.matchCount}</small>
+
+              <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
+                Done
+              </Button>
+            </div>
+          </div>
+
+          {#each displayedTeams as teamInfo (teamInfo.team)}
+            {@const defaultFont = selectedTeams.has(teamInfo.team) ? "font-bold" : ""}
+
+            <Button
+              onclick={() => {
+                if (selecting) {
+                  if (selectedTeams.has(teamInfo.team)) {
+                    selectedTeams.delete(teamInfo.team);
+                  } else {
+                    selectedTeams.add(teamInfo.team);
+                  }
+                } else {
+                  openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo, canEdit: true });
+                }
+              }}
+              class="col-span-full grid grid-cols-subgrid text-center {defaultFont}"
+            >
+              <div class="h-[24px] text-left">
+                {#if selecting}
+                  {#if selectedTeams.has(teamInfo.team)}
+                    <Icon name="square-check" />
+                  {:else}
+                    <Icon style="regular" name="square" />
+                  {/if}
                 {/if}
-              </td>
-              <td></td>
-            </tr>
+              </div>
+
+              <div>{teamInfo.team}</div>
+
+              {#if teamInfo.pickListRanks?.length}
+                {#if teamInfo.skipped}
+                  {@const borderColor = selectedTeams.has(teamInfo.team) ? "border-neutral-200" : "border-neutral-500"}
+                  {@const gridColumn = `span ${teamInfo.pickListRanks.length}`}
+                  <hr class="mx-4 {borderColor}" style="grid-column: {gridColumn} / {gridColumn}" />
+                {:else}
+                  {#each teamInfo.pickListRanks as pickListRank}
+                    <div>
+                      {#if pickListRank > 0}
+                        {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
+              {/if}
+
+              <div>
+                {#if surveyRecord.type == "match" && surveyRecord.matches.length && teamInfo.matchCount}
+                  {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
+                {:else}
+                  {teamInfo.entryCount}
+                {/if}
+              </div>
+            </Button>
           {/each}
-        </tbody>
-      </table>
-    </div>
-  {:else}
-    <span>
-      No teams.
-      {#if surveyRecord.type == "match" && surveyRecord.matches.length}
-        Note that teams from matches are used depending on the selected target.
-      {:else}
-        Any team value is allowed.
-      {/if}
-    </span>
-  {/if}
+        </div>
+
+        {#if displayedTeams.length < teamInfos.length}
+          <Button onclick={() => (displayedCount += 10)}>
+            <Icon name="arrow-down" />
+            Show more
+          </Button>
+        {/if}
+      </div>
+    {:else}
+      <span>
+        No teams.
+        {#if surveyRecord.type == "match" && surveyRecord.matches.length}
+          Note that teams from matches are used depending on the selected target.
+        {:else}
+          Any team value is allowed.
+        {/if}
+      </span>
+    {/if}
+  </div>
 </div>
