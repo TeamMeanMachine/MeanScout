@@ -2,7 +2,7 @@
   import type { DialogExports } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import { surveySchema, type Survey } from "$lib/survey";
+  import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let {
@@ -16,30 +16,28 @@
 
   export const { onopen, onconfirm }: DialogExports = {
     async onopen(open) {
-      try {
-        var json = JSON.parse(data);
-      } catch (e: any) {
-        error = "Could not upload survey: Invalid input";
+      const jsonResult = jsonToSurvey(data);
+      if (!jsonResult.success) {
+        error = jsonResult.error;
         return open();
       }
 
-      const result = surveySchema.safeParse(json);
-
-      if (!result.success) {
-        error = result.error.message;
+      const schemaResult = surveySchema.safeParse(jsonResult.survey);
+      if (!schemaResult.success) {
+        error = schemaResult.error.toString();
         return open();
       }
 
       if (
-        result.data.tbaEventKey?.length &&
+        schemaResult.data.tbaEventKey?.length &&
         $tbaAuthKeyStore &&
-        !(await tbaEventExists(result.data.tbaEventKey, $tbaAuthKeyStore))
+        !(await tbaEventExists(schemaResult.data.tbaEventKey, $tbaAuthKeyStore))
       ) {
         error = "Could not upload survey: TBA event key is invalid";
         return open();
       }
 
-      survey = result.data;
+      survey = schemaResult.data;
       open();
     },
     async onconfirm() {

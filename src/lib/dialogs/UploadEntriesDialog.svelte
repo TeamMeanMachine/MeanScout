@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { parseValueFromString } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
+  import { csvToEntries } from "$lib/entry";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -12,28 +11,16 @@
   } = $props();
 
   let surveyRecords = $state<IDBRecord<Survey>[]>([]);
-
-  let csvEntries = $state<string[][] | undefined>();
   let selectedSurveyId = $state<number | undefined>();
   let selectedSurveyRecord = $derived(surveyRecords.find((survey) => survey.id == selectedSurveyId));
+
+  let entries = $derived(selectedSurveyRecord ? csvToEntries(data, selectedSurveyRecord) : undefined);
 
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
     onopen(open) {
       if (!data.length) {
-        error = "No input";
-        return open();
-      }
-
-      const csv = data.split("\n").map((line) =>
-        line
-          .trim()
-          .split(",")
-          .map((value) => value.trim()),
-      );
-
-      if (!csv.length || !csv[0].length) {
         error = "No input";
         return open();
       }
@@ -46,18 +33,17 @@
 
       surveysRequest.onsuccess = () => {
         const surveys = surveysRequest.result;
-        if (!surveys?.length) {
+        if (!surveys.length) {
           error = "No surveys found";
           return open();
         }
 
         surveyRecords = surveys;
-        csvEntries = csv;
         open();
       };
     },
     async onconfirm() {
-      if (!csvEntries?.length) return;
+      if (!entries?.length) return;
       if (!selectedSurveyRecord) return;
 
       const addTransaction = transaction("entries", "readwrite");
@@ -70,48 +56,44 @@
         closeDialog();
       };
 
-      for (const entryCSV of csvEntries) {
-        if (entryCSV[0] == "Team" || entryCSV.length == 0) continue;
-        addEntry(entryCSV, entryStore, selectedSurveyRecord);
+      for (const entry of entries) {
+        entryStore.add($state.snapshot(entry));
       }
     },
   };
-
-  function addEntry(entryCSV: string[], entryStore: IDBObjectStore, surveyRecord: IDBRecord<Survey>) {
-    let entry: Entry;
-    if (surveyRecord.type == "match") {
-      entry = {
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
-        status: "exported",
-        team: entryCSV[0],
-        match: parseInt(entryCSV[1]),
-        absent: entryCSV[2].toLowerCase() == "true" ? true : false,
-        values: entryCSV.slice(3).map(parseValueFromString),
-        created: new Date(),
-        modified: new Date(),
-      };
-    } else {
-      entry = {
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
-        status: "exported",
-        team: entryCSV[0],
-        values: entryCSV.slice(1).map(parseValueFromString),
-        created: new Date(),
-        modified: new Date(),
-      };
-    }
-
-    entryStore.add(entry).onerror = (e) => {
-      e.preventDefault();
-    };
-  }
 </script>
 
-{#if csvEntries?.length && surveyRecords.length}
-  <span>Upload entries</span>
-  <span>Total: {csvEntries.length}</span>
+{#if entries?.length && selectedSurveyRecord}
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+    <table class="w-full text-left">
+      <thead>
+        <tr>
+          <th class="w-0 p-2">Team</th>
+          {#if selectedSurveyRecord.type == "match"}
+            <th class="w-0 p-2">Match</th>
+            <th class="w-0 p-2">Absent</th>
+          {/if}
+          <td></td>
+        </tr>
+      </thead>
+      <tbody>
+        {#each entries as entry}
+          <tr>
+            <td class="p-2">{entry.team}</td>
+            {#if entry.type == "match"}
+              <td class="p-2">{entry.match}</td>
+              <td class="p-2">{entry.absent}</td>
+            {/if}
+            <td></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+  <span>Entries: {entries.length}</span>
+{/if}
+
+{#if surveyRecords.length}
   <label class="flex flex-col">
     To survey
     <select bind:value={selectedSurveyId} class="bg-neutral-800 p-2 capitalize text-theme">

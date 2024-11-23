@@ -17,22 +17,10 @@
       "files": [
         {
           "name": "file",
-          "accept": ["*/*"]
+          "accept": ["*/*", ".json", ".csv", ".txt"]
         }
       ]
     }
-  },
-  "file_handlers": [
-    {
-      "action": "/",
-      "accept": {
-        "text/*": [".txt", ".csv"],
-        "application/json": [".json"]
-      }
-    }
-  ],
-  "launch_handler": {
-    "client_mode": "navigate-existing"
   },
   "icons": [
     {

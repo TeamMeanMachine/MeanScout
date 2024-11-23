@@ -26,17 +26,6 @@ declare global {
     ): IDBTransaction;
   }
 
-  interface LaunchParams {
-    readonly files: FileSystemFileHandle[];
-    readonly targetUrl: string;
-  }
-
-  interface Window {
-    readonly launchQueue: {
-      setConsumer(callback: (launchParams: LaunchParams) => void): undefined;
-    };
-  }
-
   type DetectedBarcode = {
     boundingBox: DOMRectReadOnly;
     cornerPoints: any;
