@@ -21,6 +21,7 @@
       }
 
       surveyRecord.name = name;
+      surveyRecord.modified = new Date();
       closeDialog();
     },
   };

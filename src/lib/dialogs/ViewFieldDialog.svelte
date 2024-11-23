@@ -48,6 +48,7 @@
       surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
     }
 
+    surveyRecord.modified = new Date();
     closeDialog();
   }
 
@@ -59,6 +60,7 @@
       surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
     }
 
+    surveyRecord.modified = new Date();
     closeDialog();
   }
 
@@ -70,6 +72,7 @@
       surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
     }
 
+    surveyRecord.modified = new Date();
     closeDialog();
   }
 </script>

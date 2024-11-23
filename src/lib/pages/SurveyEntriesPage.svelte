@@ -180,6 +180,7 @@
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor == null) {
+        surveyRecord.modified = new Date();
         refresh();
         return;
       }

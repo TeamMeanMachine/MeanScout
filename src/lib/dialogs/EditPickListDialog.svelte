@@ -22,6 +22,7 @@
     onconfirm() {
       pickList.weights = pickList.weights.filter((weight) => weight.percentage);
       surveyRecord.pickLists[index] = structuredClone($state.snapshot(pickList));
+      surveyRecord.modified = new Date();
       onupdate?.();
       closeDialog();
     },

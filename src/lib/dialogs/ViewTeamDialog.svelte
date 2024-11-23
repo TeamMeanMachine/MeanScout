@@ -45,6 +45,7 @@
       surveyRecord.skippedTeams.push(teamInfo.team);
     }
 
+    surveyRecord.modified = new Date();
     closeDialog();
   }
 
@@ -55,6 +56,7 @@
       surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => teamInfo.team != team);
     }
 
+    surveyRecord.modified = new Date();
     closeDialog();
   }
 </script>

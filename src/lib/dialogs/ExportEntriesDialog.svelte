@@ -44,10 +44,12 @@
         }
 
         entryRecord.status = "exported";
+        entryRecord.modified = new Date();
         entryStore.put($state.snapshot(entryRecord));
       }
 
       entriesTransaction.oncomplete = () => {
+        surveyRecord.modified = new Date();
         onexport?.();
         closeDialog();
       };

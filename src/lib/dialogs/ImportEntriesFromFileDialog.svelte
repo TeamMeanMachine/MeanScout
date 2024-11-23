@@ -34,6 +34,7 @@
       }
 
       addTransaction.oncomplete = () => {
+        surveyRecord.modified = new Date();
         onimport?.();
         closeDialog();
       };

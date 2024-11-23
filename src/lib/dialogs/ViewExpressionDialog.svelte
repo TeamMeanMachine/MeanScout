@@ -85,6 +85,7 @@
     <Button
       onclick={() => {
         surveyRecord.expressions = surveyRecord.expressions.toSpliced(index, 1);
+        surveyRecord.modified = new Date();
         closeDialog();
       }}
     >

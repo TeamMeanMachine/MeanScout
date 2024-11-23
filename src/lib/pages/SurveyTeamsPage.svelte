@@ -178,12 +178,14 @@
 
   function fixTeams() {
     surveyRecord.teams = surveyRecord.teams.filter((team) => !conflictingTeams.includes(team));
+    surveyRecord.modified = new Date();
   }
 
   function skipTeams() {
     if (!selectedTeams.size || surveyRecord.type != "match") return;
     if (surveyRecord.skippedTeams == undefined) surveyRecord.skippedTeams = [...selectedTeams];
     else surveyRecord.skippedTeams.push(...selectedTeams);
+    surveyRecord.modified = new Date();
   }
 
   function unskipTeams() {
@@ -191,6 +193,7 @@
     const remainingTeams = surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
     if (!remainingTeams || remainingTeams.length == 0) surveyRecord.skippedTeams = undefined;
     surveyRecord.skippedTeams = remainingTeams;
+    surveyRecord.modified = new Date();
   }
 
   function getOrdinal(n: number) {
