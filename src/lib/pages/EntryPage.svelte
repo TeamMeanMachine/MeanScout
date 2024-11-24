@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
@@ -24,12 +23,7 @@
   }
 </script>
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Draft</h1>
-</Header>
-
-<div class="flex flex-col gap-4 p-3">
+<div class="flex flex-col gap-4">
   <div class="flex flex-col">
     <span><small>Team</small> <strong>{entryRecord.team}</strong></span>
     {#if entryRecord.type == "match"}
@@ -60,7 +54,7 @@
   </div>
 </div>
 
-<div class="flex flex-wrap gap-2 p-3">
+<div class="flex flex-wrap gap-2">
   <Button
     onclick={() =>
       openDialog(SubmitEntryDialog, {

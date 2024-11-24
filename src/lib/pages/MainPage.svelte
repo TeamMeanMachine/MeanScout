@@ -1,7 +1,6 @@
 <script lang="ts">
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
@@ -17,10 +16,8 @@
   } = $props();
 </script>
 
-<Header />
-
 {#if surveyRecords.length}
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">Surveys</h2>
     {#each surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
@@ -31,7 +28,7 @@
   </div>
 {/if}
 
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Options</h2>
 
   {#if $modeStore == "admin"}

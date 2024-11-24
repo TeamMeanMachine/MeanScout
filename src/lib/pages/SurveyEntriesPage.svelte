@@ -2,7 +2,6 @@
   import { flushSync, onMount } from "svelte";
   import type { EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
   import ImportEntriesFromFileDialog from "$lib/dialogs/ImportEntriesFromFileDialog.svelte";
@@ -233,14 +232,9 @@
 
 <svelte:window {onscroll} />
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Entries</h1>
-</Header>
-
-<div class="flex flex-wrap gap-x-3 px-3">
-  <div class="grow basis-0 pt-3">
-    <div class="flex flex-wrap gap-2">
+<div class="flex flex-wrap gap-3">
+  <div class="grow basis-0">
+    <div class="flex flex-wrap gap-2 pb-2">
       <Button
         onclick={() => {
           openDialog(ImportEntriesFromQRCodeDialog, {
@@ -273,7 +267,7 @@
       </Button>
     </div>
 
-    <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-3">
+    <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
       <div class="flex flex-wrap items-center">
         <h2 class="grow font-bold">Filter</h2>
         <Button onclick={resetFilters} disabled={!filtersApplied}>
@@ -396,7 +390,7 @@
     </div>
   </div>
 
-  <div class="flex grow flex-col pt-3">
+  <div class="flex grow flex-col">
     {#if duplicateEntryIds.length}
       <Button onclick={fixEntries}>
         <Icon name="wrench" />

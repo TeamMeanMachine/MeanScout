@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
@@ -31,12 +30,7 @@
   );
 </script>
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Matches</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   {#if $modeStore == "admin"}
     <Button onclick={() => openDialog(NewMatchDialog, { surveyRecord })} class="mb-2">
       <Icon name="plus" />

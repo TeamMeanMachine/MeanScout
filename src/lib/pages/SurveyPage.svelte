@@ -2,7 +2,6 @@
   import type { Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
@@ -75,11 +74,7 @@
   }
 </script>
 
-<Header backLink="">
-  <h1 class="font-bold">{surveyRecord.name}</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Entries</h2>
 
   <Button onclick={() => openDialog(NewEntryDialog, { surveyRecord, entryRecords, prefilledTeam, prefilledMatch })}>
@@ -134,7 +129,7 @@
     .toSorted((a, b) => b.number - a.number)
     .slice(0, 3)}
 
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">Analysis</h2>
 
     {#each surveyRecord.pickLists as pickList, index}
@@ -165,7 +160,7 @@
     </Anchor>
   </div>
 
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">Matches</h2>
 
     {#if upcomingMatches.length || previousMatches.length}
@@ -246,7 +241,7 @@
   </div>
 {/if}
 
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Teams</h2>
 
   <Anchor route="survey/{surveyRecord.id}/teams">
@@ -278,7 +273,7 @@
     entryRecords.length > 0 ||
     (surveyRecord.type == "match" && (surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0))}
 
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">Admin</h2>
 
     <div class="flex flex-wrap gap-2">

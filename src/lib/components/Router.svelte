@@ -15,6 +15,10 @@
   import SurveyTeamsPage from "$lib/pages/SurveyTeamsPage.svelte";
   import type { Survey } from "$lib/survey";
   import { z } from "zod";
+  import { modeStore, targetStore } from "$lib/settings";
+  import Anchor from "./Anchor.svelte";
+  import Icon from "./Icon.svelte";
+  import type { Heading } from "$lib";
 
   const idbIdSchema = z.coerce.number().int().positive();
   const pageSchema = z.enum(["", "settings", "about", "survey", "entry"]).default("");
@@ -22,6 +26,8 @@
 
   let target: HTMLDivElement;
   let currentPage: Record<string, any>;
+  let backLink = $state<string | undefined>();
+  let heading = $state<Heading>("MeanScout");
 
   let surveyRecord = $state<any>();
   let entryRecord = $state<any>();
@@ -47,9 +53,10 @@
     surveyRecord = undefined;
     entryRecord = undefined;
 
-    const hash = location.hash.replace(/#\/?/, "").toLowerCase().trim().split("/");
+    const hashUrl = new URL(location.href.replace("#/", ""));
+    const segments = hashUrl.pathname.split("/").slice(1);
 
-    const { success, data: page } = pageSchema.safeParse(hash[0]);
+    const { success, data: page } = pageSchema.safeParse(segments[0]);
 
     if (!success || page == "") {
       return getMainPage();
@@ -58,29 +65,35 @@
     if (page == "settings") {
       return loadPage(SettingsPage, {
         title: "Settings - MeanScout",
+        backLink: "",
+        heading: "Settings",
       });
     }
 
     if (page == "about") {
       return loadPage(AboutPage, {
         title: "About - MeanScout",
+        backLink: "",
+        heading: "About MeanScout",
       });
     }
 
     if (page == "survey") {
-      const { success, data: surveyId } = idbIdSchema.safeParse(hash[1]);
+      const { success, data: surveyId } = idbIdSchema.safeParse(segments[1]);
       if (!success) {
         return getMainPage();
       }
 
       getSurveyPageData(surveyId, (entryRecords) => {
-        const { success, data: surveyPage } = surveyPageSchema.safeParse(hash[2]);
+        const { success, data: surveyPage } = surveyPageSchema.safeParse(segments[2]);
 
         if (!success || surveyPage == "") {
           return loadPage(SurveyPage, {
             surveyRecord,
             entryRecords,
             title: `${surveyRecord.name} - MeanScout`,
+            backLink: "",
+            heading: surveyRecord.name,
           });
         }
 
@@ -89,6 +102,11 @@
             surveyRecord,
             entryRecords,
             title: `Entries - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Entries" },
+            ],
           });
         }
 
@@ -97,6 +115,11 @@
             surveyRecord,
             entryRecords,
             title: `Analysis - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Analysis" },
+            ],
           });
         }
 
@@ -105,6 +128,11 @@
             surveyRecord,
             entryRecords,
             title: `Matches - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Matches" },
+            ],
           });
         }
 
@@ -113,6 +141,11 @@
             surveyRecord,
             entryRecords,
             title: `Teams - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Teams" },
+            ],
           });
         }
 
@@ -122,6 +155,11 @@
             surveyRecord,
             entryCount,
             title: `Fields - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Fields" },
+            ],
           });
         }
 
@@ -129,6 +167,11 @@
           return loadPage(SurveyOptionsPage, {
             surveyRecord,
             title: `Options - ${surveyRecord.name} - MeanScout`,
+            backLink: `survey/${surveyRecord.id}`,
+            heading: [
+              { type: "sm", text: surveyRecord.name },
+              { type: "h1", text: "Options" },
+            ],
           });
         }
       });
@@ -137,7 +180,7 @@
     }
 
     if (page == "entry") {
-      const { success, data: entryId } = idbIdSchema.safeParse(hash[1]);
+      const { success, data: entryId } = idbIdSchema.safeParse(segments[1]);
       if (!success) {
         return getMainPage();
       }
@@ -147,6 +190,11 @@
           surveyRecord,
           entryRecord,
           title: `Draft - ${surveyRecord.name} - MeanScout`,
+          backLink: `survey/${surveyRecord.id}`,
+          heading: [
+            { type: "sm", text: surveyRecord.name },
+            { type: "h1", text: "Draft" },
+          ],
         });
       });
 
@@ -192,17 +240,57 @@
     };
   }
 
-  function loadPage<Props extends Record<string, any>>(page: Component<Props>, props: Props & { title: string }) {
+  function loadPage<Props extends Record<string, any>>(
+    page: Component<Props>,
+    props: Props & { title: string; backLink?: string; heading?: Heading },
+  ) {
     if (currentPage) {
       unmount(currentPage);
       window.scrollTo(0, 0);
     }
 
     document.title = props.title;
+    backLink = props.backLink;
+    heading = props.heading ?? "MeanScout";
+
     delete (props as any).title;
+    delete (props as any).backLink;
+    delete (props as any).heading;
+
     currentPage = mount(page, { target, props });
     flushSync();
   }
 </script>
 
-<div bind:this={target}></div>
+<header class="flex min-h-11 items-center gap-3">
+  {#if backLink === undefined}
+    <img src="./logo.svg" alt="" width="25" height="25" />
+  {:else}
+    <Anchor route={backLink}>
+      <Icon name="arrow-left" />
+    </Anchor>
+  {/if}
+
+  <div class="flex grow flex-col">
+    {#if typeof heading == "string"}
+      <h1 class="font-bold">{heading}</h1>
+    {:else}
+      {#each heading as { type, text }}
+        {#if type == "h1"}
+          <h1 class="font-bold">{text}</h1>
+        {:else if type == "sm"}
+          <small>{text}</small>
+        {/if}
+      {/each}
+    {/if}
+  </div>
+
+  <div class="flex flex-col text-right">
+    {#if $modeStore == "admin"}
+      <small>Admin</small>
+    {/if}
+    <small class="font-bold capitalize text-theme">{$targetStore}</small>
+  </div>
+</header>
+
+<div bind:this={target} class="flex flex-col gap-6"></div>

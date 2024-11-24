@@ -1,6 +1,5 @@
 <script lang="ts">
   import DialogBox from "$lib/components/DialogBox.svelte";
-  import Header from "$lib/components/Header.svelte";
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import Router from "$lib/components/Router.svelte";
   import { subscribeDialog, type DialogState } from "$lib/dialog";
@@ -33,8 +32,11 @@
 {/each}
 
 {#if idbError}
-  <Header />
-  <div class="flex flex-col gap-3 p-3">
+  <header class="flex min-h-11 items-center gap-3">
+    <img src="./logo.svg" alt="" width="25" height="25" />
+    <h1 class="font-bold">MeanScout</h1>
+  </header>
+  <div class="flex flex-col gap-3">
     <h2>Error</h2>
     <p>
       MeanScout was unable to access IndexedDB. Double check that your device/browser supports it, and that you haven't

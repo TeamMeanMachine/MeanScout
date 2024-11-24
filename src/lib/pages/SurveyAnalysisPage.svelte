@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { ExpressionAsExpressionInput } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
@@ -38,12 +37,7 @@
   ]);
 </script>
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Analysis</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Pick Lists</h2>
 
   {#if surveyRecord.expressions.length}
@@ -72,7 +66,7 @@
   {/if}
 </div>
 
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Expressions</h2>
 
   {#if $modeStore == "admin"}

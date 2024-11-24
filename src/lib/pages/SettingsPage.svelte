@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditTbaAuthKeyDialog from "$lib/dialogs/EditTbaAuthKeyDialog.svelte";
@@ -9,11 +8,7 @@
   import { modes, modeStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
 </script>
 
-<Header backLink="">
-  <h1 class="font-bold">Settings</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <label class="flex flex-col self-start">
     Mode
     <select bind:value={$modeStore} class="bg-neutral-800 p-2 capitalize text-theme">
@@ -33,7 +28,7 @@
 </div>
 
 {#if $modeStore == "admin"}
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">Camera</h2>
     <Button onclick={() => openDialog(PickCameraDialog, {})}>
       <Icon name="camera" />
@@ -41,7 +36,7 @@
     </Button>
   </div>
 
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">The Blue Alliance</h2>
     {#if $tbaAuthKeyStore}
       <Button onclick={() => openDialog(EditTeamSettingDialog, {})}>

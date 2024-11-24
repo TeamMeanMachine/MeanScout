@@ -1,13 +1,8 @@
-<script lang="ts">
-  import Header from "$lib/components/Header.svelte";
-</script>
-
-<Header backLink="">
-  <h1 class="font-bold">About MeanScout</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3 marker:text-theme">
+<div class="flex flex-col gap-2">
   <span>A lightweight FRC scouting web app built with SvelteKit.</span>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Features</h2>
   <ul class="ml-8 list-outside list-disc space-y-1">
     <li>Full offline support (progressive web app)</li>
@@ -23,6 +18,9 @@
     <li>Stores data locally, in the browser</li>
     <li>Export/share surveys as JSON and entries as CSV</li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Powered by</h2>
   <ul class="ml-8 list-outside list-disc space-y-1">
     <li>
@@ -56,18 +54,27 @@
       </a>
     </li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Target selector</h2>
   <ul class="ml-8 list-outside list-disc space-y-1">
     <li>Remind your scouts which team/alliance they should scout</li>
     <li>When used with TBA match data, automatically inputs team values for you</li>
-    <li>Customize in the <a href="#/settings">settings page</a></li>
+    <li>Customize in the <a href="#/settings" class="underline">settings page</a></li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Mode selector</h2>
   <ul class="ml-8 list-outside list-disc space-y-1">
     <li>Simplify MeanScout's UI for scouts</li>
     <li>Hide survey config menus/controls from scouts</li>
-    <li>Also customizable in the <a href="#/settings">settings page</a></li>
+    <li>Also customizable in the <a href="#/settings" class="underline">settings page</a></li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Customization</h2>
   <span>
     Do you find it annoying to reprogram your team's scouting app for every competition? MeanScout solves that problem.
@@ -85,6 +92,9 @@
     <li>Use group fields to organize your fields</li>
     <li>Duplicate fields (and groups!) to quickly set up your survey</li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Data analysis</h2>
   <ol class="ml-8 list-outside list-decimal space-y-1">
     <li>Analysis tools are availabe in your survey's analysis page</li>
@@ -92,6 +102,9 @@
     <li>Build pick lists using those expressions with given weights</li>
     <li>View the best teams for each pick list (and even expressions)</li>
   </ol>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Integrating The Blue Alliance</h2>
   <ol class="ml-8 list-outside list-decimal space-y-1">
     <li>
@@ -100,13 +113,18 @@
         <i class="fa-solid fa-up-right-from-square text-theme"></i>
       </a>
     </li>
-    <li>Enter that API key, and your team number, in MeanScout's <a href="#/settings">settings page</a></li>
+    <li>
+      Enter that API key, and your team number, in MeanScout's <a href="#/settings" class="underline">settings page</a>
+    </li>
     <li>
       In your survey's options page, select one of your team's upcoming (or recent) events (or enter any valid TBA event
       key)
     </li>
     <li>In either your survey's matches page or teams page, get the corresponding data from TBA</li>
   </ol>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Exporting</h2>
   <ul class="ml-8 list-outside list-disc space-y-1">
     <li>Export survey config as JSON from your survey's options page</li>
@@ -117,6 +135,9 @@
       scouting system
     </li>
   </ul>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Privacy and You</h2>
   <span>Here's all the information that can be automatically sent from your device, where it's sent to, and why:</span>
   <ul class="ml-8 list-outside list-disc space-y-1">
@@ -139,6 +160,9 @@
     </li>
   </ul>
   <span>With all that said, happy scouting!</span>
+</div>
+
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">FOSS</h2>
   <span>
     MeanScout is Free and Open Source Software.

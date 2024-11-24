@@ -2,7 +2,6 @@
   import type { TeamInfo } from "$lib";
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import AddTeamsDialog from "$lib/dialogs/AddTeamsDialog.svelte";
@@ -206,12 +205,7 @@
 
 <svelte:window {onscroll} />
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Teams</h1>
-</Header>
-
-<div class="flex flex-wrap gap-x-3 px-3">
+<div class="flex flex-wrap gap-x-3">
   {#if $modeStore == "admin"}
     <div class="grow basis-0">
       <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
@@ -233,7 +227,7 @@
           </Button>
         {/if}
 
-        <div class="flex flex-col gap-2 pt-2">
+        <div class="flex flex-col gap-2">
           {#if selecting}
             {@const deletableTeams = [...selectedTeams].filter((team) => surveyRecord.teams.includes(team))}
 
@@ -288,7 +282,7 @@
     </div>
   {/if}
 
-  <div class="flex grow flex-col gap-2 pt-3">
+  <div class="flex grow flex-col gap-2 pt-2">
     {#if teamInfos.length}
       <div class="flex flex-col">
         {#if surveyRecord.type == "match"}

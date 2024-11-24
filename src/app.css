@@ -35,6 +35,10 @@
     @apply z-10 outline outline-2 outline-neutral-300;
   }
 
+  ::marker {
+    @apply text-theme;
+  }
+
   ::selection {
     @apply bg-theme text-white;
   }

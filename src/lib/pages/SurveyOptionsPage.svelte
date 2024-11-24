@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
@@ -38,12 +37,7 @@
   }
 </script>
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Options</h1>
-</Header>
-
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <Button onclick={() => openDialog(EditSurveyNameDialog, { surveyRecord })}>
     <Icon name="pen" />
     <div class="flex flex-col">
@@ -54,7 +48,7 @@
 </div>
 
 {#if $tbaAuthKeyStore}
-  <div class="flex flex-col gap-2 p-3">
+  <div class="flex flex-col gap-2">
     <h2 class="font-bold">The Blue Alliance</h2>
     <Button onclick={() => openDialog(EditSurveyTbaEventKeyDialog, { surveyRecord })}>
       <Icon name="calendar-days" />
@@ -86,7 +80,7 @@
   </div>
 {/if}
 
-<div class="flex flex-col gap-2 p-3">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Danger Zone</h2>
   <Button onclick={() => openDialog(DeleteSurveyDialog, { surveyRecord })}>
     <Icon name="trash" />

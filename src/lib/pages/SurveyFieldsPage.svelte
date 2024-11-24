@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
@@ -24,13 +23,8 @@
   let preview = $state(disabled);
 </script>
 
-<Header backLink="survey/{surveyRecord.id}">
-  <small>{surveyRecord.name}</small>
-  <h1 class="font-bold">Fields</h1>
-</Header>
-
 {#if !disabled}
-  <div class="flex p-3">
+  <div class="flex">
     <Button onclick={() => (preview = !preview)}>
       {#if preview}
         <Icon name="square-check" />
@@ -41,7 +35,7 @@
     </Button>
   </div>
   {#if !preview}
-    <div class="flex flex-col gap-4 p-3">
+    <div class="flex flex-col gap-4">
       {#each surveyRecord.fields as field, index (field)}
         {#if field.type == "group"}
           <div class="flex flex-col gap-2">
@@ -91,7 +85,7 @@
         {/if}
       {/each}
     </div>
-    <div class="flex flex-wrap gap-2 p-3">
+    <div class="flex flex-wrap gap-2">
       <Button
         {disabled}
         onclick={() => {
@@ -115,7 +109,7 @@
 {/if}
 
 {#if preview}
-  <div class="flex flex-col gap-4 p-3">
+  <div class="flex flex-col gap-4">
     <h2 class="font-bold">Preview</h2>
     <div class="flex flex-col">
       <span><small>Team</small> <strong>####</strong></span>
