@@ -12,8 +12,7 @@ export default {
       },
     },
     fontFamily: {
-      mono: ["Fira Code", "monospace"],
-      monoVF: ["Fira Code VF", "monospace"],
+      mono: ["Fira Code VF", "monospace"],
     },
   },
   plugins: [],
