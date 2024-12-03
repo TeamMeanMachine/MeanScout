@@ -63,7 +63,9 @@
     }
 
     if (page == "settings") {
-      return loadPage(SettingsPage, {
+      // Type checking specifically complains when we have a component
+      // that uses any Svelte rune without also having $props().
+      return loadPage(SettingsPage as Component, {
         title: "Settings - MeanScout",
         backLink: "",
         heading: "Settings",

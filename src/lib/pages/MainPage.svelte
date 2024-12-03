@@ -61,7 +61,7 @@
     <Icon name="gears" />
     <div class="flex grow flex-col">
       Settings
-      <small>Mode, Target, Camera, TBA</small>
+      <small>Configure MeanScout</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>
