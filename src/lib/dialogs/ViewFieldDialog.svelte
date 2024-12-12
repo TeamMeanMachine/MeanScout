@@ -2,13 +2,7 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
-  import {
-    type DetailedGroupField,
-    type DetailedSingleField,
-    type Field,
-    type GroupField,
-    type SingleField,
-  } from "$lib/field";
+  import { type DetailedGroupField, type DetailedSingleField, type Field, type GroupField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import EditFieldDialog from "./EditFieldDialog.svelte";
@@ -54,7 +48,12 @@
   }
 
   function editField() {
-    openDialog(EditFieldDialog, { surveyRecord, field, parentField, onupdate: refresh });
+    openDialog(EditFieldDialog, {
+      surveyRecord,
+      field: structuredClone($state.snapshot(field)),
+      parentField: structuredClone($state.snapshot(parentField)),
+      onupdate: refresh,
+    });
   }
 
   function moveField(by: number) {
@@ -63,12 +62,17 @@
       surveyRecord.modified = new Date();
       closeDialog();
     } else {
-      parentField.fieldIds.splice(index + by, 0, ...parentField.fieldIds.splice(index, 1));
+      const updatedFieldIds = structuredClone($state.snapshot(parentField.fieldIds));
+      updatedFieldIds.splice(index + by, 0, ...updatedFieldIds.splice(index, 1));
 
-      const request = objectStore("fields").put($state.snapshot(parentField));
+      const request = objectStore("fields", "readwrite").put({
+        ...$state.snapshot(parentField),
+        fieldIds: updatedFieldIds,
+      });
 
       request.onsuccess = () => {
         surveyRecord.modified = new Date();
+        onupdate?.();
         closeDialog();
       };
 
@@ -103,8 +107,8 @@
       if (parentField == undefined) {
         surveyRecord.fieldIds.push(id);
       } else {
-        parentField.fieldIds.push(id);
-        fieldStore.put($state.snapshot(parentField));
+        const updatedParentField = { ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, id] };
+        fieldStore.put(updatedParentField);
       }
     };
   }

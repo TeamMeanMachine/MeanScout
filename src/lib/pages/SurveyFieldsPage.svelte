@@ -6,7 +6,7 @@
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
   import { fieldIcons, getDefaultFieldValue, getDetailedNestedFields, type Field } from "$lib/field";
-  import { objectStore } from "$lib/idb";
+  import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -25,12 +25,17 @@
 
   let preview = $state(disabled);
 
-  let { detailedFields, detailedInnerFields } = $derived(getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords));
+  let { detailedFields, detailedInnerFields } = $state(getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords));
 
   function refresh() {
-    const fieldsRequest = objectStore("fields").index("surveyId").getAll(surveyRecord.id);
+    const refreshTransaction = transaction("fields");
+    refreshTransaction.onabort = () => {
+      location.reload();
+    };
+
+    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
     fieldsRequest.onsuccess = () => {
-      fieldRecords = fieldsRequest.result;
+      ({ detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldsRequest.result));
     };
   }
 </script>
@@ -99,6 +104,7 @@
                 openDialog(NewFieldDialog, {
                   surveyRecord,
                   parentField: structuredClone($state.snapshot(detailedField.field)),
+                  onupdate: refresh,
                 });
               }}
             >
@@ -131,7 +137,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord, type: "group" });
+          openDialog(NewFieldDialog, { surveyRecord, type: "group", onupdate: refresh });
         }}
       >
         <Icon name="plus" />
@@ -140,7 +146,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord });
+          openDialog(NewFieldDialog, { surveyRecord, onupdate: refresh });
         }}
       >
         <Icon name="plus" />

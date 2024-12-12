@@ -237,7 +237,7 @@
       entryRecords: IDBRecord<Entry>[];
     }) => void,
   ) {
-    const surveyTransaction = transaction(["surveys", "entries"]);
+    const surveyTransaction = transaction(["surveys", "fields", "entries"]);
     surveyTransaction.onabort = () => getMainPage();
     const surveyRequest = surveyTransaction.objectStore("surveys").get(surveyId);
     surveyRequest.onsuccess = () => {
@@ -256,7 +256,7 @@
   }
 
   function getEntryPageData(entryId: number, onsuccess: (fieldRecords: IDBRecord<Field>[]) => void) {
-    const entryTransaction = transaction(["entries", "surveys"]);
+    const entryTransaction = transaction(["entries", "fields", "surveys"]);
     entryTransaction.onabort = () => getMainPage();
     const entryRequest = entryTransaction.objectStore("entries").get(entryId);
     entryRequest.onsuccess = () => {

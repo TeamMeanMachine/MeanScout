@@ -41,7 +41,7 @@
         }
       }
 
-      const putRequest = objectStore("fields").put($state.snapshot(field));
+      const putRequest = objectStore("fields", "readwrite").put($state.snapshot(field));
       putRequest.onsuccess = () => {
         surveyRecord.modified = new Date();
         onupdate?.();

@@ -67,8 +67,8 @@
         if (parentField == undefined) {
           surveyRecord.fieldIds.push(id);
         } else {
-          parentField.fieldIds.push(id);
-          fieldStore.put($state.snapshot(parentField));
+          const updatedParentField = { ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, id] };
+          fieldStore.put(updatedParentField);
         }
       };
     },
