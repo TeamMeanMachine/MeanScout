@@ -15,12 +15,13 @@ declare global {
 
   interface IDBTransaction {
     objectStore(name: "surveys"): IDBObjectStore;
+    objectStore(name: "fields"): IDBObjectStore & { index(name: "surveyId"): IDBIndex };
     objectStore(name: "entries"): IDBObjectStore & { index(name: "surveyId"): IDBIndex };
   }
 
   interface IDBDatabase {
     transaction(
-      storeNames: "surveys" | "entries" | ("surveys" | "entries")[],
+      storeNames: "surveys" | "fields" | "entries" | ("surveys" | "fields" | "entries")[],
       mode?: IDBTransactionMode,
       options?: IDBTransactionOptions,
     ): IDBTransaction;

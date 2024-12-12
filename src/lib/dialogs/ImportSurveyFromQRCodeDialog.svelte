@@ -3,12 +3,14 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import type { DialogExports } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { addField, type Field } from "$lib/field";
+  import { transaction } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let importedSurvey = $state<Survey | undefined>();
+  let importedFields: Map<number, Field> | undefined = undefined;
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -27,19 +29,37 @@
         return;
       }
 
-      const addRequest = objectStore("surveys", "readwrite").add($state.snapshot(importedSurvey));
-      addRequest.onerror = () => {
-        error = `Could not add survey: ${addRequest.error?.message}`;
+      const importTransaction = transaction(["surveys", "fields"], "readwrite");
+      importTransaction.onabort = () => {
+        error = "Could not import survey";
       };
 
-      addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not add survey";
-          return;
+      const surveyStore = importTransaction.objectStore("surveys");
+      const fieldStore = importTransaction.objectStore("fields");
+
+      const addRequest = surveyStore.add($state.snapshot(importedSurvey));
+
+      addRequest.onsuccess = async () => {
+        const surveyId = addRequest.result as number;
+
+        if (importedFields?.size && importedSurvey?.fieldIds.length) {
+          const newIds: number[] = [];
+
+          for (const fieldId of importedSurvey.fieldIds) {
+            try {
+              const addedFieldId = await addField(fieldStore, importedFields, fieldId, surveyId);
+              newIds.push(addedFieldId);
+            } catch (error) {
+              importTransaction.abort();
+              return;
+            }
+          }
+
+          importedSurvey.fieldIds = newIds;
+          surveyStore.put({ ...importedSurvey, surveyId });
         }
 
-        location.hash = `/survey/${id}`;
+        location.hash = `/survey/${surveyId}`;
       };
     },
   };
@@ -58,11 +78,13 @@
     }
 
     importedSurvey = schemaResult.data;
+    importedFields = jsonResult.fields;
   }
 
   function retry() {
     error = "";
     importedSurvey = undefined;
+    importedFields = undefined;
   }
 </script>
 

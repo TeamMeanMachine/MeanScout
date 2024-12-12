@@ -4,31 +4,31 @@
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryToCSV, type Entry } from "$lib/entry";
-  import { flattenFields, getDefaultFieldValue } from "$lib/field";
+  import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fields,
     entryRecords,
     prefilledTeam,
     prefilledMatch,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fields: DetailedSingleField[];
     entryRecords: IDBRecord<Entry>[];
     prefilledTeam: string;
     prefilledMatch: number;
   } = $props();
 
-  const flattenedFields = flattenFields(surveyRecord.fields);
-
-  const defaultValues = flattenedFields.map((field) => {
-    switch (field.type) {
+  const defaultValues = fields.map((field) => {
+    switch (field.field.type) {
       case "select":
-        return field.values[0];
+        return field.field.values[0];
       default:
-        return getDefaultFieldValue(field);
+        return getDefaultFieldValue(field.field);
     }
   });
 

@@ -4,14 +4,17 @@
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { csvToEntries, type Entry } from "$lib/entry";
+  import type { DetailedSingleField } from "$lib/field";
   import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fields,
     onimport,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fields: DetailedSingleField[];
     onimport?: () => void;
   } = $props();
 
@@ -49,7 +52,7 @@
       return;
     }
 
-    importedEntries = csvToEntries(data, surveyRecord);
+    importedEntries = csvToEntries(data, surveyRecord, fields);
   }
 
   function retry() {

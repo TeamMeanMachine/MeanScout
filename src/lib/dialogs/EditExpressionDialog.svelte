@@ -4,21 +4,21 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import { flattenFields, getDetailedFieldName } from "$lib/field";
+  import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
 
   let {
     surveyRecord,
+    fields,
     index,
     onupdate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fields: DetailedSingleField[];
     index: number;
     onupdate?: () => void;
   } = $props();
-
-  const flattenedFields = flattenFields(surveyRecord.fields);
 
   let expression = $state(structuredClone($state.snapshot(surveyRecord.expressions[index])));
   let error = $state("");
@@ -222,28 +222,27 @@
   <details open>
     <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Fields</summary>
     <div class="flex flex-col gap-2 p-2">
-      {#each flattenedFields as _, fieldIndex}
+      {#each fields as field (field.field.id)}
         {@const inputIndex = expression.inputs.findIndex(
-          (input) => input.from == "field" && input.fieldIndex == fieldIndex,
+          (input) => input.from == "field" && input.fieldId == field.field.id,
         )}
         {@const isInput = inputIndex != -1}
-        {@const name = getDetailedFieldName(surveyRecord.fields, fieldIndex)}
 
         <Button
           onclick={() => {
             if (isInput) {
               expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
             } else {
-              expression.inputs = [...expression.inputs, { from: "field", fieldIndex }];
+              expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
             }
           }}
         >
           {#if isInput}
             <Icon name="square-check" />
-            <strong>{name}</strong>
+            <strong>{field.detailedName}</strong>
           {:else}
             <Icon style="regular" name="square" />
-            {name}
+            {field.detailedName}
           {/if}
         </Button>
       {/each}

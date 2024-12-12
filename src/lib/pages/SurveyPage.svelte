@@ -9,16 +9,21 @@
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { Entry, MatchEntry } from "$lib/entry";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
   import { modeStore, targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<Entry>[];
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   const drafts = entryRecords
     .filter((entry) => entry.status == "draft")
@@ -77,7 +82,11 @@
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Entries</h2>
 
-  <Button onclick={() => openDialog(NewEntryDialog, { surveyRecord, entryRecords, prefilledTeam, prefilledMatch })}>
+  <Button
+    onclick={() => {
+      openDialog(NewEntryDialog, { surveyRecord, fields, entryRecords, prefilledTeam, prefilledMatch });
+    }}
+  >
     <Icon name="plus" />
     <div class="flex flex-col">
       {#if prefilledTeam.length}
@@ -137,6 +146,7 @@
         onclick={() =>
           openDialog(ViewPickListDialog, {
             surveyRecord,
+            fields,
             entriesByTeam,
             pickList,
             index,
@@ -167,7 +177,12 @@
       <div class="flex flex-wrap gap-2">
         {#snippet teamRow(match: Match)}
           {@const onclick = () => {
-            openDialog(ViewMatchDialog, { surveyRecord, entryRecords: entryRecords as IDBRecord<MatchEntry>[], match });
+            openDialog(ViewMatchDialog, {
+              surveyRecord,
+              fieldRecords,
+              entryRecords: entryRecords as IDBRecord<MatchEntry>[],
+              match,
+            });
           }}
 
           <tr
@@ -277,14 +292,20 @@
     <h2 class="font-bold">Admin</h2>
 
     <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "qrcode" })} class="grow basis-0">
+      <Button
+        onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, fieldRecords, type: "qrcode" })}
+        class="grow basis-0"
+      >
         <Icon name="qrcode" />
         <div class="flex flex-col">
           Export
           <small>QR code</small>
         </div>
       </Button>
-      <Button onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, type: "file" })} class="grow basis-0">
+      <Button
+        onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, fieldRecords, type: "file" })}
+        class="grow basis-0"
+      >
         <Icon name="copy" />
         <div class="flex flex-col">
           Export

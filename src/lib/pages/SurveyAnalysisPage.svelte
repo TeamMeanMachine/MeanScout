@@ -8,16 +8,21 @@
   import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
   for (const entry of entryRecords) {
@@ -55,7 +60,14 @@
     {#each surveyRecord.pickLists as pickList, index}
       <Button
         onclick={() => {
-          openDialog(ViewPickListDialog, { surveyRecord, entriesByTeam, pickList, index, canEdit: true });
+          openDialog(ViewPickListDialog, {
+            surveyRecord,
+            fields,
+            entriesByTeam,
+            pickList,
+            index,
+            canEdit: true,
+          });
         }}
       >
         {pickList.name}
@@ -73,7 +85,7 @@
     <div class="flex flex-col gap-2">
       <Button
         onclick={() => {
-          openDialog(NewExpressionDialog, { surveyRecord });
+          openDialog(NewExpressionDialog, { surveyRecord, fields });
         }}
       >
         <Icon name="plus" />
@@ -87,6 +99,7 @@
       onclick={() => {
         openDialog(ViewExpressionDialog, {
           surveyRecord,
+          fields,
           entriesByTeam,
           expression,
           index,

@@ -4,21 +4,25 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { countPreviousFields } from "$lib/field";
+  import { getDetailedNestedFields, type Field } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
     teamInfo,
     canEdit,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<Entry>[];
     teamInfo: TeamInfo;
     canEdit?: boolean;
   } = $props();
+
+  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
 
   let entries = entryRecords.filter(filterEntries).toSorted(sortEntries);
 
@@ -78,6 +82,7 @@
           </tr>
         </thead>
       {/if}
+
       <tbody>
         {#if surveyRecord.type == "match" && entries.some((entry) => entry.type == "match" && entry.absent)}
           <tr>
@@ -89,31 +94,39 @@
             {/each}
           </tr>
         {/if}
-        {#each surveyRecord.fields as field, fieldIndex}
-          {@const previousFields = countPreviousFields(fieldIndex, surveyRecord.fields)}
-          {#if field.type == "group"}
-            {#each field.fields as innerField, innerFieldIndex}
-              <tr>
-                <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">
-                  <span class="font-light">{field.name}</span>
-                  <div>{innerField.name}</div>
-                </th>
-                {#each entries as entry (entry.id)}
-                  <td class="p-2 text-center">
-                    {#if entry.type != "match" || !entry.absent}
-                      {entry.values[previousFields + innerFieldIndex]}
-                    {/if}
-                  </td>
-                {/each}
-              </tr>
+
+        {#each surveyRecord.fieldIds as fieldId}
+          {@const fieldDetails = detailedFields.get(fieldId)}
+
+          {#if fieldDetails?.type == "group"}
+            {#each fieldDetails.field.fieldIds as innerFieldId}
+              {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+
+              {#if innerFieldDetails}
+                <tr>
+                  <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">
+                    <span class="font-light">{fieldDetails.field.name}</span>
+                    <div>{innerFieldDetails.field.name}</div>
+                  </th>
+
+                  {#each entries as entry (entry.id)}
+                    <td class="p-2 text-center">
+                      {#if entry.type != "match" || !entry.absent}
+                        {entry.values[innerFieldDetails.valueIndex]}
+                      {/if}
+                    </td>
+                  {/each}
+                </tr>
+              {/if}
             {/each}
-          {:else}
+          {:else if fieldDetails}
             <tr>
-              <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">{field.name}</th>
+              <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">{fieldDetails.field.name}</th>
+
               {#each entries as entry (entry.id)}
                 <td class="p-2 text-center">
                   {#if entry.type != "match" || !entry.absent}
-                    {entry.values[previousFields]}
+                    {entry.values[fieldDetails.valueIndex]}
                   {/if}
                 </td>
               {/each}

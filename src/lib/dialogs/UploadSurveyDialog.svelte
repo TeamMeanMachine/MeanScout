@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { addField, type Field } from "$lib/field";
+  import { transaction } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
@@ -11,7 +12,8 @@
     data: string;
   } = $props();
 
-  let survey = $state<Survey | undefined>();
+  let importedSurvey = $state<Survey | undefined>();
+  let importedFields: Map<number, Field> | undefined = undefined;
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
@@ -37,37 +39,56 @@
         return open();
       }
 
-      survey = schemaResult.data;
+      importedSurvey = schemaResult.data;
+      importedFields = jsonResult.fields;
       open();
     },
     async onconfirm() {
-      if (!survey) return;
+      if (!importedSurvey) return;
 
-      const addRequest = objectStore("surveys", "readwrite").add($state.snapshot(survey));
-      addRequest.onerror = () => {
-        error = `Could not upload survey: ${addRequest.error?.message}`;
+      const importTransaction = transaction(["surveys", "fields"], "readwrite");
+      importTransaction.onabort = () => {
+        error = "Could not import survey";
       };
 
-      addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not upload survey";
-          return;
+      const surveyStore = importTransaction.objectStore("surveys");
+      const fieldStore = importTransaction.objectStore("fields");
+
+      const addRequest = surveyStore.add($state.snapshot(importedSurvey));
+
+      addRequest.onsuccess = async () => {
+        const surveyId = addRequest.result as number;
+
+        if (importedFields?.size && importedSurvey?.fieldIds.length) {
+          const newIds: number[] = [];
+
+          for (const fieldId of importedSurvey.fieldIds) {
+            try {
+              const addedFieldId = await addField(fieldStore, importedFields, fieldId, surveyId);
+              newIds.push(addedFieldId);
+            } catch (error) {
+              importTransaction.abort();
+              return;
+            }
+          }
+
+          importedSurvey.fieldIds = newIds;
+          surveyStore.put({ ...importedSurvey, surveyId });
         }
 
-        location.hash = `/survey/${id}`;
+        location.hash = `/survey/${surveyId}`;
       };
     },
   };
 </script>
 
-{#if survey}
+{#if importedSurvey}
   <span>Upload survey?</span>
 
-  <span><small>Name</small> <strong>{survey.name}</strong></span>
-  <span><small>Type</small> <strong>{survey.type}</strong></span>
-  {#if survey.tbaEventKey}
-    <span><small>TBA Event Key</small> <strong>{survey.tbaEventKey}</strong></span>
+  <span><small>Name</small> <strong>{importedSurvey.name}</strong></span>
+  <span><small>Type</small> <strong>{importedSurvey.type}</strong></span>
+  {#if importedSurvey.tbaEventKey}
+    <span><small>TBA Event Key</small> <strong>{importedSurvey.tbaEventKey}</strong></span>
   {/if}
 {/if}
 

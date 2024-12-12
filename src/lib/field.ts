@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Survey } from "./survey";
 
 export const singleFieldTypes = ["toggle", "number", "select", "text", "rating", "timer"] as const;
 export type SingleFieldType = (typeof singleFieldTypes)[number];
@@ -6,49 +7,55 @@ export type SingleFieldType = (typeof singleFieldTypes)[number];
 export const fieldTypes = [...singleFieldTypes, "group"] as const;
 export type FieldType = (typeof fieldTypes)[number];
 
-const toggleFieldSchema = z.object({
+const baseSingleFieldSchema = z.object({
+  surveyId: z.number(),
   name: z.string(),
-  type: z.literal("toggle"),
   tip: z.optional(z.string()),
 });
+
+const toggleFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("toggle"),
+  }),
+);
 export type ToggleField = z.infer<typeof toggleFieldSchema>;
 
-const numberFieldSchema = z.object({
-  name: z.string(),
-  type: z.literal("number"),
-  allowNegative: z.optional(z.boolean()),
-  tip: z.optional(z.string()),
-});
+const numberFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("number"),
+    allowNegative: z.optional(z.boolean()),
+  }),
+);
 export type NumberField = z.infer<typeof numberFieldSchema>;
 
-const selectFieldSchema = z.object({
-  name: z.string(),
-  type: z.literal("select"),
-  values: z.array(z.string()),
-  tip: z.optional(z.string()),
-});
+const selectFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("select"),
+    values: z.array(z.string()),
+  }),
+);
 export type SelectField = z.infer<typeof selectFieldSchema>;
 
-const textFieldSchema = z.object({
-  name: z.string(),
-  type: z.literal("text"),
-  long: z.optional(z.boolean()),
-  tip: z.optional(z.string()),
-});
+const textFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("text"),
+    long: z.optional(z.boolean()),
+  }),
+);
 export type TextField = z.infer<typeof textFieldSchema>;
 
-const ratingFieldSchema = z.object({
-  name: z.string(),
-  type: z.literal("rating"),
-  tip: z.optional(z.string()),
-});
+const ratingFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("rating"),
+  }),
+);
 export type RatingField = z.infer<typeof ratingFieldSchema>;
 
-const timerFieldSchema = z.object({
-  name: z.string(),
-  type: z.literal("timer"),
-  tip: z.optional(z.string()),
-});
+const timerFieldSchema = baseSingleFieldSchema.merge(
+  z.object({
+    type: z.literal("timer"),
+  }),
+);
 export type TimerField = z.infer<typeof timerFieldSchema>;
 
 const singleFieldSchema = z.discriminatedUnion("type", [
@@ -61,7 +68,12 @@ const singleFieldSchema = z.discriminatedUnion("type", [
 ]);
 export type SingleField = z.infer<typeof singleFieldSchema>;
 
-const groupFieldSchema = z.object({ name: z.string(), type: z.literal("group"), fields: z.array(singleFieldSchema) });
+const groupFieldSchema = z.object({
+  surveyId: z.number(),
+  name: z.string(),
+  type: z.literal("group"),
+  fieldIds: z.array(z.number()),
+});
 export type GroupField = z.infer<typeof groupFieldSchema>;
 
 export const fieldSchema = z.discriminatedUnion("type", [...singleFieldSchema.options, groupFieldSchema]);
@@ -97,30 +109,118 @@ export function getDefaultFieldValue(field: SingleField) {
   }
 }
 
-export function flattenFields(fields: Field[]) {
-  return fields.flatMap((field) => (field.type == "group" ? field.fields : field));
-}
+export function addField(fieldStore: IDBObjectStore, fields: Map<number, Field>, fieldId: number, surveyId: number) {
+  return new Promise<number>(async (resolve, reject) => {
+    const field = fields.get(fieldId);
+    if (!field) return reject(`Could not add field with id ${fieldId} for survey id ${surveyId}`);
 
-export function countPreviousFields(index: number, fields: Field[]) {
-  return flattenFields(fields.slice(0, index)).length;
-}
-
-export function getDetailedFieldName(fields: Field[], flattenedFieldIndex: number) {
-  let flattenedFieldCount = 0;
-  for (const field of fields) {
     if (field.type == "group") {
-      for (const subField of field.fields) {
-        if (flattenedFieldCount == flattenedFieldIndex) {
-          return `${field.name} ${subField.name}`;
+      const newIds: number[] = [];
+
+      for (const innerFieldId of field.fieldIds) {
+        try {
+          const addedInnerFieldId = await addField(fieldStore, fields, innerFieldId, surveyId);
+          newIds.push(addedInnerFieldId);
+        } catch (error) {
+          return reject(error);
         }
-        flattenedFieldCount++;
+      }
+
+      field.fieldIds = newIds;
+    }
+
+    const request = fieldStore.add({ ...field, surveyId });
+    request.onerror = () => reject(`Could not add field ${field.name} for survey id ${surveyId}`);
+    request.onsuccess = () => resolve(request.result as number);
+  });
+}
+
+export type DetailedSingleField = {
+  type: "single";
+  field: IDBRecord<SingleField>;
+  detailedName: string;
+  valueIndex: number;
+};
+
+export type DetailedGroupField = {
+  type: "group";
+  field: IDBRecord<GroupField>;
+};
+
+export function getDetailedSingleFields(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
+  const singleFields: DetailedSingleField[] = [];
+
+  for (const fieldId of surveyRecord.fieldIds) {
+    const fieldRecord = fieldRecords.find((field) => field.id == fieldId);
+    if (!fieldRecord) {
+      continue;
+    }
+
+    if (fieldRecord.type == "group") {
+      for (const innerFieldId of fieldRecord.fieldIds) {
+        const innerFieldRecord = fieldRecords.find((field) => field.id == innerFieldId);
+        if (!innerFieldRecord || innerFieldRecord.type == "group") {
+          continue;
+        }
+
+        singleFields.push({
+          type: "single",
+          field: innerFieldRecord,
+          detailedName: `${fieldRecord.name} ${innerFieldRecord.name}`,
+          valueIndex: -1,
+        });
       }
     } else {
-      if (flattenedFieldCount == flattenedFieldIndex) {
-        return field.name;
-      }
-      flattenedFieldCount++;
+      singleFields.push({
+        type: "single",
+        field: fieldRecord,
+        detailedName: `${fieldRecord.name}`,
+        valueIndex: -1,
+      });
     }
   }
-  return "";
+
+  return singleFields;
+}
+
+export function getDetailedNestedFields(fieldIds: number[], fieldRecords: IDBRecord<Field>[]) {
+  const detailedFields = new Map<number, DetailedSingleField | DetailedGroupField>();
+  const detailedInnerFields = new Map<number, DetailedSingleField>();
+
+  let valueIndex = 0;
+
+  for (const fieldId of fieldIds) {
+    const field = fieldRecords.find((f) => f.id == fieldId);
+    if (!field) {
+      valueIndex++;
+      continue;
+    }
+
+    if (field.type == "group") {
+      detailedFields.set(fieldId, { type: "group", field });
+
+      for (const innerFieldId of field.fieldIds) {
+        const innerField = fieldRecords.find((f) => f.id == innerFieldId);
+        if (!innerField || innerField.type == "group") {
+          valueIndex++;
+          continue;
+        }
+
+        detailedInnerFields.set(innerFieldId, {
+          type: "single",
+          field: innerField,
+          detailedName: `${field.name} ${innerField.name}`,
+          valueIndex,
+        });
+
+        valueIndex++;
+      }
+    } else {
+      detailedFields.set(fieldId, { type: "single", field, detailedName: field.name, valueIndex });
+
+      valueIndex++;
+    }
+  }
+
+  return { detailedFields, detailedInnerFields };
 }

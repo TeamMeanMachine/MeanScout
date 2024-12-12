@@ -5,6 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
@@ -13,15 +14,19 @@
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
     match,
     canEdit,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<MatchEntry>[];
     match: Match;
     canEdit?: boolean;
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   const entriesByTeam = entryRecords.reduce(
     (acc, entry) => {
@@ -48,7 +53,7 @@
             return acc;
           }
 
-          const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam);
+          const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam, fields);
           const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
           for (const team in normalizedTeamData) {
             if (team in acc) {
@@ -119,7 +124,7 @@
   {@const entry = entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
 
   {#if teamInfo}
-    {@const onclick = () => openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo })}
+    {@const onclick = () => openDialog(ViewTeamDialog, { surveyRecord, fieldRecords, entryRecords, teamInfo })}
 
     <tr
       tabindex="0"

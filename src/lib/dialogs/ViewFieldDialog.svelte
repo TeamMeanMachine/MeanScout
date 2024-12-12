@@ -1,79 +1,141 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import { type Field, type GroupField, type SingleField } from "$lib/field";
+  import { closeDialog, openDialog } from "$lib/dialog";
+  import {
+    type DetailedGroupField,
+    type DetailedSingleField,
+    type Field,
+    type GroupField,
+    type SingleField,
+  } from "$lib/field";
+  import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import EditFieldDialog from "./EditFieldDialog.svelte";
 
   let {
     surveyRecord,
-    index,
-    parentIndex,
+    detailedFields,
+    detailedInnerFields,
+    field,
+    parentField,
+    onupdate,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    index: number;
-    parentIndex?: number | undefined;
+    detailedFields: Map<number, DetailedSingleField | DetailedGroupField>;
+    detailedInnerFields: Map<number, DetailedSingleField>;
+    field: IDBRecord<Field>;
+    parentField?: IDBRecord<GroupField> | undefined;
+    onupdate?: () => void;
   } = $props();
 
-  let field = $state<Field>({ name: "", type: "toggle" });
-  let parentField = $state<GroupField | undefined>();
+  let error = $state("");
 
-  export const { onopen }: DialogExports = {
-    onopen(open) {
-      refresh();
-      open();
-    },
-  };
+  let index = $derived.by(() => {
+    if (parentField) {
+      return parentField.fieldIds.findIndex((id) => field.id == id);
+    } else {
+      return surveyRecord.fieldIds.findIndex((id) => field.id == id);
+    }
+  });
 
   function refresh() {
-    if (parentIndex == undefined) {
-      parentField = undefined;
-      field = structuredClone($state.snapshot(surveyRecord.fields[index]));
-    } else {
-      parentField = structuredClone($state.snapshot(surveyRecord.fields[parentIndex] as GroupField));
-      field = structuredClone($state.snapshot(parentField.fields[index]));
+    if (parentField != undefined) {
+      const maybeParentField = detailedFields.get(parentField.id);
+      if (maybeParentField?.type == "group") {
+        parentField = structuredClone($state.snapshot(maybeParentField.field));
+      }
+    }
+
+    const maybeField = parentField ? detailedInnerFields.get(field.id) : detailedFields.get(field.id);
+    if (maybeField) {
+      field = structuredClone($state.snapshot(maybeField.field));
     }
   }
 
   function editField() {
-    openDialog(EditFieldDialog, { surveyRecord, index, parentIndex, onupdate: refresh });
+    openDialog(EditFieldDialog, { surveyRecord, field, parentField, onupdate: refresh });
   }
 
   function moveField(by: number) {
-    if (parentIndex == undefined || parentField == undefined) {
-      surveyRecord.fields.splice(index + by, 0, ...surveyRecord.fields.splice(index, 1));
+    if (parentField == undefined) {
+      surveyRecord.fieldIds.splice(index + by, 0, ...surveyRecord.fieldIds.splice(index, 1));
+      surveyRecord.modified = new Date();
+      closeDialog();
     } else {
-      parentField.fields.splice(index + by, 0, ...parentField.fields.splice(index, 1));
-      surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
-    }
+      parentField.fieldIds.splice(index + by, 0, ...parentField.fieldIds.splice(index, 1));
 
-    surveyRecord.modified = new Date();
-    closeDialog();
+      const request = objectStore("fields").put($state.snapshot(parentField));
+
+      request.onsuccess = () => {
+        surveyRecord.modified = new Date();
+        closeDialog();
+      };
+
+      request.onerror = () => {
+        error = "Could not move field";
+      };
+    }
   }
 
   function duplicateField() {
-    if (parentIndex == undefined || parentField == undefined) {
-      surveyRecord.fields.splice(index, 0, structuredClone($state.snapshot(field)));
-    } else {
-      parentField.fields.splice(index, 0, structuredClone($state.snapshot(field as SingleField)));
-      surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
-    }
+    const newTransaction = transaction("fields", "readwrite");
+    const fieldStore = newTransaction.objectStore("fields");
 
-    surveyRecord.modified = new Date();
-    closeDialog();
+    newTransaction.onabort = () => {
+      error = "Could not duplicate field";
+    };
+
+    newTransaction.oncomplete = () => {
+      surveyRecord.modified = new Date();
+      onupdate?.();
+      closeDialog();
+    };
+
+    const fieldWithoutId = structuredClone($state.snapshot(field)) as Field & { id?: number };
+    delete fieldWithoutId.id;
+
+    const duplicateRequest = fieldStore.add(fieldWithoutId);
+
+    duplicateRequest.onsuccess = () => {
+      const id = duplicateRequest.result as number;
+
+      if (parentField == undefined) {
+        surveyRecord.fieldIds.push(id);
+      } else {
+        parentField.fieldIds.push(id);
+        fieldStore.put($state.snapshot(parentField));
+      }
+    };
   }
 
   function deleteField() {
-    if (parentIndex == undefined || parentField == undefined) {
-      surveyRecord.fields.splice(index, 1);
-    } else {
-      parentField.fields.splice(index, 1);
-      surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
+    const deleteTransaction = transaction("fields", "readwrite");
+    const fieldStore = deleteTransaction.objectStore("fields");
+
+    fieldStore.delete(field.id);
+    if (parentField) {
+      parentField.fieldIds = parentField.fieldIds.filter((id) => field.id != id);
+      fieldStore.put($state.snapshot(parentField));
+    } else if (field.type == "group") {
+      for (const innerFieldId of field.fieldIds) {
+        fieldStore.delete(innerFieldId);
+      }
     }
 
-    surveyRecord.modified = new Date();
-    closeDialog();
+    deleteTransaction.oncomplete = () => {
+      if (parentField == undefined) {
+        surveyRecord.fieldIds = surveyRecord.fieldIds.filter((id) => field.id != id);
+      }
+
+      surveyRecord.modified = new Date();
+      onupdate?.();
+      closeDialog();
+    };
+
+    deleteTransaction.onabort = () => {
+      error = "Could not delete field";
+    };
   }
 </script>
 
@@ -94,7 +156,7 @@
     Move up
   </Button>
 {/if}
-{#if index < (parentField == undefined ? surveyRecord.fields.length : parentField.fields.length) - 1}
+{#if index < (parentField ? parentField.fieldIds.length : surveyRecord.fieldIds.length) - 1}
   <Button onclick={() => moveField(1)}>
     <Icon name="arrow-down" />
     Move down
@@ -108,3 +170,7 @@
   <Icon name="trash" />
   Delete
 </Button>
+
+{#if error}
+  <span>Error: {error}</span>
+{/if}

@@ -19,6 +19,8 @@
   import Anchor from "./Anchor.svelte";
   import Icon from "./Icon.svelte";
   import type { Heading } from "$lib";
+  import type { Entry, MatchEntry } from "$lib/entry";
+  import type { Field } from "$lib/field";
 
   const idbIdSchema = z.coerce.number().int().positive();
   const pageSchema = z.enum(["", "settings", "about", "survey", "entry"]).default("");
@@ -73,7 +75,8 @@
     }
 
     if (page == "about") {
-      return loadPage(AboutPage, {
+      // Same here.
+      return loadPage(AboutPage as Component, {
         title: "About - MeanScout",
         backLink: "",
         heading: "About MeanScout",
@@ -86,12 +89,13 @@
         return getMainPage();
       }
 
-      getSurveyPageData(surveyId, (entryRecords) => {
+      getSurveyPageData(surveyId, ({ fieldRecords, entryRecords }) => {
         const { success, data: surveyPage } = surveyPageSchema.safeParse(segments[2]);
 
         if (!success || surveyPage == "") {
           return loadPage(SurveyPage, {
             surveyRecord,
+            fieldRecords,
             entryRecords,
             title: `${surveyRecord.name} - MeanScout`,
             backLink: "",
@@ -102,6 +106,7 @@
         if (surveyPage == "entries") {
           return loadPage(SurveyEntriesPage, {
             surveyRecord,
+            fieldRecords,
             entryRecords,
             title: `Entries - ${surveyRecord.name} - MeanScout`,
             backLink: `survey/${surveyRecord.id}`,
@@ -115,7 +120,8 @@
         if (surveyPage == "analysis") {
           return loadPage(SurveyAnalysisPage, {
             surveyRecord,
-            entryRecords,
+            fieldRecords,
+            entryRecords: entryRecords as IDBRecord<MatchEntry>[],
             title: `Analysis - ${surveyRecord.name} - MeanScout`,
             backLink: `survey/${surveyRecord.id}`,
             heading: [
@@ -128,7 +134,8 @@
         if (surveyPage == "matches") {
           return loadPage(SurveyMatchesPage, {
             surveyRecord,
-            entryRecords,
+            fieldRecords,
+            entryRecords: entryRecords as IDBRecord<MatchEntry>[],
             title: `Matches - ${surveyRecord.name} - MeanScout`,
             backLink: `survey/${surveyRecord.id}`,
             heading: [
@@ -141,6 +148,7 @@
         if (surveyPage == "teams") {
           return loadPage(SurveyTeamsPage, {
             surveyRecord,
+            fieldRecords,
             entryRecords,
             title: `Teams - ${surveyRecord.name} - MeanScout`,
             backLink: `survey/${surveyRecord.id}`,
@@ -155,6 +163,7 @@
           const entryCount = entryRecords.length;
           return loadPage(SurveyFieldsPage, {
             surveyRecord,
+            fieldRecords,
             entryCount,
             title: `Fields - ${surveyRecord.name} - MeanScout`,
             backLink: `survey/${surveyRecord.id}`,
@@ -187,9 +196,10 @@
         return getMainPage();
       }
 
-      getEntryPageData(entryId, () => {
+      getEntryPageData(entryId, (fieldRecords) => {
         loadPage(EntryPage, {
           surveyRecord,
+          fieldRecords,
           entryRecord,
           title: `Draft - ${surveyRecord.name} - MeanScout`,
           backLink: `survey/${surveyRecord.id}`,
@@ -217,18 +227,35 @@
     });
   }
 
-  function getSurveyPageData(surveyId: number, onsuccess: (entryRecords: any[]) => void) {
+  function getSurveyPageData(
+    surveyId: number,
+    onsuccess: ({
+      fieldRecords,
+      entryRecords,
+    }: {
+      fieldRecords: IDBRecord<Field>[];
+      entryRecords: IDBRecord<Entry>[];
+    }) => void,
+  ) {
     const surveyTransaction = transaction(["surveys", "entries"]);
     surveyTransaction.onabort = () => getMainPage();
     const surveyRequest = surveyTransaction.objectStore("surveys").get(surveyId);
     surveyRequest.onsuccess = () => {
       surveyRecord = surveyRequest.result;
       const entriesRequest = surveyTransaction.objectStore("entries").index("surveyId").getAll(surveyRecord.id);
-      entriesRequest.onsuccess = () => onsuccess(entriesRequest.result);
+      entriesRequest.onsuccess = () => {
+        const fieldsRequest = surveyTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
+        fieldsRequest.onsuccess = () => {
+          onsuccess({
+            fieldRecords: fieldsRequest.result,
+            entryRecords: entriesRequest.result,
+          });
+        };
+      };
     };
   }
 
-  function getEntryPageData(entryId: number, onsuccess: () => void) {
+  function getEntryPageData(entryId: number, onsuccess: (fieldRecords: IDBRecord<Field>[]) => void) {
     const entryTransaction = transaction(["entries", "surveys"]);
     entryTransaction.onabort = () => getMainPage();
     const entryRequest = entryTransaction.objectStore("entries").get(entryId);
@@ -237,7 +264,8 @@
       const surveyRequest = entryTransaction.objectStore("surveys").get(entryRecord.surveyId);
       surveyRequest.onsuccess = () => {
         surveyRecord = surveyRequest.result;
-        onsuccess();
+        const fieldsRequest = entryTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
+        fieldsRequest.onsuccess = () => onsuccess(fieldsRequest.result);
       };
     };
   }

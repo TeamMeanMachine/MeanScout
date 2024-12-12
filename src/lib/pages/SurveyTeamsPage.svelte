@@ -8,6 +8,7 @@
   import DeleteTeamsDialog from "$lib/dialogs/DeleteTeamsDialog.svelte";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import type { Entry } from "$lib/entry";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { flushSync, onMount } from "svelte";
@@ -15,11 +16,15 @@
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<Entry>[];
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
@@ -112,7 +117,7 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam);
+      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam, fields);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -356,7 +361,7 @@
                     selectedTeams.add(teamInfo.team);
                   }
                 } else {
-                  openDialog(ViewTeamDialog, { surveyRecord, entryRecords, teamInfo, canEdit: true });
+                  openDialog(ViewTeamDialog, { surveyRecord, fieldRecords, entryRecords, teamInfo, canEdit: true });
                 }
               }}
               class="col-span-full grid grid-cols-subgrid text-center {defaultFont}"

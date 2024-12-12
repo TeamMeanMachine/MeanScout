@@ -3,20 +3,23 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
+  import type { Field } from "$lib/field";
   import { surveyToJSON, type Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fieldRecords,
     type,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     type: "qrcode" | "file";
   } = $props();
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
   function surveyAsJSON() {
-    return surveyToJSON($state.snapshot(surveyRecord));
+    return surveyToJSON($state.snapshot(surveyRecord), fieldRecords);
   }
 
   function shareSurveyAsFile() {

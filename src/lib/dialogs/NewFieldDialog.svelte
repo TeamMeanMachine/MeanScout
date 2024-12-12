@@ -2,35 +2,30 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField, type SingleField } from "$lib/field";
+  import { singleFieldTypes, type Field, type GroupField } from "$lib/field";
+  import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
     type = "field",
-    parentIndex,
+    parentField,
     onupdate,
   }: {
     surveyRecord: IDBRecord<Survey>;
     type?: "field" | "group";
-    parentIndex?: number;
+    parentField?: IDBRecord<GroupField> | undefined;
     onupdate?: () => void;
   } = $props();
 
-  let field = $state<Field>({ name: "", type: "number" });
-  let parentField = $state<GroupField | undefined>();
+  let field = $state<Field>(
+    type == "group"
+      ? { surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] }
+      : { surveyId: surveyRecord.id, name: "", type: "number" },
+  );
   let error = $state("");
 
-  export const { onopen, onconfirm }: DialogExports = {
-    onopen(open) {
-      if (parentIndex != undefined) {
-        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentIndex])) as GroupField;
-      } else if (type == "group") {
-        field = { name: "", type: "group", fields: [] };
-      }
-
-      open();
-    },
+  export const { onconfirm }: DialogExports = {
     onconfirm() {
       field.name = field.name.trim();
 
@@ -51,16 +46,31 @@
         }
       }
 
-      if (parentIndex == undefined || parentField == undefined) {
-        surveyRecord.fields.push(structuredClone($state.snapshot(field)));
-      } else {
-        parentField.fields.push(structuredClone($state.snapshot(field)) as SingleField);
-        surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
-      }
+      const addTransaction = transaction("fields", "readwrite");
+      const fieldStore = addTransaction.objectStore("fields");
 
-      surveyRecord.modified = new Date();
-      onupdate?.();
-      closeDialog();
+      addTransaction.onabort = () => {
+        error = "Could not create new field";
+      };
+
+      addTransaction.oncomplete = () => {
+        surveyRecord.modified = new Date();
+        onupdate?.();
+        closeDialog();
+      };
+
+      const addRequest = fieldStore.add($state.snapshot(field));
+
+      addRequest.onsuccess = () => {
+        const id = addRequest.result as number;
+
+        if (parentField == undefined) {
+          surveyRecord.fieldIds.push(id);
+        } else {
+          parentField.fieldIds.push(id);
+          fieldStore.put($state.snapshot(parentField));
+        }
+      };
     },
   };
 
@@ -68,6 +78,7 @@
     switch (to) {
       case "select":
         field = {
+          surveyId: surveyRecord.id,
           name: field.name,
           type: to,
           values: [],
@@ -79,6 +90,7 @@
       case "rating":
       case "timer":
         field = {
+          surveyId: surveyRecord.id,
           name: field.name,
           type: to,
         };
@@ -173,5 +185,5 @@
 {/if}
 
 {#if error}
-  <span>{error}</span>
+  <span>Error: {error}</span>
 {/if}

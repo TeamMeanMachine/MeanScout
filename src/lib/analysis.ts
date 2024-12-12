@@ -1,8 +1,9 @@
 import { valueSchema } from "$lib";
 import { z } from "zod";
 import type { Entry } from "./entry";
+import type { DetailedSingleField } from "./field";
 
-const fieldAsExpressionInputSchema = z.object({ from: z.literal("field"), fieldIndex: z.number() });
+const fieldAsExpressionInputSchema = z.object({ from: z.literal("field"), fieldId: z.number() });
 export type FieldAsExpressionInput = z.infer<typeof fieldAsExpressionInputSchema>;
 
 const expressionAsExpressionInputSchema = z.object({ from: z.literal("expression"), expressionName: z.string() });
@@ -69,10 +70,11 @@ export function calculateTeamData(
   expressionName: string,
   expressions: Expression[],
   entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  fields: DetailedSingleField[],
 ) {
   const teamData: Record<string, number> = {};
   for (const team in entriesByTeam) {
-    let value = runExpression(team, expressionName, expressions, entriesByTeam[team]);
+    let value = runExpression(team, expressionName, expressions, entriesByTeam[team], fields);
     if (Array.isArray(value)) {
       value = value.reduce((prev, curr) => prev + curr, 0) / value.length;
     }
@@ -94,22 +96,29 @@ export function normalizeTeamData(teamData: Record<string, number>, percentage =
   return normalizedTeamData;
 }
 
-export function getExpressionInput(team: string, input: ExpressionInput, expressions: Expression[], entries: Entry[]) {
-  switch (input.from) {
-    case "expression":
-      return runExpression(team, input.expressionName, expressions, entries);
-    case "field":
-      return entries.map((entry) => entry.values[input.fieldIndex]);
-    default:
-      return 0;
-  }
-}
-
-export function runExpression(team: string, expressionName: string, expressions: Expression[], entries: Entry[]) {
+function runExpression(
+  team: string,
+  expressionName: string,
+  expressions: Expression[],
+  entries: Entry[],
+  fields: DetailedSingleField[],
+) {
   const expression = expressions.find((e) => e.name == expressionName);
   if (!expression) return 0;
 
-  const values: any[] = expression.inputs.flatMap((input) => getExpressionInput(team, input, expressions, entries));
+  const values: any[] = expression.inputs.flatMap((input) => {
+    switch (input.from) {
+      case "expression":
+        return runExpression(team, input.expressionName, expressions, entries, fields);
+      case "field":
+        const fieldIndex = fields.findIndex((field) => field.field.id == input.fieldId);
+        if (fieldIndex == -1) return 0;
+        return entries.map((entry) => entry.values[fieldIndex]);
+      default:
+        const unhandledInput: never = input;
+        throw new Error(`Unhandled from for input: ${(unhandledInput as ExpressionInput).from}`);
+    }
+  });
 
   switch (expression.type) {
     case "average":
@@ -152,7 +161,7 @@ export function runExpression(team: string, expressionName: string, expressions:
         return Math.abs(value);
       });
     default:
-      const unhandledType: never = expression;
-      throw new Error(`Unhandled type for expression: ${(expression as Expression).type}`);
+      const unhandledExpression: never = expression;
+      throw new Error(`Unhandled type for expression: ${(unhandledExpression as Expression).type}`);
   }
 }
