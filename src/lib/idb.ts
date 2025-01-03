@@ -89,14 +89,35 @@ function migrateSurveys(transaction: IDBTransaction) {
       survey.matches = [];
     }
 
+    if (survey.type == "match") {
+      if (!survey.pickLists) {
+        survey.pickLists = [];
+      }
+
+      if (!survey.expressions) {
+        survey.expressions = [];
+      }
+    }
+
     if (!Array.isArray(survey.fieldIds)) {
       survey.fieldIds = [];
     }
 
     if (Array.isArray(survey.fields)) {
+      let flattenedIndex = 0;
+
       for (const field of survey.fields) {
         try {
-          const migratedFieldId = await migrateField(fieldStore, field, survey.id);
+          let migratedFieldId;
+
+          ({ migratedFieldId, flattenedIndex } = await migrateField(
+            fieldStore,
+            field,
+            survey.id,
+            survey.expressions,
+            flattenedIndex,
+          ));
+
           survey.fieldIds.push(migratedFieldId);
         } catch (error) {
           console.error(error);
@@ -108,23 +129,19 @@ function migrateSurveys(transaction: IDBTransaction) {
 
     migrateEntries(entryStore, survey.id);
 
-    if (survey.type == "match") {
-      if (!survey.expressions) {
-        survey.expressions = [];
-      }
-
-      if (!survey.pickLists) {
-        survey.pickLists = [];
-      }
-    }
-
     surveyCursor.update(survey);
     surveyCursor.continue();
   };
 }
 
-function migrateField(fieldStore: IDBObjectStore, field: any, surveyId: number) {
-  return new Promise<IDBValidKey>(async (resolve, reject) => {
+function migrateField(
+  fieldStore: IDBObjectStore,
+  field: any,
+  surveyId: number,
+  expressions: any[] | undefined,
+  flattenedIndex: number,
+) {
+  return new Promise<{ migratedFieldId: IDBValidKey; flattenedIndex: number }>(async (resolve, reject) => {
     if (field.type == "group") {
       if (!Array.isArray(field.fieldIds)) {
         field.fieldIds = [];
@@ -133,7 +150,16 @@ function migrateField(fieldStore: IDBObjectStore, field: any, surveyId: number) 
       if (Array.isArray(field.fields)) {
         for (const innerField of field.fields) {
           try {
-            const migratedFieldId = await migrateField(fieldStore, innerField, surveyId);
+            let migratedFieldId;
+
+            ({ migratedFieldId, flattenedIndex } = await migrateField(
+              fieldStore,
+              innerField,
+              surveyId,
+              expressions,
+              flattenedIndex,
+            ));
+
             field.fieldIds.push(migratedFieldId);
           } catch (error) {
             return reject(error);
@@ -146,7 +172,29 @@ function migrateField(fieldStore: IDBObjectStore, field: any, surveyId: number) 
 
     const addRequest = fieldStore.add({ ...field, surveyId });
     addRequest.onerror = () => reject(`Could not migrate field ${field.name} for survey id ${surveyId}`);
-    addRequest.onsuccess = () => resolve(addRequest.result);
+
+    addRequest.onsuccess = () => {
+      const migratedFieldId = addRequest.result;
+
+      if (field.type != "group") {
+        if (expressions?.length) {
+          for (let expressionIndex = 0; expressionIndex < expressions.length; expressionIndex++) {
+            expressions[expressionIndex].inputs = expressions[expressionIndex].inputs.map((input: any) => {
+              if (input.from == "field" && input.fieldIndex == flattenedIndex) {
+                input.fieldId = migratedFieldId;
+                delete input.fieldIndex;
+              }
+
+              return input;
+            });
+          }
+        }
+
+        flattenedIndex++;
+      }
+
+      resolve({ migratedFieldId, flattenedIndex });
+    };
   });
 }
 
