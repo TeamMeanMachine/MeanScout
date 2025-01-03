@@ -25,18 +25,6 @@ declare global {
       options?: IDBTransactionOptions,
     ): IDBTransaction;
   }
-
-  type DetectedBarcode = {
-    boundingBox: DOMRectReadOnly;
-    cornerPoints: any;
-    format: "qr_code";
-    rawValue: string;
-  };
-
-  declare class BarcodeDetector {
-    constructor({ formats }: { formats: ["qr_code"] });
-    detect(imageBitmapSource: ImageBitmapSource): Promise<DetectedBarcode[]>;
-  }
 }
 
 export {};
