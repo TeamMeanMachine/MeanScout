@@ -1,4 +1,4 @@
-import { matchSchema, parseValueFromString, type Match } from "$lib";
+import { matchSchema, parseValueFromString, schemaVersion, type Match } from "$lib";
 import { z } from "zod";
 import {
   expressionSchema,
@@ -44,7 +44,13 @@ export const surveySchema = z.discriminatedUnion("type", [matchSurveySchema, pit
 export type Survey = z.infer<typeof surveySchema>;
 
 export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
-  const survey = { ...structuredClone(surveyRecord), id: undefined, created: undefined, modified: undefined };
+  const survey = {
+    ...structuredClone(surveyRecord),
+    id: undefined,
+    created: undefined,
+    modified: undefined,
+    version: schemaVersion,
+  };
 
   const indexedTeams: string[] = [];
 
@@ -214,6 +220,13 @@ export function jsonToSurvey(
     compressedSurvey = JSON.parse(json.trim());
   } catch (e) {
     return { success: false, error: "Invalid input" };
+  }
+
+  if (compressedSurvey.version != schemaVersion) {
+    return {
+      success: false,
+      error: compressedSurvey.version < schemaVersion ? "Outdated version" : "Unsupported version",
+    };
   }
 
   const fields = new Map<number, Field>();

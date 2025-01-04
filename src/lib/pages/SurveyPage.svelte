@@ -284,9 +284,7 @@
 </div>
 
 {#if $modeStore == "admin"}
-  {@const shouldHideConfigureText =
-    entryRecords.length > 0 ||
-    (surveyRecord.type == "match" && (surveyRecord.expressions.length > 0 || surveyRecord.pickLists.length > 0))}
+  {@const shouldHideConfigureText = entryRecords.length > 0}
 
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Admin</h2>

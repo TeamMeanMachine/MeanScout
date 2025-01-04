@@ -3,6 +3,8 @@ import type { Entry } from "./entry";
 import type { MatchTarget, Target } from "./settings";
 import type { Survey } from "./survey";
 
+export const schemaVersion = 9;
+
 export type Heading = { type: "h1" | "sm"; text: string }[] | string;
 
 export const valueSchema = z.string().or(z.number()).or(z.boolean());

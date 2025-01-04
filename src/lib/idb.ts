@@ -1,9 +1,9 @@
+import { schemaVersion } from "$lib";
+
 let idb: IDBDatabase | undefined = undefined;
 
-const latestVersion = 9;
-
 export function initIDB(callback: (error?: string) => void) {
-  const request = indexedDB.open("MeanScout", latestVersion);
+  const request = indexedDB.open("MeanScout", schemaVersion);
   request.onerror = () => {
     callback(`${request.error?.message}`);
   };
@@ -64,7 +64,7 @@ function migrate(request: IDBOpenDBRequest, oldVersion: number) {
     request.result.createObjectStore("surveys", { keyPath: "id", autoIncrement: true });
   }
 
-  if (oldVersion < latestVersion && request.transaction) {
+  if (oldVersion < schemaVersion && request.transaction) {
     migrateSurveys(request.transaction);
   }
 }
