@@ -28,6 +28,14 @@
   } = $props();
 
   let sortedTeamData = $state<{ team: string; percentage: number; value: number }[]>([]);
+  let text = $derived(
+    sortedTeamData
+      .map(
+        (teamValue, index) =>
+          `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}\t${teamValue.percentage.toFixed(2)}%`,
+      )
+      .join("\n"),
+  );
 
   export const { onopen }: DialogExports = {
     onopen(open) {
@@ -72,6 +80,22 @@
         {/each}
       </tbody>
     </table>
+  </div>
+
+  <div class="flex gap-3">
+    {#if "canShare" in navigator}
+      <Button onclick={() => navigator.share({ text })} class="grow basis-0">
+        <Icon name="share" />
+        Share
+      </Button>
+    {/if}
+
+    {#if "clipboard" in navigator}
+      <Button onclick={() => navigator.clipboard.writeText(text)} class="grow basis-0">
+        <Icon name="copy" />
+        Copy
+      </Button>
+    {/if}
   </div>
 {/if}
 
