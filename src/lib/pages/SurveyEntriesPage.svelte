@@ -12,14 +12,19 @@
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { matchTargets } from "$lib/settings";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<Entry>[];
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   let dataGrid: HTMLDivElement;
 
@@ -239,6 +244,7 @@
         onclick={() => {
           openDialog(ImportEntriesFromQRCodeDialog, {
             surveyRecord,
+            fields,
             onimport: refresh,
           });
         }}
@@ -254,6 +260,7 @@
         onclick={() => {
           openDialog(ImportEntriesFromFileDialog, {
             surveyRecord,
+            fields,
             onimport: refresh,
           });
         }}
@@ -435,6 +442,7 @@
           onclick={() => {
             openDialog(ViewEntryDialog, {
               surveyRecord,
+              fieldRecords,
               entryRecord: entry,
               onchange: refresh,
             });

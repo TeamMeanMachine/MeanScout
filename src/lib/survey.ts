@@ -1,4 +1,4 @@
-import { matchSchema, parseValueFromString, type Match, type Value } from "$lib";
+import { matchSchema, parseValueFromString, schemaVersion, type Match } from "$lib";
 import { z } from "zod";
 import {
   expressionSchema,
@@ -8,7 +8,7 @@ import {
   type Expression,
   type PickList,
 } from "./analysis";
-import { fieldSchema, fieldTypes, singleFieldTypes, type Field, type SingleField } from "./field";
+import { fieldTypes, type Field, type SingleField } from "./field";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
@@ -16,7 +16,7 @@ export type SurveyType = (typeof surveyTypes)[number];
 const baseSurveySchema = z.object({
   name: z.string(),
   tbaEventKey: z.optional(z.string()),
-  fields: z.array(fieldSchema),
+  fieldIds: z.array(z.number()),
   teams: z.array(z.coerce.string()),
   created: z.coerce.date(),
   modified: z.coerce.date(),
@@ -43,27 +43,14 @@ export type PitSurvey = z.infer<typeof pitSurveySchema>;
 export const surveySchema = z.discriminatedUnion("type", [matchSurveySchema, pitSurveySchema]);
 export type Survey = z.infer<typeof surveySchema>;
 
-function compressField(field: SingleField) {
-  const typeNumber = fieldTypes.findIndex((type) => type == field.type);
-  const compressedField: Value[] = [typeNumber, field.name, field.tip || ""];
-
-  if (field.type == "number") {
-    if (field.allowNegative) {
-      compressedField.push(1);
-    }
-  } else if (field.type == "select") {
-    compressedField.push(field.values.join(","));
-  } else if (field.type == "text") {
-    if (field.long) {
-      compressedField.push(1);
-    }
-  }
-
-  return compressedField.join(",");
-}
-
-export function surveyToJSON(surveyRecord: IDBRecord<Survey>) {
-  const survey = { ...structuredClone(surveyRecord), id: undefined, created: undefined, modified: undefined };
+export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
+  const survey = {
+    ...structuredClone(surveyRecord),
+    id: undefined,
+    created: undefined,
+    modified: undefined,
+    version: schemaVersion,
+  };
 
   const indexedTeams: string[] = [];
 
@@ -77,144 +64,155 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>) {
   }
 
   const fields = [];
-  for (const field of survey.fields) {
+  for (const fieldId of survey.fieldIds) {
+    const field = fieldRecords.find((field) => field.id == fieldId);
+    if (!field) continue;
+
+    const fieldTypeIndex = fieldTypes.findIndex((type) => type == field.type);
+    if (fieldTypeIndex == -1) continue;
+    const compressedField = [fieldId, fieldTypeIndex, field.name];
+
     if (field.type == "group") {
-      const typeNumber = fieldTypes.findIndex((type) => type == "group");
-      const compressedField: any[] = [typeNumber, field.name];
-      for (const innerField of field.fields) {
-        compressedField.push(compressField(innerField));
-      }
-      fields.push(compressedField);
-    } else {
-      fields.push(compressField(field));
-    }
-  }
+      for (const innerFieldId of field.fieldIds) {
+        const innerField = fieldRecords.find((field) => field.id == innerFieldId);
+        if (!innerField || innerField.type == "group") continue;
 
-  let compressedSurvey;
+        const innerFieldTypeIndex = fieldTypes.findIndex((type) => type == innerField.type);
+        if (innerFieldTypeIndex == -1) continue;
+        const compressedInnerField = [innerFieldId, innerFieldTypeIndex, innerField.name, innerField.tip || ""];
 
-  if (survey.type == "match") {
-    const matches: number[] = [];
-    for (const match of survey.matches.toSorted((a, b) => a.number - b.number)) {
-      const indexes: number[] = [];
-      for (const team of [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3]) {
-        let index = indexedTeams.findIndex((t) => team == t);
-        if (index == -1) {
-          index = indexedTeams.push(team) - 1;
-        }
-        indexes.push(index);
-      }
-      matches.push(match.number, ...indexes);
-    }
-
-    let skippedTeams: number[] | undefined = undefined;
-    if (survey.skippedTeams?.length) {
-      skippedTeams = [];
-      for (const team of survey.skippedTeams) {
-        const index = indexedTeams.findIndex((t) => team == t);
-        if (index > -1) {
-          skippedTeams.push(index);
-        }
-      }
-    }
-
-    const expressionNames: string[] = [];
-
-    const expressions: any[] = [];
-    for (const expression of survey.expressions) {
-      const typeNumber = expressionTypes.findIndex((type) => type == expression.type);
-      let nameIndex = expressionNames.findIndex((e) => expression.name == e);
-      if (nameIndex == -1) {
-        nameIndex = expressionNames.push(expression.name) - 1;
-      }
-      const compressedExpression: any[] = [typeNumber, nameIndex];
-      if (expression.type == "count") {
-        compressedExpression.push(expression.valueToCount);
-      } else if (expression.type == "convert") {
-        compressedExpression.push(expression.defaultTo);
-        compressedExpression.push(expression.converters.flatMap(({ from, to }) => [from, to]).join(","));
-      } else if (expression.type == "multiply") {
-        compressedExpression.push(expression.multiplier);
-      } else if (expression.type == "divide") {
-        compressedExpression.push(expression.divisor);
-      }
-      const inputs: string[] = [];
-      for (const input of expression.inputs) {
-        if (input.from == "field") {
-          inputs.push("f" + input.fieldIndex);
-        } else if (input.from == "expression") {
-          let nameIndex = expressionNames.findIndex((e) => input.expressionName == e);
-          if (nameIndex == -1) {
-            nameIndex = expressionNames.push(input.expressionName) - 1;
+        if (innerField.type == "number") {
+          if (innerField.allowNegative) {
+            compressedInnerField.push(1);
           }
-          inputs.push("e" + nameIndex);
+        } else if (innerField.type == "select") {
+          compressedInnerField.push(innerField.values.join(","));
+        } else if (innerField.type == "text") {
+          if (innerField.long) {
+            compressedInnerField.push(1);
+          }
         }
+
+        compressedField.push(innerFieldId);
+        fields.push(compressedInnerField);
       }
-      compressedExpression.push(inputs.join(","));
-      expressions.push(compressedExpression);
+    } else {
+      compressedField.push(field.tip || "");
     }
 
-    const pickLists = [];
-    for (const pickList of survey.pickLists) {
-      const compressedPickList: any[] = [pickList.name];
-      for (const weight of pickList.weights) {
-        let nameIndex = expressionNames.findIndex((e) => weight.expressionName == e);
+    if (field.type == "number") {
+      if (field.allowNegative) {
+        compressedField.push(1);
+      }
+    } else if (field.type == "select") {
+      compressedField.push(field.values.join(","));
+    } else if (field.type == "text") {
+      if (field.long) {
+        compressedField.push(1);
+      }
+    }
+
+    fields.push(compressedField);
+  }
+
+  if (survey.type == "pit") {
+    return JSON.stringify({
+      ...survey,
+      fields: fields.length ? fields : undefined,
+      indexedTeams: indexedTeams.join(","),
+      teams: teams.length ? teams : undefined,
+    });
+  }
+
+  const matches: number[] = [];
+  for (const match of survey.matches.toSorted((a, b) => a.number - b.number)) {
+    const indexes: number[] = [];
+    for (const team of [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3]) {
+      let index = indexedTeams.findIndex((t) => team == t);
+      if (index == -1) {
+        index = indexedTeams.push(team) - 1;
+      }
+      indexes.push(index);
+    }
+    matches.push(match.number, ...indexes);
+  }
+
+  let skippedTeams: number[] | undefined = undefined;
+  if (survey.skippedTeams?.length) {
+    skippedTeams = [];
+    for (const team of survey.skippedTeams) {
+      const index = indexedTeams.findIndex((t) => team == t);
+      if (index > -1) {
+        skippedTeams.push(index);
+      }
+    }
+  }
+
+  const expressionNames: string[] = [];
+
+  const expressions: any[] = [];
+  for (const expression of survey.expressions) {
+    const typeNumber = expressionTypes.findIndex((type) => type == expression.type);
+    let nameIndex = expressionNames.findIndex((e) => expression.name == e);
+    if (nameIndex == -1) {
+      nameIndex = expressionNames.push(expression.name) - 1;
+    }
+    const compressedExpression: any[] = [typeNumber, nameIndex];
+    if (expression.type == "count") {
+      compressedExpression.push(expression.valueToCount);
+    } else if (expression.type == "convert") {
+      compressedExpression.push(expression.defaultTo);
+      compressedExpression.push(expression.converters.flatMap(({ from, to }) => [from, to]).join(","));
+    } else if (expression.type == "multiply") {
+      compressedExpression.push(expression.multiplier);
+    } else if (expression.type == "divide") {
+      compressedExpression.push(expression.divisor);
+    }
+    const inputs: string[] = [];
+    for (const input of expression.inputs) {
+      if (input.from == "field") {
+        inputs.push("f" + input.fieldId);
+      } else if (input.from == "expression") {
+        let nameIndex = expressionNames.findIndex((e) => input.expressionName == e);
         if (nameIndex == -1) {
-          nameIndex = expressionNames.push(weight.expressionName) - 1;
+          nameIndex = expressionNames.push(input.expressionName) - 1;
         }
-        compressedPickList.push(nameIndex, weight.percentage);
+        inputs.push("e" + nameIndex);
       }
-      pickLists.push(compressedPickList);
     }
-
-    compressedSurvey = {
-      ...survey,
-      fields,
-      indexedTeams: indexedTeams.join(","),
-      teams: teams.length ? teams : undefined,
-      expressionNames: expressionNames.join(","),
-      pickLists: pickLists.length ? pickLists : undefined,
-      expressions: expressions.length ? expressions : undefined,
-      matches: matches.length ? matches : undefined,
-      skippedTeams,
-    };
-  } else {
-    compressedSurvey = {
-      ...survey,
-      fields,
-      indexedTeams: indexedTeams.join(","),
-      teams: teams.length ? teams : undefined,
-    };
+    compressedExpression.push(inputs.join(","));
+    expressions.push(compressedExpression);
   }
 
-  return JSON.stringify(compressedSurvey);
+  const pickLists = [];
+  for (const pickList of survey.pickLists) {
+    const compressedPickList: any[] = [pickList.name];
+    for (const weight of pickList.weights) {
+      let nameIndex = expressionNames.findIndex((e) => weight.expressionName == e);
+      if (nameIndex == -1) {
+        nameIndex = expressionNames.push(weight.expressionName) - 1;
+      }
+      compressedPickList.push(nameIndex, weight.percentage);
+    }
+    pickLists.push(compressedPickList);
+  }
+
+  return JSON.stringify({
+    ...survey,
+    fields: fields.length ? fields : undefined,
+    indexedTeams: indexedTeams.join(","),
+    teams: teams.length ? teams : undefined,
+    expressionNames: expressionNames.join(","),
+    pickLists: pickLists.length ? pickLists : undefined,
+    expressions: expressions.length ? expressions : undefined,
+    matches: matches.length ? matches : undefined,
+    skippedTeams,
+  });
 }
 
-function uncompressField(field: any) {
-  const [type, name, tip, ...rest] = field.split(",");
-  const fieldType = singleFieldTypes[Number(type)];
-  let newField: SingleField;
-  if (fieldType == "number") {
-    newField = { name, type: fieldType };
-    if (rest.length) {
-      newField.allowNegative = true;
-    }
-  } else if (fieldType == "select") {
-    newField = { name, type: fieldType, values: rest };
-  } else if (fieldType == "text") {
-    newField = { name, type: fieldType };
-    if (rest.length) {
-      newField.long = true;
-    }
-  } else {
-    newField = { name, type: fieldType };
-  }
-  if (tip) {
-    newField.tip = tip;
-  }
-  return newField;
-}
-
-export function jsonToSurvey(json: string): { success: true; survey: Survey } | { success: false; error: string } {
+export function jsonToSurvey(
+  json: string,
+): { success: true; survey: Survey; fields: Map<number, Field> } | { success: false; error: string } {
   let survey: Survey;
   let compressedSurvey: any;
 
@@ -224,19 +222,56 @@ export function jsonToSurvey(json: string): { success: true; survey: Survey } | 
     return { success: false, error: "Invalid input" };
   }
 
-  const fields: Field[] = [];
+  if (compressedSurvey.version != schemaVersion) {
+    return {
+      success: false,
+      error: compressedSurvey.version < schemaVersion ? "Outdated version" : "Unsupported version",
+    };
+  }
+
+  const fields = new Map<number, Field>();
   if (compressedSurvey.fields?.length) {
     for (const field of compressedSurvey.fields) {
-      if (typeof field == "string") {
-        fields.push(uncompressField(field));
-      } else if (Array.isArray(field)) {
-        const [, name, ...innerFields] = field;
-        const newInnerFields: SingleField[] = [];
-        for (const innerField of innerFields) {
-          newInnerFields.push(uncompressField(innerField));
-        }
-        fields.push({ name, type: "group", fields: newInnerFields });
+      const [fieldIdString, typeIndex, name, ...rest] = field as any[];
+
+      const fieldId = Number(fieldIdString);
+      const fieldType = fieldTypes[Number(typeIndex)];
+
+      if (fieldType == "group") {
+        fields.set(fieldId, {
+          surveyId: 0,
+          name,
+          type: "group",
+          fieldIds: rest.map((id) => Number(id)),
+        });
+        continue;
       }
+
+      const [tip, ...config] = rest;
+
+      let singleField: SingleField;
+
+      if (fieldType == "number") {
+        singleField = { surveyId: 0, name, type: fieldType };
+        if (config.length) {
+          singleField.allowNegative = true;
+        }
+      } else if (fieldType == "select") {
+        singleField = { surveyId: 0, name, type: fieldType, values: config.map((value) => value.toString()) };
+      } else if (fieldType == "text") {
+        singleField = { surveyId: 0, name, type: fieldType };
+        if (config.length) {
+          singleField.long = true;
+        }
+      } else {
+        singleField = { surveyId: 0, name, type: fieldType };
+      }
+
+      if (tip) {
+        singleField.tip = tip;
+      }
+
+      fields.set(fieldId, singleField);
     }
   }
 
@@ -278,7 +313,7 @@ export function jsonToSurvey(json: string): { success: true; survey: Survey } | 
           const from = input[0];
           const index = Number(input.slice(1));
           if (from == "f") {
-            inputs.push({ from: "field", fieldIndex: index });
+            inputs.push({ from: "field", fieldId: index });
           } else if (from == "e") {
             inputs.push({ from: "expression", expressionName: expressionNames[index] });
           }
@@ -341,7 +376,7 @@ export function jsonToSurvey(json: string): { success: true; survey: Survey } | 
       type: "match",
       created: new Date(),
       modified: new Date(),
-      fields,
+      fieldIds: compressedSurvey.fieldIds,
       teams,
       pickLists,
       expressions,
@@ -357,7 +392,7 @@ export function jsonToSurvey(json: string): { success: true; survey: Survey } | 
       type: "pit",
       created: new Date(),
       modified: new Date(),
-      fields,
+      fieldIds: compressedSurvey.fieldIds,
       teams,
     };
   } else {
@@ -368,5 +403,5 @@ export function jsonToSurvey(json: string): { success: true; survey: Survey } | 
     survey.tbaEventKey = compressedSurvey.tbaEventKey;
   }
 
-  return { success: true, survey };
+  return { success: true, survey, fields };
 }

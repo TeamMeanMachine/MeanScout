@@ -20,7 +20,7 @@
         survey = {
           name,
           type,
-          fields: [],
+          fieldIds: [],
           matches: [],
           teams: [],
           expressions: [],
@@ -32,7 +32,7 @@
         survey = {
           name,
           type,
-          fields: [],
+          fieldIds: [],
           teams: [],
           created: new Date(),
           modified: new Date(),

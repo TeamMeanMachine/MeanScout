@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { countPreviousFields, type SingleField } from "$lib/field";
+  import { getDetailedNestedFields, type Field, type SingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
@@ -12,13 +12,17 @@
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecord,
     onchange,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecord: IDBRecord<Entry>;
     onchange?: () => void;
   } = $props();
+
+  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
 
   let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
@@ -83,16 +87,19 @@
       {/if}
       <tr><td class="p-2"></td></tr>
       {#if entryRecord.type != "match" || !entryRecord.absent}
-        {#each surveyRecord.fields as field, i (field)}
-          {@const previousFields = countPreviousFields(i, surveyRecord.fields)}
-          {#if field.type == "group"}
-            <tr><th colspan="2" class="p-2">{field.name}</th></tr>
-            {#each field.fields as innerField, innerFieldIndex (innerField)}
-              {@render fieldRow(innerField, entryRecord.values[previousFields + innerFieldIndex])}
+        {#each surveyRecord.fieldIds as fieldId}
+          {@const fieldDetails = detailedFields.get(fieldId)}
+          {#if fieldDetails?.type == "group"}
+            <tr><th colspan="2" class="p-2">{fieldDetails.field.name}</th></tr>
+            {#each fieldDetails.field.fieldIds as innerFieldId}
+              {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+              {#if innerFieldDetails}
+                {@render fieldRow(innerFieldDetails.field, entryRecord.values[innerFieldDetails.valueIndex])}
+              {/if}
             {/each}
             <tr><td class="p-2"></td></tr>
-          {:else}
-            {@render fieldRow(field, entryRecord.values[previousFields])}
+          {:else if fieldDetails}
+            {@render fieldRow(fieldDetails.field, entryRecord.values[fieldDetails.valueIndex])}
           {/if}
         {/each}
       {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { csvToEntries } from "$lib/entry";
+  import { getDetailedSingleFields, type DetailedSingleField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -14,7 +15,10 @@
   let selectedSurveyId = $state<number | undefined>();
   let selectedSurveyRecord = $derived(surveyRecords.find((survey) => survey.id == selectedSurveyId));
 
-  let entries = $derived(selectedSurveyRecord ? csvToEntries(data, selectedSurveyRecord) : undefined);
+  let fields = $state<DetailedSingleField[]>([]);
+  $effect(() => getFields(selectedSurveyRecord));
+
+  let entries = $derived(selectedSurveyRecord && fields ? csvToEntries(data, selectedSurveyRecord, fields) : undefined);
 
   let error = $state("");
 
@@ -61,6 +65,18 @@
       }
     },
   };
+
+  function getFields(survey: typeof selectedSurveyRecord) {
+    if (!survey) {
+      fields = [];
+      return;
+    }
+
+    const fieldsRequest = objectStore("fields").index("surveyId").getAll(survey.id);
+    fieldsRequest.onsuccess = () => {
+      fields = getDetailedSingleFields(survey, fieldsRequest.result);
+    };
+  }
 </script>
 
 {#if entries?.length && selectedSurveyRecord}
@@ -105,5 +121,5 @@
 {/if}
 
 {#if error}
-  <span>{error}</span>
+  <span>Error: {error}</span>
 {/if}

@@ -6,16 +6,21 @@
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
+  import { getDetailedSingleFields, type Field } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fieldRecords,
     entryRecords,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fieldRecords: IDBRecord<Field>[];
     entryRecords: IDBRecord<MatchEntry>[];
   } = $props();
+
+  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
 
   let upcomingMatches = $derived(
     surveyRecord.matches
@@ -40,7 +45,8 @@
 
   {#if upcomingMatches.length || previousMatches.length}
     {#snippet teamRow(match: Match)}
-      {@const onclick = () => openDialog(ViewMatchDialog, { surveyRecord, entryRecords, match, canEdit: true })}
+      {@const onclick = () =>
+        openDialog(ViewMatchDialog, { surveyRecord, fieldRecords, entryRecords, match, canEdit: true })}
 
       <tr
         tabindex="0"

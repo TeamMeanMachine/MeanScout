@@ -4,12 +4,14 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
+  import type { DetailedSingleField } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import EditExpressionDialog from "./EditExpressionDialog.svelte";
 
   let {
     surveyRecord,
+    fields,
     entriesByTeam,
     expression,
     index,
@@ -17,6 +19,7 @@
     canEdit,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fields: DetailedSingleField[];
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     expression: Expression;
     index: number;
@@ -36,7 +39,7 @@
   function refresh() {
     expression = surveyRecord.expressions[index];
 
-    const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam);
+    const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);
     const normalizedTeamData = normalizeTeamData(teamData);
 
     sortedTeamData = Object.keys(normalizedTeamData)
@@ -75,7 +78,7 @@
 {#if $modeStore == "admin" && canEdit}
   <Button
     onclick={() => {
-      openDialog(EditExpressionDialog, { surveyRecord, index, onupdate: () => refresh() });
+      openDialog(EditExpressionDialog, { surveyRecord, fields, index, onupdate: refresh });
     }}
   >
     <Icon name="pen" />

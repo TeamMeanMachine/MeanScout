@@ -2,37 +2,25 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField, type SingleField, type SingleFieldType } from "$lib/field";
+  import { singleFieldTypes, type Field, type GroupField, type SingleFieldType } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
-    index,
-    parentIndex,
+    field,
+    parentField,
     onupdate,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    index: number;
-    parentIndex?: number | undefined;
+    field: IDBRecord<Field>;
+    parentField?: IDBRecord<GroupField> | undefined;
     onupdate?: () => void;
   } = $props();
 
-  let field = $state<Field>({ name: "", type: "toggle" });
-  let parentField = $state<GroupField | undefined>();
   let error = $state("");
 
-  export const { onopen, onconfirm }: DialogExports = {
-    onopen(open) {
-      if (parentIndex == undefined) {
-        parentField = undefined;
-        field = structuredClone($state.snapshot(surveyRecord.fields[index]));
-      } else {
-        parentField = structuredClone($state.snapshot(surveyRecord.fields[parentIndex] as GroupField));
-        field = structuredClone($state.snapshot(parentField.fields[index]));
-      }
-
-      open();
-    },
+  export const { onconfirm }: DialogExports = {
     onconfirm() {
       field.name = field.name.trim();
 
@@ -53,16 +41,16 @@
         }
       }
 
-      if (parentIndex == undefined || parentField == undefined) {
-        surveyRecord.fields[index] = structuredClone($state.snapshot(field));
-      } else {
-        parentField.fields[index] = structuredClone($state.snapshot(field as SingleField));
-        surveyRecord.fields[parentIndex] = structuredClone($state.snapshot(parentField));
-      }
+      const putRequest = objectStore("fields", "readwrite").put($state.snapshot(field));
+      putRequest.onsuccess = () => {
+        surveyRecord.modified = new Date();
+        onupdate?.();
+        closeDialog();
+      };
 
-      surveyRecord.modified = new Date();
-      onupdate?.();
-      closeDialog();
+      putRequest.onerror = () => {
+        error = "Could not update field";
+      };
     },
   };
 
@@ -70,6 +58,8 @@
     switch (to) {
       case "select":
         field = {
+          id: field.id,
+          surveyId: surveyRecord.id,
           name: field.name,
           type: to,
           values: [],
@@ -81,13 +71,15 @@
       case "rating":
       case "timer":
         field = {
+          id: field.id,
+          surveyId: surveyRecord.id,
           name: field.name,
           type: to,
         };
         break;
       default:
-        const unhandledType: never = to;
-        throw new Error(`Unhandled type for field ${unhandledType}`);
+        const unhandledField: never = to;
+        throw new Error(`Unhandled type for field: ${(unhandledField as Field).type}`);
     }
   }
 
@@ -184,5 +176,5 @@
 {/if}
 
 {#if error}
-  <span>{error}</span>
+  <span>Error: {error}</span>
 {/if}

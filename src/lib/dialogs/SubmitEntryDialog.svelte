@@ -4,21 +4,21 @@
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryToCSV, type Entry } from "$lib/entry";
-  import { flattenFields, getDefaultFieldValue } from "$lib/field";
+  import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    fields,
     entryRecord,
     onexport,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fields: DetailedSingleField[];
     entryRecord: IDBRecord<Entry>;
     onexport?: () => void;
   } = $props();
-
-  const flattenedFields = flattenFields(surveyRecord.fields);
 
   let isExporting = $state(false);
   let entryCSV = $state("");
@@ -28,8 +28,8 @@
     onopen(open) {
       for (let i = 0; i < entryRecord.values.length; i++) {
         const value = entryRecord.values[i];
-        if (value == undefined || typeof value !== typeof getDefaultFieldValue(flattenedFields[i])) {
-          error = `Invalid value for ${flattenedFields[i].name}`;
+        if (value == undefined || typeof value !== typeof getDefaultFieldValue(fields[i].field)) {
+          error = `Invalid value for ${fields[i].field.name}`;
           open();
           return;
         }

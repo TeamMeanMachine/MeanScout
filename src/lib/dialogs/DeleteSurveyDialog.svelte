@@ -25,7 +25,7 @@
       };
     },
     onconfirm() {
-      const deleteTransaction = transaction(["surveys", "entries"], "readwrite");
+      const deleteTransaction = transaction(["surveys", "fields", "entries"], "readwrite");
       deleteTransaction.onabort = () => {
         error ||= `Could not delete survey: ${deleteTransaction.error?.message}`;
       };
@@ -40,16 +40,38 @@
         deleteTransaction.abort();
       };
 
-      const cursorRequest = deleteTransaction.objectStore("entries").index("surveyId").openCursor(surveyRecord.id);
-      cursorRequest.onerror = () => {
-        error = `Could not delete survey's entries: ${cursorRequest.error?.message}`;
+      const entryCursorRequest = deleteTransaction.objectStore("entries").index("surveyId").openCursor(surveyRecord.id);
+      entryCursorRequest.onerror = () => {
+        error = `Could not delete survey's entries: ${entryCursorRequest.error?.message}`;
         deleteTransaction.abort();
       };
 
-      cursorRequest.onsuccess = () => {
-        const cursor = cursorRequest.result;
+      entryCursorRequest.onsuccess = () => {
+        const cursor = entryCursorRequest.result;
         if (cursor === undefined) {
           error = "Could not delete survey's entries";
+          deleteTransaction.abort();
+          return;
+        }
+
+        if (cursor === null) {
+          return;
+        }
+
+        cursor.delete();
+        cursor.continue();
+      };
+
+      const fieldCursorRequest = deleteTransaction.objectStore("fields").index("surveyId").openCursor(surveyRecord.id);
+      fieldCursorRequest.onerror = () => {
+        error = `Could not delete survey's fields: ${fieldCursorRequest.error?.message}`;
+        deleteTransaction.abort();
+      };
+
+      fieldCursorRequest.onsuccess = () => {
+        const cursor = fieldCursorRequest.result;
+        if (cursor === undefined) {
+          error = "Could not delete survey's fields";
           deleteTransaction.abort();
           return;
         }

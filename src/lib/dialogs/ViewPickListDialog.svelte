@@ -4,6 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
+  import type { DetailedSingleField } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
@@ -11,12 +12,14 @@
 
   let {
     surveyRecord,
+    fields,
     entriesByTeam,
     pickList,
     index,
     canEdit = false,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    fields: DetailedSingleField[];
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
     index: number;
@@ -41,7 +44,7 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam);
+      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam, fields);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {

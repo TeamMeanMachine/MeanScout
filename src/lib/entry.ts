@@ -1,7 +1,7 @@
 import { matchValueSchema, valueSchema, type Value } from "$lib";
 import { z } from "zod";
 import type { Survey } from "./survey";
-import { flattenFields, getDefaultFieldValue, type SingleField } from "./field";
+import { getDefaultFieldValue, type DetailedSingleField, type SingleField } from "./field";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];
@@ -71,11 +71,14 @@ function csvToValue(csv: string, field: SingleField) {
   }
 }
 
-export function csvToEntries(csv: string, surveyRecord: IDBRecord<Survey>): Entry[] {
+export function csvToEntries(
+  csv: string,
+  surveyRecord: IDBRecord<Survey>,
+  singleFields: DetailedSingleField[],
+): Entry[] {
   const entries = csv.split("\n").map((line) => {
     return line.split(",").map((value) => value.trim());
   });
-  const fields = flattenFields(surveyRecord.fields);
 
   if (surveyRecord.type == "match") {
     return entries.map((entryCSV): MatchEntry => {
@@ -84,11 +87,11 @@ export function csvToEntries(csv: string, surveyRecord: IDBRecord<Survey>): Entr
       let values: Value[] = [];
 
       if (absent) {
-        values = fields.map(getDefaultFieldValue);
+        values = singleFields.map((field) => getDefaultFieldValue(field.field));
       } else {
         const compressedValues = entryCSV.slice(3);
         for (let i = 0; i < compressedValues.length; i++) {
-          values.push(csvToValue(compressedValues[i].trim(), fields[i]));
+          values.push(csvToValue(compressedValues[i].trim(), singleFields[i].field));
         }
       }
 
@@ -110,7 +113,7 @@ export function csvToEntries(csv: string, surveyRecord: IDBRecord<Survey>): Entr
 
       let values: Value[] = [];
       for (let i = 0; i < compressedValues.length; i++) {
-        values.push(csvToValue(compressedValues[i].trim(), fields[i]));
+        values.push(csvToValue(compressedValues[i].trim(), singleFields[i].field));
       }
 
       return {
