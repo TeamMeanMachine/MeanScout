@@ -1,47 +1,57 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    data: PageData;
   } = $props();
 
   async function getMatchesFromTBAEvent() {
-    if (surveyRecord.type != "match") return;
-    if (!surveyRecord.tbaEventKey) return;
+    if (data.surveyRecord.type != "match") return;
+    if (!data.surveyRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventMatches(surveyRecord.tbaEventKey, $tbaAuthKeyStore);
+    const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey, $tbaAuthKeyStore);
     if (response) {
-      surveyRecord.matches = response;
-      surveyRecord.modified = new Date();
+      data.surveyRecord.matches = response;
+      data.surveyRecord.modified = new Date();
     }
   }
 
   async function getTeamsFromTBAEvent() {
-    if (!surveyRecord.tbaEventKey) return;
+    if (!data.surveyRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventTeams(surveyRecord.tbaEventKey, $tbaAuthKeyStore);
+    const response = await tbaGetEventTeams(data.surveyRecord.tbaEventKey, $tbaAuthKeyStore);
     if (response) {
-      surveyRecord.teams = response;
-      surveyRecord.modified = new Date();
+      data.surveyRecord.teams = response;
+      data.surveyRecord.modified = new Date();
     }
   }
 </script>
 
+<Header
+  title="Options - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Options" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
+
 <div class="flex flex-col gap-2">
-  <Button onclick={() => openDialog(EditSurveyNameDialog, { surveyRecord })}>
+  <Button onclick={() => openDialog(EditSurveyNameDialog, { surveyRecord: data.surveyRecord })}>
     <Icon name="pen" />
     <div class="flex flex-col">
-      {surveyRecord.name}
+      {data.surveyRecord.name}
       <small>Edit name</small>
     </div>
   </Button>
@@ -50,18 +60,18 @@
 {#if $tbaAuthKeyStore}
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">The Blue Alliance</h2>
-    <Button onclick={() => openDialog(EditSurveyTbaEventKeyDialog, { surveyRecord })}>
+    <Button onclick={() => openDialog(EditSurveyTbaEventKeyDialog, { surveyRecord: data.surveyRecord })}>
       <Icon name="calendar-days" />
-      {#if surveyRecord.tbaEventKey}
+      {#if data.surveyRecord.tbaEventKey}
         <div class="flex flex-col">
-          {surveyRecord.tbaEventKey}
+          {data.surveyRecord.tbaEventKey}
           <small>Edit event</small>
         </div>
       {:else}
         Add event
       {/if}
     </Button>
-    {#if surveyRecord.tbaEventKey}
+    {#if data.surveyRecord.tbaEventKey}
       <Button onclick={getMatchesFromTBAEvent}>
         <Icon name="table-list" />
         <div class="flex flex-col">
@@ -82,7 +92,7 @@
 
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Danger Zone</h2>
-  <Button onclick={() => openDialog(DeleteSurveyDialog, { surveyRecord })}>
+  <Button onclick={() => openDialog(DeleteSurveyDialog, { surveyRecord: data.surveyRecord })}>
     <Icon name="trash" />
     Delete survey
   </Button>

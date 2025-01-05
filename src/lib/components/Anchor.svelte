@@ -14,6 +14,6 @@
   } = $props();
 </script>
 
-<a href="#/{route}" class="flex flex-wrap items-center gap-2 bg-neutral-800 p-2 {classes}" {style}>
+<a href="/#/{route}" class="flex flex-wrap items-center gap-2 bg-neutral-800 p-2 {classes}" {style}>
   {@render children()}
 </a>

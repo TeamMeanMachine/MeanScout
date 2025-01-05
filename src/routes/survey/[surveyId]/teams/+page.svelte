@@ -8,23 +8,20 @@
   import DeleteTeamsDialog from "$lib/dialogs/DeleteTeamsDialog.svelte";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import type { Entry } from "$lib/entry";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import { getDetailedSingleFields } from "$lib/field";
   import { modeStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
   import { flushSync, onMount } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
+  import type { PageData } from "./$types";
+  import Header from "$lib/components/Header.svelte";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<Entry>[];
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   const teamsFromMatches = getTeamsFromMatches();
   const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
@@ -33,9 +30,9 @@
   let dataGrid = $state<HTMLDivElement | undefined>();
 
   let ranksPerPickList = $derived.by(() => {
-    if (surveyRecord.type != "match") return [];
-    surveyRecord.skippedTeams;
-    return surveyRecord.pickLists.map(createTeamRanking);
+    if (data.surveyType != "match") return [];
+    data.surveyRecord.skippedTeams;
+    return data.surveyRecord.pickLists.map(createTeamRanking);
   });
 
   let sortBy = $state<"team" | number | "done">("team");
@@ -43,14 +40,14 @@
   let selecting = $state(false);
   let selectedTeams = new SvelteSet<string>();
 
-  let columns = $derived(surveyRecord.type == "match" ? surveyRecord.pickLists.length + 3 : 3);
+  let columns = $derived(data.surveyType == "match" ? data.surveyRecord.pickLists.length + 3 : 3);
 
   let teamInfos = $derived.by(() => {
-    const uniqueTeams = [...new Set([...surveyRecord.teams, ...teamsFromMatches])];
+    const uniqueTeams = [...new Set([...data.surveyRecord.teams, ...teamsFromMatches])];
     return uniqueTeams.map(createTeamInfo).toSorted(sortTeamInfo);
   });
 
-  let conflictingTeams = $derived([...new Set(surveyRecord.teams).intersection(new Set(teamsFromMatches))]);
+  let conflictingTeams = $derived([...new Set(data.surveyRecord.teams).intersection(new Set(teamsFromMatches))]);
 
   let displayedCount = $state(10);
   let displayedTeams = $derived(teamInfos.slice(0, displayedCount));
@@ -75,9 +72,9 @@
   }
 
   function getTeamsFromMatches() {
-    if (surveyRecord.type != "match" || !surveyRecord.matches.length) return [];
+    if (data.surveyType != "match" || !data.surveyRecord.matches.length) return [];
     const teamsFromMatches: string[] = [];
-    for (const match of surveyRecord.matches) {
+    for (const match of data.surveyRecord.matches) {
       teamsFromMatches.push(match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3);
     }
     return teamsFromMatches;
@@ -97,7 +94,7 @@
 
   function getEntriesByTeam() {
     const entriesByTeam: Record<string, IDBRecord<Entry>[]> = {};
-    for (const entry of entryRecords) {
+    for (const entry of data.entryRecords) {
       if (entry.team in entriesByTeam) {
         entriesByTeam[entry.team].push(entry);
       } else {
@@ -108,20 +105,20 @@
   }
 
   function createTeamRanking(pickList: PickList) {
-    if (surveyRecord.type != "match") return {};
+    if (data.surveyType != "match") return {};
 
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
-      if (surveyRecord.skippedTeams?.includes(team)) continue;
+      if (data.surveyRecord.skippedTeams?.includes(team)) continue;
       pickListData[team] = 0;
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam, fields);
+      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, fields);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
-        if (surveyRecord.skippedTeams?.includes(team)) continue;
+        if (data.surveyRecord.skippedTeams?.includes(team)) continue;
         pickListData[team] += normalizedTeamData[team];
       }
     }
@@ -141,10 +138,10 @@
   }
 
   function createTeamInfo(team: string): TeamInfo {
-    const matchingEntries = entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
+    const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
 
     let skipped: boolean | undefined = undefined;
-    if (surveyRecord.type == "match" && surveyRecord.skippedTeams?.includes(team)) {
+    if (data.surveyType == "match" && data.surveyRecord.skippedTeams?.includes(team)) {
       skipped = true;
     }
 
@@ -157,7 +154,7 @@
       team,
       entryCount: matchingEntries.length,
       matchCount: matchCountPerTeam[team] ?? 0,
-      isCustom: surveyRecord.teams.includes(team),
+      isCustom: data.surveyRecord.teams.includes(team),
       pickListRanks,
       skipped,
     };
@@ -181,23 +178,23 @@
   }
 
   function fixTeams() {
-    surveyRecord.teams = surveyRecord.teams.filter((team) => !conflictingTeams.includes(team));
-    surveyRecord.modified = new Date();
+    data.surveyRecord.teams = data.surveyRecord.teams.filter((team) => !conflictingTeams.includes(team));
+    data.surveyRecord.modified = new Date();
   }
 
   function skipTeams() {
-    if (!selectedTeams.size || surveyRecord.type != "match") return;
-    if (surveyRecord.skippedTeams == undefined) surveyRecord.skippedTeams = [...selectedTeams];
-    else surveyRecord.skippedTeams.push(...selectedTeams);
-    surveyRecord.modified = new Date();
+    if (!selectedTeams.size || data.surveyType != "match") return;
+    if (data.surveyRecord.skippedTeams == undefined) data.surveyRecord.skippedTeams = [...selectedTeams];
+    else data.surveyRecord.skippedTeams.push(...selectedTeams);
+    data.surveyRecord.modified = new Date();
   }
 
   function unskipTeams() {
-    if (!selectedTeams.size || surveyRecord.type != "match") return;
-    const remainingTeams = surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
-    if (!remainingTeams || remainingTeams.length == 0) surveyRecord.skippedTeams = undefined;
-    surveyRecord.skippedTeams = remainingTeams;
-    surveyRecord.modified = new Date();
+    if (!selectedTeams.size || data.surveyType != "match") return;
+    const remainingTeams = data.surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
+    if (!remainingTeams || remainingTeams.length == 0) data.surveyRecord.skippedTeams = undefined;
+    data.surveyRecord.skippedTeams = remainingTeams;
+    data.surveyRecord.modified = new Date();
   }
 
   function getOrdinal(n: number) {
@@ -210,12 +207,21 @@
 
 <svelte:window {onscroll} />
 
+<Header
+  title="Teams - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Teams" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
+
 <div class="flex flex-wrap gap-x-3">
   {#if $modeStore == "admin"}
     <div class="grow basis-0">
       <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
         <Button
-          onclick={() => openDialog(AddTeamsDialog, { surveyRecord, allTeams: teamInfos })}
+          onclick={() => openDialog(AddTeamsDialog, { surveyRecord: data.surveyRecord, allTeams: teamInfos })}
           class="flex-nowrap text-nowrap"
         >
           <Icon name="plus" />
@@ -234,13 +240,17 @@
 
         <div class="flex flex-col gap-2">
           {#if selecting}
-            {@const deletableTeams = [...selectedTeams].filter((team) => surveyRecord.teams.includes(team))}
+            {@const deletableTeams = [...selectedTeams].filter((team) => data.surveyRecord.teams.includes(team))}
 
             <span>{selectedTeams.size} <small>selected</small></span>
 
-            {#if surveyRecord.type == "match"}
-              {@const canSkipTeams = [...selectedTeams].filter((team) => !surveyRecord.skippedTeams?.includes(team))}
-              {@const canUnskipTeams = [...selectedTeams].filter((team) => surveyRecord.skippedTeams?.includes(team))}
+            {#if data.surveyType == "match"}
+              {@const canSkipTeams = [...selectedTeams].filter(
+                (team) => !data.surveyRecord.skippedTeams?.includes(team),
+              )}
+              {@const canUnskipTeams = [...selectedTeams].filter((team) =>
+                data.surveyRecord.skippedTeams?.includes(team),
+              )}
 
               {#if canUnskipTeams.length}
                 <Button onclick={unskipTeams} class="flex-nowrap text-nowrap">
@@ -258,7 +268,7 @@
             <Button
               disabled={deletableTeams.length == 0}
               onclick={() => {
-                openDialog(DeleteTeamsDialog, { surveyRecord, teams: deletableTeams });
+                openDialog(DeleteTeamsDialog, { surveyRecord: data.surveyRecord, teams: deletableTeams });
               }}
               class="flex-nowrap text-nowrap"
             >
@@ -290,13 +300,13 @@
   <div class="flex grow flex-col gap-2 pt-2">
     {#if teamInfos.length}
       <div class="flex flex-col">
-        {#if surveyRecord.type == "match"}
-          <small>{surveyRecord.skippedTeams?.length || 0} skipped</small>
+        {#if data.surveyType == "match"}
+          <small>{data.surveyRecord.skippedTeams?.length || 0} skipped</small>
         {/if}
         <small>
           Sorting by
-          {#if surveyRecord.type == "match" && typeof sortBy == "number"}
-            {surveyRecord.pickLists[sortBy].name}
+          {#if data.surveyType == "match" && typeof sortBy == "number"}
+            {data.surveyRecord.pickLists[sortBy].name}
           {:else}
             {sortBy}
           {/if}
@@ -335,8 +345,8 @@
                 Team
               </Button>
 
-              {#if ranksPerPickList.length && surveyRecord.type == "match"}
-                {#each surveyRecord.pickLists as pickList, i}
+              {#if ranksPerPickList.length && data.surveyType == "match"}
+                {#each data.surveyRecord.pickLists as pickList, i}
                   <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
                     {pickList.name}
                   </Button>
@@ -361,7 +371,13 @@
                     selectedTeams.add(teamInfo.team);
                   }
                 } else {
-                  openDialog(ViewTeamDialog, { surveyRecord, fieldRecords, entryRecords, teamInfo, canEdit: true });
+                  openDialog(ViewTeamDialog, {
+                    surveyRecord: data.surveyRecord,
+                    fieldRecords: data.fieldRecords,
+                    entryRecords: data.entryRecords,
+                    teamInfo,
+                    canEdit: true,
+                  });
                 }
               }}
               class="col-span-full grid grid-cols-subgrid text-center {defaultFont}"
@@ -395,7 +411,7 @@
               {/if}
 
               <div>
-                {#if surveyRecord.type == "match" && surveyRecord.matches.length && teamInfo.matchCount}
+                {#if data.surveyType == "match" && data.surveyRecord.matches.length && teamInfo.matchCount}
                   {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
                 {:else}
                   {teamInfo.entryCount}
@@ -415,7 +431,7 @@
     {:else}
       <span>
         No teams.
-        {#if surveyRecord.type == "match" && surveyRecord.matches.length}
+        {#if data.surveyType == "match" && data.surveyRecord.matches.length}
           Note that teams from matches are used depending on the selected target.
         {:else}
           Any team value is allowed.

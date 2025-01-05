@@ -1,29 +1,30 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
-  import { fieldIcons, getDefaultFieldValue, getDetailedNestedFields, type Field } from "$lib/field";
+  import { fieldIcons, getDefaultFieldValue, getDetailedNestedFields } from "$lib/field";
   import { transaction } from "$lib/idb";
-  import type { Survey } from "$lib/survey";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryCount,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryCount: number;
+    data: PageData;
   } = $props();
+
+  const entryCount = data.entryRecords.length;
 
   const disabled = entryCount > 0;
 
   let preview = $state(disabled);
 
-  let { detailedFields, detailedInnerFields } = $state(getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords));
+  let { detailedFields, detailedInnerFields } = $state(
+    getDetailedNestedFields(data.surveyRecord.fieldIds, data.fieldRecords),
+  );
 
   function refresh() {
     const refreshTransaction = transaction("fields");
@@ -31,12 +32,24 @@
       location.reload();
     };
 
-    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
+    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(data.surveyRecord.id);
     fieldsRequest.onsuccess = () => {
-      ({ detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldsRequest.result));
+      ({ detailedFields, detailedInnerFields } = getDetailedNestedFields(
+        data.surveyRecord.fieldIds,
+        fieldsRequest.result,
+      ));
     };
   }
 </script>
+
+<Header
+  title="Options - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Options" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
 
 {#if !disabled}
   <div class="flex">
@@ -51,7 +64,7 @@
   </div>
   {#if !preview}
     <div class="flex flex-col gap-4">
-      {#each surveyRecord.fieldIds as fieldId}
+      {#each data.surveyRecord.fieldIds as fieldId}
         {@const detailedField = detailedFields.get(fieldId)}
 
         {#if detailedField?.type == "group"}
@@ -60,7 +73,7 @@
             <Button
               onclick={() => {
                 openDialog(ViewFieldDialog, {
-                  surveyRecord,
+                  surveyRecord: data.surveyRecord,
                   detailedFields,
                   detailedInnerFields,
                   field: structuredClone($state.snapshot(detailedField.field)),
@@ -79,7 +92,7 @@
                 <Button
                   onclick={() => {
                     openDialog(ViewFieldDialog, {
-                      surveyRecord,
+                      surveyRecord: data.surveyRecord,
                       detailedFields,
                       detailedInnerFields,
                       field: structuredClone($state.snapshot(detailedInnerField.field)),
@@ -100,7 +113,7 @@
             <Button
               onclick={() => {
                 openDialog(NewFieldDialog, {
-                  surveyRecord,
+                  surveyRecord: data.surveyRecord,
                   parentField: structuredClone($state.snapshot(detailedField.field)),
                   onupdate: refresh,
                 });
@@ -114,7 +127,7 @@
           <Button
             onclick={() => {
               openDialog(ViewFieldDialog, {
-                surveyRecord,
+                surveyRecord: data.surveyRecord,
                 detailedFields,
                 detailedInnerFields,
                 field: structuredClone($state.snapshot(detailedField.field)),
@@ -135,7 +148,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord, type: "group", onupdate: refresh });
+          openDialog(NewFieldDialog, { surveyRecord: data.surveyRecord, type: "group", onupdate: refresh });
         }}
       >
         <Icon name="plus" />
@@ -144,7 +157,7 @@
       <Button
         {disabled}
         onclick={() => {
-          openDialog(NewFieldDialog, { surveyRecord, onupdate: refresh });
+          openDialog(NewFieldDialog, { surveyRecord: data.surveyRecord, onupdate: refresh });
         }}
       >
         <Icon name="plus" />
@@ -159,12 +172,12 @@
     <h2 class="font-bold">Preview</h2>
     <div class="flex flex-col">
       <span><small>Team</small> <strong>####</strong></span>
-      {#if surveyRecord.type == "match"}
+      {#if data.surveyRecord.type == "match"}
         <span><small>Match</small> <strong>##</strong></span>
       {/if}
     </div>
     <div class="flex flex-col flex-wrap gap-3">
-      {#each surveyRecord.fieldIds as fieldId}
+      {#each data.surveyRecord.fieldIds as fieldId}
         {@const detailedField = detailedFields.get(fieldId)}
 
         {#if detailedField?.type == "group"}

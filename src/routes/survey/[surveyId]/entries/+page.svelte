@@ -8,23 +8,20 @@
   import ImportEntriesFromQRCodeDialog from "$lib/dialogs/ImportEntriesFromQRCodeDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
-  import type { Survey } from "$lib/survey";
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { matchTargets } from "$lib/settings";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import { getDetailedSingleFields } from "$lib/field";
+  import Header from "$lib/components/Header.svelte";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<Entry>[];
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   let dataGrid: HTMLDivElement;
 
@@ -40,22 +37,22 @@
     return Object.values(filters).filter((val) => val !== undefined).length;
   });
 
-  let sortBy = $state<"team" | "match" | "absent" | "exported">(surveyRecord.type == "match" ? "match" : "team");
+  let sortBy = $state<"team" | "match" | "absent" | "exported">(data.surveyType == "match" ? "match" : "team");
 
-  let filteredEntries = $derived(entryRecords.filter(filterEntry).toSorted(sortEntries));
+  let filteredEntries = $derived(data.entryRecords.filter(filterEntry).toSorted(sortEntries));
 
   let displayedCount = $state(10);
   let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
 
   let duplicateEntryIds = $derived.by(() => {
-    if (surveyRecord.type != "match") {
+    if (data.surveyType != "match") {
       return [];
     }
 
     const duplicates: number[] = [];
 
     const uniqueStringToId = new Set<string>();
-    for (const entry of entryRecords) {
+    for (const entry of data.entryRecords) {
       if (entry.type != "match") {
         continue;
       }
@@ -108,8 +105,8 @@
         return false;
       }
 
-      if (filters.target != undefined && surveyRecord.type == "match") {
-        const teamsOfThisTarget = surveyRecord.matches
+      if (filters.target != undefined && data.surveyType == "match") {
+        const teamsOfThisTarget = data.surveyRecord.matches
           .filter((match) => match.number == entry.match)
           .map((match) => {
             switch (filters.target) {
@@ -163,7 +160,7 @@
   }
 
   function refresh() {
-    const entriesRequest = objectStore("entries").index("surveyId").getAll(surveyRecord.id);
+    const entriesRequest = objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
 
     entriesRequest.onerror = () => {
       location.reload();
@@ -175,16 +172,16 @@
         return;
       }
 
-      entryRecords = entriesRequest.result;
+      data.entryRecords = entriesRequest.result;
     };
   }
 
   function fixEntries() {
-    const cursorRequest = objectStore("entries", "readwrite").index("surveyId").openCursor(surveyRecord.id);
+    const cursorRequest = objectStore("entries", "readwrite").index("surveyId").openCursor(data.surveyRecord.id);
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor == null) {
-        surveyRecord.modified = new Date();
+        data.surveyRecord.modified = new Date();
         refresh();
         return;
       }
@@ -208,15 +205,15 @@
   }
 
   function getFilterableTeams() {
-    const teamSet = new Set(entryRecords.map((entry) => entry.team));
+    const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
     return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
   }
 
   function getFilterableMatches() {
-    if (surveyRecord.type != "match") return [];
+    if (data.surveyType != "match") return [];
 
     const matchSet = new Set<number>();
-    for (const entry of entryRecords) {
+    for (const entry of data.entryRecords) {
       if (entry.type != "match") continue;
       matchSet.add(entry.match);
     }
@@ -237,13 +234,22 @@
 
 <svelte:window {onscroll} />
 
+<Header
+  title="Entries - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Entries" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
+
 <div class="flex flex-wrap gap-3">
   <div class="grow basis-0">
     <div class="flex flex-wrap gap-2 pb-2">
       <Button
         onclick={() => {
           openDialog(ImportEntriesFromQRCodeDialog, {
-            surveyRecord,
+            surveyRecord: data.surveyRecord,
             fields,
             onimport: refresh,
           });
@@ -259,7 +265,7 @@
       <Button
         onclick={() => {
           openDialog(ImportEntriesFromFileDialog, {
-            surveyRecord,
+            surveyRecord: data.surveyRecord,
             fields,
             onimport: refresh,
           });
@@ -297,7 +303,7 @@
           </select>
         </label>
 
-        {#if surveyRecord.type == "match"}
+        {#if data.surveyType == "match"}
           <label class="flex grow flex-col">
             Match
             <select
@@ -339,7 +345,7 @@
           </select>
         </label>
 
-        {#if surveyRecord.type == "match" && surveyRecord.matches.length}
+        {#if data.surveyType == "match" && data.surveyRecord.matches.length}
           <label class="flex grow flex-col">
             Target
             <select
@@ -361,7 +367,7 @@
           <Button
             onclick={() => {
               openDialog(ExportEntriesDialog, {
-                surveyRecord,
+                surveyRecord: data.surveyRecord,
                 filteredEntries,
                 type: "qrcode",
                 onexport: refresh,
@@ -378,7 +384,7 @@
           <Button
             onclick={() => {
               openDialog(ExportEntriesDialog, {
-                surveyRecord,
+                surveyRecord: data.surveyRecord,
                 filteredEntries,
                 type: "file",
                 onexport: refresh,
@@ -410,11 +416,11 @@
 
     <small>
       {#if filtersApplied}
-        {filteredEntries.length} / {entryRecords.length}
+        {filteredEntries.length} / {data.entryRecords.length}
         - {filtersApplied}
         {filtersApplied == 1 ? "filter" : "filters"}
       {:else}
-        {entryRecords.length} {entryRecords.length == 1 ? "entry" : "entries"}
+        {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
       {/if}
     </small>
     <small>Sorting by {sortBy}</small>
@@ -422,11 +428,11 @@
     <div
       bind:this={dataGrid}
       class="grid gap-2 pt-1"
-      style="grid-template-columns: repeat({surveyRecord.type == 'match' ? 4 : 2}, min-content) auto;"
+      style="grid-template-columns: repeat({data.surveyType == 'match' ? 4 : 2}, min-content) auto;"
     >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
         <Button onclick={() => (sortBy = "team")} class="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
-        {#if surveyRecord.type == "match"}
+        {#if data.surveyType == "match"}
           <Button onclick={() => (sortBy = "match")} class="font-{sortBy == 'match' ? 'bold' : 'light'}">Match</Button>
           <Button onclick={() => (sortBy = "absent")} class="font-{sortBy == 'absent' ? 'bold' : 'light'}">
             Absent
@@ -441,8 +447,8 @@
         <Button
           onclick={() => {
             openDialog(ViewEntryDialog, {
-              surveyRecord,
-              fieldRecords,
+              surveyRecord: data.surveyRecord,
+              fieldRecords: data.fieldRecords,
               entryRecord: entry,
               onchange: refresh,
             });

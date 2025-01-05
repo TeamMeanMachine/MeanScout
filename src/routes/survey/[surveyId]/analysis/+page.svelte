@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ExpressionAsExpressionInput } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
@@ -8,24 +9,20 @@
   import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import { getDetailedSingleFields } from "$lib/field";
   import { modeStore } from "$lib/settings";
-  import type { MatchSurvey } from "$lib/survey";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<MatchEntry>[];
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
-  for (const entry of entryRecords) {
+  for (const entry of data.entryRecords) {
     if (entry.team in entriesByTeam) {
       entriesByTeam[entry.team] = [...entriesByTeam[entry.team], entry];
     } else {
@@ -34,22 +31,31 @@
   }
 
   let usedExpressionNames = $derived([
-    ...surveyRecord.expressions
+    ...data.surveyRecord.expressions
       .flatMap((e) => e.inputs)
       .filter((input): input is ExpressionAsExpressionInput => input.from == "expression")
       .map((input) => input.expressionName),
-    ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
+    ...data.surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
 </script>
+
+<Header
+  title="Analysis - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Analysis" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
 
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Pick Lists</h2>
 
-  {#if surveyRecord.expressions.length}
+  {#if data.surveyRecord.expressions.length}
     {#if $modeStore == "admin"}
       <Button
         onclick={() => {
-          openDialog(NewPickListDialog, { surveyRecord });
+          openDialog(NewPickListDialog, { surveyRecord: data.surveyRecord });
         }}
       >
         <Icon name="plus" />
@@ -57,11 +63,11 @@
       </Button>
     {/if}
 
-    {#each surveyRecord.pickLists as pickList, index}
+    {#each data.surveyRecord.pickLists as pickList, index}
       <Button
         onclick={() => {
           openDialog(ViewPickListDialog, {
-            surveyRecord,
+            surveyRecord: data.surveyRecord,
             fields,
             entriesByTeam,
             pickList,
@@ -85,7 +91,7 @@
     <div class="flex flex-col gap-2">
       <Button
         onclick={() => {
-          openDialog(NewExpressionDialog, { surveyRecord, fields });
+          openDialog(NewExpressionDialog, { surveyRecord: data.surveyRecord, fields });
         }}
       >
         <Icon name="plus" />
@@ -94,11 +100,11 @@
     </div>
   {/if}
 
-  {#each surveyRecord.expressions as expression, index}
+  {#each data.surveyRecord.expressions as expression, index}
     <Button
       onclick={() => {
         openDialog(ViewExpressionDialog, {
-          surveyRecord,
+          surveyRecord: data.surveyRecord,
           fields,
           entriesByTeam,
           expression,

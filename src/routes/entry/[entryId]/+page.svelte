@@ -1,44 +1,52 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import type { Entry } from "$lib/entry";
-  import { getDetailedNestedFields, getDetailedSingleFields, type Field } from "$lib/field";
-  import type { Survey } from "$lib/survey";
+  import { getDetailedNestedFields, getDetailedSingleFields } from "$lib/field";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecord,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecord: IDBRecord<Entry>;
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
+  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
+    data.surveyRecord.fieldIds,
+    data.fieldRecords,
+  );
 
   function onchange() {
-    entryRecord.modified = new Date();
-    surveyRecord.modified = new Date();
+    data.entryRecord.modified = new Date();
+    data.surveyRecord.modified = new Date();
   }
 </script>
 
+<Header
+  title="Draft - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Draft" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
+
 <div class="flex flex-col gap-4">
   <div class="flex flex-col">
-    <span><small>Team</small> <strong>{entryRecord.team}</strong></span>
-    {#if entryRecord.type == "match"}
-      <span><small>Match</small> <strong>{entryRecord.match}</strong></span>
+    <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
+    {#if data.entryRecord.type == "match"}
+      <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
     {/if}
   </div>
 
   <div class="flex flex-col flex-wrap gap-3">
-    {#each surveyRecord.fieldIds as fieldId}
+    {#each data.surveyRecord.fieldIds as fieldId}
       {@const fieldDetails = detailedFields.get(fieldId)}
 
       {#if fieldDetails?.type == "group"}
@@ -52,7 +60,7 @@
               {#if innerFieldDetails}
                 <FieldValueEditor
                   field={innerFieldDetails.field}
-                  bind:value={entryRecord.values[innerFieldDetails.valueIndex]}
+                  bind:value={data.entryRecord.values[innerFieldDetails.valueIndex]}
                   {onchange}
                 />
               {/if}
@@ -62,7 +70,7 @@
       {:else if fieldDetails}
         <FieldValueEditor
           field={fieldDetails.field}
-          bind:value={entryRecord.values[fieldDetails.valueIndex]}
+          bind:value={data.entryRecord.values[fieldDetails.valueIndex]}
           {onchange}
         />
       {/if}
@@ -74,11 +82,11 @@
   <Button
     onclick={() =>
       openDialog(SubmitEntryDialog, {
-        surveyRecord,
+        surveyRecord: data.surveyRecord,
         fields,
-        entryRecord,
+        entryRecord: data.entryRecord,
         onexport: () => {
-          location.hash = `/survey/${surveyRecord.id}`;
+          location.hash = `/survey/${data.surveyRecord.id}`;
         },
       })}
   >
@@ -89,13 +97,13 @@
   <Button
     onclick={() =>
       openDialog(DeleteEntryDialog, {
-        surveyRecord,
-        entryRecord,
+        surveyRecord: data.surveyRecord,
+        entryRecord: data.entryRecord,
         ondelete: () => {
-          if (entryRecord.status == "draft") {
-            location.hash = `/survey/${surveyRecord.id}`;
+          if (data.entryRecord.status == "draft") {
+            location.hash = `/survey/${data.surveyRecord.id}`;
           } else {
-            location.hash = `/survey/${surveyRecord.id}/entries`;
+            location.hash = `/survey/${data.surveyRecord.id}/entries`;
           }
         },
       })}

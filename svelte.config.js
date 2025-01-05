@@ -19,6 +19,12 @@ const config = {
     csrf: {
       checkOrigin: false,
     },
+    output: {
+      bundleStrategy: "single",
+    },
+    router: {
+      type: "hash",
+    },
   },
 };
 

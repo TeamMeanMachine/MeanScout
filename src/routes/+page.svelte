@@ -1,50 +1,79 @@
 <script lang="ts">
-  import DialogBox from "$lib/components/DialogBox.svelte";
-  import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
-  import Router from "$lib/components/Router.svelte";
-  import { subscribeDialog, type DialogState } from "$lib/dialog";
-  import { initIDB } from "$lib/idb";
-  import "../app.css";
+  import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import { openDialog } from "$lib/dialog";
+  import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
+  import ImportSurveyFromQrCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
+  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
+  import { modeStore } from "$lib/settings";
+  import type { PageData } from "./$types";
 
-  if (navigator.storage) {
-    navigator.storage
-      .persisted()
-      .then((isPersisted) => {
-        if (isPersisted) return;
-        navigator.storage.persist().catch(console.error);
-      })
-      .catch(console.error);
-  }
-
-  let dialogStack = $state<DialogState[]>([]);
-  subscribeDialog((state) => {
-    dialogStack = state;
-  });
-
-  let idbError = $state<undefined | false | string>();
-  initIDB((error) => {
-    idbError = error ?? false;
-  });
+  let {
+    data,
+  }: {
+    data: PageData;
+  } = $props();
 </script>
 
-{#each dialogStack as { component, props }}
-  <DialogBox {component} {props} />
-{/each}
+<Header />
 
-{#if idbError}
-  <header class="flex min-h-11 items-center gap-3">
-    <img src="./logo.svg" alt="" width="25" height="25" />
-    <h1 class="font-bold">MeanScout</h1>
-  </header>
-  <div class="flex flex-col gap-3">
-    <h2>Error</h2>
-    <p>
-      MeanScout was unable to access IndexedDB. Double check that your device/browser supports it, and that you haven't
-      removed the permission to access it.
-    </p>
-    <p>Error: {idbError}</p>
+{#if data.surveys.length}
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Surveys</h2>
+    {#each data.surveys.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
+      <Anchor route="survey/{survey.id}">
+        <div class="grow">{survey.name}</div>
+        <Icon name="arrow-right" />
+      </Anchor>
+    {/each}
   </div>
-{:else if idbError == false}
-  <LaunchUploadHandler />
-  <Router />
 {/if}
+
+<div class="flex flex-col gap-2">
+  <h2 class="font-bold">Options</h2>
+
+  {#if $modeStore == "admin"}
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => openDialog(ImportSurveyFromQrCodeDialog, {})} class="grow basis-0">
+        <Icon name="qrcode" />
+        <div class="flex flex-col">
+          Import
+          <small>QR code</small>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} class="grow basis-0">
+        <Icon name="paste" />
+        <div class="flex flex-col">
+          Import
+          <small>File</small>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
+        <Icon name="plus" />
+        <div class="flex flex-col">
+          Create
+          <small>New</small>
+        </div>
+      </Button>
+    </div>
+  {/if}
+
+  <Anchor route="settings">
+    <Icon name="gears" />
+    <div class="flex grow flex-col">
+      Settings
+      <small>Configure MeanScout</small>
+    </div>
+    <Icon name="arrow-right" />
+  </Anchor>
+  <Anchor route="about">
+    <Icon name="info-circle" />
+    <div class="flex grow flex-col">
+      About
+      <small>Guides, Info</small>
+    </div>
+    <Icon name="arrow-right" />
+  </Anchor>
+</div>
