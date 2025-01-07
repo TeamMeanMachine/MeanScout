@@ -43,7 +43,7 @@
     };
 
     editRequest.onsuccess = () => {
-      surveyRecord.modified = new Date();
+      objectStore("surveys", "readwrite").put({ ...$state.snapshot(surveyRecord), modified: new Date() });
       location.hash = `/entry/${entry.id}`;
     };
   }

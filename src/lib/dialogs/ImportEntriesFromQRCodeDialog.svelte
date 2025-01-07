@@ -15,7 +15,7 @@
   }: {
     surveyRecord: IDBRecord<Survey>;
     fields: DetailedSingleField[];
-    onimport?: () => void;
+    onimport: () => void;
   } = $props();
 
   let importedEntries = $state<Entry[]>([]);
@@ -39,8 +39,7 @@
       }
 
       addTransaction.oncomplete = () => {
-        surveyRecord.modified = new Date();
-        onimport?.();
+        onimport();
         closeDialog();
       };
     },

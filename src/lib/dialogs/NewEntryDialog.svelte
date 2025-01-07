@@ -12,15 +12,15 @@
   let {
     surveyRecord,
     fields,
-    entryRecords,
     prefilledTeam,
     prefilledMatch,
+    oncreate,
   }: {
     surveyRecord: IDBRecord<Survey>;
     fields: DetailedSingleField[];
-    entryRecords: IDBRecord<Entry>[];
     prefilledTeam: string;
     prefilledMatch: number;
+    oncreate: (entry: IDBRecord<Entry>) => void;
   } = $props();
 
   const defaultValues = fields.map((field) => {
@@ -107,10 +107,8 @@
           return;
         }
 
-        surveyRecord.modified = new Date();
-
         if (absent) {
-          entryRecords.push({ ...entry, id: id as number });
+          oncreate({ ...entry, id: id as number });
           closeDialog();
         } else {
           location.hash = `/entry/${id}`;

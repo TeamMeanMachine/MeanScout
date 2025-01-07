@@ -12,7 +12,7 @@
   }: {
     surveyRecord: IDBRecord<Survey>;
     fields: DetailedSingleField[];
-    onimport?: () => void;
+    onimport: () => void;
   } = $props();
 
   let files = $state<FileList | undefined>();
@@ -37,8 +37,7 @@
       }
 
       addTransaction.oncomplete = () => {
-        surveyRecord.modified = new Date();
-        onimport?.();
+        onimport();
         closeDialog();
       };
     },

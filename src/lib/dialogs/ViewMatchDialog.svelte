@@ -5,30 +5,30 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import { getDetailedSingleFields } from "$lib/field";
   import { modeStore } from "$lib/settings";
-  import type { MatchSurvey } from "$lib/survey";
+  import type { PageData } from "../../routes/survey/[surveyId]/matches/$types";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import EditMatchDialog from "./EditMatchDialog.svelte";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
     match,
     canEdit,
+    onupdate,
+    ondelete,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<MatchEntry>[];
+    data: PageData;
     match: Match;
     canEdit?: boolean;
+    onupdate?: (match: Match) => void;
+    ondelete?: () => void;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const entriesByTeam = entryRecords.reduce(
+  const entriesByTeam = data.entryRecords.reduce(
     (acc, entry) => {
       if (entry.type != "match") return acc;
 
@@ -46,14 +46,19 @@
   let teamInfos = $derived(getTeamInfosFromMatch(match));
 
   function getTeamInfosFromMatch(match: Match) {
-    const ranksPerPickList = surveyRecord.pickLists.map((pickList) => {
+    const ranksPerPickList = data.surveyRecord.pickLists.map((pickList) => {
       const pickListData = pickList.weights.reduce(
         (acc, weight) => {
-          if (surveyRecord.type != "match") {
+          if (data.surveyRecord.type != "match") {
             return acc;
           }
 
-          const teamData = calculateTeamData(weight.expressionName, surveyRecord.expressions, entriesByTeam, fields);
+          const teamData = calculateTeamData(
+            weight.expressionName,
+            data.surveyRecord.expressions,
+            entriesByTeam,
+            fields,
+          );
           const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
           for (const team in normalizedTeamData) {
             if (team in acc) {
@@ -86,13 +91,13 @@
     const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
 
     const teamInfos: TeamInfo[] = teams.map((team) => {
-      const matchingEntries = entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
+      const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
       const ranks = ranksPerPickList.map((pickList) => pickList[team]);
       return {
         team,
         entryCount: matchingEntries.length,
         matchCount: 0,
-        isCustom: surveyRecord.teams.includes(team),
+        isCustom: data.surveyRecord.teams.includes(team),
         pickListRanks: ranksPerPickList.length ? ranks : undefined,
       };
     });
@@ -121,10 +126,14 @@
 
 {#snippet teamRow(team: string, alliance: string)}
   {@const teamInfo = teamInfos.find((teamInfo) => teamInfo.team == team)}
-  {@const entry = entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
+  {@const entry = data.entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
 
   {#if teamInfo}
-    {@const onclick = () => openDialog(ViewTeamDialog, { surveyRecord, fieldRecords, entryRecords, teamInfo })}
+    {@const onclick = () =>
+      openDialog(ViewTeamDialog, {
+        data,
+        teamInfo,
+      })}
 
     <tr
       tabindex="0"
@@ -165,7 +174,7 @@
       <tr>
         <th class="w-0 p-2">Team</th>
         {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
-          {#each surveyRecord.pickLists as pickList}
+          {#each data.surveyRecord.pickLists as pickList}
             <th class="w-0 p-2">{pickList.name}</th>
           {/each}
         {/if}
@@ -185,11 +194,29 @@
 </div>
 
 {#if $modeStore == "admin" && canEdit}
-  <Button onclick={() => openDialog(EditMatchDialog, { surveyRecord, match })}>
+  <Button
+    onclick={() =>
+      openDialog(EditMatchDialog, {
+        match,
+        onupdate(changes) {
+          match = changes;
+          onupdate?.(changes);
+        },
+      })}
+  >
     <Icon name="pen" />
     Edit
   </Button>
-  <Button onclick={() => openDialog(DeleteMatchDialog, { surveyRecord, number: match.number, ondelete: closeDialog })}>
+  <Button
+    onclick={() =>
+      openDialog(DeleteMatchDialog, {
+        number: match.number,
+        ondelete() {
+          ondelete?.();
+          closeDialog();
+        },
+      })}
+  >
     <Icon name="trash" />
     Delete
   </Button>

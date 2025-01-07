@@ -2,16 +2,13 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
     entryRecord,
     ondelete,
   }: {
-    surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
-    ondelete?: (() => void) | undefined;
+    ondelete: () => void;
   } = $props();
 
   let error = $state("");
@@ -24,8 +21,7 @@
       };
 
       deleteRequest.onsuccess = () => {
-        surveyRecord.modified = new Date();
-        ondelete?.();
+        ondelete();
         closeDialog();
       };
     },

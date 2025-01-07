@@ -1,29 +1,19 @@
 <script lang="ts">
   import type { DialogExports } from "$lib/dialog";
-  import { objectStore, transaction } from "$lib/idb";
+  import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
+    entryCount,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    entryCount: number;
   } = $props();
 
-  let entryCount = $state(0);
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
-    onopen(open) {
-      const entryCountRequest = objectStore("entries").index("surveyId").count(surveyRecord.id);
-      entryCountRequest.onerror = () => open();
-
-      entryCountRequest.onsuccess = () => {
-        if (typeof entryCountRequest.result == "number") {
-          entryCount = entryCountRequest.result;
-        }
-        open();
-      };
-    },
     onconfirm() {
       const deleteTransaction = transaction(["surveys", "fields", "entries"], "readwrite");
       deleteTransaction.onabort = () => {

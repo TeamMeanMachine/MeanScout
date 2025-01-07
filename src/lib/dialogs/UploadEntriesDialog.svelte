@@ -57,6 +57,7 @@
       };
 
       addTransaction.oncomplete = () => {
+        objectStore("surveys", "readwrite").put({ ...$state.snapshot(selectedSurveyRecord), modified: new Date() });
         closeDialog();
       };
 

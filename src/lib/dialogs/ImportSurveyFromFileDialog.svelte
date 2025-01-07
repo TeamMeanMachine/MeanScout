@@ -38,14 +38,14 @@
       const addRequest = surveyStore.add($state.snapshot(importedSurvey));
 
       addRequest.onsuccess = async () => {
-        const surveyId = addRequest.result as number;
+        const id = addRequest.result as number;
 
         if (importedFields?.size && importedSurvey?.fieldIds.length) {
           const newIds: number[] = [];
 
           for (const fieldId of importedSurvey.fieldIds) {
             try {
-              const addedFieldId = await addField(fieldStore, importedFields, fieldId, surveyId);
+              const addedFieldId = await addField(fieldStore, importedFields, fieldId, id);
               newIds.push(addedFieldId);
             } catch (error) {
               importTransaction.abort();
@@ -54,10 +54,10 @@
           }
 
           importedSurvey.fieldIds = newIds;
-          surveyStore.put({ ...importedSurvey, surveyId });
+          surveyStore.put({ ...$state.snapshot(importedSurvey), id });
         }
 
-        location.hash = `/survey/${surveyId}`;
+        location.hash = `/survey/${id}`;
       };
     },
   };

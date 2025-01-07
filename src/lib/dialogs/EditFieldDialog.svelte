@@ -15,36 +15,36 @@
     surveyRecord: IDBRecord<Survey>;
     field: IDBRecord<Field>;
     parentField?: IDBRecord<GroupField> | undefined;
-    onupdate?: () => void;
+    onupdate: () => void;
   } = $props();
 
+  let changes = $state(structuredClone($state.snapshot(field)));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      field.name = field.name.trim();
+      changes.name = changes.name.trim();
 
-      if (!field.name) {
+      if (!changes.name) {
         error = "Name can't be empty";
         return;
       }
 
-      if (field.type == "select") {
-        if (field.values.length == 0) {
+      if (changes.type == "select") {
+        if (changes.values.length == 0) {
           error = "Select must have values";
           return;
         }
 
-        if (field.values.some((value) => value.trim().length == 0)) {
+        if (changes.values.some((value) => value.trim().length == 0)) {
           error = "Don't use an empty value";
           return;
         }
       }
 
-      const putRequest = objectStore("fields", "readwrite").put($state.snapshot(field));
+      const putRequest = objectStore("fields", "readwrite").put($state.snapshot(changes));
       putRequest.onsuccess = () => {
-        surveyRecord.modified = new Date();
-        onupdate?.();
+        onupdate();
         closeDialog();
       };
 
@@ -57,10 +57,10 @@
   function changeType(to: SingleFieldType) {
     switch (to) {
       case "select":
-        field = {
-          id: field.id,
+        changes = {
+          id: changes.id,
           surveyId: surveyRecord.id,
-          name: field.name,
+          name: changes.name,
           type: to,
           values: [],
         };
@@ -70,10 +70,10 @@
       case "text":
       case "rating":
       case "timer":
-        field = {
-          id: field.id,
+        changes = {
+          id: changes.id,
           surveyId: surveyRecord.id,
-          name: field.name,
+          name: changes.name,
           type: to,
         };
         break;
@@ -84,26 +84,26 @@
   }
 
   function toggleAllowNegative() {
-    if (field.type == "number") {
-      field.allowNegative = !field.allowNegative;
+    if (changes.type == "number") {
+      changes.allowNegative = !changes.allowNegative;
     }
   }
 
   function deleteSelectValue(index: number) {
-    if (field.type == "select") {
-      field.values = field.values.filter((_, i) => i != index);
+    if (changes.type == "select") {
+      changes.values = changes.values.filter((_, i) => i != index);
     }
   }
 
   function newSelectValue() {
-    if (field.type == "select") {
-      field.values = [...field.values, ""];
+    if (changes.type == "select") {
+      changes.values = [...changes.values, ""];
     }
   }
 
   function toggleLong() {
-    if (field.type == "text") {
-      field.long = !field.long;
+    if (changes.type == "text") {
+      changes.long = !changes.long;
     }
   }
 </script>
@@ -113,19 +113,19 @@
   {#if parentField}
     {parentField.name}
   {/if}
-  {field.type == "group" ? "group" : "field"}
+  {changes.type == "group" ? "group" : "field"}
 </span>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={field.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
-{#if field.type != "group"}
+{#if changes.type != "group"}
   <label class="flex flex-col">
     Type
     <select
-      value={field.type}
+      value={changes.type}
       onchange={(e) => changeType(e.currentTarget.value as SingleFieldType)}
       class="bg-neutral-800 p-2 capitalize text-theme"
     >
@@ -135,20 +135,20 @@
     </select>
   </label>
 
-  {#if field.type == "number"}
+  {#if changes.type == "number"}
     <Button onclick={toggleAllowNegative}>
-      {#if field.allowNegative}
+      {#if changes.allowNegative}
         <Icon name="square-check" />
       {:else}
         <Icon style="regular" name="square" />
       {/if}
       Allow negative
     </Button>
-  {:else if field.type == "select"}
+  {:else if changes.type == "select"}
     Values
-    {#each field.values as _, i}
+    {#each changes.values as _, i}
       <div class="flex gap-2">
-        <input bind:value={field.values[i]} class="grow bg-neutral-800 p-2 text-theme" />
+        <input bind:value={changes.values[i]} class="grow bg-neutral-800 p-2 text-theme" />
         <Button onclick={() => deleteSelectValue(i)}>
           <Icon name="trash" />
         </Button>
@@ -158,9 +158,9 @@
       <Icon name="plus" />
       New value
     </Button>
-  {:else if field.type == "text"}
+  {:else if changes.type == "text"}
     <Button onclick={toggleLong}>
-      {#if field.long}
+      {#if changes.long}
         <Icon name="square-check" />
       {:else}
         <Icon style="regular" name="square" />
@@ -171,7 +171,7 @@
 
   <label class="flex flex-col">
     Tip
-    <input bind:value={field.tip} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={changes.tip} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 

@@ -17,6 +17,8 @@
     index,
     usedExpressionNames,
     canEdit,
+    onupdate,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
@@ -25,6 +27,8 @@
     index: number;
     usedExpressionNames?: string[] | undefined;
     canEdit?: boolean;
+    onupdate?: (expression: Expression) => void;
+    ondelete?: () => void;
   } = $props();
 
   let sortedTeamData = $state<{ team: string; percentage: number; value: number }[]>([]);
@@ -102,7 +106,15 @@
 {#if $modeStore == "admin" && canEdit}
   <Button
     onclick={() => {
-      openDialog(EditExpressionDialog, { surveyRecord, fields, index, onupdate: refresh });
+      openDialog(EditExpressionDialog, {
+        surveyRecord,
+        fields,
+        index,
+        onupdate(expression) {
+          onupdate?.(expression);
+          refresh();
+        },
+      });
     }}
   >
     <Icon name="pen" />
@@ -111,8 +123,7 @@
   {#if !usedExpressionNames?.includes(expression.name)}
     <Button
       onclick={() => {
-        surveyRecord.expressions = surveyRecord.expressions.toSpliced(index, 1);
-        surveyRecord.modified = new Date();
+        ondelete?.();
         closeDialog();
       }}
     >

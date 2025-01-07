@@ -1,14 +1,13 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { MatchSurvey } from "$lib/survey";
 
   let {
-    surveyRecord,
-    match: match,
+    match,
+    onupdate,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
     match: Match;
+    onupdate: (match: Match) => void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(match)));
@@ -16,35 +15,44 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      if (!changes.red1.trim()) {
+      changes.red1 = changes.red1.trim();
+      changes.red2 = changes.red2.trim();
+      changes.red3 = changes.red3.trim();
+      changes.blue1 = changes.blue1.trim();
+      changes.blue2 = changes.blue2.trim();
+      changes.blue3 = changes.blue3.trim();
+
+      if (!changes.red1) {
         error = "invalid value for red 1!";
         return;
       }
-      if (!changes.red2.trim()) {
+
+      if (!changes.red2) {
         error = "invalid value for red 2!";
         return;
       }
-      if (!changes.red3.trim()) {
+
+      if (!changes.red3) {
         error = "invalid value for red 3!";
         return;
       }
 
-      if (!changes.blue1.trim()) {
+      if (!changes.blue1) {
         error = "invalid value for blue 1!";
         return;
       }
-      if (!changes.blue2.trim()) {
+
+      if (!changes.blue2) {
         error = "invalid value for blue 2!";
         return;
       }
-      if (!changes.blue3.trim()) {
+
+      if (!changes.blue3) {
         error = "invalid value for blue 3!";
         return;
       }
 
-      const index = surveyRecord.matches.findIndex((m) => m.number == changes.number);
-      if (index >= 0) surveyRecord.matches[index] = structuredClone($state.snapshot(changes));
-      surveyRecord.modified = new Date();
+      onupdate(changes);
       closeDialog();
     },
   };

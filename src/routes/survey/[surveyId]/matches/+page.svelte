@@ -1,43 +1,63 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
-  import type { MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import { modeStore } from "$lib/settings";
-  import type { MatchSurvey } from "$lib/survey";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<MatchEntry>[];
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
-
   let upcomingMatches = $derived(
-    surveyRecord.matches
-      .filter((match) => !entryRecords.find((e) => e.status != "draft" && e.match == match.number))
+    data.surveyRecord.matches
+      .filter((match) => !data.entryRecords.find((e) => e.status != "draft" && e.match == match.number))
       .toSorted((a, b) => a.number - b.number),
   );
 
   let previousMatches = $derived(
-    surveyRecord.matches
-      .filter((match) => entryRecords.find((e) => e.status != "draft" && e.match == match.number))
+    data.surveyRecord.matches
+      .filter((match) => data.entryRecords.find((e) => e.status != "draft" && e.match == match.number))
       .toSorted((a, b) => b.number - a.number),
   );
 </script>
 
+<Header
+  title="Matches - {data.surveyRecord.name} - MeanScout"
+  heading={[
+    { type: "sm", text: data.surveyRecord.name },
+    { type: "h1", text: "Matches" },
+  ]}
+  backLink="survey/{data.surveyRecord.id}"
+/>
+
 <div class="flex flex-col gap-2">
   {#if $modeStore == "admin"}
-    <Button onclick={() => openDialog(NewMatchDialog, { surveyRecord })} class="mb-2">
+    <Button
+      onclick={() =>
+        openDialog(NewMatchDialog, {
+          surveyRecord: data.surveyRecord,
+          oncreate(match) {
+            data = {
+              ...data,
+              surveyRecord: {
+                ...data.surveyRecord,
+                matches: [...data.surveyRecord.matches, match],
+                modified: new Date(),
+              },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+        })}
+      class="mb-2"
+    >
       <Icon name="plus" />
       New match
     </Button>
@@ -46,7 +66,33 @@
   {#if upcomingMatches.length || previousMatches.length}
     {#snippet teamRow(match: Match)}
       {@const onclick = () =>
-        openDialog(ViewMatchDialog, { surveyRecord, fieldRecords, entryRecords, match, canEdit: true })}
+        openDialog(ViewMatchDialog, {
+          data,
+          match,
+          canEdit: true,
+          onupdate(match: Match) {
+            const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
+            const index = matches.findIndex((m) => m.number == match.number);
+            if (index >= 0) matches[index] = match;
+
+            data = {
+              ...data,
+              surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+          ondelete() {
+            data = {
+              ...data,
+              surveyRecord: {
+                ...data.surveyRecord,
+                matches: data.surveyRecord.matches.filter((m) => m.number != match.number),
+                modified: new Date(),
+              },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+        })}
 
       <tr
         tabindex="0"

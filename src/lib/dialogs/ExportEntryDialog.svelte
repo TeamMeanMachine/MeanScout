@@ -15,7 +15,7 @@
   }: {
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
-    onexport?: (entry: IDBRecord<Entry>) => void;
+    onexport: (entry: IDBRecord<Entry>) => void;
   } = $props();
 
   const exportFileName = createEntryFileName(surveyRecord, entryRecord);
@@ -32,13 +32,13 @@
 
       entry.status = "exported";
 
-      const request = objectStore("entries", "readwrite").put(entry);
+      const request = objectStore("entries", "readwrite").put($state.snapshot(entry));
       request.onerror = () => {
         error = `Could not update entry status`;
       };
 
       request.onsuccess = () => {
-        onexport?.(entry);
+        onexport(entry);
         closeDialog();
       };
     },

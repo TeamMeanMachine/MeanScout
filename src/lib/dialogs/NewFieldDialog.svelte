@@ -10,12 +10,12 @@
     surveyRecord,
     type = "field",
     parentField,
-    onupdate,
+    oncreate,
   }: {
     surveyRecord: IDBRecord<Survey>;
     type?: "field" | "group";
     parentField?: IDBRecord<GroupField> | undefined;
-    onupdate?: () => void;
+    oncreate: (id: number) => void;
   } = $props();
 
   let field = $state<Field>(
@@ -53,22 +53,24 @@
         error = "Could not create new field";
       };
 
-      addTransaction.oncomplete = () => {
-        surveyRecord.modified = new Date();
-        onupdate?.();
-        closeDialog();
-      };
-
       const addRequest = fieldStore.add($state.snapshot(field));
 
       addRequest.onsuccess = () => {
         const id = addRequest.result as number;
 
         if (parentField == undefined) {
-          surveyRecord.fieldIds.push(id);
+          oncreate(id);
+          closeDialog();
         } else {
-          const updatedParentField = { ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, id] };
-          fieldStore.put(updatedParentField);
+          const updatedParentField = {
+            ...$state.snapshot(parentField),
+            fieldIds: [...parentField.fieldIds, id],
+          };
+
+          fieldStore.put(updatedParentField).onsuccess = () => {
+            oncreate(id);
+            closeDialog();
+          };
         }
       };
     },

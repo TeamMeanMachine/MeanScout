@@ -1,8 +1,11 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
 
   let tab = $state<"guides" | "info">("guides");
 </script>
+
+<Header title="About - MeanScout" heading="About MeanScout" backLink="" />
 
 <div class="flex flex-wrap gap-2">
   <Button onclick={() => (tab = "guides")} class={tab == "guides" ? "font-bold" : "font-light"}>Guides</Button>

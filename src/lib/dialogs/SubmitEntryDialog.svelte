@@ -6,18 +6,15 @@
   import { entryToCSV, type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
     fields,
     entryRecord,
     onexport,
   }: {
-    surveyRecord: IDBRecord<Survey>;
     fields: DetailedSingleField[];
     entryRecord: IDBRecord<Entry>;
-    onexport?: () => void;
+    onexport: () => void;
   } = $props();
 
   let isExporting = $state(false);
@@ -55,8 +52,7 @@
       };
 
       submitRequest.onsuccess = () => {
-        surveyRecord.modified = new Date();
-        onexport?.();
+        onexport();
         closeDialog();
       };
     },

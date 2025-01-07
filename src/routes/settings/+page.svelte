@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { cameraStore, modes, modeStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
@@ -68,6 +69,8 @@
     tbaAuthKeyInput = $tbaAuthKeyStore;
   }
 </script>
+
+<Header title="Settings - MeanScout" heading="Settings" backLink="" />
 
 <label class="flex flex-wrap items-center gap-2">
   <Icon name={$modeStore == "admin" ? "lock-open" : "lock"} />

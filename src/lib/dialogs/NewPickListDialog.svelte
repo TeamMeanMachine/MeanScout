@@ -7,8 +7,10 @@
 
   let {
     surveyRecord,
+    oncreate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    oncreate: (pickList: PickList) => void;
   } = $props();
 
   let pickList = $state<PickList>({ name: "New pick list", weights: [] });
@@ -17,8 +19,7 @@
   export const { onconfirm }: DialogExports = {
     onconfirm() {
       pickList.weights = pickList.weights.filter((weight) => weight.percentage);
-      surveyRecord.pickLists = [...surveyRecord.pickLists, structuredClone($state.snapshot(pickList))];
-      surveyRecord.modified = new Date();
+      oncreate(pickList);
       closeDialog();
     },
   };

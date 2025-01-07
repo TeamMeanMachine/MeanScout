@@ -2,62 +2,68 @@
   import type { Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
-  import type { Entry, MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields, type Field } from "$lib/field";
+  import type { MatchEntry } from "$lib/entry";
+  import { getDetailedSingleFields } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import { modeStore, targetStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
+  import type { MatchSurvey } from "$lib/survey";
+  import type { PageData } from "./$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<Entry>[];
+    data: PageData;
   } = $props();
 
-  const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const drafts = entryRecords
-    .filter((entry) => entry.status == "draft")
-    .toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
-
-  const entriesByTeam = entryRecords.reduce(
-    (acc, entry) => {
-      if (entry.type != "match") return acc;
-
-      if (entry.team in acc) {
-        acc[entry.team].push(entry);
-      } else {
-        acc[entry.team] = [entry];
-      }
-
-      return acc;
-    },
-    {} as Record<string, IDBRecord<MatchEntry>[]>,
+  let drafts = $derived(
+    data.entryRecords
+      .filter((entry) => entry.status == "draft")
+      .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
   );
 
-  const prefilledMatch = getPrefilledMatch();
-  const prefilledTeam = getPrefilledTeam(prefilledMatch);
+  let entriesByTeam = $derived(
+    data.entryRecords.reduce(
+      (acc, entry) => {
+        if (entry.type != "match") return acc;
+
+        if (entry.team in acc) {
+          acc[entry.team].push(entry);
+        } else {
+          acc[entry.team] = [entry];
+        }
+
+        return acc;
+      },
+      {} as Record<string, IDBRecord<MatchEntry>[]>,
+    ),
+  );
+
+  let prefilledMatch = $derived.by(() => {
+    data;
+    return getPrefilledMatch();
+  });
+  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
 
   function getPrefilledMatch() {
-    if (surveyRecord.type != "match") return 1;
+    if (data.surveyType != "match") return 1;
 
-    const recordedMatches = entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+    const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
     return 1 + Math.max(...recordedMatches, 0);
   }
 
   function getPrefilledTeam(matchValue: number) {
-    if (surveyRecord.type != "match") return "";
+    if (data.surveyType != "match") return "";
 
-    const matchData = surveyRecord.matches.find((match) => match.number == matchValue);
+    const matchData = data.surveyRecord.matches.find((match) => match.number == matchValue);
     if (!matchData) return "";
 
     switch ($targetStore) {
@@ -79,12 +85,28 @@
   }
 </script>
 
+<Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} backLink="" />
+
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Entries</h2>
 
   <Button
     onclick={() => {
-      openDialog(NewEntryDialog, { surveyRecord, fields, entryRecords, prefilledTeam, prefilledMatch });
+      openDialog(NewEntryDialog, {
+        surveyRecord: data.surveyRecord,
+        fields,
+        prefilledTeam,
+        prefilledMatch,
+        oncreate(entry) {
+          data = {
+            ...data,
+            surveyRecord: { ...data.surveyRecord, modified: new Date() },
+            entryRecords: [...data.entryRecords, entry],
+          } as PageData;
+
+          objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+        },
+      });
     }}
   >
     <Icon name="plus" />
@@ -92,7 +114,7 @@
       {#if prefilledTeam.length}
         <span><small>Team</small> {prefilledTeam}</span>
       {/if}
-      {#if surveyRecord.type == "match" && prefilledMatch}
+      {#if data.surveyType == "match" && prefilledMatch}
         <span><small>Match</small> {prefilledMatch}</span>
       {/if}
     </div>
@@ -110,42 +132,46 @@
     </Anchor>
   {/each}
 
-  <Anchor route="survey/{surveyRecord.id}/entries">
+  <Anchor route="survey/{data.surveyRecord.id}/entries">
     <Icon name="list-ol" />
     <div class="flex grow flex-col">
       Entries
-      <small>{entryRecords.length - drafts.length} completed</small>
+      <small>{data.entryRecords.length - drafts.length} completed</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>
 </div>
 
-{#if surveyRecord.type == "match"}
-  {@const matchesScouted = surveyRecord.matches.filter((match) => {
+{#if data.surveyType == "match"}
+  {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
     const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-    return entryRecords.find(
+    return data.entryRecords.find(
       (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
     );
   }).length}
 
-  {@const upcomingMatches = surveyRecord.matches
-    .filter((match) => !entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number))
+  {@const upcomingMatches = data.surveyRecord.matches
+    .filter(
+      (match) => !data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
+    )
     .toSorted((a, b) => a.number - b.number)
     .slice(0, 3)}
 
-  {@const previousMatches = surveyRecord.matches
-    .filter((match) => entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number))
+  {@const previousMatches = data.surveyRecord.matches
+    .filter((match) =>
+      data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
+    )
     .toSorted((a, b) => b.number - a.number)
     .slice(0, 3)}
 
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Analysis</h2>
 
-    {#each surveyRecord.pickLists as pickList, index}
+    {#each data.surveyRecord.pickLists as pickList, index}
       <Button
         onclick={() =>
           openDialog(ViewPickListDialog, {
-            surveyRecord,
+            surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
             fields,
             entriesByTeam,
             pickList,
@@ -156,14 +182,14 @@
       </Button>
     {/each}
 
-    <Anchor route="survey/{surveyRecord.id}/analysis">
+    <Anchor route="survey/{data.surveyRecord.id}/analysis">
       <Icon name="chart-simple" />
       <div class="flex grow flex-col">
         Analysis
         <small>
-          {surveyRecord.pickLists.length} pick {surveyRecord.pickLists.length == 1 ? "list" : "lists"},
-          {surveyRecord.expressions.length}
-          {surveyRecord.expressions.length == 1 ? "expression" : "expressions"}
+          {data.surveyRecord.pickLists.length} pick {data.surveyRecord.pickLists.length == 1 ? "list" : "lists"},
+          {data.surveyRecord.expressions.length}
+          {data.surveyRecord.expressions.length == 1 ? "expression" : "expressions"}
         </small>
       </div>
       <Icon name="arrow-right" />
@@ -178,9 +204,7 @@
         {#snippet teamRow(match: Match)}
           {@const onclick = () => {
             openDialog(ViewMatchDialog, {
-              surveyRecord,
-              fieldRecords,
-              entryRecords: entryRecords as IDBRecord<MatchEntry>[],
+              data: data as any,
               match,
             });
           }}
@@ -242,13 +266,13 @@
       </div>
     {/if}
 
-    <Anchor route="survey/{surveyRecord.id}/matches">
+    <Anchor route="survey/{data.surveyRecord.id}/matches">
       <Icon name="table-list" />
       <div class="flex grow flex-col">
         Matches
         <small>
           {matchesScouted} scouted,
-          {surveyRecord.matches.length} total
+          {data.surveyRecord.matches.length} total
         </small>
       </div>
       <Icon name="arrow-right" />
@@ -259,14 +283,14 @@
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Teams</h2>
 
-  <Anchor route="survey/{surveyRecord.id}/teams">
+  <Anchor route="survey/{data.surveyRecord.id}/teams">
     <Icon name="people-group" />
     <div class="flex grow flex-col">
       Teams
       <small>
-        {#if surveyRecord.type == "match"}
+        {#if data.surveyType == "match"}
           {new Set(
-            surveyRecord.matches.flatMap((match) => [
+            data.surveyRecord.matches.flatMap((match) => [
               match.red1,
               match.red2,
               match.red3,
@@ -276,7 +300,7 @@
             ]),
           ).size} from matches,
         {/if}
-        {surveyRecord.teams.length} custom
+        {data.surveyRecord.teams.length} custom
       </small>
     </div>
     <Icon name="arrow-right" />
@@ -284,14 +308,19 @@
 </div>
 
 {#if $modeStore == "admin"}
-  {@const shouldHideConfigureText = entryRecords.length > 0}
+  {@const shouldHideConfigureText = data.entryRecords.length > 0}
 
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Admin</h2>
 
     <div class="flex flex-wrap gap-2">
       <Button
-        onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, fieldRecords, type: "qrcode" })}
+        onclick={() =>
+          openDialog(ExportSurveyDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+            type: "qrcode",
+          })}
         class="grow basis-0"
       >
         <Icon name="qrcode" />
@@ -301,7 +330,12 @@
         </div>
       </Button>
       <Button
-        onclick={() => openDialog(ExportSurveyDialog, { surveyRecord, fieldRecords, type: "file" })}
+        onclick={() =>
+          openDialog(ExportSurveyDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+            type: "file",
+          })}
         class="grow basis-0"
       >
         <Icon name="copy" />
@@ -312,7 +346,7 @@
       </Button>
     </div>
 
-    <Anchor route="survey/{surveyRecord.id}/fields">
+    <Anchor route="survey/{data.surveyRecord.id}/fields">
       <Icon name="list-check" />
       <div class="flex grow flex-col">
         Fields
@@ -326,7 +360,7 @@
       <Icon name="arrow-right" />
     </Anchor>
 
-    <Anchor route="survey/{surveyRecord.id}/options">
+    <Anchor route="survey/{data.surveyRecord.id}/options">
       <Icon name="gears" />
       <div class="flex grow flex-col">
         Options

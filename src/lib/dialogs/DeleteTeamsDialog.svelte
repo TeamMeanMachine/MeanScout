@@ -1,19 +1,17 @@
 <script lang="ts">
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
     teams,
+    ondelete,
   }: {
-    surveyRecord: IDBRecord<Survey>;
     teams: string[];
+    ondelete: (teams: string[]) => void;
   } = $props();
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      surveyRecord.teams = surveyRecord.teams.filter((team) => !teams.includes(team));
-      surveyRecord.modified = new Date();
+      ondelete(teams);
       closeDialog();
     },
   };

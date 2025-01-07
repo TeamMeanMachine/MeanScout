@@ -17,6 +17,8 @@
     pickList,
     index,
     canEdit = false,
+    onupdate,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
@@ -24,6 +26,8 @@
     pickList: PickList;
     index: number;
     canEdit?: boolean;
+    onupdate?: (pickList: PickList) => void;
+    ondelete?: () => void;
   } = $props();
 
   let sortedTeamData = $state<{ team: string; percentage: number }[]>([]);
@@ -109,7 +113,14 @@
 {#if $modeStore == "admin" && canEdit}
   <Button
     onclick={() => {
-      openDialog(EditPickListDialog, { surveyRecord, index, onupdate: refresh });
+      openDialog(EditPickListDialog, {
+        surveyRecord,
+        index,
+        onupdate(pickList) {
+          onupdate?.(pickList);
+          refresh();
+        },
+      });
     }}
   >
     <Icon name="pen" />
@@ -117,7 +128,12 @@
   </Button>
   <Button
     onclick={() => {
-      openDialog(DeletePickListDialog, { surveyRecord, index, ondelete: closeDialog });
+      openDialog(DeletePickListDialog, {
+        ondelete() {
+          ondelete?.();
+          closeDialog();
+        },
+      });
     }}
   >
     <Icon name="trash" />

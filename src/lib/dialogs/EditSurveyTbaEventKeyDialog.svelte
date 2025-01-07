@@ -6,8 +6,10 @@
 
   let {
     surveyRecord,
+    onedit,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    onedit: (tbaEventKey: string) => void;
   } = $props();
 
   let event = $state(surveyRecord.tbaEventKey ?? "");
@@ -34,8 +36,7 @@
       event = event.trim();
 
       if (!event) {
-        surveyRecord.tbaEventKey = event;
-        surveyRecord.modified = new Date();
+        onedit(event);
         return closeDialog();
       }
 
@@ -46,8 +47,7 @@
         return;
       }
 
-      surveyRecord.tbaEventKey = event;
-      surveyRecord.modified = new Date();
+      onedit(event);
       closeDialog();
     },
   };
