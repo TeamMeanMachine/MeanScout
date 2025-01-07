@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { parseValueFromString } from "$lib";
   import type { ConvertExpression } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -7,8 +6,10 @@
 
   let {
     expression,
+    onedit,
   }: {
     expression: ConvertExpression;
+    onedit: (converters: ConvertExpression["converters"], defaultTo: ConvertExpression["defaultTo"]) => void;
   } = $props();
 
   let converters = $state(structuredClone($state.snapshot(expression.converters)));
@@ -16,11 +17,7 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
-        from: parseValueFromString(from),
-        to: parseValueFromString(to),
-      }));
-      expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+      onedit(converters, defaultTo);
       closeDialog();
     },
   };

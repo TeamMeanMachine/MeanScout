@@ -5,8 +5,10 @@
 
   let {
     surveyRecord,
+    oncreate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
+    oncreate: (match: Match) => void;
   } = $props();
 
   let match = $state<Match>({
@@ -55,8 +57,7 @@
         return;
       }
 
-      surveyRecord.matches.push(structuredClone($state.snapshot(match)));
-      surveyRecord.modified = new Date();
+      oncreate(match);
       closeDialog();
     },
   };

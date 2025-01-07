@@ -7,6 +7,7 @@
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { getDetailedNestedFields, getDetailedSingleFields } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import type { PageData } from "./$types";
 
   let {
@@ -14,6 +15,8 @@
   }: {
     data: PageData;
   } = $props();
+
+  let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
@@ -23,8 +26,13 @@
   );
 
   function onchange() {
-    data.entryRecord.modified = new Date();
-    data.surveyRecord.modified = new Date();
+    data = {
+      ...data,
+      entryRecord: { ...entry, modified: new Date() },
+      surveyRecord: { ...data.surveyRecord, modified: new Date() },
+    } as PageData;
+    objectStore("entries", "readwrite").put($state.snapshot(data.entryRecord));
+    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 </script>
 
@@ -60,7 +68,7 @@
               {#if innerFieldDetails}
                 <FieldValueEditor
                   field={innerFieldDetails.field}
-                  bind:value={data.entryRecord.values[innerFieldDetails.valueIndex]}
+                  bind:value={entry.values[innerFieldDetails.valueIndex]}
                   {onchange}
                 />
               {/if}
@@ -68,11 +76,7 @@
           </div>
         </div>
       {:else if fieldDetails}
-        <FieldValueEditor
-          field={fieldDetails.field}
-          bind:value={data.entryRecord.values[fieldDetails.valueIndex]}
-          {onchange}
-        />
+        <FieldValueEditor field={fieldDetails.field} bind:value={entry.values[fieldDetails.valueIndex]} {onchange} />
       {/if}
     {/each}
   </div>
@@ -82,10 +86,10 @@
   <Button
     onclick={() =>
       openDialog(SubmitEntryDialog, {
-        surveyRecord: data.surveyRecord,
         fields,
         entryRecord: data.entryRecord,
         onexport: () => {
+          objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
           location.hash = `/survey/${data.surveyRecord.id}`;
         },
       })}
@@ -97,9 +101,9 @@
   <Button
     onclick={() =>
       openDialog(DeleteEntryDialog, {
-        surveyRecord: data.surveyRecord,
         entryRecord: data.entryRecord,
         ondelete: () => {
+          objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
           if (data.entryRecord.status == "draft") {
             location.hash = `/survey/${data.surveyRecord.id}`;
           } else {

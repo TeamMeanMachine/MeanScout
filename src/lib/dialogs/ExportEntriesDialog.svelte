@@ -18,7 +18,7 @@
     surveyRecord: IDBRecord<Survey>;
     filteredEntries: IDBRecord<Entry>[];
     type: "qrcode" | "file";
-    onexport?: (() => void) | undefined;
+    onexport: () => void;
   } = $props();
 
   const exportFileName = `${surveyRecord.name}-entries-${$targetStore}.csv`.replaceAll(" ", "_");
@@ -43,14 +43,11 @@
           continue;
         }
 
-        entryRecord.status = "exported";
-        entryRecord.modified = new Date();
-        entryStore.put($state.snapshot(entryRecord));
+        entryStore.put({ ...$state.snapshot(entryRecord), status: "exported", modified: new Date() });
       }
 
       entriesTransaction.oncomplete = () => {
-        surveyRecord.modified = new Date();
-        onexport?.();
+        onexport();
         closeDialog();
       };
     },

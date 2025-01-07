@@ -11,9 +11,11 @@
   let {
     surveyRecord,
     fields,
+    oncreate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
+    oncreate: (expression: Expression) => void;
   } = $props();
 
   let expression = $state<Expression>({ name: "", type: "average", inputs: [] });
@@ -46,8 +48,7 @@
         expression.defaultTo = parseValueFromString(expression.defaultTo);
       }
 
-      surveyRecord.expressions.push(structuredClone($state.snapshot(expression)));
-      surveyRecord.modified = new Date();
+      oncreate(expression);
       closeDialog();
     },
   };
@@ -135,7 +136,17 @@
   <Button
     onclick={() => {
       if (expression.type != "convert") return;
-      openDialog(EditConvertersDialog, { expression });
+      openDialog(EditConvertersDialog, {
+        expression,
+        onedit(converters, defaultTo) {
+          if (expression.type != "convert") return;
+          expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
+            from: parseValueFromString(from),
+            to: parseValueFromString(to),
+          }));
+          expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+        },
+      });
     }}
   >
     <Icon name="pen" />

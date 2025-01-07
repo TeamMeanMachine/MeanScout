@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
@@ -11,7 +12,7 @@
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     index: number;
-    onupdate?: () => void;
+    onupdate: (pickList: PickList) => void;
   } = $props();
 
   let pickList = $state(structuredClone($state.snapshot(surveyRecord.pickLists[index])));
@@ -21,9 +22,7 @@
   export const { onconfirm }: DialogExports = {
     onconfirm() {
       pickList.weights = pickList.weights.filter((weight) => weight.percentage);
-      surveyRecord.pickLists[index] = structuredClone($state.snapshot(pickList));
-      surveyRecord.modified = new Date();
-      onupdate?.();
+      onupdate(pickList);
       closeDialog();
     },
   };

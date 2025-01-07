@@ -4,27 +4,30 @@
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { getDetailedNestedFields, type Field } from "$lib/field";
+  import { getDetailedNestedFields } from "$lib/field";
   import { modeStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
+  import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
-    surveyRecord,
-    fieldRecords,
-    entryRecords,
+    data,
     teamInfo,
     canEdit,
+    ontoggleskip,
+    ondelete,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecords: IDBRecord<Entry>[];
+    data: PageData;
     teamInfo: TeamInfo;
     canEdit?: boolean;
+    ontoggleskip?: () => void;
+    ondelete?: () => void;
   } = $props();
 
-  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
+  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
+    data.surveyRecord.fieldIds,
+    data.fieldRecords,
+  );
 
-  let entries = entryRecords.filter(filterEntries).toSorted(sortEntries);
+  let entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   function filterEntries(entry: IDBRecord<Entry>) {
     return entry.status != "draft" && entry.team == teamInfo.team;
@@ -39,28 +42,12 @@
   }
 
   function toggleSkipped() {
-    if (surveyRecord.type != "match") return;
-
-    if (!surveyRecord.skippedTeams) {
-      surveyRecord.skippedTeams = [teamInfo.team];
-    } else if (surveyRecord.skippedTeams.includes(teamInfo.team)) {
-      surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => team != teamInfo.team);
-    } else {
-      surveyRecord.skippedTeams.push(teamInfo.team);
-    }
-
-    surveyRecord.modified = new Date();
+    ontoggleskip?.();
     closeDialog();
   }
 
   function removeTeam() {
-    surveyRecord.teams = surveyRecord.teams.filter((team) => teamInfo.team != team);
-
-    if (surveyRecord.type == "match" && surveyRecord.skippedTeams?.length) {
-      surveyRecord.skippedTeams = surveyRecord.skippedTeams.filter((team) => teamInfo.team != team);
-    }
-
-    surveyRecord.modified = new Date();
+    ondelete?.();
     closeDialog();
   }
 </script>
@@ -70,7 +57,7 @@
 {#if entries.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto text-sm">
     <table>
-      {#if surveyRecord.type == "match"}
+      {#if data.surveyType == "match"}
         <thead class="sticky top-0 z-10 bg-neutral-800">
           <tr>
             <th class="sticky left-0 z-10 w-0 bg-neutral-800 p-2 text-left text-sm">Match</th>
@@ -84,7 +71,7 @@
       {/if}
 
       <tbody>
-        {#if surveyRecord.type == "match" && entries.some((entry) => entry.type == "match" && entry.absent)}
+        {#if data.surveyType == "match" && entries.some((entry) => entry.type == "match" && entry.absent)}
           <tr>
             <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">Absent</th>
             {#each entries as entry (entry.id)}
@@ -95,7 +82,7 @@
           </tr>
         {/if}
 
-        {#each surveyRecord.fieldIds as fieldId}
+        {#each data.surveyRecord.fieldIds as fieldId}
           {@const fieldDetails = detailedFields.get(fieldId)}
 
           {#if fieldDetails?.type == "group"}
@@ -138,7 +125,7 @@
   </div>
 {/if}
 
-{#if $modeStore == "admin" && surveyRecord.type == "match" && canEdit}
+{#if $modeStore == "admin" && data.surveyType == "match" && canEdit}
   <Button onclick={toggleSkipped}>
     {#if teamInfo.skipped}
       <Icon name="xmark" />

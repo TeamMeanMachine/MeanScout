@@ -1,14 +1,13 @@
 <script lang="ts">
   import type { TeamInfo } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
     allTeams,
+    onadd,
   }: {
-    surveyRecord: IDBRecord<Survey>;
     allTeams: TeamInfo[];
+    onadd: (teams: string[]) => void;
   } = $props();
 
   let teamInput = $state("");
@@ -35,8 +34,7 @@
         }
       }
 
-      surveyRecord.teams = [...surveyRecord.teams, ...teamInputs];
-      surveyRecord.modified = new Date();
+      onadd(teamInputs);
       closeDialog();
     },
   };

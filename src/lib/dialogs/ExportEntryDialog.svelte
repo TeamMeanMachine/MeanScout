@@ -15,7 +15,7 @@
   }: {
     surveyRecord: IDBRecord<Survey>;
     entryRecord: IDBRecord<Entry>;
-    onexport?: (entry: IDBRecord<Entry>) => void;
+    onexport: (entry: IDBRecord<Entry>) => void;
   } = $props();
 
   const exportFileName = createEntryFileName(surveyRecord, entryRecord);
@@ -38,7 +38,7 @@
       };
 
       request.onsuccess = () => {
-        onexport?.(entry);
+        onexport(entry);
         closeDialog();
       };
     },

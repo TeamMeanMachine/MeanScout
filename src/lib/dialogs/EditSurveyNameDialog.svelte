@@ -4,8 +4,10 @@
 
   let {
     surveyRecord,
+    onedit,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    onedit: (name: string) => void;
   } = $props();
 
   let name = $state(surveyRecord.name);
@@ -20,8 +22,7 @@
         return;
       }
 
-      surveyRecord.name = name;
-      surveyRecord.modified = new Date();
+      onedit(name);
       closeDialog();
     },
   };

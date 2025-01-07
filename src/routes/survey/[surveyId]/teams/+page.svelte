@@ -14,6 +14,7 @@
   import { SvelteSet } from "svelte/reactivity";
   import type { PageData } from "./$types";
   import Header from "$lib/components/Header.svelte";
+  import { objectStore } from "$lib/idb";
 
   let {
     data,
@@ -23,9 +24,16 @@
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const teamsFromMatches = getTeamsFromMatches();
-  const matchCountPerTeam = getMatchCountPerTeam(teamsFromMatches);
-  const entriesByTeam = getEntriesByTeam();
+  let teamsFromMatches = $derived.by(() => {
+    data.surveyRecord;
+    return getTeamsFromMatches();
+  });
+  let matchCountPerTeam = $derived(getMatchCountPerTeam(teamsFromMatches));
+  let entriesByTeam = $derived.by(() => {
+    data.surveyRecord;
+    data.entryRecords;
+    return getEntriesByTeam();
+  });
 
   let dataGrid = $state<HTMLDivElement | undefined>();
 
@@ -178,23 +186,47 @@
   }
 
   function fixTeams() {
-    data.surveyRecord.teams = data.surveyRecord.teams.filter((team) => !conflictingTeams.includes(team));
-    data.surveyRecord.modified = new Date();
+    data = {
+      ...data,
+      surveyRecord: {
+        ...data.surveyRecord,
+        teams: data.surveyRecord.teams.filter((team) => !conflictingTeams.includes(team)),
+        modified: new Date(),
+      },
+    } as PageData;
+    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 
   function skipTeams() {
     if (!selectedTeams.size || data.surveyType != "match") return;
-    if (data.surveyRecord.skippedTeams == undefined) data.surveyRecord.skippedTeams = [...selectedTeams];
-    else data.surveyRecord.skippedTeams.push(...selectedTeams);
-    data.surveyRecord.modified = new Date();
+
+    let skippedTeams = structuredClone($state.snapshot(data.surveyRecord.skippedTeams));
+    if (skippedTeams == undefined) {
+      skippedTeams = [...selectedTeams];
+    } else {
+      skippedTeams.push(...selectedTeams);
+    }
+
+    data = {
+      ...data,
+      surveyRecord: { ...data.surveyRecord, skippedTeams, modified: new Date() },
+    };
+    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 
   function unskipTeams() {
     if (!selectedTeams.size || data.surveyType != "match") return;
-    const remainingTeams = data.surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
-    if (!remainingTeams || remainingTeams.length == 0) data.surveyRecord.skippedTeams = undefined;
-    data.surveyRecord.skippedTeams = remainingTeams;
-    data.surveyRecord.modified = new Date();
+
+    let remainingTeams = data.surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
+    if (!remainingTeams || remainingTeams.length == 0) {
+      remainingTeams = undefined;
+    }
+
+    data = {
+      ...data,
+      surveyRecord: { ...data.surveyRecord, skippedTeams: remainingTeams, modified: new Date() },
+    };
+    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 
   function getOrdinal(n: number) {
@@ -221,7 +253,21 @@
     <div class="grow basis-0">
       <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
         <Button
-          onclick={() => openDialog(AddTeamsDialog, { surveyRecord: data.surveyRecord, allTeams: teamInfos })}
+          onclick={() =>
+            openDialog(AddTeamsDialog, {
+              allTeams: teamInfos,
+              onadd(teams) {
+                data = {
+                  ...data,
+                  surveyRecord: {
+                    ...data.surveyRecord,
+                    teams: [...data.surveyRecord.teams, ...teams],
+                    modified: new Date(),
+                  },
+                } as PageData;
+                objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              },
+            })}
           class="flex-nowrap text-nowrap"
         >
           <Icon name="plus" />
@@ -246,10 +292,10 @@
 
             {#if data.surveyType == "match"}
               {@const canSkipTeams = [...selectedTeams].filter(
-                (team) => !data.surveyRecord.skippedTeams?.includes(team),
+                (team) => data.surveyType == "match" && !data.surveyRecord.skippedTeams?.includes(team),
               )}
-              {@const canUnskipTeams = [...selectedTeams].filter((team) =>
-                data.surveyRecord.skippedTeams?.includes(team),
+              {@const canUnskipTeams = [...selectedTeams].filter(
+                (team) => data.surveyType == "match" && data.surveyRecord.skippedTeams?.includes(team),
               )}
 
               {#if canUnskipTeams.length}
@@ -268,7 +314,20 @@
             <Button
               disabled={deletableTeams.length == 0}
               onclick={() => {
-                openDialog(DeleteTeamsDialog, { surveyRecord: data.surveyRecord, teams: deletableTeams });
+                openDialog(DeleteTeamsDialog, {
+                  teams: deletableTeams,
+                  ondelete(teams) {
+                    data = {
+                      ...data,
+                      surveyRecord: {
+                        ...data.surveyRecord,
+                        teams: data.surveyRecord.teams.filter((team) => !teams.includes(team)),
+                        modified: new Date(),
+                      },
+                    } as PageData;
+                    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  },
+                });
               }}
               class="flex-nowrap text-nowrap"
             >
@@ -372,11 +431,50 @@
                   }
                 } else {
                   openDialog(ViewTeamDialog, {
-                    surveyRecord: data.surveyRecord,
-                    fieldRecords: data.fieldRecords,
-                    entryRecords: data.entryRecords,
+                    data,
                     teamInfo,
                     canEdit: true,
+                    ontoggleskip() {
+                      if (data.surveyType != "match") return;
+
+                      let skippedTeams = structuredClone($state.snapshot(data.surveyRecord.skippedTeams));
+                      if (!skippedTeams) {
+                        skippedTeams = [teamInfo.team];
+                      } else if (skippedTeams.includes(teamInfo.team)) {
+                        skippedTeams = skippedTeams.filter((team) => team != teamInfo.team);
+                      } else {
+                        skippedTeams.push(teamInfo.team);
+                      }
+
+                      data = {
+                        ...data,
+                        surveyRecord: { ...data.surveyRecord, skippedTeams, modified: new Date() },
+                      };
+                      objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                    },
+                    ondelete() {
+                      if (data.surveyType == "match") {
+                        data = {
+                          ...data,
+                          surveyRecord: {
+                            ...data.surveyRecord,
+                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                            skippedTeams: data.surveyRecord.skippedTeams?.filter((team) => teamInfo.team != team),
+                            modified: new Date(),
+                          },
+                        };
+                      } else {
+                        data = {
+                          ...data,
+                          surveyRecord: {
+                            ...data.surveyRecord,
+                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                            modified: new Date(),
+                          },
+                        };
+                      }
+                      objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                    },
                   });
                 }
               }}

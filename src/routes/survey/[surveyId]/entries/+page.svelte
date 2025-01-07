@@ -160,6 +160,12 @@
   }
 
   function refresh() {
+    data = {
+      ...data,
+      surveyRecord: { ...data.surveyRecord, modified: new Date() },
+    } as PageData;
+    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+
     const entriesRequest = objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
 
     entriesRequest.onerror = () => {
@@ -172,7 +178,10 @@
         return;
       }
 
-      data.entryRecords = entriesRequest.result;
+      data = {
+        ...data,
+        entryRecords: entriesRequest.result,
+      };
     };
   }
 
@@ -181,7 +190,6 @@
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor == null) {
-        data.surveyRecord.modified = new Date();
         refresh();
         return;
       }

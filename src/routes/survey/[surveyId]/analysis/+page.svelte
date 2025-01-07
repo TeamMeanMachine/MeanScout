@@ -10,6 +10,7 @@
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
   import { getDetailedSingleFields } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import { modeStore } from "$lib/settings";
   import type { PageData } from "./$types";
 
@@ -55,7 +56,20 @@
     {#if $modeStore == "admin"}
       <Button
         onclick={() => {
-          openDialog(NewPickListDialog, { surveyRecord: data.surveyRecord });
+          openDialog(NewPickListDialog, {
+            surveyRecord: data.surveyRecord,
+            oncreate(pickList) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  pickLists: [...data.surveyRecord.pickLists, pickList],
+                  modified: new Date(),
+                },
+              };
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          });
         }}
       >
         <Icon name="plus" />
@@ -73,6 +87,26 @@
             pickList,
             index,
             canEdit: true,
+            onupdate(pickList) {
+              const pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
+              pickLists[index] = pickList;
+              data = {
+                ...data,
+                surveyRecord: { ...data.surveyRecord, pickLists, modified: new Date() },
+              };
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+            ondelete() {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  pickLists: data.surveyRecord.pickLists.toSpliced(index, 1),
+                  modified: new Date(),
+                },
+              };
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
           });
         }}
       >
@@ -91,7 +125,21 @@
     <div class="flex flex-col gap-2">
       <Button
         onclick={() => {
-          openDialog(NewExpressionDialog, { surveyRecord: data.surveyRecord, fields });
+          openDialog(NewExpressionDialog, {
+            surveyRecord: data.surveyRecord,
+            fields,
+            oncreate(expression) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  expressions: [...data.surveyRecord.expressions, expression],
+                  modified: new Date(),
+                },
+              };
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          });
         }}
       >
         <Icon name="plus" />
@@ -111,6 +159,26 @@
           index,
           usedExpressionNames,
           canEdit: true,
+          onupdate(expression) {
+            const expressions = structuredClone($state.snapshot(data.surveyRecord.expressions));
+            expressions[index] = expression;
+            data = {
+              ...data,
+              surveyRecord: { ...data.surveyRecord, expressions, modified: new Date() },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+          ondelete() {
+            data = {
+              ...data,
+              surveyRecord: {
+                ...data.surveyRecord,
+                expressions: data.surveyRecord.expressions.toSpliced(index, 1),
+                modified: new Date(),
+              },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
         });
       }}
     >

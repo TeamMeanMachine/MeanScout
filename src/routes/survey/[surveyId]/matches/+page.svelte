@@ -6,6 +6,7 @@
   import { openDialog } from "$lib/dialog";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
+  import { objectStore } from "$lib/idb";
   import { modeStore } from "$lib/settings";
   import type { PageData } from "./$types";
 
@@ -39,7 +40,24 @@
 
 <div class="flex flex-col gap-2">
   {#if $modeStore == "admin"}
-    <Button onclick={() => openDialog(NewMatchDialog, { surveyRecord: data.surveyRecord })} class="mb-2">
+    <Button
+      onclick={() =>
+        openDialog(NewMatchDialog, {
+          surveyRecord: data.surveyRecord,
+          oncreate(match) {
+            data = {
+              ...data,
+              surveyRecord: {
+                ...data.surveyRecord,
+                matches: [...data.surveyRecord.matches, match],
+                modified: new Date(),
+              },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+        })}
+      class="mb-2"
+    >
       <Icon name="plus" />
       New match
     </Button>
@@ -49,11 +67,31 @@
     {#snippet teamRow(match: Match)}
       {@const onclick = () =>
         openDialog(ViewMatchDialog, {
-          surveyRecord: data.surveyRecord,
-          fieldRecords: data.fieldRecords,
-          entryRecords: data.entryRecords,
+          data,
           match,
           canEdit: true,
+          onupdate(match: Match) {
+            const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
+            const index = matches.findIndex((m) => m.number == match.number);
+            if (index >= 0) matches[index] = match;
+
+            data = {
+              ...data,
+              surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+          ondelete() {
+            data = {
+              ...data,
+              surveyRecord: {
+                ...data.surveyRecord,
+                matches: data.surveyRecord.matches.filter((m) => m.number != match.number),
+                modified: new Date(),
+              },
+            };
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
         })}
 
       <tr

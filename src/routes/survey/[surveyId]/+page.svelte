@@ -11,6 +11,7 @@
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
   import { getDetailedSingleFields } from "$lib/field";
+  import { objectStore } from "$lib/idb";
   import { modeStore, targetStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import type { PageData } from "./$types";
@@ -23,27 +24,34 @@
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const drafts = data.entryRecords
-    .filter((entry) => entry.status == "draft")
-    .toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
-
-  const entriesByTeam = data.entryRecords.reduce(
-    (acc, entry) => {
-      if (entry.type != "match") return acc;
-
-      if (entry.team in acc) {
-        acc[entry.team].push(entry);
-      } else {
-        acc[entry.team] = [entry];
-      }
-
-      return acc;
-    },
-    {} as Record<string, IDBRecord<MatchEntry>[]>,
+  let drafts = $derived(
+    data.entryRecords
+      .filter((entry) => entry.status == "draft")
+      .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
   );
 
-  const prefilledMatch = getPrefilledMatch();
-  const prefilledTeam = getPrefilledTeam(prefilledMatch);
+  let entriesByTeam = $derived(
+    data.entryRecords.reduce(
+      (acc, entry) => {
+        if (entry.type != "match") return acc;
+
+        if (entry.team in acc) {
+          acc[entry.team].push(entry);
+        } else {
+          acc[entry.team] = [entry];
+        }
+
+        return acc;
+      },
+      {} as Record<string, IDBRecord<MatchEntry>[]>,
+    ),
+  );
+
+  let prefilledMatch = $derived.by(() => {
+    data;
+    return getPrefilledMatch();
+  });
+  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
 
   function getPrefilledMatch() {
     if (data.surveyType != "match") return 1;
@@ -87,9 +95,17 @@
       openDialog(NewEntryDialog, {
         surveyRecord: data.surveyRecord,
         fields,
-        entryRecords: data.entryRecords,
         prefilledTeam,
         prefilledMatch,
+        oncreate(entry) {
+          data = {
+            ...data,
+            surveyRecord: { ...data.surveyRecord, modified: new Date() },
+            entryRecords: [...data.entryRecords, entry],
+          } as PageData;
+
+          objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+        },
       });
     }}
   >
@@ -188,9 +204,7 @@
         {#snippet teamRow(match: Match)}
           {@const onclick = () => {
             openDialog(ViewMatchDialog, {
-              surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-              fieldRecords: data.fieldRecords,
-              entryRecords: data.entryRecords as IDBRecord<MatchEntry>[],
+              data: data as any,
               match,
             });
           }}
