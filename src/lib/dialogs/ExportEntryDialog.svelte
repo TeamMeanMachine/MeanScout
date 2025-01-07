@@ -32,7 +32,7 @@
 
       entry.status = "exported";
 
-      const request = objectStore("entries", "readwrite").put(entry);
+      const request = objectStore("entries", "readwrite").put($state.snapshot(entry));
       request.onerror = () => {
         error = `Could not update entry status`;
       };
