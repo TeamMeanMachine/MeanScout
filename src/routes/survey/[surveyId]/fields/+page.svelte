@@ -16,9 +16,7 @@
     data: PageData;
   } = $props();
 
-  const disabled = data.entryRecords.length > 0;
-
-  let preview = $state(disabled);
+  let preview = $state(data.disabled);
 
   let { detailedFields, detailedInnerFields } = $state(
     getDetailedNestedFields(data.surveyRecord.fieldIds, data.fieldRecords),
@@ -55,7 +53,7 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-{#if !disabled}
+{#if !data.disabled}
   <div class="flex">
     <Button onclick={() => (preview = !preview)}>
       {#if preview}
@@ -212,7 +210,7 @@
     </div>
     <div class="flex flex-wrap gap-2">
       <Button
-        {disabled}
+        disabled={data.disabled}
         onclick={() => {
           openDialog(NewFieldDialog, {
             surveyRecord: data.surveyRecord,
@@ -234,7 +232,7 @@
         New group
       </Button>
       <Button
-        {disabled}
+        disabled={data.disabled}
         onclick={() => {
           openDialog(NewFieldDialog, {
             surveyRecord: data.surveyRecord,

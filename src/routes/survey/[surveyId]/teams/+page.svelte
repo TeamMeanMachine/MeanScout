@@ -8,7 +8,6 @@
   import DeleteTeamsDialog from "$lib/dialogs/DeleteTeamsDialog.svelte";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import type { Entry } from "$lib/entry";
-  import { getDetailedSingleFields } from "$lib/field";
   import { modeStore } from "$lib/settings";
   import { flushSync, onMount } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
@@ -21,8 +20,6 @@
   }: {
     data: PageData;
   } = $props();
-
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   let teamsFromMatches = $derived.by(() => {
     data.surveyRecord;
@@ -122,7 +119,7 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, fields);
+      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, data.fields);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {

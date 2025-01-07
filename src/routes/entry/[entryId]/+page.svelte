@@ -6,7 +6,6 @@
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { getDetailedNestedFields, getDetailedSingleFields } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { PageData } from "./$types";
 
@@ -17,13 +16,6 @@
   } = $props();
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
-
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
-
-  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
-    data.surveyRecord.fieldIds,
-    data.fieldRecords,
-  );
 
   function onchange() {
     data = {
@@ -55,7 +47,7 @@
 
   <div class="flex flex-col flex-wrap gap-3">
     {#each data.surveyRecord.fieldIds as fieldId}
-      {@const fieldDetails = detailedFields.get(fieldId)}
+      {@const fieldDetails = data.detailedFields.get(fieldId)}
 
       {#if fieldDetails?.type == "group"}
         <div class="flex w-full flex-col gap-1">
@@ -63,7 +55,7 @@
 
           <div class="mb-4 flex flex-col flex-wrap gap-3">
             {#each fieldDetails.field.fieldIds as innerFieldId}
-              {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+              {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
 
               {#if innerFieldDetails}
                 <FieldValueEditor
@@ -86,7 +78,7 @@
   <Button
     onclick={() =>
       openDialog(SubmitEntryDialog, {
-        fields,
+        fields: data.fields,
         entryRecord: data.entryRecord,
         onexport: () => {
           objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });

@@ -3,8 +3,8 @@ import type { Field } from "$lib/field";
 import { transaction } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
 
-export async function loadSurveyPageData(surveyId: number) {
-  return await new Promise<
+export function loadSurveyPageData(surveyId: number) {
+  return new Promise<
     | {
         surveyType: "match";
         surveyRecord: IDBRecord<MatchSurvey>;

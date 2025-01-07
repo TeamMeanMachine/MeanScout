@@ -8,8 +8,6 @@
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
-  import type { MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { modeStore } from "$lib/settings";
   import type { PageData } from "./$types";
@@ -19,17 +17,6 @@
   }: {
     data: PageData;
   } = $props();
-
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
-
-  const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
-  for (const entry of data.entryRecords) {
-    if (entry.team in entriesByTeam) {
-      entriesByTeam[entry.team] = [...entriesByTeam[entry.team], entry];
-    } else {
-      entriesByTeam[entry.team] = [entry];
-    }
-  }
 
   let usedExpressionNames = $derived([
     ...data.surveyRecord.expressions
@@ -82,8 +69,8 @@
         onclick={() => {
           openDialog(ViewPickListDialog, {
             surveyRecord: data.surveyRecord,
-            fields,
-            entriesByTeam,
+            fields: data.fields,
+            entriesByTeam: data.entriesByTeam,
             pickList,
             index,
             canEdit: true,
@@ -127,7 +114,7 @@
         onclick={() => {
           openDialog(NewExpressionDialog, {
             surveyRecord: data.surveyRecord,
-            fields,
+            fields: data.fields,
             oncreate(expression) {
               data = {
                 ...data,
@@ -153,8 +140,8 @@
       onclick={() => {
         openDialog(ViewExpressionDialog, {
           surveyRecord: data.surveyRecord,
-          fields,
-          entriesByTeam,
+          fields: data.fields,
+          entriesByTeam: data.entriesByTeam,
           expression,
           index,
           usedExpressionNames,

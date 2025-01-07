@@ -10,7 +10,6 @@
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
-  import { getDetailedSingleFields } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { modeStore, targetStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
@@ -21,8 +20,6 @@
   }: {
     data: PageData;
   } = $props();
-
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   let drafts = $derived(
     data.entryRecords
@@ -94,7 +91,7 @@
     onclick={() => {
       openDialog(NewEntryDialog, {
         surveyRecord: data.surveyRecord,
-        fields,
+        fields: data.fields,
         prefilledTeam,
         prefilledMatch,
         oncreate(entry) {
@@ -172,7 +169,7 @@
         onclick={() =>
           openDialog(ViewPickListDialog, {
             surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-            fields,
+            fields: data.fields,
             entriesByTeam,
             pickList,
             index,

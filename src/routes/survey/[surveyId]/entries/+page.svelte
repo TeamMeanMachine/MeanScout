@@ -11,7 +11,6 @@
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { matchTargets } from "$lib/settings";
-  import { getDetailedSingleFields } from "$lib/field";
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
 
@@ -20,8 +19,6 @@
   }: {
     data: PageData;
   } = $props();
-
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   let dataGrid: HTMLDivElement;
 
@@ -258,7 +255,7 @@
         onclick={() => {
           openDialog(ImportEntriesFromQRCodeDialog, {
             surveyRecord: data.surveyRecord,
-            fields,
+            fields: data.fields,
             onimport: refresh,
           });
         }}
@@ -274,7 +271,7 @@
         onclick={() => {
           openDialog(ImportEntriesFromFileDialog, {
             surveyRecord: data.surveyRecord,
-            fields,
+            fields: data.fields,
             onimport: refresh,
           });
         }}
