@@ -2,9 +2,9 @@ import type { MatchEntry, PitEntry } from "$lib/entry";
 import type { Field } from "$lib/field";
 import { transaction } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
-import type { LayoutLoad } from "./$types";
+import type { PageLoad } from "./$types";
 
-export const load: LayoutLoad = async (event) => {
+export const load: PageLoad = async (event) => {
   const entryId = Number(event.params.entryId);
 
   return await new Promise<

@@ -2,11 +2,8 @@ import type { MatchEntry, PitEntry } from "$lib/entry";
 import type { Field } from "$lib/field";
 import { transaction } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
-import type { LayoutLoad } from "./$types";
 
-export const load: LayoutLoad = async (event) => {
-  const surveyId = Number(event.params.surveyId);
-
+export async function loadSurveyPageData(surveyId: number) {
   return await new Promise<
     | {
         surveyType: "match";
@@ -60,4 +57,4 @@ export const load: LayoutLoad = async (event) => {
       };
     };
   });
-};
+}
