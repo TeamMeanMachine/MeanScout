@@ -2,7 +2,7 @@
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { modeStore } from "$lib/settings";
@@ -15,8 +15,6 @@
     fields,
     entriesByTeam,
     pickList,
-    index,
-    canEdit = false,
     onupdate,
     ondelete,
   }: {
@@ -24,29 +22,11 @@
     fields: DetailedSingleField[];
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
-    index: number;
-    canEdit?: boolean;
     onupdate?: (pickList: PickList) => void;
     ondelete?: () => void;
   } = $props();
 
-  let sortedTeamData = $state<{ team: string; percentage: number }[]>([]);
-  let text = $derived(
-    sortedTeamData
-      .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.percentage.toFixed(2)}%`)
-      .join("\n"),
-  );
-
-  export const { onopen }: DialogExports = {
-    onopen(open) {
-      refresh();
-      open();
-    },
-  };
-
-  function refresh() {
-    pickList = surveyRecord.pickLists[index];
-
+  function getSortedTeamData() {
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
       pickListData[team] = 0;
@@ -63,10 +43,16 @@
 
     const normalizedPickListData = normalizeTeamData(pickListData);
 
-    sortedTeamData = Object.keys(normalizedPickListData)
+    return Object.keys(normalizedPickListData)
       .map((team) => ({ team, percentage: normalizedPickListData[team] }))
       .toSorted((a, b) => b.percentage - a.percentage);
   }
+
+  const sortedTeamData = getSortedTeamData();
+
+  const text = sortedTeamData
+    .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.percentage.toFixed(2)}%`)
+    .join("\n");
 </script>
 
 <span>{pickList.name}</span>
@@ -110,33 +96,37 @@
   </div>
 {/if}
 
-{#if $modeStore == "admin" && canEdit}
-  <Button
-    onclick={() => {
-      openDialog(EditPickListDialog, {
-        surveyRecord,
-        index,
-        onupdate(pickList) {
-          onupdate?.(pickList);
-          refresh();
-        },
-      });
-    }}
-  >
-    <Icon name="pen" />
-    Edit
-  </Button>
-  <Button
-    onclick={() => {
-      openDialog(DeletePickListDialog, {
-        ondelete() {
-          ondelete?.();
-          closeDialog();
-        },
-      });
-    }}
-  >
-    <Icon name="trash" />
-    Delete
-  </Button>
+{#if $modeStore == "admin"}
+  {#if onupdate}
+    <Button
+      onclick={() => {
+        openDialog(EditPickListDialog, {
+          surveyRecord,
+          pickList,
+          onupdate(changes) {
+            pickList = changes;
+            onupdate(changes);
+          },
+        });
+      }}
+    >
+      <Icon name="pen" />
+      Edit
+    </Button>
+  {/if}
+  {#if ondelete}
+    <Button
+      onclick={() => {
+        openDialog(DeletePickListDialog, {
+          ondelete() {
+            ondelete();
+            closeDialog();
+          },
+        });
+      }}
+    >
+      <Icon name="trash" />
+      Delete
+    </Button>
+  {/if}
 {/if}

@@ -69,7 +69,6 @@
         openDialog(ViewMatchDialog, {
           data,
           match,
-          canEdit: true,
           onupdate(match: Match) {
             const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
             const index = matches.findIndex((m) => m.number == match.number);

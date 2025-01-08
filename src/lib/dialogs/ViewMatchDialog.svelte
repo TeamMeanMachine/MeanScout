@@ -15,13 +15,11 @@
   let {
     data,
     match,
-    canEdit,
     onupdate,
     ondelete,
   }: {
     data: PageData;
     match: Match;
-    canEdit?: boolean;
     onupdate?: (match: Match) => void;
     ondelete?: () => void;
   } = $props();
@@ -131,7 +129,7 @@
   {#if teamInfo}
     {@const onclick = () =>
       openDialog(ViewTeamDialog, {
-        data,
+        data: data as any,
         teamInfo,
       })}
 
@@ -193,31 +191,35 @@
   </table>
 </div>
 
-{#if $modeStore == "admin" && canEdit}
-  <Button
-    onclick={() =>
-      openDialog(EditMatchDialog, {
-        match,
-        onupdate(changes) {
-          match = changes;
-          onupdate?.(changes);
-        },
-      })}
-  >
-    <Icon name="pen" />
-    Edit
-  </Button>
-  <Button
-    onclick={() =>
-      openDialog(DeleteMatchDialog, {
-        number: match.number,
-        ondelete() {
-          ondelete?.();
-          closeDialog();
-        },
-      })}
-  >
-    <Icon name="trash" />
-    Delete
-  </Button>
+{#if $modeStore == "admin"}
+  {#if onupdate}
+    <Button
+      onclick={() =>
+        openDialog(EditMatchDialog, {
+          match,
+          onupdate(changes) {
+            match = changes;
+            onupdate(changes);
+          },
+        })}
+    >
+      <Icon name="pen" />
+      Edit
+    </Button>
+  {/if}
+  {#if ondelete}
+    <Button
+      onclick={() =>
+        openDialog(DeleteMatchDialog, {
+          number: match.number,
+          ondelete() {
+            ondelete();
+            closeDialog();
+          },
+        })}
+    >
+      <Icon name="trash" />
+      Delete
+    </Button>
+  {/if}
 {/if}

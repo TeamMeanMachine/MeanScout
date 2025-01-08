@@ -164,7 +164,7 @@
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Analysis</h2>
 
-    {#each data.surveyRecord.pickLists as pickList, index}
+    {#each data.surveyRecord.pickLists as pickList}
       <Button
         onclick={() =>
           openDialog(ViewPickListDialog, {
@@ -172,7 +172,6 @@
             fields: data.fields,
             entriesByTeam,
             pickList,
-            index,
           })}
       >
         {pickList.name}

@@ -11,132 +11,121 @@
   let {
     surveyRecord,
     fields,
+    expression,
     index,
     onupdate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
+    expression: Expression;
     index: number;
     onupdate: (expression: Expression) => void;
   } = $props();
 
-  let expression = $state(structuredClone($state.snapshot(surveyRecord.expressions[index])));
+  let changes = $state(structuredClone($state.snapshot(expression)));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      expression.name = expression.name.trim();
+      changes.name = changes.name.trim();
 
-      if (!expression.name) {
+      if (!changes.name) {
         error = "name can't be empty!";
         return;
       }
 
-      if (surveyRecord.expressions.find((e, i) => e.name == expression.name && i != index)) {
+      if (surveyRecord.expressions.find((e, i) => e.name == changes.name && i != index)) {
         error = "name must be unique!";
         return;
       }
 
-      if (expression.type == "divide" && expression.divisor == 0) {
+      if (changes.type == "divide" && changes.divisor == 0) {
         error = "divisor can't be 0!";
         return;
       }
 
-      if (expression.type == "convert") {
-        expression.converters = expression.converters.map(({ from, to }) => ({
+      if (changes.type == "convert") {
+        changes.converters = changes.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
           to: parseValueFromString(to),
         }));
-        expression.defaultTo = parseValueFromString(expression.defaultTo);
+        changes.defaultTo = parseValueFromString(changes.defaultTo);
       }
 
-      const prevName = surveyRecord.expressions[index].name;
-
-      if (expression.name != prevName) {
-        surveyRecord.expressions = surveyRecord.expressions.map((e) => {
-          e.inputs = e.inputs.map((input) => {
-            if (input.from == "expression" && input.expressionName == prevName) {
-              input.expressionName = expression.name;
-            }
-
-            return input;
-          });
-
-          return e;
-        });
-
-        surveyRecord.pickLists = surveyRecord.pickLists.map((pickList) => {
-          pickList.weights = pickList.weights.map((weight) => {
-            if (weight.expressionName == prevName) {
-              weight.expressionName = expression.name;
-            }
-
-            return weight;
-          });
-
-          return pickList;
-        });
-      }
-
-      onupdate(expression);
+      onupdate(changes);
       closeDialog();
     },
   };
+
+  function expressionReferencesOther(e: Expression, other: Expression) {
+    for (const input of e.inputs.filter((input) => input.from == "expression")) {
+      if (input.expressionName == other.name) {
+        return true;
+      }
+
+      const newExp = surveyRecord.expressions.find((newExp) => newExp.name == input.expressionName);
+      if (newExp && expressionReferencesOther(newExp, e)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 </script>
 
 <span>Edit expression</span>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={expression.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <label class="flex flex-col">
   Type
   <select
-    value={expression.type}
+    value={changes.type}
     onchange={(e) => {
       switch (e.currentTarget.value) {
         case "average":
         case "min":
         case "max":
         case "sum":
-          expression = {
-            name: expression.name,
+          changes = {
+            name: changes.name,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
+            inputs: changes.inputs,
           };
           break;
         case "count":
-          expression = {
-            name: expression.name,
+          changes = {
+            name: changes.name,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
+            inputs: changes.inputs,
             valueToCount: "",
           };
           break;
         case "convert":
-          expression = {
-            name: expression.name,
+          changes = {
+            name: changes.name,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
+            inputs: changes.inputs,
             converters: [],
             defaultTo: "",
           };
           break;
         case "multiply":
-          expression = {
-            name: expression.name,
+          changes = {
+            name: changes.name,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
+            inputs: changes.inputs,
             multiplier: 1,
           };
           break;
         case "divide":
-          expression = {
-            name: expression.name,
+          changes = {
+            name: changes.name,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
+            inputs: changes.inputs,
             divisor: 1,
           };
           break;
@@ -157,24 +146,24 @@
   </select>
 </label>
 
-{#if expression.type == "count"}
+{#if changes.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={expression.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={changes.valueToCount} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "convert"}
+{:else if changes.type == "convert"}
   <Button
     onclick={() => {
-      if (expression.type != "convert") return;
+      if (changes.type != "convert") return;
       openDialog(EditConvertersDialog, {
-        expression,
+        expression: changes,
         onedit(converters, defaultTo) {
-          if (expression.type != "convert") return;
-          expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
+          if (changes.type != "convert") return;
+          changes.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
             from: parseValueFromString(from),
             to: parseValueFromString(to),
           }));
-          expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+          changes.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
         },
       });
     }}
@@ -182,15 +171,15 @@
     <Icon name="pen" />
     Edit Converters
   </Button>
-{:else if expression.type == "multiply"}
+{:else if changes.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={expression.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={changes.multiplier} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "divide"}
+{:else if changes.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={expression.divisor} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={changes.divisor} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 
@@ -200,8 +189,8 @@
   <details open>
     <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Expressions</summary>
     <div class="flex flex-col gap-2 p-2">
-      {#each surveyRecord.expressions as exp}
-        {@const inputIndex = expression.inputs.findIndex(
+      {#each surveyRecord.expressions.filter((e) => expression.name != e.name && !expressionReferencesOther(e, expression)) as exp}
+        {@const inputIndex = changes.inputs.findIndex(
           (input) => input.from == "expression" && input.expressionName == exp.name,
         )}
         {@const isInput = inputIndex != -1}
@@ -209,9 +198,9 @@
         <Button
           onclick={() => {
             if (isInput) {
-              expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+              changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
             } else {
-              expression.inputs = [...expression.inputs, { from: "expression", expressionName: exp.name }];
+              changes.inputs = [...changes.inputs, { from: "expression", expressionName: exp.name }];
             }
           }}
         >
@@ -231,7 +220,7 @@
     <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Fields</summary>
     <div class="flex flex-col gap-2 p-2">
       {#each fields as field (field.field.id)}
-        {@const inputIndex = expression.inputs.findIndex(
+        {@const inputIndex = changes.inputs.findIndex(
           (input) => input.from == "field" && input.fieldId == field.field.id,
         )}
         {@const isInput = inputIndex != -1}
@@ -239,9 +228,9 @@
         <Button
           onclick={() => {
             if (isInput) {
-              expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+              changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
             } else {
-              expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
+              changes.inputs = [...changes.inputs, { from: "field", fieldId: field.field.id }];
             }
           }}
         >

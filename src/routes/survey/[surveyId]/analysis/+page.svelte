@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { ExpressionAsExpressionInput } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -21,7 +20,7 @@
   let usedExpressionNames = $derived([
     ...data.surveyRecord.expressions
       .flatMap((e) => e.inputs)
-      .filter((input): input is ExpressionAsExpressionInput => input.from == "expression")
+      .filter((input) => input.from == "expression")
       .map((input) => input.expressionName),
     ...data.surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
@@ -72,8 +71,6 @@
             fields: data.fields,
             entriesByTeam: data.entriesByTeam,
             pickList,
-            index,
-            canEdit: true,
             onupdate(pickList) {
               const pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
               pickLists[index] = pickList;
@@ -145,13 +142,37 @@
           expression,
           index,
           usedExpressionNames,
-          canEdit: true,
           onupdate(expression) {
-            const expressions = structuredClone($state.snapshot(data.surveyRecord.expressions));
+            let pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
+            let expressions = structuredClone($state.snapshot(data.surveyRecord.expressions));
+
+            const previousName = expressions[index].name;
+            if (expression.name != previousName) {
+              pickLists = pickLists.map((pickList) => {
+                pickList.weights = pickList.weights.map((weight) => {
+                  if (weight.expressionName == previousName) {
+                    weight.expressionName = expression.name;
+                  }
+                  return weight;
+                });
+                return pickList;
+              });
+
+              expressions = expressions.map((e) => {
+                e.inputs = e.inputs.map((input) => {
+                  if (input.from == "expression" && input.expressionName == previousName) {
+                    input.expressionName = expression.name;
+                  }
+                  return input;
+                });
+                return e;
+              });
+            }
+
             expressions[index] = expression;
             data = {
               ...data,
-              surveyRecord: { ...data.surveyRecord, expressions, modified: new Date() },
+              surveyRecord: { ...data.surveyRecord, pickLists, expressions, modified: new Date() },
             };
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },

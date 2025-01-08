@@ -2,7 +2,7 @@
   import { calculateTeamData, normalizeTeamData, type Expression } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { modeStore } from "$lib/settings";
@@ -16,7 +16,6 @@
     expression,
     index,
     usedExpressionNames,
-    canEdit,
     onupdate,
     ondelete,
   }: {
@@ -26,38 +25,27 @@
     expression: Expression;
     index: number;
     usedExpressionNames?: string[] | undefined;
-    canEdit?: boolean;
     onupdate?: (expression: Expression) => void;
     ondelete?: () => void;
   } = $props();
 
-  let sortedTeamData = $state<{ team: string; percentage: number; value: number }[]>([]);
-  let text = $derived(
-    sortedTeamData
-      .map(
-        (teamValue, index) =>
-          `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}\t${teamValue.percentage.toFixed(2)}%`,
-      )
-      .join("\n"),
-  );
-
-  export const { onopen }: DialogExports = {
-    onopen(open) {
-      refresh();
-      open();
-    },
-  };
-
-  function refresh() {
-    expression = surveyRecord.expressions[index];
-
+  function getSortedTeamData() {
     const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);
     const normalizedTeamData = normalizeTeamData(teamData);
 
-    sortedTeamData = Object.keys(normalizedTeamData)
+    return Object.keys(normalizedTeamData)
       .map((team) => ({ team, percentage: normalizedTeamData[team], value: teamData[team] }))
       .toSorted((a, b) => b.value - a.value);
   }
+
+  const sortedTeamData = getSortedTeamData();
+
+  const text = sortedTeamData
+    .map(
+      (teamValue, index) =>
+        `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}\t${teamValue.percentage.toFixed(2)}%`,
+    )
+    .join("\n");
 </script>
 
 <span>{expression.name}</span>
@@ -103,27 +91,30 @@
   </div>
 {/if}
 
-{#if $modeStore == "admin" && canEdit}
-  <Button
-    onclick={() => {
-      openDialog(EditExpressionDialog, {
-        surveyRecord,
-        fields,
-        index,
-        onupdate(expression) {
-          onupdate?.(expression);
-          refresh();
-        },
-      });
-    }}
-  >
-    <Icon name="pen" />
-    Edit
-  </Button>
-  {#if !usedExpressionNames?.includes(expression.name)}
+{#if $modeStore == "admin"}
+  {#if onupdate}
     <Button
       onclick={() => {
-        ondelete?.();
+        openDialog(EditExpressionDialog, {
+          surveyRecord,
+          fields,
+          expression,
+          index,
+          onupdate(changes) {
+            expression = changes;
+            onupdate(changes);
+          },
+        });
+      }}
+    >
+      <Icon name="pen" />
+      Edit
+    </Button>
+  {/if}
+  {#if !usedExpressionNames?.includes(expression.name) && ondelete}
+    <Button
+      onclick={() => {
+        ondelete();
         closeDialog();
       }}
     >
