@@ -11,14 +11,10 @@
   let {
     data,
     teamInfo,
-    canEdit,
-    ontoggleskip,
     ondelete,
   }: {
     data: PageData;
     teamInfo: TeamInfo;
-    canEdit?: boolean;
-    ontoggleskip?: () => void;
     ondelete?: () => void;
   } = $props();
 
@@ -39,16 +35,6 @@
     }
 
     return b.match - a.match;
-  }
-
-  function toggleSkipped() {
-    ontoggleskip?.();
-    closeDialog();
-  }
-
-  function removeTeam() {
-    ondelete?.();
-    closeDialog();
   }
 </script>
 
@@ -125,20 +111,13 @@
   </div>
 {/if}
 
-{#if $modeStore == "admin" && data.surveyType == "match" && canEdit}
-  <Button onclick={toggleSkipped}>
-    {#if teamInfo.skipped}
-      <Icon name="xmark" />
-      Unskip
-    {:else}
-      <Icon name="forward" />
-      Skip
-    {/if}
-  </Button>
-{/if}
-
-{#if $modeStore == "admin" && teamInfo.isCustom && canEdit}
-  <Button onclick={removeTeam}>
+{#if $modeStore == "admin" && teamInfo.isCustom && ondelete}
+  <Button
+    onclick={() => {
+      ondelete();
+      closeDialog();
+    }}
+  >
     <Icon name="trash" />
     Delete
   </Button>

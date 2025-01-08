@@ -36,7 +36,6 @@
 
   let ranksPerPickList = $derived.by(() => {
     if (data.surveyType != "match") return [];
-    data.surveyRecord.skippedTeams;
     return data.surveyRecord.pickLists.map(createTeamRanking);
   });
 
@@ -114,7 +113,6 @@
 
     const pickListData: Record<string, number> = {};
     for (const team in entriesByTeam) {
-      if (data.surveyRecord.skippedTeams?.includes(team)) continue;
       pickListData[team] = 0;
     }
 
@@ -123,7 +121,6 @@
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
-        if (data.surveyRecord.skippedTeams?.includes(team)) continue;
         pickListData[team] += normalizedTeamData[team];
       }
     }
@@ -145,14 +142,9 @@
   function createTeamInfo(team: string): TeamInfo {
     const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
 
-    let skipped: boolean | undefined = undefined;
-    if (data.surveyType == "match" && data.surveyRecord.skippedTeams?.includes(team)) {
-      skipped = true;
-    }
-
     let pickListRanks: number[] | undefined = undefined;
     if (ranksPerPickList.length) {
-      pickListRanks = ranksPerPickList.map((pickList) => (skipped ? 0 : pickList[team]));
+      pickListRanks = ranksPerPickList.map((pickList) => pickList[team]);
     }
 
     return {
@@ -161,7 +153,6 @@
       matchCount: matchCountPerTeam[team] ?? 0,
       isCustom: data.surveyRecord.teams.includes(team),
       pickListRanks,
-      skipped,
     };
   }
 
@@ -191,38 +182,6 @@
         modified: new Date(),
       },
     } as PageData;
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-  }
-
-  function skipTeams() {
-    if (!selectedTeams.size || data.surveyType != "match") return;
-
-    let skippedTeams = structuredClone($state.snapshot(data.surveyRecord.skippedTeams));
-    if (skippedTeams == undefined) {
-      skippedTeams = [...selectedTeams];
-    } else {
-      skippedTeams.push(...selectedTeams);
-    }
-
-    data = {
-      ...data,
-      surveyRecord: { ...data.surveyRecord, skippedTeams, modified: new Date() },
-    };
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-  }
-
-  function unskipTeams() {
-    if (!selectedTeams.size || data.surveyType != "match") return;
-
-    let remainingTeams = data.surveyRecord.skippedTeams?.filter((t) => !selectedTeams.has(t));
-    if (!remainingTeams || remainingTeams.length == 0) {
-      remainingTeams = undefined;
-    }
-
-    data = {
-      ...data,
-      surveyRecord: { ...data.surveyRecord, skippedTeams: remainingTeams, modified: new Date() },
-    };
     objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 
@@ -285,28 +244,18 @@
           {#if selecting}
             {@const deletableTeams = [...selectedTeams].filter((team) => data.surveyRecord.teams.includes(team))}
 
+            <Button
+              onclick={() => {
+                selecting = false;
+                selectedTeams.clear();
+              }}
+              class="flex-nowrap text-nowrap"
+            >
+              <Icon name="xmark" />
+              Cancel
+            </Button>
+
             <span>{selectedTeams.size} <small>selected</small></span>
-
-            {#if data.surveyType == "match"}
-              {@const canSkipTeams = [...selectedTeams].filter(
-                (team) => data.surveyType == "match" && !data.surveyRecord.skippedTeams?.includes(team),
-              )}
-              {@const canUnskipTeams = [...selectedTeams].filter(
-                (team) => data.surveyType == "match" && data.surveyRecord.skippedTeams?.includes(team),
-              )}
-
-              {#if canUnskipTeams.length}
-                <Button onclick={unskipTeams} class="flex-nowrap text-nowrap">
-                  <Icon name="backward" />
-                  Unskip {canUnskipTeams.length || ""}
-                </Button>
-              {:else}
-                <Button disabled={!canSkipTeams.length} onclick={skipTeams} class="flex-nowrap text-nowrap">
-                  <Icon name="forward" />
-                  Skip {canSkipTeams.length || ""}
-                </Button>
-              {/if}
-            {/if}
 
             <Button
               disabled={deletableTeams.length == 0}
@@ -331,17 +280,6 @@
               <Icon name="trash" />
               Delete {deletableTeams.length || ""}
             </Button>
-
-            <Button
-              onclick={() => {
-                selecting = false;
-                selectedTeams.clear();
-              }}
-              class="flex-nowrap text-nowrap"
-            >
-              <Icon name="xmark" />
-              Cancel
-            </Button>
           {:else}
             <Button onclick={() => (selecting = true)} class="flex-nowrap text-nowrap">
               <Icon name="check" />
@@ -356,9 +294,6 @@
   <div class="flex grow flex-col gap-2 pt-2">
     {#if teamInfos.length}
       <div class="flex flex-col">
-        {#if data.surveyType == "match"}
-          <small>{data.surveyRecord.skippedTeams?.length || 0} skipped</small>
-        {/if}
         <small>
           Sorting by
           {#if data.surveyType == "match" && typeof sortBy == "number"}
@@ -430,46 +365,15 @@
                   openDialog(ViewTeamDialog, {
                     data,
                     teamInfo,
-                    canEdit: true,
-                    ontoggleskip() {
-                      if (data.surveyType != "match") return;
-
-                      let skippedTeams = structuredClone($state.snapshot(data.surveyRecord.skippedTeams));
-                      if (!skippedTeams) {
-                        skippedTeams = [teamInfo.team];
-                      } else if (skippedTeams.includes(teamInfo.team)) {
-                        skippedTeams = skippedTeams.filter((team) => team != teamInfo.team);
-                      } else {
-                        skippedTeams.push(teamInfo.team);
-                      }
-
+                    ondelete() {
                       data = {
                         ...data,
-                        surveyRecord: { ...data.surveyRecord, skippedTeams, modified: new Date() },
-                      };
-                      objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-                    },
-                    ondelete() {
-                      if (data.surveyType == "match") {
-                        data = {
-                          ...data,
-                          surveyRecord: {
-                            ...data.surveyRecord,
-                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
-                            skippedTeams: data.surveyRecord.skippedTeams?.filter((team) => teamInfo.team != team),
-                            modified: new Date(),
-                          },
-                        };
-                      } else {
-                        data = {
-                          ...data,
-                          surveyRecord: {
-                            ...data.surveyRecord,
-                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
-                            modified: new Date(),
-                          },
-                        };
-                      }
+                        surveyRecord: {
+                          ...data.surveyRecord,
+                          teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                          modified: new Date(),
+                        },
+                      } as PageData;
                       objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
                     },
                   });
@@ -490,19 +394,13 @@
               <div>{teamInfo.team}</div>
 
               {#if teamInfo.pickListRanks?.length}
-                {#if teamInfo.skipped}
-                  {@const borderColor = selectedTeams.has(teamInfo.team) ? "border-neutral-200" : "border-neutral-500"}
-                  {@const gridColumn = `span ${teamInfo.pickListRanks.length}`}
-                  <hr class="mx-4 {borderColor}" style="grid-column: {gridColumn} / {gridColumn}" />
-                {:else}
-                  {#each teamInfo.pickListRanks as pickListRank}
-                    <div>
-                      {#if pickListRank > 0}
-                        {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
-                      {/if}
-                    </div>
-                  {/each}
-                {/if}
+                {#each teamInfo.pickListRanks as pickListRank}
+                  <div>
+                    {#if pickListRank > 0}
+                      {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
+                    {/if}
+                  </div>
+                {/each}
               {/if}
 
               <div>

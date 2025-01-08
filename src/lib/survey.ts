@@ -28,7 +28,6 @@ const matchSurveySchema = baseSurveySchema.merge(
     matches: z.array(matchSchema),
     expressions: z.array(expressionSchema),
     pickLists: z.array(pickListSchema),
-    skippedTeams: z.optional(z.array(z.coerce.string())),
   }),
 );
 export type MatchSurvey = z.infer<typeof matchSurveySchema>;
@@ -137,17 +136,6 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
     matches.push(match.number, ...indexes);
   }
 
-  let skippedTeams: number[] | undefined = undefined;
-  if (survey.skippedTeams?.length) {
-    skippedTeams = [];
-    for (const team of survey.skippedTeams) {
-      const index = indexedTeams.findIndex((t) => team == t);
-      if (index > -1) {
-        skippedTeams.push(index);
-      }
-    }
-  }
-
   const expressionNames: string[] = [];
 
   const expressions: any[] = [];
@@ -206,7 +194,6 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
     pickLists: pickLists.length ? pickLists : undefined,
     expressions: expressions.length ? expressions : undefined,
     matches: matches.length ? matches : undefined,
-    skippedTeams,
   });
 }
 
@@ -363,14 +350,6 @@ export function jsonToSurvey(
       }
     }
 
-    let skippedTeams: string[] | undefined;
-    if (compressedSurvey.skippedTeams?.length) {
-      skippedTeams = [];
-      for (const team of compressedSurvey.skippedTeams) {
-        skippedTeams.push(indexedTeams[team]);
-      }
-    }
-
     survey = {
       name: compressedSurvey.name,
       type: "match",
@@ -382,10 +361,6 @@ export function jsonToSurvey(
       expressions,
       matches,
     };
-
-    if (skippedTeams?.length) {
-      survey.skippedTeams = skippedTeams;
-    }
   } else if (compressedSurvey.type == "pit") {
     survey = {
       name: compressedSurvey.name,
