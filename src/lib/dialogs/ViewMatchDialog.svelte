@@ -6,7 +6,7 @@
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import { getDetailedSingleFields } from "$lib/field";
-  import { modeStore } from "$lib/settings";
+  import { modeStore, teamStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/matches/$types";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import EditMatchDialog from "./EditMatchDialog.svelte";
@@ -42,6 +42,15 @@
   );
 
   let teamInfos = $derived(getTeamInfosFromMatch(match));
+
+  let showDoneColumn = $derived(
+    teamInfos.some((teamInfo) => {
+      return (
+        teamInfo.entryCount &&
+        data.entryRecords.some((e) => e.status != "draft" && e.match == match.number && e.team == teamInfo.team)
+      );
+    }),
+  );
 
   function getTeamInfosFromMatch(match: Match) {
     const ranksPerPickList = data.surveyRecord.pickLists.map((pickList) => {
@@ -120,6 +129,12 @@
 
     return "th";
   }
+
+  function getFontWeight(team: string) {
+    if (!$teamStore) return "";
+    if (team == $teamStore) return "font-bold underline";
+    return "font-light";
+  }
 </script>
 
 {#snippet teamRow(team: string, alliance: string)}
@@ -127,68 +142,59 @@
   {@const entry = data.entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
 
   {#if teamInfo}
-    {@const onclick = () =>
-      openDialog(ViewTeamDialog, {
-        data: data as any,
-        teamInfo,
-      })}
-
-    <tr
-      tabindex="0"
-      role="button"
-      {onclick}
-      onkeydown={(e) => {
-        if (e.key == " " || e.key == "Enter") {
-          e.preventDefault();
-          onclick();
-        }
+    <Button
+      onclick={() => {
+        openDialog(ViewTeamDialog, {
+          data: data as any,
+          teamInfo,
+        });
       }}
-      class="button cursor-pointer bg-neutral-800"
+      class="col-span-full grid grid-cols-subgrid gap-2 text-center"
     >
-      <td class="p-2 text-{alliance}">{teamInfo.team}</td>
+      <div class="text-{alliance} {getFontWeight(teamInfo.team)}">{teamInfo.team}</div>
       {#if teamInfo.pickListRanks?.length}
         {#each teamInfo.pickListRanks as pickListRank}
-          <td class="p-2">
+          <div>
             {#if pickListRank > 0}
               {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
             {/if}
-          </td>
+          </div>
         {/each}
       {/if}
-      <td class="p-2">
+      <div>
         {#if entry}
           <Icon name="check" />
         {/if}
-      </td>
-      <td></td>
-    </tr>
+      </div>
+    </Button>
   {/if}
 {/snippet}
 
 <div class="flex flex-col">
   <span>Match {match.number}</span>
-  <table class="border-separate border-spacing-y-2 text-center">
-    <thead class="text-nowrap">
-      <tr>
-        <th class="w-0 p-2">Team</th>
-        {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
-          {#each data.surveyRecord.pickLists as pickList}
-            <th class="w-0 p-2">{pickList.name}</th>
-          {/each}
-        {/if}
-        <th class="w-0 p-2">Done</th>
-        <td></td>
-      </tr>
-    </thead>
-    <tbody>
-      {#each [match.red1, match.red2, match.red3] as team}
-        {@render teamRow(team, "red")}
-      {/each}
-      {#each [match.blue1, match.blue2, match.blue3] as team}
-        {@render teamRow(team, "blue")}
-      {/each}
-    </tbody>
-  </table>
+  <div
+    class="grid gap-2 pt-2"
+    style="grid-template-columns: repeat({data.surveyRecord.pickLists.length + 2}, min-content) auto;"
+  >
+    <div class="col-span-full grid grid-cols-subgrid gap-2 gap-x-3 text-nowrap text-center text-sm font-bold">
+      <div>Team</div>
+      {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
+        {#each data.surveyRecord.pickLists as pickList}
+          <div>{pickList.name}</div>
+        {/each}
+      {/if}
+      {#if showDoneColumn}
+        <div>Done</div>
+      {/if}
+    </div>
+
+    {#each [match.red1, match.red2, match.red3] as team}
+      {@render teamRow(team, "red")}
+    {/each}
+    {#each [match.blue1, match.blue2, match.blue3] as team}
+      {@render teamRow(team, "blue")}
+    {/each}
+  </div>
 </div>
 
 {#if $modeStore == "admin"}

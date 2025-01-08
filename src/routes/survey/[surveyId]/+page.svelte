@@ -11,7 +11,7 @@
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
-  import { modeStore, targetStore } from "$lib/settings";
+  import { modeStore, targetStore, teamStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
   import type { PageData } from "./$types";
 
@@ -20,6 +20,12 @@
   }: {
     data: PageData;
   } = $props();
+
+  let prefilledMatch = $derived.by(() => {
+    data;
+    return getPrefilledMatch();
+  });
+  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
 
   let drafts = $derived(
     data.entryRecords
@@ -44,11 +50,7 @@
     ),
   );
 
-  let prefilledMatch = $derived.by(() => {
-    data;
-    return getPrefilledMatch();
-  });
-  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
+  let filterMatches = $state(false);
 
   function getPrefilledMatch() {
     if (data.surveyType != "match") return 1;
@@ -79,6 +81,16 @@
       default:
         return "";
     }
+  }
+
+  function matchHasTeamStore(match: Match) {
+    return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes($teamStore);
+  }
+
+  function getFontWeight(team: string) {
+    if (!$teamStore) return "";
+    if (team == $teamStore) return "font-bold underline";
+    return "font-light";
   }
 </script>
 
@@ -147,14 +159,16 @@
     );
   }).length}
 
-  {@const upcomingMatches = data.surveyRecord.matches
+  {@const matches = filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
+
+  {@const upcomingMatches = matches
     .filter(
       (match) => !data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
     )
     .toSorted((a, b) => a.number - b.number)
     .slice(0, 3)}
 
-  {@const previousMatches = data.surveyRecord.matches
+  {@const previousMatches = matches
     .filter((match) =>
       data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
     )
@@ -193,70 +207,63 @@
   </div>
 
   <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Matches</h2>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="font-bold">Matches</h2>
+      {#if $teamStore}
+        <div class="flex gap-2">
+          <Button onclick={() => (filterMatches = false)} class={filterMatches ? "font-light" : "font-bold"}>
+            All
+          </Button>
+          <Button onclick={() => (filterMatches = true)} class={filterMatches ? "font-bold" : "font-light"}>
+            {$teamStore}
+          </Button>
+        </div>
+      {/if}
+    </div>
 
     {#if upcomingMatches.length || previousMatches.length}
       <div class="flex flex-wrap gap-2">
         {#snippet teamRow(match: Match)}
-          {@const onclick = () => {
-            openDialog(ViewMatchDialog, {
-              data: data as any,
-              match,
-            });
-          }}
-
-          <tr
-            tabindex="0"
-            role="button"
-            {onclick}
-            onkeydown={(e) => {
-              if (e.key == " " || e.key == "Enter") {
-                e.preventDefault();
-                onclick();
-              }
+          <Button
+            onclick={() => {
+              openDialog(ViewMatchDialog, {
+                data: data as any,
+                match,
+              });
             }}
-            class="button cursor-pointer bg-neutral-800"
+            class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
           >
-            <td class="w-0 p-2">{match.number}</td>
-            <td class="w-0 space-y-0.5 p-2">
-              <div class="text-red">{match.red1}</div>
-              <div class="text-blue">{match.blue1}</div>
-            </td>
-            <td class="w-0 space-y-0.5 p-2">
-              <div class="text-red">{match.red2}</div>
-              <div class="text-blue">{match.blue2}</div>
-            </td>
-            <td class="w-0 space-y-0.5 p-2">
-              <div class="text-red">{match.red3}</div>
-              <div class="text-blue">{match.blue3}</div>
-            </td>
-            <td></td>
-          </tr>
+            <div>{match.number}</div>
+            <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
+              <div class="text-red {getFontWeight(match.red1)}">{match.red1}</div>
+              <div class="text-red {getFontWeight(match.red2)}">{match.red2}</div>
+              <div class="text-red {getFontWeight(match.red3)}">{match.red3}</div>
+              <div class="text-blue {getFontWeight(match.blue1)}">{match.blue1}</div>
+              <div class="text-blue {getFontWeight(match.blue2)}">{match.blue2}</div>
+              <div class="text-blue {getFontWeight(match.blue3)}">{match.blue3}</div>
+            </div>
+          </Button>
         {/snippet}
 
         {#if upcomingMatches.length}
           <div class="flex grow flex-col">
             <small>Upcoming</small>
-            <table class="border-separate border-spacing-y-2 text-center">
-              <tbody>
-                {#each upcomingMatches as match}
-                  {@render teamRow(match)}
-                {/each}
-              </tbody>
-            </table>
+            <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+              {#each upcomingMatches as match}
+                {@render teamRow(match)}
+              {/each}
+            </div>
           </div>
         {/if}
 
         {#if previousMatches.length}
           <div class="flex grow flex-col">
             <small>Previous</small>
-            <table class="border-separate border-spacing-y-2 text-center">
-              <tbody>
-                {#each previousMatches as match}
-                  {@render teamRow(match)}
-                {/each}
-              </tbody>
-            </table>
+            <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+              {#each previousMatches as match}
+                {@render teamRow(match)}
+              {/each}
+            </div>
           </div>
         {/if}
       </div>
