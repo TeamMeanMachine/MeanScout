@@ -85,7 +85,7 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
             compressedInnerField.push(1);
           }
         } else if (innerField.type == "select") {
-          compressedInnerField.push(innerField.values.join(","));
+          compressedInnerField.push(...innerField.values);
         } else if (innerField.type == "text") {
           if (innerField.long) {
             compressedInnerField.push(1);
@@ -244,7 +244,18 @@ export function jsonToSurvey(
           singleField.allowNegative = true;
         }
       } else if (fieldType == "select") {
-        singleField = { surveyId: 0, name, type: fieldType, values: config.map((value) => value.toString()) };
+        singleField = {
+          surveyId: 0,
+          name,
+          type: fieldType,
+          values: config.flatMap((value) => {
+            if (typeof value == "string") {
+              return value.split(",");
+            } else {
+              return value;
+            }
+          }),
+        };
       } else if (fieldType == "text") {
         singleField = { surveyId: 0, name, type: fieldType };
         if (config.length) {

@@ -109,7 +109,13 @@ export function getDefaultFieldValue(field: SingleField) {
   }
 }
 
-export function addField(fieldStore: IDBObjectStore, fields: Map<number, Field>, fieldId: number, surveyId: number) {
+export function addField(
+  fieldStore: IDBObjectStore,
+  fields: Map<number, Field>,
+  oldNewMap: Map<number, number>,
+  fieldId: number,
+  surveyId: number,
+) {
   return new Promise<number>(async (resolve, reject) => {
     const field = fields.get(fieldId);
     if (!field) return reject(`Could not add field with id ${fieldId} for survey id ${surveyId}`);
@@ -119,8 +125,9 @@ export function addField(fieldStore: IDBObjectStore, fields: Map<number, Field>,
 
       for (const innerFieldId of field.fieldIds) {
         try {
-          const addedInnerFieldId = await addField(fieldStore, fields, innerFieldId, surveyId);
+          const addedInnerFieldId = await addField(fieldStore, fields, oldNewMap, innerFieldId, surveyId);
           newIds.push(addedInnerFieldId);
+          oldNewMap.set(innerFieldId, addedInnerFieldId);
         } catch (error) {
           return reject(error);
         }

@@ -44,11 +44,13 @@
 
         if (importedFields?.size && importedSurvey?.fieldIds.length) {
           const newIds: number[] = [];
+          const oldNewMap = new Map<number, number>();
 
           for (const fieldId of importedSurvey.fieldIds) {
             try {
-              const addedFieldId = await addField(fieldStore, importedFields, fieldId, id);
+              const addedFieldId = await addField(fieldStore, importedFields, oldNewMap, fieldId, id);
               newIds.push(addedFieldId);
+              oldNewMap.set(fieldId, addedFieldId);
             } catch (error) {
               importTransaction.abort();
               return;
@@ -56,6 +58,20 @@
           }
 
           importedSurvey.fieldIds = newIds;
+          if (importedSurvey.type == "match") {
+            importedSurvey.expressions = importedSurvey.expressions.map((e) => {
+              e.inputs = e.inputs.map((i) => {
+                if (i.from == "field" && oldNewMap.has(i.fieldId)) {
+                  const newId = oldNewMap.get(i.fieldId);
+                  if (newId) {
+                    i.fieldId = newId;
+                  }
+                }
+                return i;
+              });
+              return e;
+            });
+          }
           surveyStore.put({ ...$state.snapshot(importedSurvey), id });
         }
 

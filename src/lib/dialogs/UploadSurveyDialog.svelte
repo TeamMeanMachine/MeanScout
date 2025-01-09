@@ -57,15 +57,17 @@
       const addRequest = surveyStore.add($state.snapshot(importedSurvey));
 
       addRequest.onsuccess = async () => {
-        const surveyId = addRequest.result as number;
+        const id = addRequest.result as number;
 
         if (importedFields?.size && importedSurvey?.fieldIds.length) {
           const newIds: number[] = [];
+          const oldNewMap = new Map<number, number>();
 
           for (const fieldId of importedSurvey.fieldIds) {
             try {
-              const addedFieldId = await addField(fieldStore, importedFields, fieldId, surveyId);
+              const addedFieldId = await addField(fieldStore, importedFields, oldNewMap, fieldId, id);
               newIds.push(addedFieldId);
+              oldNewMap.set(fieldId, addedFieldId);
             } catch (error) {
               importTransaction.abort();
               return;
@@ -73,10 +75,24 @@
           }
 
           importedSurvey.fieldIds = newIds;
-          surveyStore.put({ ...importedSurvey, surveyId });
+          if (importedSurvey.type == "match") {
+            importedSurvey.expressions = importedSurvey.expressions.map((e) => {
+              e.inputs = e.inputs.map((i) => {
+                if (i.from == "field" && oldNewMap.has(i.fieldId)) {
+                  const newId = oldNewMap.get(i.fieldId);
+                  if (newId) {
+                    i.fieldId = newId;
+                  }
+                }
+                return i;
+              });
+              return e;
+            });
+          }
+          surveyStore.put({ ...$state.snapshot(importedSurvey), id });
         }
 
-        location.hash = `/survey/${surveyId}`;
+        location.hash = `/survey/${id}`;
       };
     },
   };
