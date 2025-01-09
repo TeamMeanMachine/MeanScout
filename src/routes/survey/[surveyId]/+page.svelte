@@ -196,11 +196,7 @@
       <Icon name="chart-simple" />
       <div class="flex grow flex-col">
         Analysis
-        <small>
-          {data.surveyRecord.pickLists.length} pick {data.surveyRecord.pickLists.length == 1 ? "list" : "lists"},
-          {data.surveyRecord.expressions.length}
-          {data.surveyRecord.expressions.length == 1 ? "expression" : "expressions"}
-        </small>
+        <small>Pick Lists, Expressions</small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>

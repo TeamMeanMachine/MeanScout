@@ -12,19 +12,27 @@
   let {
     surveyRecord,
     fields,
+    expressions,
     entriesByTeam,
     expression,
     index,
     usedExpressionNames,
+    input,
     onupdate,
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
+    expressions?: {
+      derived: Expression[];
+      primitive: Expression[];
+      mixed: Expression[];
+    };
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     expression: Expression;
     index: number;
     usedExpressionNames?: string[] | undefined;
+    input?: "expressions" | "fields";
     onupdate?: (expression: Expression) => void;
     ondelete?: () => void;
   } = $props();
@@ -46,6 +54,21 @@
         `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}\t${teamValue.percentage.toFixed(2)}%`,
     )
     .join("\n");
+
+  function expressionReferencesOther(e: Expression, other: Expression) {
+    for (const input of e.inputs.filter((input) => input.from == "expression")) {
+      if (input.expressionName == other.name) {
+        return true;
+      }
+
+      const newExp = surveyRecord.expressions.find((newExp) => newExp.name == input.expressionName);
+      if (newExp && expressionReferencesOther(newExp, e)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 </script>
 
 <span>{expression.name}</span>
@@ -92,14 +115,26 @@
 {/if}
 
 {#if $modeStore == "admin"}
-  {#if onupdate}
+  {#if onupdate && expressions}
     <Button
       onclick={() => {
         openDialog(EditExpressionDialog, {
           surveyRecord,
           fields,
+          expressions: {
+            derived: expressions.derived.filter(
+              (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+            ),
+            primitive: expressions.primitive.filter(
+              (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+            ),
+            mixed: expressions.mixed.filter(
+              (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+            ),
+          },
           expression,
           index,
+          input,
           onupdate(changes) {
             expression = changes;
             onupdate(changes);

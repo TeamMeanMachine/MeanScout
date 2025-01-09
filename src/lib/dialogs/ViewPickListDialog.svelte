@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
+  import { calculateTeamData, normalizeTeamData, type Expression, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
@@ -13,6 +13,7 @@
   let {
     surveyRecord,
     fields,
+    expressions,
     entriesByTeam,
     pickList,
     onupdate,
@@ -20,6 +21,11 @@
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
+    expressions?: {
+      derived: Expression[];
+      primitive: Expression[];
+      mixed: Expression[];
+    };
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
     onupdate?: (pickList: PickList) => void;
@@ -97,11 +103,11 @@
 {/if}
 
 {#if $modeStore == "admin"}
-  {#if onupdate}
+  {#if onupdate && expressions}
     <Button
       onclick={() => {
         openDialog(EditPickListDialog, {
-          surveyRecord,
+          expressions,
           pickList,
           onupdate(changes) {
             pickList = changes;

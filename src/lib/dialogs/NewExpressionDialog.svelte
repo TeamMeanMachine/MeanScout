@@ -11,10 +11,18 @@
   let {
     surveyRecord,
     fields,
+    expressions,
+    input,
     oncreate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
+    expressions: {
+      derived: Expression[];
+      primitive: Expression[];
+      mixed: Expression[];
+    };
+    input: "expressions" | "fields";
     oncreate: (expression: Expression) => void;
   } = $props();
 
@@ -37,6 +45,11 @@
 
       if (expression.type == "divide" && expression.divisor == 0) {
         error = "divisor can't be 0!";
+        return;
+      }
+
+      if (expression.inputs.length == 0) {
+        error = "no inputs selected!";
         return;
       }
 
@@ -164,69 +177,87 @@
   </label>
 {/if}
 
-<span>Inputs</span>
+{#if input == "expressions"}
+  {#snippet expressionButton(exp: Expression)}
+    {@const inputIndex = expression.inputs.findIndex(
+      (input) => input.from == "expression" && input.expressionName == exp.name,
+    )}
+    {@const isInput = inputIndex != -1}
 
-<div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
-  <details open>
-    <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Expressions</summary>
-    <div class="flex flex-col gap-2 p-2">
-      {#each surveyRecord.expressions as exp}
-        {@const inputIndex = expression.inputs.findIndex(
-          (input) => input.from == "expression" && input.expressionName == exp.name,
-        )}
-        {@const isInput = inputIndex != -1}
+    <Button
+      onclick={() => {
+        if (isInput) {
+          expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+        } else {
+          expression.inputs = [...expression.inputs, { from: "expression", expressionName: exp.name }];
+        }
+      }}
+    >
+      {#if isInput}
+        <Icon name="square-check" />
+        <strong>{exp.name}</strong>
+      {:else}
+        <Icon style="regular" name="square" />
+        {exp.name}
+      {/if}
+    </Button>
+  {/snippet}
 
-        <Button
-          onclick={() => {
-            if (isInput) {
-              expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
-            } else {
-              expression.inputs = [...expression.inputs, { from: "expression", expressionName: exp.name }];
-            }
-          }}
-        >
-          {#if isInput}
-            <Icon name="square-check" />
-            <strong>{exp.name}</strong>
-          {:else}
-            <Icon style="regular" name="square" />
-            {exp.name}
-          {/if}
-        </Button>
-      {/each}
-    </div>
-  </details>
+  <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
+    {#if expressions.derived.length}
+      <div class="flex flex-col gap-2">
+        <span>Expressions <small>(from expressions)</small></span>
+        {#each expressions.derived as exp}
+          {@render expressionButton(exp)}
+        {/each}
+      </div>
+    {/if}
+    {#if expressions.primitive.length}
+      <div class="flex flex-col gap-2">
+        <span>Expressions <small>(from fields)</small></span>
+        {#each expressions.primitive as exp}
+          {@render expressionButton(exp)}
+        {/each}
+      </div>
+    {/if}
+    {#if expressions.mixed.length}
+      <div class="flex flex-col gap-2">
+        <span>Expressions <small>(mixed)</small></span>
+        {#each expressions.mixed as exp}
+          {@render expressionButton(exp)}
+        {/each}
+      </div>
+    {/if}
+  </div>
+{:else if input == "fields"}
+  <span>Fields</span>
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+    {#each fields as field (field.field.id)}
+      {@const inputIndex = expression.inputs.findIndex(
+        (input) => input.from == "field" && input.fieldId == field.field.id,
+      )}
+      {@const isInput = inputIndex != -1}
 
-  <details open>
-    <summary class="cursor-default bg-neutral-800 p-2 pl-3 marker:text-theme">Fields</summary>
-    <div class="flex flex-col gap-2 p-2">
-      {#each fields as field (field.field.id)}
-        {@const inputIndex = expression.inputs.findIndex(
-          (input) => input.from == "field" && input.fieldId == field.field.id,
-        )}
-        {@const isInput = inputIndex != -1}
-
-        <Button
-          onclick={() => {
-            if (isInput) {
-              expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
-            } else {
-              expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
-            }
-          }}
-        >
-          {#if isInput}
-            <Icon name="square-check" />
-            <strong>{field.detailedName}</strong>
-          {:else}
-            <Icon style="regular" name="square" />
-            {field.detailedName}
-          {/if}
-        </Button>
-      {/each}
-    </div>
-  </details>
-</div>
+      <Button
+        onclick={() => {
+          if (isInput) {
+            expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+          } else {
+            expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
+          }
+        }}
+      >
+        {#if isInput}
+          <Icon name="square-check" />
+          <strong>{field.detailedName}</strong>
+        {:else}
+          <Icon style="regular" name="square" />
+          {field.detailedName}
+        {/if}
+      </Button>
+    {/each}
+  </div>
+{/if}
 
 {#if error}
   <span>Error: {error}</span>
