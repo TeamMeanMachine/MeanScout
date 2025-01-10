@@ -2,12 +2,14 @@
   import type { Expression, PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import DeletePickListDialog from "./DeletePickListDialog.svelte";
 
   let {
     expressions,
     pickList,
     onupdate,
+    ondelete,
   }: {
     expressions: {
       derived: Expression[];
@@ -16,6 +18,7 @@
     };
     pickList: PickList;
     onupdate: (pickList: PickList) => void;
+    ondelete: () => void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(pickList)));
@@ -103,3 +106,17 @@
 </div>
 
 <span>Total weights: {totalWeights}%</span>
+
+<Button
+  onclick={() => {
+    openDialog(DeletePickListDialog, {
+      ondelete() {
+        ondelete();
+        closeDialog();
+      },
+    });
+  }}
+>
+  <Icon name="trash" />
+  Delete
+</Button>

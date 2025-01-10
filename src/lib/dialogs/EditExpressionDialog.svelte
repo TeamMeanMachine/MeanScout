@@ -14,8 +14,10 @@
     expressions,
     expression,
     index,
+    usedExpressionNames,
     input,
     onupdate,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
@@ -26,8 +28,10 @@
     };
     expression: Expression;
     index: number;
+    usedExpressionNames?: string[] | undefined;
     input?: "expressions" | "fields";
     onupdate: (expression: Expression) => void;
+    ondelete: () => void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(expression)));
@@ -274,6 +278,18 @@
       </Button>
     {/each}
   </div>
+{/if}
+
+{#if !usedExpressionNames?.includes(expression.name)}
+  <Button
+    onclick={() => {
+      ondelete();
+      closeDialog();
+    }}
+  >
+    <Icon name="trash" />
+    Delete
+  </Button>
 {/if}
 
 {#if error}

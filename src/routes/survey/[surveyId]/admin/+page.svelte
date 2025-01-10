@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
@@ -44,15 +43,6 @@
     }
   }
 </script>
-
-<Header
-  title="Options - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Options" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
 
 <div class="flex flex-col gap-2">
   <Button

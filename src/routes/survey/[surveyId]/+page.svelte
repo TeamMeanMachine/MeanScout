@@ -359,11 +359,11 @@
       <Icon name="arrow-right" />
     </Anchor>
 
-    <Anchor route="survey/{data.surveyRecord.id}/options">
-      <Icon name="gears" />
+    <Anchor route="survey/{data.surveyRecord.id}/admin">
+      <Icon name="toolbox" />
       <div class="flex grow flex-col">
-        Options
-        <small>Name, TBA event</small>
+        Admin
+        <small> Setup, Configure </small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
