@@ -72,7 +72,7 @@
     <Icon name="info-circle" />
     <div class="flex grow flex-col">
       About
-      <small>Guides, Info</small>
+      <small>Info, Guides</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>
