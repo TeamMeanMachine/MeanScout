@@ -2,12 +2,9 @@
   import type { Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
-  import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
-  import { objectStore } from "$lib/idb";
-  import { modeStore, teamStore } from "$lib/settings";
+  import { teamStore } from "$lib/settings";
   import type { PageData } from "./$types";
 
   let {
@@ -55,29 +52,6 @@
 />
 
 <div class="flex flex-col gap-3">
-  {#if $modeStore == "admin"}
-    <Button
-      onclick={() =>
-        openDialog(NewMatchDialog, {
-          surveyRecord: data.surveyRecord,
-          oncreate(match) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                matches: [...data.surveyRecord.matches, match],
-                modified: new Date(),
-              },
-            };
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-          },
-        })}
-    >
-      <Icon name="plus" />
-      New match
-    </Button>
-  {/if}
-
   {#if $teamStore}
     <div class="flex flex-wrap gap-2">
       <Button onclick={() => (filterMatches = false)} class={filterMatches ? "font-light" : "font-bold"}>All</Button>
@@ -94,28 +68,6 @@
           openDialog(ViewMatchDialog, {
             data,
             match,
-            onupdate(match: Match) {
-              const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
-              const index = matches.findIndex((m) => m.number == match.number);
-              if (index >= 0) matches[index] = match;
-
-              data = {
-                ...data,
-                surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
-              };
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-            },
-            ondelete() {
-              data = {
-                ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  matches: data.surveyRecord.matches.filter((m) => m.number != match.number),
-                  modified: new Date(),
-                },
-              };
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-            },
           });
         }}
         class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"

@@ -92,7 +92,7 @@
           surveyStore.put({ ...$state.snapshot(importedSurvey), id });
         }
 
-        location.hash = `/survey/${id}`;
+        location.hash = `/survey/${id}/admin`;
       };
     },
   };

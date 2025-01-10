@@ -345,25 +345,11 @@
       </Button>
     </div>
 
-    <Anchor route="survey/{data.surveyRecord.id}/fields">
-      <Icon name="list-check" />
-      <div class="flex grow flex-col">
-        Fields
-        <small>
-          {#if !shouldHideConfigureText}
-            Configure,
-          {/if}
-          Preview
-        </small>
-      </div>
-      <Icon name="arrow-right" />
-    </Anchor>
-
     <Anchor route="survey/{data.surveyRecord.id}/admin">
       <Icon name="toolbox" />
       <div class="flex grow flex-col">
         Admin
-        <small> Setup, Configure </small>
+        <small>Setup, Configure</small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>

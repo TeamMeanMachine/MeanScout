@@ -2,13 +2,13 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
-  import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
   import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import type { PageData } from "./$types";
+  import AdminHeader from "./AdminHeader.svelte";
 
   let {
     data,
@@ -43,6 +43,8 @@
     }
   }
 </script>
+
+<AdminHeader surveyRecord={data.surveyRecord} page="general" />
 
 <div class="flex flex-col gap-2">
   <Button
@@ -110,20 +112,3 @@
     {/if}
   </div>
 {/if}
-
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">Danger Zone</h2>
-  <Button
-    onclick={() => {
-      openDialog(DeleteSurveyDialog, { surveyRecord: data.surveyRecord, entryCount: data.entryRecords.length });
-    }}
-  >
-    <Icon name="trash" />
-    <div class="flex flex-col">
-      Delete survey
-      {#if data.entryRecords.length}
-        <small>And {data.entryRecords.length} {data.entryRecords.length > 1 ? "entries" : "entry"}</small>
-      {/if}
-    </div>
-  </Button>
-</div>

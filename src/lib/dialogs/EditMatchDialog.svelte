@@ -1,13 +1,18 @@
 <script lang="ts">
   import type { Match } from "$lib";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import Button from "$lib/components/Button.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
 
   let {
     match,
     onupdate,
+    ondelete,
   }: {
     match: Match;
     onupdate: (match: Match) => void;
+    ondelete: () => void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(match)));
@@ -89,6 +94,20 @@
     <input maxlength="5" bind:value={changes.blue3} class="w-full bg-neutral-800 p-2 text-blue" />
   </label>
 </div>
+
+<Button
+  onclick={() =>
+    openDialog(DeleteMatchDialog, {
+      number: match.number,
+      ondelete() {
+        ondelete();
+        closeDialog();
+      },
+    })}
+>
+  <Icon name="trash" />
+  Delete
+</Button>
 
 {#if error}
   <span>Error: {error}</span>

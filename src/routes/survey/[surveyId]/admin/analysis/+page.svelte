@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Expression } from "$lib/analysis";
-  import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
@@ -9,6 +8,7 @@
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import { objectStore } from "$lib/idb";
+  import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -55,6 +55,8 @@
     return false;
   }
 </script>
+
+<AdminHeader surveyRecord={data.surveyRecord} page="analysis" />
 
 {#if data.fields.length > 0}
   <div class="flex flex-col gap-2">
@@ -198,10 +200,6 @@
   {/if}
 {:else}
   To setup analysis, go create some fields.
-  <Anchor route="survey/{data.surveyRecord.id}/fields" class="self-start">
-    <Icon name="list-check" />
-    Fields
-  </Anchor>
 {/if}
 
 {#snippet expressionButton(expression: Expression, input?: "expressions" | "fields")}

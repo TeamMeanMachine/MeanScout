@@ -54,7 +54,7 @@
           return;
         }
 
-        location.hash = `/survey/${id}`;
+        location.hash = `/survey/${id}/admin`;
       };
     },
   };

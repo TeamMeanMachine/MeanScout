@@ -3,25 +3,19 @@
   import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
+  import { openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
   import { getDetailedSingleFields } from "$lib/field";
-  import { modeStore, teamStore } from "$lib/settings";
+  import { teamStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/matches/$types";
-  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import EditMatchDialog from "./EditMatchDialog.svelte";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
     data,
     match,
-    onupdate,
-    ondelete,
   }: {
     data: PageData;
     match: Match;
-    onupdate?: (match: Match) => void;
-    ondelete?: () => void;
   } = $props();
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
@@ -196,36 +190,3 @@
     {/each}
   </div>
 </div>
-
-{#if $modeStore == "admin"}
-  {#if onupdate}
-    <Button
-      onclick={() =>
-        openDialog(EditMatchDialog, {
-          match,
-          onupdate(changes) {
-            match = changes;
-            onupdate(changes);
-          },
-        })}
-    >
-      <Icon name="pen" />
-      Edit
-    </Button>
-  {/if}
-  {#if ondelete}
-    <Button
-      onclick={() =>
-        openDialog(DeleteMatchDialog, {
-          number: match.number,
-          ondelete() {
-            ondelete();
-            closeDialog();
-          },
-        })}
-    >
-      <Icon name="trash" />
-      Delete
-    </Button>
-  {/if}
-{/if}
