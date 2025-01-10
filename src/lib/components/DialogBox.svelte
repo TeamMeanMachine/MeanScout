@@ -20,7 +20,7 @@
   let ignoreClose = false;
 
   function onboxmouseup() {
-    if (!ignoreClose) closeDialog();
+    if (!ignoreClose) box.close();
     ignoreClose = false;
   }
 
@@ -47,7 +47,6 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <dialog
   bind:this={box}
   onclose={closeDialog}
@@ -64,7 +63,7 @@
     onmousedown={onforminteract}
     class="flex max-h-dvh flex-col gap-3 p-3"
   >
-    <div bind:this={target} class="flex flex-col gap-3"></div>
+    <div bind:this={target} class="contents"></div>
 
     <div class="flex flex-wrap justify-between gap-3">
       <Button onclick={() => box.close()}>
