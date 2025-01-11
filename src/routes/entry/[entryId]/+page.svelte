@@ -39,10 +39,10 @@
 
 <div class="flex flex-col gap-4">
   <div class="flex flex-col">
-    <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
     {#if data.entryRecord.type == "match"}
       <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
     {/if}
+    <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
   </div>
 
   <div class="flex flex-col flex-wrap gap-3">

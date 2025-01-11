@@ -71,15 +71,17 @@
   <table class="w-full text-left">
     <tbody>
       <tr><th colspan="2" class="p-2">Entry</th></tr>
-      <tr>
-        <td class="w-0 p-2 text-sm">Team</td>
-        <td class="p-2 font-bold">{entryRecord.team}</td>
-      </tr>
       {#if entryRecord.type == "match"}
         <tr>
           <td class="p-2 text-sm">Match</td>
           <td class="p-2 font-bold">{entryRecord.match}</td>
         </tr>
+      {/if}
+      <tr>
+        <td class="w-0 p-2 text-sm">Team</td>
+        <td class="p-2 font-bold">{entryRecord.team}</td>
+      </tr>
+      {#if entryRecord.type == "match"}
         <tr>
           <td class="p-2 text-sm">Absent</td>
           <td class="p-2 font-bold">{entryRecord.absent}</td>

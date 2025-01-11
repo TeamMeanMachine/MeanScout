@@ -123,11 +123,11 @@
   >
     <Icon name="plus" />
     <div class="flex flex-col">
-      {#if prefilledTeam.length}
-        <span><small>Team</small> {prefilledTeam}</span>
-      {/if}
       {#if data.surveyType == "match" && prefilledMatch}
         <span><small>Match</small> {prefilledMatch}</span>
+      {/if}
+      {#if prefilledTeam.length}
+        <span><small>Team</small> {prefilledTeam}</span>
       {/if}
     </div>
   </Button>

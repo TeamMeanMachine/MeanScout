@@ -49,7 +49,7 @@
 
   {#if data.surveyRecord.matches.length}
     <div class="cool-grid grid gap-2">
-      {#each data.surveyRecord.matches as match (match)}
+      {#each data.surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match (match)}
         <Button
           onclick={() => {
             openDialog(EditMatchDialog, {

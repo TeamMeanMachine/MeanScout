@@ -294,6 +294,22 @@
       </div>
 
       <div class="mb-2 flex flex-wrap gap-2">
+        {#if data.surveyType == "match"}
+          <label class="flex grow flex-col">
+            Match
+            <select
+              bind:value={filters.match}
+              class="bg-neutral-800 p-2 text-theme"
+              class:font-bold={filters.match !== undefined}
+            >
+              <option value={undefined}>--</option>
+              {#each getFilterableMatches() as match}
+                <option>{match}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+
         <label class="flex grow flex-col">
           Team
           <select
@@ -309,20 +325,6 @@
         </label>
 
         {#if data.surveyType == "match"}
-          <label class="flex grow flex-col">
-            Match
-            <select
-              bind:value={filters.match}
-              class="bg-neutral-800 p-2 text-theme"
-              class:font-bold={filters.match !== undefined}
-            >
-              <option value={undefined}>--</option>
-              {#each getFilterableMatches() as match}
-                <option>{match}</option>
-              {/each}
-            </select>
-          </label>
-
           <label class="flex grow flex-col">
             Absent
             <select
@@ -436,9 +438,11 @@
       style="grid-template-columns: repeat({data.surveyType == 'match' ? 4 : 2}, min-content) auto;"
     >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-        <Button onclick={() => (sortBy = "team")} class="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
         {#if data.surveyType == "match"}
           <Button onclick={() => (sortBy = "match")} class="font-{sortBy == 'match' ? 'bold' : 'light'}">Match</Button>
+        {/if}
+        <Button onclick={() => (sortBy = "team")} class="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
+        {#if data.surveyType == "match"}
           <Button onclick={() => (sortBy = "absent")} class="font-{sortBy == 'absent' ? 'bold' : 'light'}">
             Absent
           </Button>
@@ -460,9 +464,11 @@
           }}
           class="col-span-full grid grid-cols-subgrid text-center"
         >
-          <div>{entry.team}</div>
           {#if entry.type == "match"}
             <div>{entry.match}</div>
+          {/if}
+          <div>{entry.team}</div>
+          {#if entry.type == "match"}
             <div>
               {#if entry.absent}
                 <Icon name="check" />

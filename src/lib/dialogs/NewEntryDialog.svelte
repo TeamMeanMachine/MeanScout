@@ -32,8 +32,8 @@
     }
   });
 
-  let team = $state(prefilledTeam);
   let match = $state(prefilledMatch);
+  let team = $state(prefilledTeam);
   let absent = $state(false);
   let error = $state("");
 
@@ -162,6 +162,19 @@
 
 <span>New entry</span>
 
+{#if surveyRecord.type == "match"}
+  <label class="flex flex-col">
+    Match
+    <input
+      type="number"
+      bind:value={match}
+      oninput={() => (team = suggestedTeams[0])}
+      min="1"
+      class="bg-neutral-800 p-2 text-theme"
+    />
+  </label>
+{/if}
+
 <datalist id="teams-list">
   {#each suggestedTeams as team}
     <option value={team}></option>
@@ -173,10 +186,6 @@
 </label>
 
 {#if surveyRecord.type == "match"}
-  <label class="flex flex-col">
-    Match
-    <input type="number" bind:value={match} class="bg-neutral-800 p-2 text-theme" />
-  </label>
   <Button
     onclick={() => {
       absent = !absent;
