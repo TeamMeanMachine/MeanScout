@@ -19,20 +19,17 @@
 
 <Header />
 
-{#if data.surveys.length}
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Surveys</h2>
+<div class="flex flex-col gap-2">
+  <h2 class="font-bold">Surveys</h2>
+
+  {#if data.surveys.length}
     {#each data.surveys.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
         <div class="grow">{survey.name}</div>
         <Icon name="arrow-right" />
       </Anchor>
     {/each}
-  </div>
-{/if}
-
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">Options</h2>
+  {/if}
 
   {#if $modeStore == "admin"}
     <div class="flex flex-wrap gap-2">
@@ -59,12 +56,15 @@
       </Button>
     </div>
   {/if}
+</div>
 
+<div class="flex flex-col gap-2">
+  <h2 class="font-bold">MeanScout</h2>
   <Anchor route="settings">
     <Icon name="gears" />
     <div class="flex grow flex-col">
       Settings
-      <small>Configure MeanScout</small>
+      <small>App config</small>
     </div>
     <Icon name="arrow-right" />
   </Anchor>

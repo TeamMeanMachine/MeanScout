@@ -2,6 +2,9 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
 
+  const lastSurvey = localStorage.getItem("survey");
+  const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
+
   let tab = $state<"info" | "guides">("info");
 
   function getTabClass(matching: string) {
@@ -9,7 +12,7 @@
   }
 </script>
 
-<Header title="About - MeanScout" heading="About MeanScout" backLink="" />
+<Header title="About - MeanScout" heading="About MeanScout" {backLink} />
 
 <div class="flex flex-wrap gap-2">
   <Button onclick={() => (tab = "info")} class={getTabClass("info")}>Info</Button>

@@ -6,7 +6,10 @@
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
+  import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
+  import ImportSurveyFromQrCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
+  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";
@@ -94,7 +97,7 @@
   }
 </script>
 
-<Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} backLink="" />
+<Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} />
 
 <div class="flex flex-col gap-2">
   <h2 class="font-bold">Entries</h2>
@@ -307,10 +310,8 @@
 </div>
 
 {#if $modeStore == "admin"}
-  {@const shouldHideConfigureText = data.entryRecords.length > 0}
-
   <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Admin</h2>
+    <h2 class="font-bold">Survey</h2>
 
     <div class="flex flex-wrap gap-2">
       <Button
@@ -355,3 +356,30 @@
     </Anchor>
   </div>
 {/if}
+
+<div class="flex flex-col gap-2">
+  <h2 class="font-bold">MeanScout</h2>
+  <Anchor route="">
+    <Icon name="arrow-left" />
+    <div class="flex grow flex-col">
+      Main page
+      <small>Switch survey</small>
+    </div>
+  </Anchor>
+  <Anchor route="settings">
+    <Icon name="gears" />
+    <div class="flex grow flex-col">
+      Settings
+      <small>App config</small>
+    </div>
+    <Icon name="arrow-right" />
+  </Anchor>
+  <Anchor route="about">
+    <Icon name="info-circle" />
+    <div class="flex grow flex-col">
+      About
+      <small>Info, Guides</small>
+    </div>
+    <Icon name="arrow-right" />
+  </Anchor>
+</div>

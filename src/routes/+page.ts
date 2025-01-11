@@ -3,6 +3,7 @@ import type { Survey } from "$lib/survey";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async () => {
+  localStorage.removeItem("survey");
   return {
     surveys: await new Promise<IDBRecord<Survey>[]>((resolve) => {
       const surveysRequest = objectStore("surveys").getAll();

@@ -5,6 +5,9 @@
   import { cameraStore, modes, modeStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
 
+  const lastSurvey = localStorage.getItem("survey");
+  const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
+
   let modeInput = $state($modeStore);
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);
@@ -70,7 +73,7 @@
   }
 </script>
 
-<Header title="Settings - MeanScout" heading="Settings" backLink="" />
+<Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
 <label class="flex flex-wrap items-center gap-2">
   <Icon name={$modeStore == "admin" ? "lock-open" : "lock"} />

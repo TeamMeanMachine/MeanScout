@@ -48,6 +48,8 @@ export function loadSurveyPageData(surveyId: number) {
             return surveyTransaction.abort();
           }
 
+          localStorage.setItem("survey", surveyRecord.id);
+
           if (surveyRecord.type == "match") {
             resolve({ surveyType: "match", surveyRecord, fieldRecords, entryRecords });
           } else {
