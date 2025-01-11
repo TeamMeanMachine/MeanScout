@@ -15,6 +15,7 @@
   let tbaAuthKeyInput = $state($tbaAuthKeyStore);
 
   let cameras = $state<{ id: string; name: string }[]>([]);
+  let noCamera = $state(false);
 
   let error = $state("");
 
@@ -28,15 +29,23 @@
     );
   });
 
-  navigator.mediaDevices
-    .enumerateDevices()
-    .then((devices) => {
-      cameras = devices
-        .filter((device) => device.kind == "videoinput" && device.label.trim())
-        .map((device) => ({ id: device.deviceId, name: device.label.trim() }))
-        .toSorted((a, b) => a.name.localeCompare(b.name, "en"));
-    })
-    .catch(() => (error = "Could not get cameras"));
+  requestCameras().catch(() => (noCamera = true));
+
+  async function requestCameras() {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    stream.getTracks().forEach((track) => track.stop());
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+
+    cameras = devices
+      .filter((device) => device.kind == "videoinput" && device.label.trim())
+      .map((device) => ({ id: device.deviceId, name: device.label.trim() }))
+      .toSorted((a, b) => a.name.localeCompare(b.name, "en"));
+
+    if (cameras.length == 0) {
+      throw new Error("No camera");
+    }
+  }
 
   async function save() {
     error = "";
@@ -117,6 +126,8 @@
           <option value={id}>{name}</option>
         {/each}
       </select>
+    {:else if noCamera}
+      <span>No camera</span>
     {:else}
       <div><i class="fa-solid fa-sync fa-spin"></i></div>
     {/if}
