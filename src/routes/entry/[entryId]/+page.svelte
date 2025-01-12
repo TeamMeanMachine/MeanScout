@@ -37,74 +37,76 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-col gap-4">
-  <div class="flex flex-col">
-    {#if data.entryRecord.type == "match"}
-      <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
-    {/if}
-    <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
-  </div>
-
-  <div class="flex flex-col flex-wrap gap-3">
-    {#each data.surveyRecord.fieldIds as fieldId}
-      {@const fieldDetails = data.detailedFields.get(fieldId)}
-
-      {#if fieldDetails?.type == "group"}
-        <div class="flex w-full flex-col gap-1">
-          <h2 class="font-bold">{fieldDetails.field.name}</h2>
-
-          <div class="mb-4 flex flex-col flex-wrap gap-3">
-            {#each fieldDetails.field.fieldIds as innerFieldId}
-              {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
-
-              {#if innerFieldDetails}
-                <FieldValueEditor
-                  field={innerFieldDetails.field}
-                  bind:value={entry.values[innerFieldDetails.valueIndex]}
-                  {onchange}
-                />
-              {/if}
-            {/each}
-          </div>
-        </div>
-      {:else if fieldDetails}
-        <FieldValueEditor field={fieldDetails.field} bind:value={entry.values[fieldDetails.valueIndex]} {onchange} />
+<div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-col">
+      {#if data.entryRecord.type == "match"}
+        <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
       {/if}
-    {/each}
+      <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
+    </div>
+
+    <div class="flex flex-col flex-wrap gap-3">
+      {#each data.surveyRecord.fieldIds as fieldId}
+        {@const fieldDetails = data.detailedFields.get(fieldId)}
+
+        {#if fieldDetails?.type == "group"}
+          <div class="flex w-full flex-col gap-1">
+            <h2 class="font-bold">{fieldDetails.field.name}</h2>
+
+            <div class="mb-4 flex flex-col flex-wrap gap-3">
+              {#each fieldDetails.field.fieldIds as innerFieldId}
+                {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
+
+                {#if innerFieldDetails}
+                  <FieldValueEditor
+                    field={innerFieldDetails.field}
+                    bind:value={entry.values[innerFieldDetails.valueIndex]}
+                    {onchange}
+                  />
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else if fieldDetails}
+          <FieldValueEditor field={fieldDetails.field} bind:value={entry.values[fieldDetails.valueIndex]} {onchange} />
+        {/if}
+      {/each}
+    </div>
   </div>
-</div>
 
-<div class="flex flex-wrap gap-2">
-  <Button
-    onclick={() =>
-      openDialog(SubmitEntryDialog, {
-        fields: data.fields,
-        entryRecord: data.entryRecord,
-        onexport: () => {
-          objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-          location.hash = `/survey/${data.surveyRecord.id}`;
-        },
-      })}
-  >
-    <Icon name="floppy-disk" />
-    Submit
-  </Button>
-
-  <Button
-    onclick={() =>
-      openDialog(DeleteEntryDialog, {
-        entryRecord: data.entryRecord,
-        ondelete: () => {
-          objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-          if (data.entryRecord.status == "draft") {
+  <div class="flex flex-wrap gap-2">
+    <Button
+      onclick={() =>
+        openDialog(SubmitEntryDialog, {
+          fields: data.fields,
+          entryRecord: data.entryRecord,
+          onexport: () => {
+            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             location.hash = `/survey/${data.surveyRecord.id}`;
-          } else {
-            location.hash = `/survey/${data.surveyRecord.id}/entries`;
-          }
-        },
-      })}
-  >
-    <Icon name="trash" />
-    Delete
-  </Button>
+          },
+        })}
+    >
+      <Icon name="floppy-disk" />
+      Submit
+    </Button>
+
+    <Button
+      onclick={() =>
+        openDialog(DeleteEntryDialog, {
+          entryRecord: data.entryRecord,
+          ondelete: () => {
+            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            if (data.entryRecord.status == "draft") {
+              location.hash = `/survey/${data.surveyRecord.id}`;
+            } else {
+              location.hash = `/survey/${data.surveyRecord.id}/entries`;
+            }
+          },
+        })}
+    >
+      <Icon name="trash" />
+      Delete
+    </Button>
+  </div>
 </div>

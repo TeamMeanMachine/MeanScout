@@ -142,26 +142,128 @@
   }
 </script>
 
-<AdminHeader surveyRecord={data.surveyRecord} page="fields" />
+<div class="flex flex-col gap-6" style="view-transition-name:admin">
+  <AdminHeader surveyRecord={data.surveyRecord} page="fields" />
 
-{#if data.disabled}
-  <span>
-    Can't edit fields: {data.entryRecords.length}
-    {data.entryRecords.length == 1 ? "entry" : "entries"} exist.
-  </span>
-{/if}
+  {#if data.disabled}
+    <span>
+      Can't edit fields: {data.entryRecords.length}
+      {data.entryRecords.length == 1 ? "entry" : "entries"} exist.
+    </span>
+  {/if}
 
-<div bind:this={mainList} class="flex flex-col gap-4">
-  {#if data.surveyRecord.fieldIds.length}
-    {#key data.surveyRecord.fieldIds}
-      {#each data.surveyRecord.fieldIds as fieldId (fieldId)}
-        {@const detailedField = detailedFields.get(fieldId)}
+  <div bind:this={mainList} class="flex flex-col gap-4">
+    {#if data.surveyRecord.fieldIds.length}
+      {#key data.surveyRecord.fieldIds}
+        {#each data.surveyRecord.fieldIds as fieldId (fieldId)}
+          {@const detailedField = detailedFields.get(fieldId)}
 
-        {#if detailedField?.type == "group"}
-          <div data-id={fieldId} class="group flex flex-col gap-2">
-            <h2 class="font-bold">{detailedField.field.name}</h2>
+          {#if detailedField?.type == "group"}
+            <div data-id={fieldId} class="group flex flex-col gap-2">
+              <h2 class="font-bold">{detailedField.field.name}</h2>
 
-            {#if !data.disabled}
+              {#if !data.disabled}
+                <Button
+                  disabled={data.disabled}
+                  onclick={() => {
+                    openDialog(ViewFieldDialog, {
+                      surveyRecord: data.surveyRecord,
+                      detailedInnerFields,
+                      field: structuredClone($state.snapshot(detailedField.field)),
+                      onedit: refresh,
+                      onmove(index, by) {
+                        const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
+                        fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
+                        data = {
+                          ...data,
+                          surveyRecord: { ...data.surveyRecord, fieldIds },
+                        } as PageData;
+                        refresh();
+                      },
+                      onduplicate(index, id) {
+                        data = {
+                          ...data,
+                          surveyRecord: {
+                            ...data.surveyRecord,
+                            fieldIds: data.surveyRecord.fieldIds.toSpliced(index + 1, 0, id),
+                          },
+                        } as PageData;
+                        refresh();
+                      },
+                      ondelete() {
+                        data = {
+                          ...data,
+                          surveyRecord: {
+                            ...data.surveyRecord,
+                            fieldIds: data.surveyRecord.fieldIds.filter((id) => detailedField.field.id != id),
+                          },
+                        } as PageData;
+                        refresh();
+                      },
+                    });
+                  }}
+                  class="handle"
+                >
+                  <Icon name={fieldIcons["group"]} />
+                  Group
+                </Button>
+              {/if}
+
+              <div use:createSortable data-id={fieldId} class="group-fields flex flex-col gap-2">
+                {#key detailedField.field.fieldIds}
+                  {#each detailedField.field.fieldIds as innerFieldId (innerFieldId)}
+                    {@const detailedInnerField = detailedInnerFields.get(innerFieldId)}
+
+                    {#if detailedInnerField}
+                      <div data-parent-id={fieldId} data-id={innerFieldId} class="single flex flex-col">
+                        <Button
+                          disabled={data.disabled}
+                          onclick={() => {
+                            openDialog(ViewFieldDialog, {
+                              surveyRecord: data.surveyRecord,
+                              detailedInnerFields,
+                              field: structuredClone($state.snapshot(detailedInnerField.field)),
+                              parentField: structuredClone($state.snapshot(detailedField.field)),
+                              onedit: refresh,
+                              onmove: refresh,
+                              onduplicate: refresh,
+                              ondelete: refresh,
+                            });
+                          }}
+                          class="handle"
+                        >
+                          <Icon name={fieldIcons[detailedInnerField.field.type]} />
+                          <div class="flex flex-col">
+                            {detailedInnerField.field.name}
+                            <small class="capitalize">{detailedInnerField.field.type}</small>
+                          </div>
+                        </Button>
+                      </div>
+                    {/if}
+                  {/each}
+                {/key}
+              </div>
+
+              {#if !data.disabled}
+                <Button
+                  disabled={data.disabled}
+                  onclick={() => {
+                    openDialog(NewFieldDialog, {
+                      surveyRecord: data.surveyRecord,
+                      parentField: structuredClone($state.snapshot(detailedField.field)),
+                      type: "field",
+                      oncreate: refresh,
+                    });
+                  }}
+                  class="group-fields"
+                >
+                  <Icon name="plus" />
+                  New {detailedField.field.name} field
+                </Button>
+              {/if}
+            </div>
+          {:else if detailedField}
+            <div data-id={fieldId} class="single flex flex-col">
               <Button
                 disabled={data.disabled}
                 onclick={() => {
@@ -203,165 +305,65 @@
                 }}
                 class="handle"
               >
-                <Icon name={fieldIcons["group"]} />
-                Group
+                <Icon name={fieldIcons[detailedField.field.type]} />
+                <div class="flex flex-col">
+                  {detailedField.field.name}
+                  <small class="capitalize">{detailedField.field.type}</small>
+                </div>
               </Button>
-            {/if}
-
-            <div use:createSortable data-id={fieldId} class="group-fields flex flex-col gap-2">
-              {#key detailedField.field.fieldIds}
-                {#each detailedField.field.fieldIds as innerFieldId (innerFieldId)}
-                  {@const detailedInnerField = detailedInnerFields.get(innerFieldId)}
-
-                  {#if detailedInnerField}
-                    <div data-parent-id={fieldId} data-id={innerFieldId} class="single flex flex-col">
-                      <Button
-                        disabled={data.disabled}
-                        onclick={() => {
-                          openDialog(ViewFieldDialog, {
-                            surveyRecord: data.surveyRecord,
-                            detailedInnerFields,
-                            field: structuredClone($state.snapshot(detailedInnerField.field)),
-                            parentField: structuredClone($state.snapshot(detailedField.field)),
-                            onedit: refresh,
-                            onmove: refresh,
-                            onduplicate: refresh,
-                            ondelete: refresh,
-                          });
-                        }}
-                        class="handle"
-                      >
-                        <Icon name={fieldIcons[detailedInnerField.field.type]} />
-                        <div class="flex flex-col">
-                          {detailedInnerField.field.name}
-                          <small class="capitalize">{detailedInnerField.field.type}</small>
-                        </div>
-                      </Button>
-                    </div>
-                  {/if}
-                {/each}
-              {/key}
             </div>
+          {/if}
+        {/each}
+      {/key}
+    {:else}
+      No fields.
+    {/if}
+  </div>
 
-            {#if !data.disabled}
-              <Button
-                disabled={data.disabled}
-                onclick={() => {
-                  openDialog(NewFieldDialog, {
-                    surveyRecord: data.surveyRecord,
-                    parentField: structuredClone($state.snapshot(detailedField.field)),
-                    type: "field",
-                    oncreate: refresh,
-                  });
-                }}
-                class="group-fields"
-              >
-                <Icon name="plus" />
-                New {detailedField.field.name} field
-              </Button>
-            {/if}
-          </div>
-        {:else if detailedField}
-          <div data-id={fieldId} class="single flex flex-col">
-            <Button
-              disabled={data.disabled}
-              onclick={() => {
-                openDialog(ViewFieldDialog, {
-                  surveyRecord: data.surveyRecord,
-                  detailedInnerFields,
-                  field: structuredClone($state.snapshot(detailedField.field)),
-                  onedit: refresh,
-                  onmove(index, by) {
-                    const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-                    fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
-                    data = {
-                      ...data,
-                      surveyRecord: { ...data.surveyRecord, fieldIds },
-                    } as PageData;
-                    refresh();
-                  },
-                  onduplicate(index, id) {
-                    data = {
-                      ...data,
-                      surveyRecord: {
-                        ...data.surveyRecord,
-                        fieldIds: data.surveyRecord.fieldIds.toSpliced(index + 1, 0, id),
-                      },
-                    } as PageData;
-                    refresh();
-                  },
-                  ondelete() {
-                    data = {
-                      ...data,
-                      surveyRecord: {
-                        ...data.surveyRecord,
-                        fieldIds: data.surveyRecord.fieldIds.filter((id) => detailedField.field.id != id),
-                      },
-                    } as PageData;
-                    refresh();
-                  },
-                });
-              }}
-              class="handle"
-            >
-              <Icon name={fieldIcons[detailedField.field.type]} />
-              <div class="flex flex-col">
-                {detailedField.field.name}
-                <small class="capitalize">{detailedField.field.type}</small>
-              </div>
-            </Button>
-          </div>
-        {/if}
-      {/each}
-    {/key}
-  {:else}
-    No fields.
+  {#if !data.disabled}
+    <div class="flex flex-wrap gap-2">
+      <Button
+        onclick={() => {
+          openDialog(NewFieldDialog, {
+            surveyRecord: data.surveyRecord,
+            type: "group",
+            oncreate(id) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  fieldIds: [...data.surveyRecord.fieldIds, id],
+                },
+              } as PageData;
+              refresh();
+            },
+          });
+        }}
+      >
+        <Icon name="plus" />
+        New group
+      </Button>
+      <Button
+        onclick={() => {
+          openDialog(NewFieldDialog, {
+            surveyRecord: data.surveyRecord,
+            type: "field",
+            oncreate(id) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  fieldIds: [...data.surveyRecord.fieldIds, id],
+                },
+              } as PageData;
+              refresh();
+            },
+          });
+        }}
+      >
+        <Icon name="plus" />
+        New field
+      </Button>
+    </div>
   {/if}
 </div>
-
-{#if !data.disabled}
-  <div class="flex flex-wrap gap-2">
-    <Button
-      onclick={() => {
-        openDialog(NewFieldDialog, {
-          surveyRecord: data.surveyRecord,
-          type: "group",
-          oncreate(id) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                fieldIds: [...data.surveyRecord.fieldIds, id],
-              },
-            } as PageData;
-            refresh();
-          },
-        });
-      }}
-    >
-      <Icon name="plus" />
-      New group
-    </Button>
-    <Button
-      onclick={() => {
-        openDialog(NewFieldDialog, {
-          surveyRecord: data.surveyRecord,
-          type: "field",
-          oncreate(id) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                fieldIds: [...data.surveyRecord.fieldIds, id],
-              },
-            } as PageData;
-            refresh();
-          },
-        });
-      }}
-    >
-      <Icon name="plus" />
-      New field
-    </Button>
-  </div>
-{/if}

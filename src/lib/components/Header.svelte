@@ -19,12 +19,12 @@
   <title>{title}</title>
 </svelte:head>
 
-<header class="flex min-h-11 items-center gap-3">
+<header class="flex min-h-11 items-center gap-3" style="view-transition-name:header">
   {#if backLink === undefined}
     <img src="./logo.svg" alt="" width="25" height="25" />
   {:else}
     <Anchor route={backLink}>
-      <Icon name="arrow-left" />
+      <Icon name="xmark" />
     </Anchor>
   {/if}
 

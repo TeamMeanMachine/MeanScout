@@ -51,11 +51,21 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-col gap-3">
+<div class="flex flex-col gap-3" style="view-transition-name:matches">
   {#if $teamStore}
     <div class="flex flex-wrap gap-2">
-      <Button onclick={() => (filterMatches = false)} class={filterMatches ? "font-light" : "font-bold"}>All</Button>
-      <Button onclick={() => (filterMatches = true)} class={filterMatches ? "font-bold" : "font-light"}>
+      <Button
+        onclick={() => (filterMatches = false)}
+        class={filterMatches ? "font-light" : "font-bold"}
+        style="view-transition-name:match-filter-all"
+      >
+        All
+      </Button>
+      <Button
+        onclick={() => (filterMatches = true)}
+        class={filterMatches ? "font-bold" : "font-light"}
+        style="view-transition-name:match-filter-team"
+      >
         {$teamStore}
       </Button>
     </div>

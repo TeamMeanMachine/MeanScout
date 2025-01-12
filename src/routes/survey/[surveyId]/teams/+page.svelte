@@ -182,7 +182,7 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2" style="view-transition-name:teams">
   {#if teamInfos.length}
     <div class="flex flex-col">
       <small>

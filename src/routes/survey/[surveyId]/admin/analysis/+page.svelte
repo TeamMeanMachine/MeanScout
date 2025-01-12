@@ -56,89 +56,24 @@
   }
 </script>
 
-<AdminHeader surveyRecord={data.surveyRecord} page="analysis" />
+<div class="flex flex-col gap-6" style="view-transition-name:admin">
+  <AdminHeader surveyRecord={data.surveyRecord} page="analysis" />
 
-{#if data.fields.length > 0}
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Pick Lists</h2>
-
-    {#if data.surveyRecord.expressions.length}
-      <Button
-        onclick={() => {
-          openDialog(NewPickListDialog, {
-            expressions,
-            oncreate(pickList) {
-              data = {
-                ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  pickLists: [...data.surveyRecord.pickLists, pickList],
-                  modified: new Date(),
-                },
-              };
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-            },
-          });
-        }}
-      >
-        <Icon name="plus" />
-        New pick list
-      </Button>
-
-      {#each data.surveyRecord.pickLists as pickList, index}
-        <Button
-          onclick={() => {
-            openDialog(EditPickListDialog, {
-              expressions,
-              pickList,
-              onupdate(pickList) {
-                const pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
-                pickLists[index] = pickList;
-                data = {
-                  ...data,
-                  surveyRecord: { ...data.surveyRecord, pickLists, modified: new Date() },
-                };
-                objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-              },
-              ondelete() {
-                data = {
-                  ...data,
-                  surveyRecord: {
-                    ...data.surveyRecord,
-                    pickLists: data.surveyRecord.pickLists.toSpliced(index, 1),
-                    modified: new Date(),
-                  },
-                };
-                objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-              },
-            });
-          }}
-        >
-          {pickList.name}
-        </Button>
-      {/each}
-    {:else}
-      To set up pick lists, first create some expressions.
-    {/if}
-  </div>
-
-  {#if expressions.primitive.length > 0}
+  {#if data.fields.length > 0}
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Expressions <small>(from expressions)</small></h2>
-      <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Pick Lists</h2>
+
+      {#if data.surveyRecord.expressions.length}
         <Button
           onclick={() => {
-            openDialog(NewExpressionDialog, {
-              surveyRecord: data.surveyRecord,
-              fields: data.fields,
+            openDialog(NewPickListDialog, {
               expressions,
-              input: "expressions",
-              oncreate(expression) {
+              oncreate(pickList) {
                 data = {
                   ...data,
                   surveyRecord: {
                     ...data.surveyRecord,
-                    expressions: [...data.surveyRecord.expressions, expression],
+                    pickLists: [...data.surveyRecord.pickLists, pickList],
                     modified: new Date(),
                   },
                 };
@@ -148,59 +83,126 @@
           }}
         >
           <Icon name="plus" />
-          From expressions
+          New pick list
         </Button>
+
+        {#each data.surveyRecord.pickLists as pickList, index}
+          <Button
+            onclick={() => {
+              openDialog(EditPickListDialog, {
+                expressions,
+                pickList,
+                onupdate(pickList) {
+                  const pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
+                  pickLists[index] = pickList;
+                  data = {
+                    ...data,
+                    surveyRecord: { ...data.surveyRecord, pickLists, modified: new Date() },
+                  };
+                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                },
+                ondelete() {
+                  data = {
+                    ...data,
+                    surveyRecord: {
+                      ...data.surveyRecord,
+                      pickLists: data.surveyRecord.pickLists.toSpliced(index, 1),
+                      modified: new Date(),
+                    },
+                  };
+                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                },
+              });
+            }}
+          >
+            {pickList.name}
+          </Button>
+        {/each}
+      {:else}
+        To set up pick lists, first create some expressions.
+      {/if}
+    </div>
+
+    {#if expressions.primitive.length > 0}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Expressions <small>(from expressions)</small></h2>
+        <div class="flex flex-col gap-2">
+          <Button
+            onclick={() => {
+              openDialog(NewExpressionDialog, {
+                surveyRecord: data.surveyRecord,
+                fields: data.fields,
+                expressions,
+                input: "expressions",
+                oncreate(expression) {
+                  data = {
+                    ...data,
+                    surveyRecord: {
+                      ...data.surveyRecord,
+                      expressions: [...data.surveyRecord.expressions, expression],
+                      modified: new Date(),
+                    },
+                  };
+                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                },
+              });
+            }}
+          >
+            <Icon name="plus" />
+            From expressions
+          </Button>
+        </div>
+
+        {#each expressions.derived as expression}
+          {@render expressionButton(expression, "expressions")}
+        {/each}
       </div>
+    {/if}
 
-      {#each expressions.derived as expression}
-        {@render expressionButton(expression, "expressions")}
-      {/each}
-    </div>
-  {/if}
-
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Expressions <small>(from fields)</small></h2>
-    <Button
-      onclick={() => {
-        openDialog(NewExpressionDialog, {
-          surveyRecord: data.surveyRecord,
-          fields: data.fields,
-          expressions,
-          input: "fields",
-          oncreate(expression) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                expressions: [...data.surveyRecord.expressions, expression],
-                modified: new Date(),
-              },
-            };
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-          },
-        });
-      }}
-    >
-      <Icon name="plus" />
-      From fields
-    </Button>
-
-    {#each expressions.primitive as expression}
-      {@render expressionButton(expression, "fields")}
-    {/each}
-  </div>
-
-  {#if expressions.mixed.length}
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
-      {#each expressions.mixed as expression}
-        {@render expressionButton(expression)}
+      <h2 class="font-bold">Expressions <small>(from fields)</small></h2>
+      <Button
+        onclick={() => {
+          openDialog(NewExpressionDialog, {
+            surveyRecord: data.surveyRecord,
+            fields: data.fields,
+            expressions,
+            input: "fields",
+            oncreate(expression) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  expressions: [...data.surveyRecord.expressions, expression],
+                  modified: new Date(),
+                },
+              };
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          });
+        }}
+      >
+        <Icon name="plus" />
+        From fields
+      </Button>
+
+      {#each expressions.primitive as expression}
+        {@render expressionButton(expression, "fields")}
       {/each}
     </div>
+
+    {#if expressions.mixed.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
+        {#each expressions.mixed as expression}
+          {@render expressionButton(expression)}
+        {/each}
+      </div>
+    {/if}
+  {:else}
+    To setup analysis, go create some fields.
   {/if}
-{:else}
-  To setup analysis, go create some fields.
-{/if}
+</div>
 
 {#snippet expressionButton(expression: Expression, input?: "expressions" | "fields")}
   {@const index = data.surveyRecord.expressions.findIndex((e) => e.name == expression.name)}

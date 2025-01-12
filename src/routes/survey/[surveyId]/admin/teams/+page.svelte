@@ -192,242 +192,47 @@
 
 <svelte:window {onscroll} />
 
-<AdminHeader surveyRecord={data.surveyRecord} page="teams" />
+<div class="flex flex-col gap-6" style="view-transition-name:admin">
+  <AdminHeader surveyRecord={data.surveyRecord} page="teams" />
 
-<div class="flex flex-wrap gap-3">
-  {#if matchTeamInfos.length}
-    <div class="flex grow basis-0 flex-col gap-2">
-      <h2 class="font-bold">Match Teams</h2>
-      <div class="flex flex-col">
-        <small>
-          Sorting by
-          {#if data.surveyType == "match" && typeof sortBy == "number"}
-            {data.surveyRecord.pickLists[sortBy].name}
-          {:else}
-            {sortBy}
-          {/if}
-        </small>
-
-        <div class="grid gap-2 pt-1" style="grid-template-columns: repeat({columns}, min-content) auto;">
-          <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-            <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
-              <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
-                Team
-              </Button>
-
-              {#if ranksPerPickList.length && data.surveyType == "match"}
-                {#each data.surveyRecord.pickLists as pickList, i}
-                  <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
-                    {pickList.name}
-                  </Button>
-                {/each}
-              {/if}
-
-              <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
-                Done
-              </Button>
-            </div>
-          </div>
-
-          {#each matchTeamInfos as teamInfo (teamInfo.team)}
-            <Button
-              onclick={() => {
-                openDialog(ViewTeamDialog, {
-                  data,
-                  teamInfo,
-                  ondelete() {
-                    data = {
-                      ...data,
-                      surveyRecord: {
-                        ...data.surveyRecord,
-                        teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
-                        modified: new Date(),
-                      },
-                    } as PageData;
-                    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-                  },
-                });
-              }}
-              class="col-span-full grid grid-cols-subgrid text-center"
-            >
-              <div>{teamInfo.team}</div>
-
-              {#if teamInfo.pickListRanks?.length}
-                {#each teamInfo.pickListRanks as pickListRank}
-                  <div>
-                    {#if pickListRank > 0}
-                      {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
-                    {/if}
-                  </div>
-                {/each}
-              {/if}
-
-              <div>
-                {#if data.surveyType == "match" && data.surveyRecord.matches.length && teamInfo.matchCount}
-                  {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
-                {:else}
-                  {teamInfo.entryCount}
-                {/if}
-              </div>
-            </Button>
-          {/each}
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <div class="flex grow basis-0 flex-col gap-2">
-    <h2 class="font-bold">Custom Teams</h2>
-    <Button
-      onclick={() =>
-        openDialog(AddTeamsDialog, {
-          allTeams: customTeamInfos,
-          onadd(teams) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                teams: [...data.surveyRecord.teams, ...teams],
-                modified: new Date(),
-              },
-            } as PageData;
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-          },
-        })}
-      class="flex-nowrap text-nowrap"
-    >
-      <Icon name="plus" />
-      Add team(s)
-    </Button>
-
-    {#if conflictingTeams.length}
-      <Button onclick={fixTeams} class="flex-nowrap text-nowrap">
-        <Icon name="wrench" />
+  <div class="flex flex-wrap gap-3">
+    {#if matchTeamInfos.length}
+      <div class="flex grow basis-0 flex-col gap-2">
+        <h2 class="font-bold">Match Teams</h2>
         <div class="flex flex-col">
-          Fix teams
-          <small class="text-wrap">{conflictingTeams.length} custom teams were found in matches</small>
-        </div>
-      </Button>
-    {/if}
+          <small>
+            Sorting by
+            {#if data.surveyType == "match" && typeof sortBy == "number"}
+              {data.surveyRecord.pickLists[sortBy].name}
+            {:else}
+              {sortBy}
+            {/if}
+          </small>
 
-    {#if data.surveyRecord.teams.length}
-      <div class="flex flex-col gap-2">
-        {#if selecting}
-          {@const deletableTeams = [...selectedTeams].filter((team) => data.surveyRecord.teams.includes(team))}
+          <div class="grid gap-2 pt-1" style="grid-template-columns: repeat({columns}, min-content) auto;">
+            <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
+              <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
+                <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
+                  Team
+                </Button>
 
-          <Button
-            onclick={() => {
-              selecting = false;
-              selectedTeams.clear();
-            }}
-            class="flex-nowrap text-nowrap"
-          >
-            <Icon name="xmark" />
-            Cancel
-          </Button>
+                {#if ranksPerPickList.length && data.surveyType == "match"}
+                  {#each data.surveyRecord.pickLists as pickList, i}
+                    <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
+                      {pickList.name}
+                    </Button>
+                  {/each}
+                {/if}
 
-          <span>{selectedTeams.size} <small>selected</small></span>
+                <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
+                  Done
+                </Button>
+              </div>
+            </div>
 
-          <Button
-            disabled={deletableTeams.length == 0}
-            onclick={() => {
-              openDialog(DeleteTeamsDialog, {
-                teams: deletableTeams,
-                ondelete(teams) {
-                  data = {
-                    ...data,
-                    surveyRecord: {
-                      ...data.surveyRecord,
-                      teams: data.surveyRecord.teams.filter((team) => !teams.includes(team)),
-                      modified: new Date(),
-                    },
-                  } as PageData;
-                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-                },
-              });
-            }}
-            class="flex-nowrap text-nowrap"
-          >
-            <Icon name="trash" />
-            Delete {deletableTeams.length || ""}
-          </Button>
-        {:else}
-          <Button onclick={() => (selecting = true)} class="flex-nowrap text-nowrap">
-            <Icon name="check" />
-            Select
-          </Button>
-        {/if}
-      </div>
-    {/if}
-
-    {#if customTeamInfos.length}
-      <div class="flex flex-col">
-        <small>
-          Sorting by
-          {#if data.surveyType == "match" && typeof sortBy == "number"}
-            {data.surveyRecord.pickLists[sortBy].name}
-          {:else}
-            {sortBy}
-          {/if}
-        </small>
-
-        <div
-          bind:this={dataGrid}
-          class="grid gap-2 pt-1"
-          style="grid-template-columns: repeat({columns}, min-content) auto;"
-        >
-          <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-            {#if selecting}
+            {#each matchTeamInfos as teamInfo (teamInfo.team)}
               <Button
                 onclick={() => {
-                  if (selectedTeams.size == customTeamInfos.length) {
-                    selectedTeams.clear();
-                  } else {
-                    for (const { team } of customTeamInfos) {
-                      selectedTeams.add(team);
-                    }
-                  }
-                }}
-              >
-                {#if selectedTeams.size == customTeamInfos.length}
-                  <Icon name="square-check" />
-                {:else}
-                  <Icon style="regular" name="square" />
-                {/if}
-              </Button>
-            {/if}
-
-            <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
-              <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
-                Team
-              </Button>
-
-              {#if ranksPerPickList.length && data.surveyType == "match"}
-                {#each data.surveyRecord.pickLists as pickList, i}
-                  <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
-                    {pickList.name}
-                  </Button>
-                {/each}
-              {/if}
-
-              <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
-                Done
-              </Button>
-            </div>
-          </div>
-
-          {#each displayedTeams as teamInfo (teamInfo.team)}
-            {@const defaultFont = selectedTeams.has(teamInfo.team) ? "font-bold" : ""}
-
-            <Button
-              onclick={() => {
-                if (selecting) {
-                  if (selectedTeams.has(teamInfo.team)) {
-                    selectedTeams.delete(teamInfo.team);
-                  } else {
-                    selectedTeams.add(teamInfo.team);
-                  }
-                } else {
                   openDialog(ViewTeamDialog, {
                     data,
                     teamInfo,
@@ -443,59 +248,256 @@
                       objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
                     },
                   });
-                }
+                }}
+                class="col-span-full grid grid-cols-subgrid text-center"
+              >
+                <div>{teamInfo.team}</div>
+
+                {#if teamInfo.pickListRanks?.length}
+                  {#each teamInfo.pickListRanks as pickListRank}
+                    <div>
+                      {#if pickListRank > 0}
+                        {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
+
+                <div>
+                  {#if data.surveyType == "match" && data.surveyRecord.matches.length && teamInfo.matchCount}
+                    {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
+                  {:else}
+                    {teamInfo.entryCount}
+                  {/if}
+                </div>
+              </Button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <div class="flex grow basis-0 flex-col gap-2">
+      <h2 class="font-bold">Custom Teams</h2>
+      <Button
+        onclick={() =>
+          openDialog(AddTeamsDialog, {
+            allTeams: customTeamInfos,
+            onadd(teams) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  teams: [...data.surveyRecord.teams, ...teams],
+                  modified: new Date(),
+                },
+              } as PageData;
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          })}
+        class="flex-nowrap text-nowrap"
+      >
+        <Icon name="plus" />
+        Add team(s)
+      </Button>
+
+      {#if conflictingTeams.length}
+        <Button onclick={fixTeams} class="flex-nowrap text-nowrap">
+          <Icon name="wrench" />
+          <div class="flex flex-col">
+            Fix teams
+            <small class="text-wrap">{conflictingTeams.length} custom teams were found in matches</small>
+          </div>
+        </Button>
+      {/if}
+
+      {#if data.surveyRecord.teams.length}
+        <div class="flex flex-col gap-2">
+          {#if selecting}
+            {@const deletableTeams = [...selectedTeams].filter((team) => data.surveyRecord.teams.includes(team))}
+
+            <Button
+              onclick={() => {
+                selecting = false;
+                selectedTeams.clear();
               }}
-              class="col-span-full grid grid-cols-subgrid text-center {defaultFont}"
+              class="flex-nowrap text-nowrap"
             >
+              <Icon name="xmark" />
+              Cancel
+            </Button>
+
+            <span>{selectedTeams.size} <small>selected</small></span>
+
+            <Button
+              disabled={deletableTeams.length == 0}
+              onclick={() => {
+                openDialog(DeleteTeamsDialog, {
+                  teams: deletableTeams,
+                  ondelete(teams) {
+                    data = {
+                      ...data,
+                      surveyRecord: {
+                        ...data.surveyRecord,
+                        teams: data.surveyRecord.teams.filter((team) => !teams.includes(team)),
+                        modified: new Date(),
+                      },
+                    } as PageData;
+                    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  },
+                });
+              }}
+              class="flex-nowrap text-nowrap"
+            >
+              <Icon name="trash" />
+              Delete {deletableTeams.length || ""}
+            </Button>
+          {:else}
+            <Button onclick={() => (selecting = true)} class="flex-nowrap text-nowrap">
+              <Icon name="check" />
+              Select
+            </Button>
+          {/if}
+        </div>
+      {/if}
+
+      {#if customTeamInfos.length}
+        <div class="flex flex-col">
+          <small>
+            Sorting by
+            {#if data.surveyType == "match" && typeof sortBy == "number"}
+              {data.surveyRecord.pickLists[sortBy].name}
+            {:else}
+              {sortBy}
+            {/if}
+          </small>
+
+          <div
+            bind:this={dataGrid}
+            class="grid gap-2 pt-1"
+            style="grid-template-columns: repeat({columns}, min-content) auto;"
+          >
+            <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
               {#if selecting}
-                <div class="h-[24px] text-left">
-                  {#if selectedTeams.has(teamInfo.team)}
+                <Button
+                  onclick={() => {
+                    if (selectedTeams.size == customTeamInfos.length) {
+                      selectedTeams.clear();
+                    } else {
+                      for (const { team } of customTeamInfos) {
+                        selectedTeams.add(team);
+                      }
+                    }
+                  }}
+                >
+                  {#if selectedTeams.size == customTeamInfos.length}
                     <Icon name="square-check" />
                   {:else}
                     <Icon style="regular" name="square" />
                   {/if}
-                </div>
+                </Button>
               {/if}
 
-              <div>{teamInfo.team}</div>
+              <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
+                <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
+                  Team
+                </Button>
 
-              {#if teamInfo.pickListRanks?.length}
-                {#each teamInfo.pickListRanks as pickListRank}
-                  <div>
-                    {#if pickListRank > 0}
-                      {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
+                {#if ranksPerPickList.length && data.surveyType == "match"}
+                  {#each data.surveyRecord.pickLists as pickList, i}
+                    <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
+                      {pickList.name}
+                    </Button>
+                  {/each}
+                {/if}
+
+                <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
+                  Done
+                </Button>
+              </div>
+            </div>
+
+            {#each displayedTeams as teamInfo (teamInfo.team)}
+              {@const defaultFont = selectedTeams.has(teamInfo.team) ? "font-bold" : ""}
+
+              <Button
+                onclick={() => {
+                  if (selecting) {
+                    if (selectedTeams.has(teamInfo.team)) {
+                      selectedTeams.delete(teamInfo.team);
+                    } else {
+                      selectedTeams.add(teamInfo.team);
+                    }
+                  } else {
+                    openDialog(ViewTeamDialog, {
+                      data,
+                      teamInfo,
+                      ondelete() {
+                        data = {
+                          ...data,
+                          surveyRecord: {
+                            ...data.surveyRecord,
+                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                            modified: new Date(),
+                          },
+                        } as PageData;
+                        objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                      },
+                    });
+                  }
+                }}
+                class="col-span-full grid grid-cols-subgrid text-center {defaultFont}"
+              >
+                {#if selecting}
+                  <div class="h-[24px] text-left">
+                    {#if selectedTeams.has(teamInfo.team)}
+                      <Icon name="square-check" />
+                    {:else}
+                      <Icon style="regular" name="square" />
                     {/if}
                   </div>
-                {/each}
-              {/if}
-
-              <div>
-                {#if data.surveyType == "match" && data.surveyRecord.matches.length && teamInfo.matchCount}
-                  {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
-                {:else}
-                  {teamInfo.entryCount}
                 {/if}
-              </div>
-            </Button>
-          {/each}
-        </div>
 
-        {#if displayedTeams.length < customTeamInfos.length}
-          <Button onclick={() => (displayedCount += 10)}>
-            <Icon name="arrow-down" />
-            Show more
-          </Button>
-        {/if}
-      </div>
-    {:else}
-      <small>No custom teams.</small>
-      <small>
-        {#if matchTeamInfos.length}
-          Match teams are used depending on the selected target.
-        {:else}
-          Any team value is allowed.
-        {/if}
-      </small>
-    {/if}
+                <div>{teamInfo.team}</div>
+
+                {#if teamInfo.pickListRanks?.length}
+                  {#each teamInfo.pickListRanks as pickListRank}
+                    <div>
+                      {#if pickListRank > 0}
+                        {pickListRank}<small class="font-light">{getOrdinal(pickListRank)}</small>
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
+
+                <div>
+                  {#if data.surveyType == "match" && data.surveyRecord.matches.length && teamInfo.matchCount}
+                    {teamInfo.entryCount}<small class="font-light">/{teamInfo.matchCount}</small>
+                  {:else}
+                    {teamInfo.entryCount}
+                  {/if}
+                </div>
+              </Button>
+            {/each}
+          </div>
+
+          {#if displayedTeams.length < customTeamInfos.length}
+            <Button onclick={() => (displayedCount += 10)}>
+              <Icon name="arrow-down" />
+              Show more
+            </Button>
+          {/if}
+        </div>
+      {:else}
+        <small>No custom teams.</small>
+        <small>
+          {#if matchTeamInfos.length}
+            Match teams are used depending on the selected target.
+          {:else}
+            Any team value is allowed.
+          {/if}
+        </small>
+      {/if}
+    </div>
   </div>
 </div>

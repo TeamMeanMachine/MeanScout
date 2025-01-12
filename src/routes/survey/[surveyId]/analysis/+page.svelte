@@ -38,57 +38,59 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-{#if data.fields.length > 0}
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Pick Lists</h2>
+<div class="flex flex-col gap-6" style="view-transition-name:analysis">
+  {#if data.fields.length > 0}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Pick Lists</h2>
 
-    {#if data.surveyRecord.expressions.length}
-      {#each data.surveyRecord.pickLists as pickList}
-        <Button
-          onclick={() => {
-            openDialog(ViewPickListDialog, {
-              surveyRecord: data.surveyRecord,
-              fields: data.fields,
-              entriesByTeam: data.entriesByTeam,
-              pickList,
-            });
-          }}
-        >
-          {pickList.name}
-        </Button>
-      {/each}
-    {:else}
-      To set up pick lists, first create some expressions.
+      {#if data.surveyRecord.expressions.length}
+        {#each data.surveyRecord.pickLists as pickList}
+          <Button
+            onclick={() => {
+              openDialog(ViewPickListDialog, {
+                surveyRecord: data.surveyRecord,
+                fields: data.fields,
+                entriesByTeam: data.entriesByTeam,
+                pickList,
+              });
+            }}
+          >
+            {pickList.name}
+          </Button>
+        {/each}
+      {:else}
+        To set up pick lists, first create some expressions.
+      {/if}
+    </div>
+
+    {#if expressions.primitive.length > 0}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Expressions <small>(from expressions)</small></h2>
+        {#each expressions.derived as expression}
+          {@render expressionButton(expression)}
+        {/each}
+      </div>
     {/if}
-  </div>
 
-  {#if expressions.primitive.length > 0}
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Expressions <small>(from expressions)</small></h2>
-      {#each expressions.derived as expression}
+      <h2 class="font-bold">Expressions <small>(from fields)</small></h2>
+      {#each expressions.primitive as expression}
         {@render expressionButton(expression)}
       {/each}
     </div>
-  {/if}
 
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Expressions <small>(from fields)</small></h2>
-    {#each expressions.primitive as expression}
-      {@render expressionButton(expression)}
-    {/each}
-  </div>
-
-  {#if expressions.mixed.length}
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
-      {#each expressions.mixed as expression}
-        {@render expressionButton(expression)}
-      {/each}
-    </div>
+    {#if expressions.mixed.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
+        {#each expressions.mixed as expression}
+          {@render expressionButton(expression)}
+        {/each}
+      </div>
+    {/if}
+  {:else}
+    No fields.
   {/if}
-{:else}
-  No fields.
-{/if}
+</div>
 
 {#snippet expressionButton(expression: Expression)}
   <Button

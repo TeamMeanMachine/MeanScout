@@ -44,71 +44,73 @@
   }
 </script>
 
-<AdminHeader surveyRecord={data.surveyRecord} page="general" />
+<div class="flex flex-col gap-6" style="view-transition-name:admin">
+  <AdminHeader surveyRecord={data.surveyRecord} page="general" />
 
-<div class="flex flex-col gap-2">
-  <Button
-    onclick={() =>
-      openDialog(EditSurveyNameDialog, {
-        surveyRecord: data.surveyRecord,
-        onedit(name) {
-          data = {
-            ...data,
-            surveyRecord: { ...data.surveyRecord, name, modified: new Date() },
-          } as PageData;
-          objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-        },
-      })}
-  >
-    <Icon name="pen" />
-    <div class="flex flex-col">
-      {data.surveyRecord.name}
-      <small>Edit name</small>
-    </div>
-  </Button>
-</div>
-
-{#if $tbaAuthKeyStore}
   <div class="flex flex-col gap-2">
-    <h2 class="font-bold">The Blue Alliance</h2>
     <Button
       onclick={() =>
-        openDialog(EditSurveyTbaEventKeyDialog, {
+        openDialog(EditSurveyNameDialog, {
           surveyRecord: data.surveyRecord,
-          onedit(tbaEventKey) {
+          onedit(name) {
             data = {
               ...data,
-              surveyRecord: { ...data.surveyRecord, tbaEventKey, modified: new Date() },
+              surveyRecord: { ...data.surveyRecord, name, modified: new Date() },
             } as PageData;
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },
         })}
     >
-      <Icon name="calendar-days" />
-      {#if data.surveyRecord.tbaEventKey}
-        <div class="flex flex-col">
-          {data.surveyRecord.tbaEventKey}
-          <small>Edit event</small>
-        </div>
-      {:else}
-        Add event
-      {/if}
+      <Icon name="pen" />
+      <div class="flex flex-col">
+        {data.surveyRecord.name}
+        <small>Edit name</small>
+      </div>
     </Button>
-    {#if data.surveyRecord.tbaEventKey}
-      <Button onclick={getMatchesFromTBAEvent}>
-        <Icon name="table-list" />
-        <div class="flex flex-col">
-          Get matches from TBA
-          <small>Removes existing matches</small>
-        </div>
-      </Button>
-      <Button onclick={getTeamsFromTBAEvent}>
-        <Icon name="people-group" />
-        <div class="flex flex-col">
-          Get teams from TBA
-          <small>Removes existing teams</small>
-        </div>
-      </Button>
-    {/if}
   </div>
-{/if}
+
+  {#if $tbaAuthKeyStore}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">The Blue Alliance</h2>
+      <Button
+        onclick={() =>
+          openDialog(EditSurveyTbaEventKeyDialog, {
+            surveyRecord: data.surveyRecord,
+            onedit(tbaEventKey) {
+              data = {
+                ...data,
+                surveyRecord: { ...data.surveyRecord, tbaEventKey, modified: new Date() },
+              } as PageData;
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          })}
+      >
+        <Icon name="calendar-days" />
+        {#if data.surveyRecord.tbaEventKey}
+          <div class="flex flex-col">
+            {data.surveyRecord.tbaEventKey}
+            <small>Edit event</small>
+          </div>
+        {:else}
+          Add event
+        {/if}
+      </Button>
+      {#if data.surveyRecord.tbaEventKey}
+        <Button onclick={getMatchesFromTBAEvent}>
+          <Icon name="table-list" />
+          <div class="flex flex-col">
+            Get matches from TBA
+            <small>Removes existing matches</small>
+          </div>
+        </Button>
+        <Button onclick={getTeamsFromTBAEvent}>
+          <Icon name="people-group" />
+          <div class="flex flex-col">
+            Get teams from TBA
+            <small>Removes existing teams</small>
+          </div>
+        </Button>
+      {/if}
+    </div>
+  {/if}
+</div>

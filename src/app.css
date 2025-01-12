@@ -23,7 +23,7 @@
   }
 
   :root:has(dialog[open]) {
-    overflow: hidden;
+    overflow-y: hidden !important;
   }
 
   :disabled {
@@ -46,5 +46,13 @@
   dialog:focus,
   dialog:hover {
     @apply outline-none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      @apply !animate-none;
+    }
   }
 }

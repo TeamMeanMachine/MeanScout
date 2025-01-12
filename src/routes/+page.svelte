@@ -58,9 +58,9 @@
   {/if}
 </div>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2" style="view-transition-name:meanscout">
   <h2 class="font-bold">MeanScout</h2>
-  <Anchor route="settings">
+  <Anchor route="settings" style="view-transition-name:settings">
     <Icon name="gears" />
     <div class="flex grow flex-col">
       Settings
@@ -68,7 +68,7 @@
     </div>
     <Icon name="arrow-right" />
   </Anchor>
-  <Anchor route="about">
+  <Anchor route="about" style="view-transition-name:about">
     <Icon name="info-circle" />
     <div class="flex grow flex-col">
       About

@@ -248,7 +248,7 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-wrap gap-3">
+<div class="flex flex-wrap gap-3" style="view-transition-name:entries">
   <div class="grow basis-0">
     <div class="flex flex-wrap gap-2 pb-2">
       <Button

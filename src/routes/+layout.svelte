@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import DialogBox from "$lib/components/DialogBox.svelte";
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import { closeAllDialogs, type DialogState, subscribeDialog } from "$lib/dialog";
@@ -21,7 +22,18 @@
     dialogStack = state;
   });
 
-  onhashchange = () => closeAllDialogs();
+  onNavigate((navigation) => {
+    closeAllDialogs();
+
+    if (document.startViewTransition) {
+      return new Promise((resolve) => {
+        document.startViewTransition(async () => {
+          resolve();
+          await navigation.complete;
+        });
+      });
+    }
+  });
 </script>
 
 {#each dialogStack as { component, props }}

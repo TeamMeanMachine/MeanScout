@@ -96,287 +96,297 @@
 
 <Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} />
 
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">Entries</h2>
+<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Entries</h2>
 
-  <Button
-    onclick={() => {
-      openDialog(NewEntryDialog, {
-        surveyRecord: data.surveyRecord,
-        fields: data.fields,
-        prefilledTeam,
-        prefilledMatch,
-        oncreate(entry) {
-          data = {
-            ...data,
-            surveyRecord: { ...data.surveyRecord, modified: new Date() },
-            entryRecords: [...data.entryRecords, entry],
-          } as PageData;
+    <Button
+      onclick={() => {
+        openDialog(NewEntryDialog, {
+          surveyRecord: data.surveyRecord,
+          fields: data.fields,
+          prefilledTeam,
+          prefilledMatch,
+          oncreate(entry) {
+            data = {
+              ...data,
+              surveyRecord: { ...data.surveyRecord, modified: new Date() },
+              entryRecords: [...data.entryRecords, entry],
+            } as PageData;
 
-          objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-        },
-      });
-    }}
-  >
-    <Icon name="plus" />
-    <div class="flex flex-col">
-      {#if data.surveyType == "match" && prefilledMatch}
-        <span><small>Match</small> {prefilledMatch}</span>
-      {/if}
-      {#if prefilledTeam.length}
-        <span><small>Team</small> {prefilledTeam}</span>
-      {/if}
-    </div>
-  </Button>
-
-  {#each drafts as draft (draft.id)}
-    <Anchor route="entry/{draft.id}">
-      <div class="flex grow flex-col">
-        <span><small>Team</small> {draft.team}</span>
-        {#if draft.type == "match"}
-          <span><small>Match</small> {draft.match}</span>
+            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          },
+        });
+      }}
+    >
+      <Icon name="plus" />
+      <div class="flex flex-col">
+        {#if data.surveyType == "match" && prefilledMatch}
+          <span><small>Match</small> {prefilledMatch}</span>
+        {/if}
+        {#if prefilledTeam.length}
+          <span><small>Team</small> {prefilledTeam}</span>
         {/if}
       </div>
-      <Icon name="arrow-right" />
-    </Anchor>
-  {/each}
+    </Button>
 
-  <Anchor route="survey/{data.surveyRecord.id}/entries">
-    <Icon name="list-ol" />
-    <div class="flex grow flex-col">
-      Entries
-      <small>{data.entryRecords.length - drafts.length} completed</small>
-    </div>
-    <Icon name="arrow-right" />
-  </Anchor>
-</div>
-
-{#if data.surveyType == "match"}
-  {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
-    const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-    return data.entryRecords.find(
-      (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
-    );
-  }).length}
-
-  {@const matches = filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
-
-  {@const upcomingMatches = matches
-    .filter(
-      (match) => !data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
-    )
-    .toSorted((a, b) => a.number - b.number)
-    .slice(0, 3)}
-
-  {@const previousMatches = matches
-    .filter((match) =>
-      data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
-    )
-    .toSorted((a, b) => b.number - a.number)
-    .slice(0, 3)}
-
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Analysis</h2>
-
-    {#each data.surveyRecord.pickLists as pickList}
-      <Button
-        onclick={() =>
-          openDialog(ViewPickListDialog, {
-            surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-            fields: data.fields,
-            entriesByTeam,
-            pickList,
-          })}
-      >
-        {pickList.name}
-      </Button>
+    {#each drafts as draft (draft.id)}
+      <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
+        <div class="flex grow flex-col">
+          <span><small>Team</small> {draft.team}</span>
+          {#if draft.type == "match"}
+            <span><small>Match</small> {draft.match}</span>
+          {/if}
+        </div>
+        <Icon name="arrow-right" />
+      </Anchor>
     {/each}
 
-    <Anchor route="survey/{data.surveyRecord.id}/analysis">
-      <Icon name="chart-simple" />
+    <Anchor route="survey/{data.surveyRecord.id}/entries" style="view-transition-name:entries">
+      <Icon name="list-ol" />
       <div class="flex grow flex-col">
-        Analysis
-        <small>Pick Lists, Expressions</small>
+        Entries
+        <small>{data.entryRecords.length - drafts.length} completed</small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
   </div>
 
-  <div class="flex flex-col gap-2">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-bold">Matches</h2>
-      {#if $teamStore}
-        <div class="flex gap-2">
-          <Button onclick={() => (filterMatches = false)} class={filterMatches ? "font-light" : "font-bold"}>
-            All
-          </Button>
-          <Button onclick={() => (filterMatches = true)} class={filterMatches ? "font-bold" : "font-light"}>
-            {$teamStore}
-          </Button>
+  {#if data.surveyType == "match"}
+    {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
+      const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+      return data.entryRecords.find(
+        (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
+      );
+    }).length}
+
+    {@const matches = filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
+
+    {@const upcomingMatches = matches
+      .filter(
+        (match) => !data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
+      )
+      .toSorted((a, b) => a.number - b.number)
+      .slice(0, 3)}
+
+    {@const previousMatches = matches
+      .filter((match) =>
+        data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
+      )
+      .toSorted((a, b) => b.number - a.number)
+      .slice(0, 3)}
+
+    <div class="flex flex-col gap-2" style="view-transition-name:analysis">
+      <h2 class="font-bold">Analysis</h2>
+
+      {#each data.surveyRecord.pickLists as pickList}
+        <Button
+          onclick={() =>
+            openDialog(ViewPickListDialog, {
+              surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
+              fields: data.fields,
+              entriesByTeam,
+              pickList,
+            })}
+        >
+          {pickList.name}
+        </Button>
+      {/each}
+
+      <Anchor route="survey/{data.surveyRecord.id}/analysis">
+        <Icon name="chart-simple" />
+        <div class="flex grow flex-col">
+          Analysis
+          <small>Pick Lists, Expressions</small>
         </div>
-      {/if}
+        <Icon name="arrow-right" />
+      </Anchor>
     </div>
 
-    {#if upcomingMatches.length || previousMatches.length}
-      <div class="flex flex-wrap gap-2">
-        {#snippet teamRow(match: Match)}
-          <Button
-            onclick={() => {
-              openDialog(ViewMatchDialog, {
-                data: data as any,
-                match,
-              });
-            }}
-            class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
-          >
-            <div>{match.number}</div>
-            <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-              <div class="text-red {getFontWeight(match.red1)}">{match.red1}</div>
-              <div class="text-red {getFontWeight(match.red2)}">{match.red2}</div>
-              <div class="text-red {getFontWeight(match.red3)}">{match.red3}</div>
-              <div class="text-blue {getFontWeight(match.blue1)}">{match.blue1}</div>
-              <div class="text-blue {getFontWeight(match.blue2)}">{match.blue2}</div>
-              <div class="text-blue {getFontWeight(match.blue3)}">{match.blue3}</div>
-            </div>
-          </Button>
-        {/snippet}
-
-        {#if upcomingMatches.length}
-          <div class="flex grow flex-col">
-            <small>Upcoming</small>
-            <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
-              {#each upcomingMatches as match}
-                {@render teamRow(match)}
-              {/each}
-            </div>
-          </div>
-        {/if}
-
-        {#if previousMatches.length}
-          <div class="flex grow flex-col">
-            <small>Previous</small>
-            <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
-              {#each previousMatches as match}
-                {@render teamRow(match)}
-              {/each}
-            </div>
+    <div class="flex flex-col gap-2" style="view-transition-name:matches">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-bold">Matches</h2>
+        {#if $teamStore}
+          <div class="flex gap-2">
+            <Button
+              onclick={() => (filterMatches = false)}
+              class={filterMatches ? "font-light" : "font-bold"}
+              style="view-transition-name:match-filter-all"
+            >
+              All
+            </Button>
+            <Button
+              onclick={() => (filterMatches = true)}
+              class={filterMatches ? "font-bold" : "font-light"}
+              style="view-transition-name:match-filter-team"
+            >
+              {$teamStore}
+            </Button>
           </div>
         {/if}
       </div>
-    {/if}
 
-    <Anchor route="survey/{data.surveyRecord.id}/matches">
-      <Icon name="table-list" />
+      {#if upcomingMatches.length || previousMatches.length}
+        <div class="flex flex-wrap gap-2">
+          {#snippet teamRow(match: Match)}
+            <Button
+              onclick={() => {
+                openDialog(ViewMatchDialog, {
+                  data: data as any,
+                  match,
+                });
+              }}
+              class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
+            >
+              <div>{match.number}</div>
+              <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
+                <div class="text-red {getFontWeight(match.red1)}">{match.red1}</div>
+                <div class="text-red {getFontWeight(match.red2)}">{match.red2}</div>
+                <div class="text-red {getFontWeight(match.red3)}">{match.red3}</div>
+                <div class="text-blue {getFontWeight(match.blue1)}">{match.blue1}</div>
+                <div class="text-blue {getFontWeight(match.blue2)}">{match.blue2}</div>
+                <div class="text-blue {getFontWeight(match.blue3)}">{match.blue3}</div>
+              </div>
+            </Button>
+          {/snippet}
+
+          {#if upcomingMatches.length}
+            <div class="flex grow flex-col">
+              <small>Upcoming</small>
+              <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+                {#each upcomingMatches as match}
+                  {@render teamRow(match)}
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          {#if previousMatches.length}
+            <div class="flex grow flex-col">
+              <small>Previous</small>
+              <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+                {#each previousMatches as match}
+                  {@render teamRow(match)}
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <Anchor route="survey/{data.surveyRecord.id}/matches">
+        <Icon name="table-list" />
+        <div class="flex grow flex-col">
+          Matches
+          <small>
+            {matchesScouted} scouted,
+            {data.surveyRecord.matches.length} total
+          </small>
+        </div>
+        <Icon name="arrow-right" />
+      </Anchor>
+    </div>
+  {/if}
+
+  <div class="flex flex-col gap-2" style="view-transition-name:teams">
+    <h2 class="font-bold">Teams</h2>
+
+    <Anchor route="survey/{data.surveyRecord.id}/teams">
+      <Icon name="people-group" />
       <div class="flex grow flex-col">
-        Matches
+        Teams
         <small>
-          {matchesScouted} scouted,
-          {data.surveyRecord.matches.length} total
+          {#if data.surveyType == "match"}
+            {new Set(
+              data.surveyRecord.matches.flatMap((match) => [
+                match.red1,
+                match.red2,
+                match.red3,
+                match.blue1,
+                match.blue2,
+                match.blue3,
+              ]),
+            ).size} from matches,
+          {/if}
+          {data.surveyRecord.teams.length} custom
         </small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
   </div>
-{/if}
 
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">Teams</h2>
+  {#if $modeStore == "admin"}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Survey</h2>
 
-  <Anchor route="survey/{data.surveyRecord.id}/teams">
-    <Icon name="people-group" />
-    <div class="flex grow flex-col">
-      Teams
-      <small>
-        {#if data.surveyType == "match"}
-          {new Set(
-            data.surveyRecord.matches.flatMap((match) => [
-              match.red1,
-              match.red2,
-              match.red3,
-              match.blue1,
-              match.blue2,
-              match.blue3,
-            ]),
-          ).size} from matches,
-        {/if}
-        {data.surveyRecord.teams.length} custom
-      </small>
-    </div>
-    <Icon name="arrow-right" />
-  </Anchor>
-</div>
+      <div class="flex flex-wrap gap-2">
+        <Button
+          onclick={() =>
+            openDialog(ExportSurveyDialog, {
+              surveyRecord: data.surveyRecord,
+              fieldRecords: data.fieldRecords,
+              type: "qrcode",
+            })}
+          class="grow basis-0"
+        >
+          <Icon name="qrcode" />
+          <div class="flex flex-col">
+            Export
+            <small>QR code</small>
+          </div>
+        </Button>
+        <Button
+          onclick={() =>
+            openDialog(ExportSurveyDialog, {
+              surveyRecord: data.surveyRecord,
+              fieldRecords: data.fieldRecords,
+              type: "file",
+            })}
+          class="grow basis-0"
+        >
+          <Icon name="copy" />
+          <div class="flex flex-col">
+            Export
+            <small>File</small>
+          </div>
+        </Button>
+      </div>
 
-{#if $modeStore == "admin"}
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Survey</h2>
-
-    <div class="flex flex-wrap gap-2">
-      <Button
-        onclick={() =>
-          openDialog(ExportSurveyDialog, {
-            surveyRecord: data.surveyRecord,
-            fieldRecords: data.fieldRecords,
-            type: "qrcode",
-          })}
-        class="grow basis-0"
-      >
-        <Icon name="qrcode" />
-        <div class="flex flex-col">
-          Export
-          <small>QR code</small>
+      <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
+        <Icon name="toolbox" />
+        <div class="flex grow flex-col">
+          Admin
+          <small>Setup, Configure</small>
         </div>
-      </Button>
-      <Button
-        onclick={() =>
-          openDialog(ExportSurveyDialog, {
-            surveyRecord: data.surveyRecord,
-            fieldRecords: data.fieldRecords,
-            type: "file",
-          })}
-        class="grow basis-0"
-      >
-        <Icon name="copy" />
-        <div class="flex flex-col">
-          Export
-          <small>File</small>
-        </div>
-      </Button>
+        <Icon name="arrow-right" />
+      </Anchor>
     </div>
+  {/if}
 
-    <Anchor route="survey/{data.surveyRecord.id}/admin">
-      <Icon name="toolbox" />
+  <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
+    <h2 class="font-bold">MeanScout</h2>
+    <Anchor route="">
+      <Icon name="arrow-left" />
       <div class="flex grow flex-col">
-        Admin
-        <small>Setup, Configure</small>
+        Main page
+        <small>Switch survey</small>
+      </div>
+    </Anchor>
+    <Anchor route="settings" style="view-transition-name:settings">
+      <Icon name="gears" />
+      <div class="flex grow flex-col">
+        Settings
+        <small>App config</small>
+      </div>
+      <Icon name="arrow-right" />
+    </Anchor>
+    <Anchor route="about" style="view-transition-name:about">
+      <Icon name="info-circle" />
+      <div class="flex grow flex-col">
+        About
+        <small>Info, Guides</small>
       </div>
       <Icon name="arrow-right" />
     </Anchor>
   </div>
-{/if}
-
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">MeanScout</h2>
-  <Anchor route="">
-    <Icon name="arrow-left" />
-    <div class="flex grow flex-col">
-      Main page
-      <small>Switch survey</small>
-    </div>
-  </Anchor>
-  <Anchor route="settings">
-    <Icon name="gears" />
-    <div class="flex grow flex-col">
-      Settings
-      <small>App config</small>
-    </div>
-    <Icon name="arrow-right" />
-  </Anchor>
-  <Anchor route="about">
-    <Icon name="info-circle" />
-    <div class="flex grow flex-col">
-      About
-      <small>Info, Guides</small>
-    </div>
-    <Icon name="arrow-right" />
-  </Anchor>
 </div>
