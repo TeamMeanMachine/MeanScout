@@ -332,7 +332,7 @@
           <Icon name="qrcode" />
           <div class="flex flex-col">
             Export
-            <small>QR code</small>
+            <small>QRF code</small>
           </div>
         </Button>
         <Button

@@ -5,7 +5,7 @@
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
 
-  let tab = $state<"info" | "guides">("info");
+  let tab = $state<"info" | "guides" | "qrfcode">("info");
 
   function getTabClass(matching: string) {
     return tab == matching ? "font-bold underline" : "font-light";
@@ -18,6 +18,7 @@
   <div class="flex flex-wrap gap-2">
     <Button onclick={() => (tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => (tab = "guides")} class={getTabClass("guides")}>Guides</Button>
+    <Button onclick={() => (tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
   </div>
 
   {#if tab == "info"}
@@ -40,7 +41,7 @@
         </li>
         <li>Data analysis (pick lists and expressions)</li>
         <li>Stores data locally, in the browser</li>
-        <li>Export/share survey configs and scouting data via QR codes or files</li>
+        <li>Export/share survey configs and scouting data via QRF codes or files</li>
       </ul>
     </div>
 
@@ -206,9 +207,9 @@
       <h2 class="font-bold">Exporting</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Export or copy analysis ranking results to other apps (e.g. Google Keep)</li>
-        <li>Export survey configs and scouting data via QR codes or files</li>
+        <li>Export survey configs and scouting data via QRF codes or files</li>
         <li>Scouting data can be exported from the survey's entries page (use filters if needed!)</li>
-        <li>If you can't use QR codes, you'll have to manually share data as files between devices</li>
+        <li>If you can't use QRF codes, you'll have to manually share data as files between devices</li>
         <li>
           In that case, you can use Quick Share (Android + Windows), AirDrop (Apple), USB, email, messaging, smoke
           signals, or whatever works for you
@@ -222,11 +223,35 @@
         <li>Once you've fully set up your survey on one device, export it to the rest</li>
         <li>Fill in the team setting on each device (highlights your team in match lists)</li>
         <li>Set a unique target on each device (definitely do this one!)</li>
-        <li>If you can use QR codes, make sure to pick a rear-facing camera</li>
+        <li>If you can use QRF codes, make sure to pick a rear-facing camera</li>
         <li>To limit menus/controls for scouts, set those devices to scout mode</li>
       </ol>
     </div>
+  {:else if tab == "qrfcode"}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">What's a QRF code?</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>A single QR code can only hold so much information</li>
+        <li>
+          QRF codes combine QR codes with a technology called
+          <a href="https://en.wikipedia.org/wiki/Fountain_code" target="_blank">
+            <span class="underline">fountain codes</span>
+            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+          </a>
+        </li>
+        <li>Any amount of data can be transmitted from endlessly generating QR codes</li>
+        <li>Each QR code contains and combines randomly selected chunks of data</li>
+        <li>When scanning a QRF code in MeanScout, the app reassembles the original data on the fly</li>
+        <li>You can scan QRF codes with a regular QR code scanner, but you probably can't do much with it</li>
+      </ul>
+    </div>
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Why is it called a "fountain" code?</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Let's say you want to fill up a bucket with water from a fountain</li>
+        <li>You don't care about which molecules of water go in your bucket</li>
+        <li>You just need enough water to fill it up</li>
+      </ul>
+    </div>
   {/if}
-
-  <span class="mb-6">With all that said, happy scouting!</span>
 </div>

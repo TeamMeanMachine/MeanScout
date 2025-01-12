@@ -10,7 +10,7 @@
   import type { Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
-  import { matchTargets } from "$lib/settings";
+  import { cameraStore, matchTargets } from "$lib/settings";
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
 
@@ -251,22 +251,24 @@
 <div class="flex flex-wrap gap-3" style="view-transition-name:entries">
   <div class="grow basis-0">
     <div class="flex flex-wrap gap-2 pb-2">
-      <Button
-        onclick={() => {
-          openDialog(ImportEntriesFromQRCodeDialog, {
-            surveyRecord: data.surveyRecord,
-            fields: data.fields,
-            onimport: refresh,
-          });
-        }}
-        class="grow"
-      >
-        <Icon name="qrcode" />
-        <div class="flex flex-col">
-          Import
-          <small>QR code</small>
-        </div>
-      </Button>
+      {#if $cameraStore}
+        <Button
+          onclick={() => {
+            openDialog(ImportEntriesFromQRCodeDialog, {
+              surveyRecord: data.surveyRecord,
+              fields: data.fields,
+              onimport: refresh,
+            });
+          }}
+          class="grow"
+        >
+          <Icon name="qrcode" />
+          <div class="flex flex-col">
+            Import
+            <small>QRF code</small>
+          </div>
+        </Button>
+      {/if}
       <Button
         onclick={() => {
           openDialog(ImportEntriesFromFileDialog, {
@@ -385,7 +387,7 @@
             <Icon name="qrcode" />
             <div class="flex flex-col">
               Export
-              <small>QR code</small>
+              <small>QRF code</small>
             </div>
           </Button>
           <Button

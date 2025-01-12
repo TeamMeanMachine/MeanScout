@@ -122,7 +122,7 @@
       </div>
       {#if cameras.length}
         <select bind:value={cameraInput} class="bg-neutral-800 p-2 capitalize text-theme">
-          <option value="">Default</option>
+          <option value="">Select</option>
           {#each cameras as { id, name }}
             <option value={id}>{name}</option>
           {/each}

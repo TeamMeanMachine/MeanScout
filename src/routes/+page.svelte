@@ -7,7 +7,7 @@
   import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
   import ImportSurveyFromQrCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
-  import { modeStore } from "$lib/settings";
+  import { cameraStore, modeStore } from "$lib/settings";
   import type { PageData } from "./$types";
 
   let {
@@ -33,13 +33,15 @@
 
   {#if $modeStore == "admin"}
     <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ImportSurveyFromQrCodeDialog, {})} class="grow basis-0">
-        <Icon name="qrcode" />
-        <div class="flex flex-col">
-          Import
-          <small>QR code</small>
-        </div>
-      </Button>
+      {#if $cameraStore}
+        <Button onclick={() => openDialog(ImportSurveyFromQrCodeDialog, {})} class="grow basis-0">
+          <Icon name="qrcode" />
+          <div class="flex flex-col">
+            Import
+            <small>QRF code</small>
+          </div>
+        </Button>
+      {/if}
       <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} class="grow basis-0">
         <Icon name="paste" />
         <div class="flex flex-col">
