@@ -1,5 +1,3 @@
-import type { QRCode } from "jsqr";
-
 /**
  * Runs bitwise xor on each corresponding value in the two provided arrays,
  * updating the first array in-place.

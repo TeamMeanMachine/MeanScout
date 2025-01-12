@@ -16,6 +16,7 @@
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.5.27",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@types/sortablejs": "^1.15.8",
     "@types/qrcode": "^1.5.5",
     "autoprefixer": "^10.4.20",
     "prettier": "^3.3.2",
@@ -30,6 +31,7 @@
   "dependencies": {
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
+    "sortablejs": "^1.15.6",
     "zod": "^3.23.8"
   }
 }

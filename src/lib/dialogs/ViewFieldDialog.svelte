@@ -2,20 +2,13 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
-  import {
-    type DetailedGroupField,
-    type DetailedSingleField,
-    type Field,
-    type GroupField,
-    type SingleField,
-  } from "$lib/field";
+  import { type DetailedSingleField, type Field, type GroupField, type SingleField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import EditFieldDialog from "./EditFieldDialog.svelte";
 
   let {
     surveyRecord,
-    detailedFields,
     detailedInnerFields,
     field,
     parentField,
@@ -25,7 +18,6 @@
     ondelete,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    detailedFields: Map<number, DetailedSingleField | DetailedGroupField>;
     detailedInnerFields: Map<number, DetailedSingleField>;
     field: IDBRecord<Field>;
     parentField?: IDBRecord<GroupField> | undefined;
@@ -34,6 +26,25 @@
     onduplicate?: (index: number, id: number) => void;
     ondelete?: () => void;
   } = $props();
+
+  const isExpressionInput =
+    surveyRecord.type == "match" &&
+    surveyRecord.expressions.some((e) =>
+      e.inputs.some((i) => {
+        if (i.from == "expression") return false;
+
+        if (field.type == "group") {
+          for (const innerId of field.fieldIds) {
+            if (i.fieldId == innerId) {
+              return true;
+            }
+          }
+          return false;
+        } else {
+          return i.fieldId == field.id;
+        }
+      }),
+    );
 
   let error = $state("");
 
@@ -190,9 +201,22 @@
   <Icon name="clone" />
   Duplicate
 </Button>
-<Button onclick={deleteField}>
+<Button onclick={deleteField} disabled={isExpressionInput}>
   <Icon name="trash" />
-  Delete
+  {#if isExpressionInput}
+    <div class="flex flex-col">
+      Delete
+      <small>
+        {#if field.type == "group"}
+          Inner fields are used for analysis
+        {:else}
+          This field is used for analysis
+        {/if}
+      </small>
+    </div>
+  {:else}
+    Delete
+  {/if}
 </Button>
 
 {#if error}

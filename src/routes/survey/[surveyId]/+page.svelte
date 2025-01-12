@@ -6,10 +6,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
-  import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
-  import ImportSurveyFromQrCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
-  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { MatchEntry } from "$lib/entry";

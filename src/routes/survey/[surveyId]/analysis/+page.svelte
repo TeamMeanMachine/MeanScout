@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { Expression } from "$lib/analysis";
-  import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
@@ -89,11 +87,7 @@
     </div>
   {/if}
 {:else}
-  To setup analysis, go create some fields.
-  <Anchor route="survey/{data.surveyRecord.id}/fields" class="self-start">
-    <Icon name="list-check" />
-    Fields
-  </Anchor>
+  No fields.
 {/if}
 
 {#snippet expressionButton(expression: Expression)}
