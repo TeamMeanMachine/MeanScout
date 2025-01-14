@@ -26,7 +26,7 @@
   let entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   function filterEntries(entry: IDBRecord<Entry>) {
-    return entry.status != "draft" && entry.team == teamInfo.team;
+    return entry.status != "draft" && entry.team == teamInfo.number;
   }
 
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
@@ -38,7 +38,12 @@
   }
 </script>
 
-<span>Team {teamInfo.team}</span>
+<div class="flex flex-col">
+  <span>Team {teamInfo.number}</span>
+  {#if teamInfo.name}
+    <small>{teamInfo.name}</small>
+  {/if}
+</div>
 
 {#if entries.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto text-sm">

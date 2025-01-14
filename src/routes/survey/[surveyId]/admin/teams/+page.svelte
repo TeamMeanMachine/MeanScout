@@ -46,9 +46,13 @@
   let columns = $derived(data.surveyType == "match" ? data.surveyRecord.pickLists.length + 3 : 3);
 
   let matchTeamInfos = $derived([...new Set(teamsFromMatches)].map(createTeamInfo).toSorted(sortTeamInfo));
-  let customTeamInfos = $derived(data.surveyRecord.teams.map(createTeamInfo).toSorted(sortTeamInfo));
+  let customTeamInfos = $derived(
+    data.surveyRecord.teams.map((team) => createTeamInfo(team.number)).toSorted(sortTeamInfo),
+  );
 
-  let conflictingTeams = $derived([...new Set(data.surveyRecord.teams).intersection(new Set(teamsFromMatches))]);
+  let conflictingTeams = $derived([
+    ...new Set(data.surveyRecord.teams.map((team) => team.number)).intersection(new Set(teamsFromMatches)),
+  ]);
 
   let displayedCount = $state(10);
   let displayedTeams = $derived(customTeamInfos.slice(0, displayedCount));
@@ -145,16 +149,17 @@
     }
 
     return {
-      team,
+      number: team,
+      name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
       entryCount: matchingEntries.length,
       matchCount: matchCountPerTeam[team] ?? 0,
-      isCustom: data.surveyRecord.teams.includes(team),
+      isCustom: data.surveyRecord.teams.some((t) => t.number == team),
       pickListRanks,
     };
   }
 
   function sortTeamInfo(a: TeamInfo, b: TeamInfo) {
-    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const teamCompare = a.number.localeCompare(b.number, "en", { numeric: true });
     const doneCompare = a.entryCount / a.matchCount - b.entryCount / b.matchCount;
 
     if (typeof sortBy == "number" && a.pickListRanks?.length && b.pickListRanks?.length) {
@@ -175,7 +180,7 @@
       ...data,
       surveyRecord: {
         ...data.surveyRecord,
-        teams: data.surveyRecord.teams.filter((team) => !conflictingTeams.includes(team)),
+        teams: data.surveyRecord.teams.filter((team) => !conflictingTeams.includes(team.number)),
         modified: new Date(),
       },
     } as PageData;
@@ -230,7 +235,7 @@
               </div>
             </div>
 
-            {#each matchTeamInfos as teamInfo (teamInfo.team)}
+            {#each matchTeamInfos as teamInfo (teamInfo.number)}
               <Button
                 onclick={() => {
                   openDialog(ViewTeamDialog, {
@@ -241,7 +246,7 @@
                         ...data,
                         surveyRecord: {
                           ...data.surveyRecord,
-                          teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                          teams: data.surveyRecord.teams.filter((team) => teamInfo.number != team.number),
                           modified: new Date(),
                         },
                       } as PageData;
@@ -251,7 +256,7 @@
                 }}
                 class="col-span-full grid grid-cols-subgrid text-center"
               >
-                <div>{teamInfo.team}</div>
+                <div>{teamInfo.number}</div>
 
                 {#if teamInfo.pickListRanks?.length}
                   {#each teamInfo.pickListRanks as pickListRank}
@@ -314,7 +319,9 @@
       {#if data.surveyRecord.teams.length}
         <div class="flex flex-col gap-2">
           {#if selecting}
-            {@const deletableTeams = [...selectedTeams].filter((team) => data.surveyRecord.teams.includes(team))}
+            {@const deletableTeams = [...selectedTeams].filter((team) =>
+              data.surveyRecord.teams.some((t) => t.number == team),
+            )}
 
             <Button
               onclick={() => {
@@ -339,7 +346,7 @@
                       ...data,
                       surveyRecord: {
                         ...data.surveyRecord,
-                        teams: data.surveyRecord.teams.filter((team) => !teams.includes(team)),
+                        teams: data.surveyRecord.teams.filter((team) => !teams.includes(team.number)),
                         modified: new Date(),
                       },
                     } as PageData;
@@ -384,8 +391,8 @@
                     if (selectedTeams.size == customTeamInfos.length) {
                       selectedTeams.clear();
                     } else {
-                      for (const { team } of customTeamInfos) {
-                        selectedTeams.add(team);
+                      for (const { number } of customTeamInfos) {
+                        selectedTeams.add(number);
                       }
                     }
                   }}
@@ -417,16 +424,16 @@
               </div>
             </div>
 
-            {#each displayedTeams as teamInfo (teamInfo.team)}
-              {@const defaultFont = selectedTeams.has(teamInfo.team) ? "font-bold" : ""}
+            {#each displayedTeams as teamInfo (teamInfo.number)}
+              {@const defaultFont = selectedTeams.has(teamInfo.number) ? "font-bold" : ""}
 
               <Button
                 onclick={() => {
                   if (selecting) {
-                    if (selectedTeams.has(teamInfo.team)) {
-                      selectedTeams.delete(teamInfo.team);
+                    if (selectedTeams.has(teamInfo.number)) {
+                      selectedTeams.delete(teamInfo.number);
                     } else {
-                      selectedTeams.add(teamInfo.team);
+                      selectedTeams.add(teamInfo.number);
                     }
                   } else {
                     openDialog(ViewTeamDialog, {
@@ -437,7 +444,7 @@
                           ...data,
                           surveyRecord: {
                             ...data.surveyRecord,
-                            teams: data.surveyRecord.teams.filter((team) => teamInfo.team != team),
+                            teams: data.surveyRecord.teams.filter((team) => teamInfo.number != team.number),
                             modified: new Date(),
                           },
                         } as PageData;
@@ -450,7 +457,7 @@
               >
                 {#if selecting}
                   <div class="h-[24px] text-left">
-                    {#if selectedTeams.has(teamInfo.team)}
+                    {#if selectedTeams.has(teamInfo.number)}
                       <Icon name="square-check" />
                     {:else}
                       <Icon style="regular" name="square" />
@@ -458,7 +465,7 @@
                   </div>
                 {/if}
 
-                <div>{teamInfo.team}</div>
+                <div>{teamInfo.number}</div>
 
                 {#if teamInfo.pickListRanks?.length}
                   {#each teamInfo.pickListRanks as pickListRank}

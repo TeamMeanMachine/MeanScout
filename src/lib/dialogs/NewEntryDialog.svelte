@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -38,6 +39,7 @@
   let error = $state("");
 
   let suggestedTeams = $derived(getSuggestedTeams(match));
+  let teamName = $derived(surveyRecord.teams.find((t) => t.number == team)?.name || "");
 
   let isExporting = $state(false);
 
@@ -46,7 +48,7 @@
       team = team.trim();
 
       const teamHasInvalidFormat = !/^\d{1,5}[A-Z]?$/.test(team);
-      const teamIsNotListed = suggestedTeams.length && !suggestedTeams.includes(team);
+      const teamIsNotListed = suggestedTeams.length && !suggestedTeams.some((t) => t.number == team);
 
       if (teamHasInvalidFormat) {
         error = "invalid value for team";
@@ -152,11 +154,25 @@
             teamSet.add(matchData.blue3);
         }
       }
+
+      surveyRecord.teams.forEach((team) => {
+        if (
+          !surveyRecord.matches
+            .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
+            .includes(team.number)
+        ) {
+          teamSet.add(team.number);
+        }
+      });
+    } else {
+      surveyRecord.teams.forEach((team) => {
+        teamSet.add(team.number);
+      });
     }
 
-    surveyRecord.teams.forEach((team) => teamSet.add(team));
-
-    return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
+    return [...teamSet]
+      .map((team): Team => surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
+      .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
   }
 </script>
 
@@ -168,7 +184,7 @@
     <input
       type="number"
       bind:value={match}
-      oninput={() => (team = suggestedTeams[0])}
+      oninput={() => (team = suggestedTeams[0].number)}
       min="1"
       class="bg-neutral-800 p-2 text-theme"
     />
@@ -177,12 +193,15 @@
 
 <datalist id="teams-list">
   {#each suggestedTeams as team}
-    <option value={team}></option>
+    <option value={team.number}>{team.name}</option>
   {/each}
 </datalist>
 <label class="flex flex-col">
   Team
   <input list="teams-list" bind:value={team} class="bg-neutral-800 p-2 text-theme" />
+  {#if teamName}
+    <small>{teamName}</small>
+  {/if}
 </label>
 
 {#if surveyRecord.type == "match"}

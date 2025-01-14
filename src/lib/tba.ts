@@ -1,4 +1,4 @@
-import type { Match } from "./";
+import type { Match, Team } from "./";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 
@@ -68,13 +68,11 @@ export async function tbaGetEventMatches(eventKey: string, authKey: string) {
 }
 
 export async function tbaGetEventTeams(eventKey: string, authKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/teams/keys`, authKey);
+  const response = await tbaFetch(`/event/${eventKey}/teams/simple`, authKey);
 
   if (response.status == "success" && Array.isArray(response.data)) {
-    const newTeams = new Set<string>();
-    response.data.forEach((team) => {
-      newTeams.add(`${team}`.trim().replace("frc", ""));
+    return response.data.map((team): Team => {
+      return { number: team.key.replace("frc", ""), name: team.nickname };
     });
-    return [...newTeams];
   }
 }

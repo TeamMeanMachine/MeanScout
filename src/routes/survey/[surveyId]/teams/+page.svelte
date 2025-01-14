@@ -39,7 +39,7 @@
   let columns = $derived(data.surveyType == "match" ? data.surveyRecord.pickLists.length + 2 : 2);
 
   let teamInfos = $derived.by(() => {
-    const uniqueTeams = [...new Set([...data.surveyRecord.teams, ...teamsFromMatches])];
+    const uniqueTeams = [...new Set([...data.surveyRecord.teams.map((team) => team.number), ...teamsFromMatches])];
     return uniqueTeams.map(createTeamInfo).toSorted(sortTeamInfo);
   });
 
@@ -138,16 +138,17 @@
     }
 
     return {
-      team,
+      number: team,
+      name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
       entryCount: matchingEntries.length,
       matchCount: matchCountPerTeam[team] ?? 0,
-      isCustom: data.surveyRecord.teams.includes(team),
+      isCustom: data.surveyRecord.teams.some((t) => t.number == team),
       pickListRanks,
     };
   }
 
   function sortTeamInfo(a: TeamInfo, b: TeamInfo) {
-    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const teamCompare = a.number.localeCompare(b.number, "en", { numeric: true });
     const doneCompare = a.entryCount / a.matchCount - b.entryCount / b.matchCount;
 
     if (typeof sortBy == "number" && a.pickListRanks?.length && b.pickListRanks?.length) {
@@ -217,12 +218,21 @@
           </div>
         </div>
 
-        {#each displayedTeams as teamInfo (teamInfo.team)}
+        {#each displayedTeams as teamInfo (teamInfo.number)}
           <Button
             onclick={() => openDialog(ViewTeamDialog, { data, teamInfo })}
             class="col-span-full grid grid-cols-subgrid text-center"
           >
-            <div>{teamInfo.team}</div>
+            <div class="flex flex-col text-left">
+              {#if teamInfo.name}
+                <span class="font-bold">{teamInfo.number}</span>
+                <small class="max-h-10 overflow-hidden font-light">
+                  {teamInfo.name.replaceAll("Robotics", "").replaceAll("Team", "")}
+                </small>
+              {:else}
+                {teamInfo.number}
+              {/if}
+            </div>
             {#if teamInfo.pickListRanks?.length}
               {#each teamInfo.pickListRanks as pickListRank}
                 <div>

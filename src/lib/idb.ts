@@ -99,6 +99,17 @@ function migrateSurveys(transaction: IDBTransaction) {
       }
     }
 
+    if (Array.isArray(survey.teams)) {
+      survey.teams = survey.teams.map((team: any) => {
+        if (typeof team == "string") {
+          return { number: team, name: "" };
+        }
+        return team;
+      });
+    } else {
+      survey.teams = [];
+    }
+
     if (!Array.isArray(survey.fieldIds)) {
       survey.fieldIds = [];
     }

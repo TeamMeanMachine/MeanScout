@@ -3,7 +3,7 @@ import type { Entry } from "./entry";
 import type { MatchTarget, Target } from "./settings";
 import type { Survey } from "./survey";
 
-export const schemaVersion = 9;
+export const schemaVersion = 10;
 
 export type Heading = { type: "h1" | "sm"; text: string }[] | string;
 
@@ -23,8 +23,10 @@ export const matchSchema = z.object({
 });
 export type Match = z.infer<typeof matchSchema>;
 
-export type TeamInfo = {
-  team: string;
+export const teamSchema = z.object({ number: z.string(), name: z.string() });
+export type Team = z.infer<typeof teamSchema>;
+
+export type TeamInfo = Team & {
   entryCount: number;
   matchCount: number;
   isCustom: boolean;

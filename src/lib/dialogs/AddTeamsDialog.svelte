@@ -28,7 +28,7 @@
       }
 
       for (const team of teamInputs) {
-        if (allTeams.some((teamData) => teamData.team == team)) {
+        if (allTeams.some((teamData) => teamData.number == team)) {
           error = `Team ${team} already exists`;
           return;
         }

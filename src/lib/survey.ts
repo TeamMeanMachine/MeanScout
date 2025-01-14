@@ -1,4 +1,4 @@
-import { matchSchema, parseValueFromString, schemaVersion, type Match } from "$lib";
+import { matchSchema, parseValueFromString, schemaVersion, teamSchema, type Match } from "$lib";
 import { z } from "zod";
 import {
   expressionSchema,
@@ -17,7 +17,7 @@ const baseSurveySchema = z.object({
   name: z.string(),
   tbaEventKey: z.optional(z.string()),
   fieldIds: z.array(z.number()),
-  teams: z.array(z.coerce.string()),
+  teams: z.array(teamSchema),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });
@@ -55,9 +55,9 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
 
   const teams: number[] = [];
   for (const team of survey.teams) {
-    let index = indexedTeams.findIndex((t) => team == t);
+    let index = indexedTeams.findIndex((t) => team.number == t);
     if (index == -1) {
-      index = indexedTeams.push(team) - 1;
+      index = indexedTeams.push(team.number) - 1;
     }
     teams.push(index);
   }
@@ -367,7 +367,7 @@ export function jsonToSurvey(
       created: new Date(),
       modified: new Date(),
       fieldIds: compressedSurvey.fieldIds,
-      teams,
+      teams: teams.map((team) => ({ number: team, name: "" })),
       pickLists,
       expressions,
       matches,
@@ -379,7 +379,7 @@ export function jsonToSurvey(
       created: new Date(),
       modified: new Date(),
       fieldIds: compressedSurvey.fieldIds,
-      teams,
+      teams: teams.map((team) => ({ number: team, name: "" })),
     };
   } else {
     return { success: false, error: "Invalid input" };
