@@ -1,21 +1,15 @@
 <script lang="ts">
   import type { TeamInfo } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { getDetailedNestedFields } from "$lib/field";
-  import { modeStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
     data,
     teamInfo,
-    ondelete,
   }: {
     data: PageData;
     teamInfo: TeamInfo;
-    ondelete?: () => void;
   } = $props();
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
@@ -114,16 +108,4 @@
       </tbody>
     </table>
   </div>
-{/if}
-
-{#if $modeStore == "admin" && teamInfo.isCustom && ondelete}
-  <Button
-    onclick={() => {
-      ondelete();
-      closeDialog();
-    }}
-  >
-    <Icon name="trash" />
-    Delete
-  </Button>
 {/if}

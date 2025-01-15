@@ -197,11 +197,13 @@
   {/each}
 </datalist>
 <label class="flex flex-col">
-  Team
+  <div class="flex flex-wrap items-end justify-between">
+    Team
+    {#if teamName}
+      <span class="text-sm font-light">{teamName}</span>
+    {/if}
+  </div>
   <input list="teams-list" bind:value={team} class="bg-neutral-800 p-2 text-theme" />
-  {#if teamName}
-    <small>{teamName}</small>
-  {/if}
 </label>
 
 {#if surveyRecord.type == "match"}

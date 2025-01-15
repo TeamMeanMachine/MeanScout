@@ -36,7 +36,7 @@
 
   let sortBy = $state<"team" | number | "done">("team");
 
-  let columns = $derived(data.surveyType == "match" ? data.surveyRecord.pickLists.length + 2 : 2);
+  let columns = $derived(data.surveyType == "match" ? data.surveyRecord.pickLists.length : 0);
 
   let teamInfos = $derived.by(() => {
     const uniqueTeams = [...new Set([...data.surveyRecord.teams.map((team) => team.number), ...teamsFromMatches])];
@@ -197,22 +197,28 @@
 
       <div
         bind:this={dataGrid}
-        class="grid gap-2 pt-1"
-        style="grid-template-columns: repeat({columns}, min-content) auto;"
+        class="grid gap-y-2 pt-1"
+        style="grid-template-columns: minmax(auto, max-content) repeat({columns + 1}, min-content) minmax(0, auto)"
       >
         <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-          <div class="grid grid-cols-subgrid" style="grid-column: span {columns} / span {columns}">
+          <div class="col-span-full grid grid-cols-subgrid gap-x-2">
             <Button onclick={() => (sortBy = "team")} class={sortBy == "team" ? "font-bold" : "font-light"}>
               Team
             </Button>
             {#if ranksPerPickList.length && data.surveyType == "match"}
               {#each data.surveyRecord.pickLists as pickList, i}
-                <Button onclick={() => (sortBy = i)} class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs">
+                <Button
+                  onclick={() => (sortBy = i)}
+                  class="{sortBy == i ? 'font-bold' : 'font-light'} text-nowrap text-xs"
+                >
                   {pickList.name}
                 </Button>
               {/each}
             {/if}
-            <Button onclick={() => (sortBy = "done")} class={sortBy == "done" ? "font-bold" : "font-light"}>
+            <Button
+              onclick={() => (sortBy = "done")}
+              class="{sortBy == 'done' ? 'font-bold' : 'font-light'} justify-center"
+            >
               Done
             </Button>
           </div>

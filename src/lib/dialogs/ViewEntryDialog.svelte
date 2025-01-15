@@ -27,6 +27,8 @@
   let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
 
+  let teamName = $derived(surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name);
+
   function editEntry() {
     if (entry.status == "draft") {
       location.hash = `/entry/${entry.id}`;
@@ -79,7 +81,12 @@
       {/if}
       <tr>
         <td class="w-0 p-2 text-sm">Team</td>
-        <td class="p-2 font-bold">{entryRecord.team}</td>
+        <td class="p-2 font-bold">
+          {entryRecord.team}
+          {#if teamName}
+            <div><small class="font-light">{teamName}</small></div>
+          {/if}
+        </td>
       </tr>
       {#if entryRecord.type == "match"}
         <tr>

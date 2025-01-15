@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { TeamInfo } from "$lib";
+  import type { Team } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
-    allTeams,
+    teams,
     onadd,
   }: {
-    allTeams: TeamInfo[];
+    teams: Team[];
     onadd: (teams: string[]) => void;
   } = $props();
 
@@ -28,8 +28,14 @@
       }
 
       for (const team of teamInputs) {
-        if (allTeams.some((teamData) => teamData.number == team)) {
+        if (teams.some((teamData) => teamData.number == team)) {
           error = `Team ${team} already exists`;
+          return;
+        }
+
+        const teamHasInvalidFormat = !/^\d{1,5}[A-Z]?$/.test(team);
+        if (teamHasInvalidFormat) {
+          error = `Invalid value for team ${team}`;
           return;
         }
       }
@@ -41,7 +47,7 @@
 </script>
 
 <label class="flex flex-col">
-  Add team(s)
+  New team number(s)
   <input bind:value={teamInput} class="bg-neutral-800 p-2 text-theme" />
   <small class="pt-1">Separate multiple teams with commas</small>
 </label>

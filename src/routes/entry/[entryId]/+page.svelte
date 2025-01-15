@@ -17,6 +17,8 @@
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
+  let teamName = $derived(data.surveyRecord.teams.find((t) => t.number == data.entryRecord.team)?.name);
+
   function onchange() {
     data = {
       ...data,
@@ -44,6 +46,9 @@
         <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
       {/if}
       <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
+      {#if teamName?.length}
+        <span><small class="font-light">{teamName}</small></span>
+      {/if}
     </div>
 
     <div class="flex flex-col flex-wrap gap-3">

@@ -1,4 +1,4 @@
-import { matchSchema, parseValueFromString, schemaVersion, teamSchema, type Match } from "$lib";
+import { matchSchema, parseValueFromString, schemaVersion, teamSchema, type Match, type Team } from "$lib";
 import { z } from "zod";
 import {
   expressionSchema,
@@ -51,13 +51,13 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
     version: schemaVersion,
   };
 
-  const indexedTeams: string[] = [];
+  const indexedTeams: Team[] = [];
 
   const teams: number[] = [];
   for (const team of survey.teams) {
-    let index = indexedTeams.findIndex((t) => team.number == t);
+    let index = indexedTeams.findIndex((t) => team.number == t.number);
     if (index == -1) {
-      index = indexedTeams.push(team.number) - 1;
+      index = indexedTeams.push(team) - 1;
     }
     teams.push(index);
   }
@@ -118,7 +118,7 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
     return JSON.stringify({
       ...survey,
       fields: fields.length ? fields : undefined,
-      indexedTeams: indexedTeams.join(","),
+      indexedTeams: indexedTeams.map((team) => [team.number, team.name].join(",")),
       teams: teams.length ? teams : undefined,
     });
   }
@@ -127,9 +127,9 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
   for (const match of survey.matches.toSorted((a, b) => a.number - b.number)) {
     const indexes: number[] = [];
     for (const team of [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3]) {
-      let index = indexedTeams.findIndex((t) => team == t);
+      let index = indexedTeams.findIndex((t) => team == t.number);
       if (index == -1) {
-        index = indexedTeams.push(team) - 1;
+        index = indexedTeams.push({ number: team, name: "" }) - 1;
       }
       indexes.push(index);
     }
@@ -188,7 +188,7 @@ export function surveyToJSON(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
   return JSON.stringify({
     ...survey,
     fields: fields.length ? fields : undefined,
-    indexedTeams: indexedTeams.join(","),
+    indexedTeams: indexedTeams.map((team) => [team.number, team.name].join(",")),
     teams: teams.length ? teams : undefined,
     expressionNames: expressionNames.join(","),
     pickLists: pickLists.length ? pickLists : undefined,
@@ -209,11 +209,10 @@ export function jsonToSurvey(
     return { success: false, error: "Invalid input" };
   }
 
-  if (compressedSurvey.version != schemaVersion) {
-    return {
-      success: false,
-      error: compressedSurvey.version < schemaVersion ? "Outdated version" : "Unsupported version",
-    };
+  if (compressedSurvey.version < schemaVersion) {
+    return { success: false, error: "Outdated version" };
+  } else if (compressedSurvey.version > schemaVersion) {
+    return { success: false, error: "Unsupported version" };
   }
 
   const fields = new Map<number, Field>();
@@ -273,12 +272,15 @@ export function jsonToSurvey(
     }
   }
 
-  let indexedTeams: string[] = [];
+  let indexedTeams: Team[] = [];
   if (compressedSurvey.indexedTeams.length) {
-    indexedTeams = compressedSurvey.indexedTeams.split(",");
+    indexedTeams = compressedSurvey.indexedTeams.map((team: string) => {
+      const [number, name] = team.split(",", 2);
+      return { number, name };
+    });
   }
 
-  const teams: string[] = [];
+  const teams: Team[] = [];
   if (compressedSurvey.teams?.length && indexedTeams.length) {
     for (const teamIndex of compressedSurvey.teams) {
       teams.push(indexedTeams[teamIndex]);
@@ -351,12 +353,12 @@ export function jsonToSurvey(
       for (let i = 0; i < compressedSurvey.matches.length; i += 7) {
         matches.push({
           number: compressedSurvey.matches[i],
-          red1: indexedTeams[compressedSurvey.matches[i + 1]],
-          red2: indexedTeams[compressedSurvey.matches[i + 2]],
-          red3: indexedTeams[compressedSurvey.matches[i + 3]],
-          blue1: indexedTeams[compressedSurvey.matches[i + 4]],
-          blue2: indexedTeams[compressedSurvey.matches[i + 5]],
-          blue3: indexedTeams[compressedSurvey.matches[i + 6]],
+          red1: indexedTeams[compressedSurvey.matches[i + 1]].number,
+          red2: indexedTeams[compressedSurvey.matches[i + 2]].number,
+          red3: indexedTeams[compressedSurvey.matches[i + 3]].number,
+          blue1: indexedTeams[compressedSurvey.matches[i + 4]].number,
+          blue2: indexedTeams[compressedSurvey.matches[i + 5]].number,
+          blue3: indexedTeams[compressedSurvey.matches[i + 6]].number,
         });
       }
     }
@@ -367,7 +369,7 @@ export function jsonToSurvey(
       created: new Date(),
       modified: new Date(),
       fieldIds: compressedSurvey.fieldIds,
-      teams: teams.map((team) => ({ number: team, name: "" })),
+      teams,
       pickLists,
       expressions,
       matches,
@@ -379,7 +381,7 @@ export function jsonToSurvey(
       created: new Date(),
       modified: new Date(),
       fieldIds: compressedSurvey.fieldIds,
-      teams: teams.map((team) => ({ number: team, name: "" })),
+      teams,
     };
   } else {
     return { success: false, error: "Invalid input" };
