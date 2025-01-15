@@ -26,6 +26,7 @@
     return getPrefilledMatch();
   });
   let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
+  let prefilledTeamName = $derived(data.surveyRecord.teams.find((t) => t.number == prefilledTeam)?.name);
 
   let drafts = $derived(
     data.entryRecords
@@ -126,16 +127,26 @@
         {/if}
         {#if prefilledTeam.length}
           <span><small>Team</small> {prefilledTeam}</span>
+          {#if prefilledTeamName?.length}
+            <span><small class="font-light">{prefilledTeamName}</small></span>
+          {/if}
+        {/if}
+        {#if !prefilledMatch && !prefilledTeam}
+          <span>New entry</span>
         {/if}
       </div>
     </Button>
 
     {#each drafts as draft (draft.id)}
+      {@const teamName = data.surveyRecord.teams.find((t) => t.number == draft.team)?.name}
       <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
         <div class="flex grow flex-col">
-          <span><small>Team</small> {draft.team}</span>
           {#if draft.type == "match"}
             <span><small>Match</small> {draft.match}</span>
+          {/if}
+          <span><small>Team</small> {draft.team}</span>
+          {#if teamName?.length}
+            <span><small class="font-light">{teamName}</small></span>
           {/if}
         </div>
         <Icon name="arrow-right" />
@@ -297,8 +308,8 @@
         Teams
         <small>
           {#if data.surveyType == "match"}
-            {new Set(
-              data.surveyRecord.matches.flatMap((match) => [
+            {new Set([
+              ...data.surveyRecord.matches.flatMap((match) => [
                 match.red1,
                 match.red2,
                 match.red3,
@@ -306,9 +317,11 @@
                 match.blue2,
                 match.blue3,
               ]),
-            ).size} from matches,
+              ...data.surveyRecord.teams.map((team) => team.number),
+            ]).size} total
+          {:else}
+            {data.surveyRecord.teams.length} total
           {/if}
-          {data.surveyRecord.teams.length} custom
         </small>
       </div>
       <Icon name="arrow-right" />

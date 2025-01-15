@@ -41,7 +41,7 @@
     teamInfos.some((teamInfo) => {
       return (
         teamInfo.entryCount &&
-        data.entryRecords.some((e) => e.status != "draft" && e.match == match.number && e.team == teamInfo.team)
+        data.entryRecords.some((e) => e.status != "draft" && e.match == match.number && e.team == teamInfo.number)
       );
     }),
   );
@@ -95,16 +95,17 @@
       const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
       const ranks = ranksPerPickList.map((pickList) => pickList[team]);
       return {
-        team,
+        number: team,
+        name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
         entryCount: matchingEntries.length,
         matchCount: 0,
-        isCustom: data.surveyRecord.teams.includes(team),
+        isCustom: data.surveyRecord.teams.some((t) => t.number == team),
         pickListRanks: ranksPerPickList.length ? ranks : undefined,
       };
     });
 
     return teamInfos.filter((teamInfo) => {
-      return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes(teamInfo.team);
+      return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes(teamInfo.number);
     });
   }
 
@@ -131,8 +132,36 @@
   }
 </script>
 
+<div class="flex flex-col">
+  <span>Match {match.number}</span>
+  <div
+    class="grid gap-2 pt-2"
+    style="grid-template-columns: auto repeat({data.surveyRecord.pickLists.length +
+      (showDoneColumn ? 1 : 0)}, min-content) 0"
+  >
+    <div class="col-span-full grid grid-cols-subgrid gap-2 gap-x-3 text-nowrap text-sm font-bold">
+      <div class="pl-2">Team</div>
+      {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
+        {#each data.surveyRecord.pickLists as pickList}
+          <div>{pickList.name}</div>
+        {/each}
+      {/if}
+      {#if showDoneColumn}
+        <div class="">Done</div>
+      {/if}
+    </div>
+
+    {#each [match.red1, match.red2, match.red3] as team}
+      {@render teamRow(team, "red")}
+    {/each}
+    {#each [match.blue1, match.blue2, match.blue3] as team}
+      {@render teamRow(team, "blue")}
+    {/each}
+  </div>
+</div>
+
 {#snippet teamRow(team: string, alliance: string)}
-  {@const teamInfo = teamInfos.find((teamInfo) => teamInfo.team == team)}
+  {@const teamInfo = teamInfos.find((teamInfo) => teamInfo.number == team)}
   {@const entry = data.entryRecords.find((e) => e.status != "draft" && e.match == match.number && e.team == team)}
 
   {#if teamInfo}
@@ -145,7 +174,14 @@
       }}
       class="col-span-full grid grid-cols-subgrid gap-2 text-center"
     >
-      <div class="text-{alliance} {getFontWeight(teamInfo.team)}">{teamInfo.team}</div>
+      <div class="flex flex-col text-left">
+        <span class="text-{alliance} {getFontWeight(teamInfo.number)}">{teamInfo.number}</span>
+        {#if teamInfo.name}
+          <small class="font-light">
+            {teamInfo.name.replaceAll("Robotics", "").replaceAll("Team", "")}
+          </small>
+        {/if}
+      </div>
       {#if teamInfo.pickListRanks?.length}
         {#each teamInfo.pickListRanks as pickListRank}
           <div>
@@ -163,30 +199,3 @@
     </Button>
   {/if}
 {/snippet}
-
-<div class="flex flex-col">
-  <span>Match {match.number}</span>
-  <div
-    class="grid gap-2 pt-2"
-    style="grid-template-columns: repeat({data.surveyRecord.pickLists.length + 2}, min-content) auto;"
-  >
-    <div class="col-span-full grid grid-cols-subgrid gap-2 gap-x-3 text-nowrap text-center text-sm font-bold">
-      <div>Team</div>
-      {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
-        {#each data.surveyRecord.pickLists as pickList}
-          <div>{pickList.name}</div>
-        {/each}
-      {/if}
-      {#if showDoneColumn}
-        <div>Done</div>
-      {/if}
-    </div>
-
-    {#each [match.red1, match.red2, match.red3] as team}
-      {@render teamRow(team, "red")}
-    {/each}
-    {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@render teamRow(team, "blue")}
-    {/each}
-  </div>
-</div>

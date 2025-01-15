@@ -1,21 +1,15 @@
 <script lang="ts">
   import type { TeamInfo } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
-  import { closeDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { getDetailedNestedFields } from "$lib/field";
-  import { modeStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
     data,
     teamInfo,
-    ondelete,
   }: {
     data: PageData;
     teamInfo: TeamInfo;
-    ondelete?: () => void;
   } = $props();
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
@@ -26,7 +20,7 @@
   let entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   function filterEntries(entry: IDBRecord<Entry>) {
-    return entry.status != "draft" && entry.team == teamInfo.team;
+    return entry.status != "draft" && entry.team == teamInfo.number;
   }
 
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
@@ -38,7 +32,12 @@
   }
 </script>
 
-<span>Team {teamInfo.team}</span>
+<div class="flex flex-col">
+  <span>Team {teamInfo.number}</span>
+  {#if teamInfo.name}
+    <small>{teamInfo.name}</small>
+  {/if}
+</div>
 
 {#if entries.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto text-sm">
@@ -109,16 +108,4 @@
       </tbody>
     </table>
   </div>
-{/if}
-
-{#if $modeStore == "admin" && teamInfo.isCustom && ondelete}
-  <Button
-    onclick={() => {
-      ondelete();
-      closeDialog();
-    }}
-  >
-    <Icon name="trash" />
-    Delete
-  </Button>
 {/if}
