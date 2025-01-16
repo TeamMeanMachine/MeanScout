@@ -2,9 +2,9 @@
   import type { Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
+  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, type Entry } from "$lib/entry";
+  import { exportEntriesCompressed, type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
@@ -233,20 +233,23 @@
     </Button>
 
     {#if isExporting}
-      {@const absentEntryCSV = entryToCSV({
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
-        status: "submitted",
-        team,
-        match,
-        absent: true,
-        values: defaultValues,
-        created: new Date(),
-        modified: new Date(),
-      })}
-      {#key absentEntryCSV}
-        <QRCodeDisplay data={absentEntryCSV} />
-      {/key}
+      {@const absentEntryCSV = exportEntriesCompressed([
+        {
+          id: 0,
+          surveyId: surveyRecord.id,
+          type: surveyRecord.type,
+          status: "submitted",
+          team,
+          match,
+          absent: true,
+          values: defaultValues,
+          created: new Date(),
+          modified: new Date(),
+        },
+      ])}
+      {#await absentEntryCSV then data}
+        <QrCodeDisplay {data} />
+      {/await}
     {/if}
   {/if}
 {/if}

@@ -18,10 +18,7 @@ export class FountainEncoder {
   /** Discrete probability distribution. */
   private readonly distribution: number[];
 
-  constructor(message: string, blockSize: number) {
-    const textEncoder = new TextEncoder();
-    const data = textEncoder.encode(message);
-
+  constructor(data: Uint8Array, blockSize: number) {
     const blocksNeeded = Math.ceil(data.length / blockSize);
 
     const blocks: Uint8Array[] = [];
@@ -132,6 +129,8 @@ export type EncodedBlock = {
   data: Uint8Array;
 };
 
+const headerSeparatorByte = new TextEncoder().encode("|")[0];
+
 export class FountainDecoder {
   /** Contains encoded blocks at various stages of decoding. */
   private readonly buffer: EncodedBlock[];
@@ -143,7 +142,7 @@ export class FountainDecoder {
   private totalSources: number;
 
   /** Run as soon as all blocks have been decoded. */
-  ondecode: ((message: string) => void) | undefined;
+  ondecode: ((message: Uint8Array) => void) | undefined;
 
   constructor() {
     this.buffer = [];
@@ -153,8 +152,10 @@ export class FountainDecoder {
     this.ondecode = undefined;
   }
 
-  decode(string: string, bytes: number[] | Uint8Array) {
-    const [headerString] = string.split("|", 1);
+  decode(bytes: number[]) {
+    const headerSeparatorIndex = bytes.findIndex((byte) => byte == headerSeparatorByte);
+    const headerBytes = new Uint8Array(bytes.slice(0, headerSeparatorIndex || 0));
+    const headerString = new TextDecoder().decode(headerBytes);
 
     if (this.lastHeader == headerString || !headerString.length) {
       return;
@@ -231,14 +232,6 @@ export class FountainDecoder {
       offset += data.length;
     }
 
-    const end = messageData.findIndex((byte) => byte == 0);
-    if (end > -1) {
-      messageData = messageData.subarray(0, end);
-    }
-
-    const textDecoder = new TextDecoder();
-    const message = textDecoder.decode(messageData);
-
-    this.ondecode?.(message);
+    this.ondecode?.(messageData);
   }
 }

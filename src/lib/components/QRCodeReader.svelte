@@ -7,7 +7,7 @@
   let {
     onread,
   }: {
-    onread: (data: string) => void;
+    onread: (data: Uint8Array) => void;
   } = $props();
 
   // Using the experimental BarcodeDetector API resulted in issues when sharing between Apple and Android devices.
@@ -68,7 +68,7 @@
         const image = reader.context.getImageData(0, 0, reader.canvas.width, reader.canvas.height);
         const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
         if (code) {
-          scanned = fountainDecoder.decode(code.data, code.binaryData) ?? "skip";
+          scanned = fountainDecoder.decode(code.binaryData) ?? "skip";
         }
       }
     }

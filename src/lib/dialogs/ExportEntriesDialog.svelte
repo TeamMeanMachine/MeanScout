@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, type Entry } from "$lib/entry";
+  import { entryToCSV, exportEntriesCompressed, type Entry } from "$lib/entry";
   import { transaction } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -69,7 +69,9 @@
 <span>Export {filteredEntries.length} {filteredEntries.length == 1 ? "entry" : "entries"}</span>
 
 {#if type == "qrcode"}
-  <QRCodeDisplay data={entriesAsCSV()} />
+  {#await exportEntriesCompressed($state.snapshot(filteredEntries)) then data}
+    <QRCodeDisplay {data} />
+  {/await}
 {:else if type == "file"}
   {#if "canShare" in navigator}
     <Button onclick={shareEntriesAsFile}>

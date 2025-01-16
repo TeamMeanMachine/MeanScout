@@ -3,7 +3,7 @@
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
+  import { importSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let {
@@ -18,7 +18,7 @@
 
   export const { onopen, onconfirm }: DialogExports = {
     async onopen(open) {
-      const jsonResult = jsonToSurvey(data);
+      const jsonResult = importSurvey(data);
       if (!jsonResult.success) {
         error = jsonResult.error;
         return open();

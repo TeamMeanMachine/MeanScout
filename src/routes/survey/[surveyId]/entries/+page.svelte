@@ -256,7 +256,6 @@
           onclick={() => {
             openDialog(ImportEntriesFromQRCodeDialog, {
               surveyRecord: data.surveyRecord,
-              fields: data.fields,
               onimport: refresh,
             });
           }}

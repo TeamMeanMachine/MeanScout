@@ -8,7 +8,7 @@
     framesPerSecond = 15,
     bytesPerFrame = 400,
   }: {
-    data: string;
+    data: Uint8Array;
     framesPerSecond?: number;
     bytesPerFrame?: number;
   } = $props();

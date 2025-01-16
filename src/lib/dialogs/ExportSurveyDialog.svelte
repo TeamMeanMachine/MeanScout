@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import type { Field } from "$lib/field";
-  import { surveyToJSON, type Survey } from "$lib/survey";
+  import { exportSurvey, exportSurveyCompressed, type Survey } from "$lib/survey";
 
   let {
     surveyRecord,
@@ -19,7 +19,7 @@
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
   function surveyAsJSON() {
-    return surveyToJSON($state.snapshot(surveyRecord), fieldRecords);
+    return exportSurvey($state.snapshot(surveyRecord), $state.snapshot(fieldRecords));
   }
 
   function shareSurveyAsFile() {
@@ -36,7 +36,9 @@
 <span>Export survey</span>
 
 {#if type == "qrcode"}
-  <QrCodeDisplay data={surveyAsJSON()} />
+  {#await exportSurveyCompressed($state.snapshot(surveyRecord), $state.snapshot(fieldRecords)) then data}
+    <QrCodeDisplay {data} />
+  {/await}
 {:else if type == "file"}
   {#if "canShare" in navigator}
     <Button onclick={shareSurveyAsFile}>

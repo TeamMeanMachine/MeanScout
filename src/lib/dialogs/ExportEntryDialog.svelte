@@ -2,9 +2,9 @@
   import { createEntryFileName, download, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
+  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, type Entry } from "$lib/entry";
+  import { entryToCSV, exportEntriesCompressed, type Entry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -55,7 +55,9 @@
 
 <span>Export entry</span>
 
-<QRCodeDisplay data={entryToCSV(entry)} />
+{#await exportEntriesCompressed([entry]) then data}
+  <QrCodeDisplay {data} />
+{/await}
 
 {#if "canShare" in navigator}
   <Button onclick={shareEntryAsFile}>

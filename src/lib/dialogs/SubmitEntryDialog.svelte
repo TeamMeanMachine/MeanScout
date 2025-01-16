@@ -3,7 +3,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, type Entry } from "$lib/entry";
+  import { exportEntriesCompressed, type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
 
@@ -18,11 +18,11 @@
   } = $props();
 
   let isExporting = $state(false);
-  let entryCSV = $state("");
+  let compressedEntry = $state<Uint8Array>();
   let error = $state("");
 
   export const { onopen, onconfirm }: DialogExports = {
-    onopen(open) {
+    async onopen(open) {
       for (let i = 0; i < entryRecord.values.length; i++) {
         const value = entryRecord.values[i];
         if (value == undefined || typeof value !== typeof getDefaultFieldValue(fields[i].field)) {
@@ -32,7 +32,7 @@
         }
       }
 
-      entryCSV = entryToCSV(entryRecord);
+      compressedEntry = await exportEntriesCompressed([entryRecord]);
       open();
     },
     onconfirm() {
@@ -76,8 +76,8 @@
   {/if}
 </Button>
 
-{#if isExporting && entryCSV}
-  <QRCodeDisplay data={entryCSV} />
+{#if isExporting && compressedEntry}
+  <QRCodeDisplay data={compressedEntry} />
 {/if}
 
 {#if error}

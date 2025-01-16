@@ -2,6 +2,7 @@ import { matchValueSchema, valueSchema, type Value } from "$lib";
 import { z } from "zod";
 import type { Survey } from "./survey";
 import { getDefaultFieldValue, type DetailedSingleField, type SingleField } from "./field";
+import { compress, decompress } from "./compress";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];
@@ -33,6 +34,71 @@ export type PitEntry = z.infer<typeof pitEntrySchema>;
 
 const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);
 export type Entry = z.infer<typeof entrySchema>;
+
+export function exportEntries(entryRecords: IDBRecord<Entry>[]) {
+  const entries = entryRecords.map((entry) => {
+    return {
+      ...entry,
+      id: undefined,
+      type: undefined,
+      surveyId: undefined,
+      status: undefined,
+      created: undefined,
+      modified: undefined,
+    };
+  });
+
+  return JSON.stringify(entries);
+}
+
+export function exportEntriesCompressed(entryRecords: IDBRecord<Entry>[]) {
+  return compress(exportEntries(entryRecords));
+}
+
+export function importEntries(
+  surveyRecord: IDBRecord<Survey>,
+  data: string,
+): { success: true; entries: Entry[] } | { success: false; error: string } {
+  let decompressed: Partial<Entry>[] = JSON.parse(data);
+
+  let entries: Entry[];
+
+  if (surveyRecord.type == "match") {
+    entries = (decompressed as Partial<MatchEntry>[]).map((entry) => {
+      return {
+        surveyId: surveyRecord.id,
+        type: "match",
+        status: "exported",
+        team: entry.team || "",
+        match: entry.match || 0,
+        absent: entry.absent || false,
+        values: entry.values || [],
+        created: new Date(),
+        modified: new Date(),
+      };
+    });
+  } else if (surveyRecord.type == "pit") {
+    entries = decompressed.map((entry) => {
+      return {
+        surveyId: surveyRecord.id,
+        type: "pit",
+        status: "exported",
+        team: entry.team || "",
+        values: entry.values || [],
+        created: new Date(),
+        modified: new Date(),
+      };
+    });
+  } else {
+    return { success: false, error: "Invalid type of entries" };
+  }
+
+  return { success: true, entries };
+}
+
+export async function importEntriesCompressed(surveyRecord: IDBRecord<Survey>, data: Uint8Array) {
+  return importEntries(surveyRecord, await decompress(data));
+}
 
 function valueToCSV(value: Value) {
   if (value === 0 || value === false) {

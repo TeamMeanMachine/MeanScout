@@ -3,7 +3,7 @@
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
+  import { importSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let files = $state<FileList | undefined>();
@@ -83,7 +83,7 @@
       return;
     }
 
-    const jsonResult = jsonToSurvey(await files[0].text());
+    const jsonResult = importSurvey(await files[0].text());
     if (!jsonResult.success) {
       error = jsonResult.error;
       return;

@@ -6,7 +6,7 @@
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
-  import { jsonToSurvey, surveySchema, type Survey } from "$lib/survey";
+  import { importSurveyCompressed, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
   let importedSurvey = $state<Survey | undefined>();
@@ -53,6 +53,7 @@
               oldNewMap.set(fieldId, addedFieldId);
             } catch (error) {
               importTransaction.abort();
+              console.error(fieldId, error);
               return;
             }
           }
@@ -80,8 +81,9 @@
     },
   };
 
-  function onread(data: string) {
-    const jsonResult = jsonToSurvey(data);
+  async function onread(data: Uint8Array) {
+    const jsonResult = await importSurveyCompressed(data);
+    console.log(jsonResult);
     if (!jsonResult.success) {
       error = jsonResult.error;
       return;
