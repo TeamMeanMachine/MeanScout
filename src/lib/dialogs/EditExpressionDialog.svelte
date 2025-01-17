@@ -15,7 +15,6 @@
     expression,
     index,
     usedExpressionNames,
-    input,
     onupdate,
     ondelete,
   }: {
@@ -24,18 +23,15 @@
     expressions: {
       derived: Expression[];
       primitive: Expression[];
-      mixed: Expression[];
     };
     expression: Expression;
     index: number;
     usedExpressionNames?: string[] | undefined;
-    input?: "expressions" | "fields";
     onupdate: (expression: Expression) => void;
     ondelete: () => void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(expression)));
-  let inputTab = $state<"expressions" | "fields">(input ?? "expressions");
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -57,7 +53,12 @@
         return;
       }
 
-      if (changes.inputs.length == 0) {
+      if (changes.from == "fields" && changes.fieldIds.length == 0) {
+        error = "no inputs selected!";
+        return;
+      }
+
+      if (changes.from == "expressions" && changes.expressionNames.length == 0) {
         error = "no inputs selected!";
         return;
       }
@@ -94,41 +95,56 @@
         case "max":
         case "sum":
           changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
             name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: changes.inputs,
           };
           break;
         case "count":
           changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
             name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             valueToCount: "",
           };
           break;
         case "convert":
           changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
             name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             converters: [],
             defaultTo: "",
           };
           break;
         case "multiply":
           changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
             name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             multiplier: 1,
           };
           break;
         case "divide":
           changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
             name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             divisor: 1,
           };
           break;
@@ -186,35 +202,23 @@
   </label>
 {/if}
 
-{#if !input}
-  <div class="flex flex-wrap items-center gap-2">
-    <span class="grow">Inputs</span>
-    <Button onclick={() => (inputTab = "expressions")} class={inputTab == "expressions" ? "font-bold" : "font-light"}>
-      Expressions
-    </Button>
-    <Button onclick={() => (inputTab = "fields")} class={inputTab == "fields" ? "font-bold" : "font-light"}>
-      Fields
-    </Button>
-  </div>
-{/if}
-
-{#if inputTab == "expressions"}
+{#if changes.from == "expressions"}
   {#snippet expressionButton(exp: Expression)}
-    {@const inputIndex = changes.inputs.findIndex(
-      (input) => input.from == "expression" && input.expressionName == exp.name,
-    )}
-    {@const isInput = inputIndex != -1}
+    {@const inputIndex =
+      changes.from == "expressions" &&
+      changes.expressionNames.findIndex((expressionName) => expressionName == exp.name)}
 
     <Button
       onclick={() => {
-        if (isInput) {
-          changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
+        if (changes.from != "expressions") return;
+        if (inputIndex != false && inputIndex != -1) {
+          changes.expressionNames = changes.expressionNames.toSpliced(inputIndex, 1);
         } else {
-          changes.inputs = [...changes.inputs, { from: "expression", expressionName: exp.name }];
+          changes.expressionNames = [...changes.expressionNames, exp.name];
         }
       }}
     >
-      {#if isInput}
+      {#if inputIndex != false && inputIndex != -1}
         <Icon name="square-check" />
         <strong>{exp.name}</strong>
       {:else}
@@ -241,34 +245,25 @@
         {/each}
       </div>
     {/if}
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <span>Expressions <small>(mixed)</small></span>
-        {#each expressions.mixed as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
   </div>
-{:else if inputTab == "fields"}
+{:else if changes.from == "fields"}
   <span>Fields</span>
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each fields as field (field.field.id)}
-      {@const inputIndex = changes.inputs.findIndex(
-        (input) => input.from == "field" && input.fieldId == field.field.id,
-      )}
-      {@const isInput = inputIndex != -1}
+      {@const inputIndex =
+        changes.from == "fields" && changes.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
       <Button
         onclick={() => {
-          if (isInput) {
-            changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
+          if (changes.from != "fields") return;
+          if (inputIndex != false && inputIndex != -1) {
+            changes.fieldIds = changes.fieldIds.toSpliced(inputIndex, 1);
           } else {
-            changes.inputs = [...changes.inputs, { from: "field", fieldId: field.field.id }];
+            changes.fieldIds = [...changes.fieldIds, field.field.id];
           }
         }}
       >
-        {#if isInput}
+        {#if inputIndex != false && inputIndex != -1}
           <Icon name="square-check" />
           <strong>{field.detailedName}</strong>
         {:else}

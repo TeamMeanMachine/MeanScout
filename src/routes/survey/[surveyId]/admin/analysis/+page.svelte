@@ -18,35 +18,24 @@
   } = $props();
 
   let usedExpressionNames = $derived([
-    ...data.surveyRecord.expressions
-      .flatMap((e) => e.inputs)
-      .filter((input) => input.from == "expression")
-      .map((input) => input.expressionName),
+    ...data.surveyRecord.expressions.filter((e) => e.from == "expressions").flatMap((e) => e.expressionNames),
     ...data.surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
 
   let expressions = $derived({
-    derived: data.surveyRecord.expressions.filter(
-      (expression) => expression.inputs.length && expression.inputs.every((input) => input.from == "expression"),
-    ),
-    primitive: data.surveyRecord.expressions.filter(
-      (expression) => expression.inputs.length && expression.inputs.every((input) => input.from == "field"),
-    ),
-    mixed: data.surveyRecord.expressions.filter(
-      (expression) =>
-        !expression.inputs.length ||
-        (expression.inputs.some((input) => input.from == "expression") &&
-          expression.inputs.some((input) => input.from == "field")),
-    ),
+    derived: data.surveyRecord.expressions.filter((expression) => expression.from == "expressions"),
+    primitive: data.surveyRecord.expressions.filter((expression) => expression.from == "fields"),
   });
 
   function expressionReferencesOther(e: Expression, other: Expression) {
-    for (const input of e.inputs.filter((input) => input.from == "expression")) {
-      if (input.expressionName == other.name) {
+    if (e.from == "fields") return false;
+
+    for (const expressionName of e.expressionNames) {
+      if (expressionName == other.name) {
         return true;
       }
 
-      const newExp = data.surveyRecord.expressions.find((newExp) => newExp.name == input.expressionName);
+      const newExp = data.surveyRecord.expressions.find((newExp) => newExp.name == expressionName);
       if (newExp && expressionReferencesOther(newExp, e)) {
         return true;
       }
@@ -154,7 +143,7 @@
         </div>
 
         {#each expressions.derived as expression}
-          {@render expressionButton(expression, "expressions")}
+          {@render expressionButton(expression)}
         {/each}
       </div>
     {/if}
@@ -187,24 +176,15 @@
       </Button>
 
       {#each expressions.primitive as expression}
-        {@render expressionButton(expression, "fields")}
+        {@render expressionButton(expression)}
       {/each}
     </div>
-
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
-        {#each expressions.mixed as expression}
-          {@render expressionButton(expression)}
-        {/each}
-      </div>
-    {/if}
   {:else}
     To setup analysis, go create some fields.
   {/if}
 </div>
 
-{#snippet expressionButton(expression: Expression, input?: "expressions" | "fields")}
+{#snippet expressionButton(expression: Expression)}
   {@const index = data.surveyRecord.expressions.findIndex((e) => e.name == expression.name)}
 
   <Button
@@ -219,13 +199,9 @@
           primitive: expressions.primitive.filter(
             (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
           ),
-          mixed: expressions.mixed.filter(
-            (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-          ),
         },
         expression,
         index,
-        input,
         usedExpressionNames,
         onupdate(expression) {
           let pickLists = structuredClone($state.snapshot(data.surveyRecord.pickLists));
@@ -244,12 +220,14 @@
             });
 
             expressions = expressions.map((e) => {
-              e.inputs = e.inputs.map((input) => {
-                if (input.from == "expression" && input.expressionName == previousName) {
-                  input.expressionName = expression.name;
-                }
-                return input;
-              });
+              if (e.from == "expressions") {
+                e.expressionNames = e.expressionNames.map((expressionName) => {
+                  if (expressionName == previousName) {
+                    return expression.name;
+                  }
+                  return expressionName;
+                });
+              }
               return e;
             });
           }

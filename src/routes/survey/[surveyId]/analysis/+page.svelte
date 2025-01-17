@@ -14,18 +14,8 @@
   } = $props();
 
   let expressions = $derived({
-    derived: data.surveyRecord.expressions.filter(
-      (expression) => expression.inputs.length && expression.inputs.every((input) => input.from == "expression"),
-    ),
-    primitive: data.surveyRecord.expressions.filter(
-      (expression) => expression.inputs.length && expression.inputs.every((input) => input.from == "field"),
-    ),
-    mixed: data.surveyRecord.expressions.filter(
-      (expression) =>
-        !expression.inputs.length ||
-        (expression.inputs.some((input) => input.from == "expression") &&
-          expression.inputs.some((input) => input.from == "field")),
-    ),
+    derived: data.surveyRecord.expressions.filter((expression) => expression.from == "expressions"),
+    primitive: data.surveyRecord.expressions.filter((expression) => expression.from == "fields"),
   });
 </script>
 
@@ -78,15 +68,6 @@
         {@render expressionButton(expression)}
       {/each}
     </div>
-
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Expressions <small>(mixed)</small></h2>
-        {#each expressions.mixed as expression}
-          {@render expressionButton(expression)}
-        {/each}
-      </div>
-    {/if}
   {:else}
     No fields.
   {/if}

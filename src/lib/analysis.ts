@@ -3,67 +3,69 @@ import { z } from "zod";
 import type { Entry } from "./entry";
 import type { DetailedSingleField } from "./field";
 
-const fieldAsExpressionInputSchema = z.object({ from: z.literal("field"), fieldId: z.number() });
-export type FieldAsExpressionInput = z.infer<typeof fieldAsExpressionInputSchema>;
-
-const expressionAsExpressionInputSchema = z.object({ from: z.literal("expression"), expressionName: z.string() });
-export type ExpressionAsExpressionInput = z.infer<typeof expressionAsExpressionInputSchema>;
-
-const expressionInputSchema = z.discriminatedUnion("from", [
-  fieldAsExpressionInputSchema,
-  expressionAsExpressionInputSchema,
-]);
-export type ExpressionInput = z.infer<typeof expressionInputSchema>;
-
-const baseExpressionSchema = z.object({
-  name: z.string(),
-  inputs: z.array(expressionInputSchema),
-});
-
 export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] as const;
-
-const reduceExpressionSchema = z.discriminatedUnion("type", [
-  baseExpressionSchema.merge(z.object({ type: z.literal("average") })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("min") })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("max") })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("sum") })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("count"), valueToCount: valueSchema })),
-]);
-export type ReduceExpression = z.infer<typeof reduceExpressionSchema>;
-
 export const mapExpressionTypes = ["convert", "multiply", "divide", "abs"] as const;
 
-const convertExpressionSchema = baseExpressionSchema.merge(
-  z.object({
-    type: z.literal("convert"),
-    converters: z.array(z.object({ from: valueSchema, to: valueSchema })),
-    defaultTo: valueSchema,
-  }),
-);
-export type ConvertExpression = z.infer<typeof convertExpressionSchema>;
+const expressionFromFieldsSchema = z.object({
+  name: z.string(),
+  scope: z.literal("entry").or(z.literal("survey")),
+  from: z.literal("fields"),
+  fieldIds: z.array(z.number()),
+});
 
-const divisorSchema = z.number().gt(0).or(z.number().lt(0));
+const expressionFromExpressionsSchema = z.object({
+  name: z.string(),
+  scope: z.literal("entry").or(z.literal("survey")),
+  from: z.literal("expressions"),
+  expressionNames: z.array(z.string()),
+});
 
-const mapExpressionSchema = z.discriminatedUnion("type", [
-  convertExpressionSchema,
-  baseExpressionSchema.merge(z.object({ type: z.literal("multiply"), multiplier: z.number().finite() })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("divide"), divisor: divisorSchema })),
-  baseExpressionSchema.merge(z.object({ type: z.literal("abs") })),
+const baseExpressionWithInputsSchema = z.discriminatedUnion("from", [
+  expressionFromFieldsSchema,
+  expressionFromExpressionsSchema,
 ]);
-export type MapExpression = z.infer<typeof mapExpressionSchema>;
 
-export const expressionTypes = [...reduceExpressionTypes, ...mapExpressionTypes] as const;
-
-export const expressionSchema = z.discriminatedUnion("type", [
-  ...reduceExpressionSchema.options,
-  ...mapExpressionSchema.options,
+const reduceExpressionOptionsSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("average") }),
+  z.object({ type: z.literal("min") }),
+  z.object({ type: z.literal("max") }),
+  z.object({ type: z.literal("sum") }),
+  z.object({ type: z.literal("count"), valueToCount: valueSchema }),
 ]);
-export type Expression = z.infer<typeof expressionSchema>;
+
+const convertExpressionOptionsSchema = z.object({
+  type: z.literal("convert"),
+  converters: z.array(z.object({ from: valueSchema, to: valueSchema })),
+  defaultTo: valueSchema,
+});
+
+const mapExpressionOptionsSchema = z.discriminatedUnion("type", [
+  convertExpressionOptionsSchema,
+  z.object({ type: z.literal("multiply"), multiplier: z.number().finite() }),
+  z.object({ type: z.literal("divide"), divisor: z.number().gt(0).or(z.number().lt(0)) }),
+  z.object({ type: z.literal("abs") }),
+]);
+
+const expressionOptionsSchema = z.discriminatedUnion("type", [
+  ...reduceExpressionOptionsSchema.options,
+  ...mapExpressionOptionsSchema.options,
+]);
+
+export const expressionSchema = z.intersection(baseExpressionWithInputsSchema, expressionOptionsSchema);
 
 export const pickListSchema = z.object({
   name: z.string(),
   weights: z.array(z.object({ expressionName: z.string(), percentage: z.number() })),
 });
+
+type BaseExpressionWithInputs = z.infer<typeof baseExpressionWithInputsSchema>;
+export type ConvertExpression = BaseExpressionWithInputs & z.infer<typeof convertExpressionOptionsSchema>;
+
+type ExpressionOptions = z.infer<typeof expressionOptionsSchema>;
+export type ExpressionFromFields = z.infer<typeof expressionFromFieldsSchema> & ExpressionOptions;
+export type ExpressionFromExpressions = z.infer<typeof expressionFromExpressionsSchema> & ExpressionOptions;
+
+export type Expression = z.infer<typeof expressionSchema>;
 export type PickList = z.infer<typeof pickListSchema>;
 
 export function calculateTeamData(
@@ -106,19 +108,18 @@ function runExpression(
   const expression = expressions.find((e) => e.name == expressionName);
   if (!expression) return 0;
 
-  const values: any[] = expression.inputs.flatMap((input) => {
-    switch (input.from) {
-      case "expression":
-        return runExpression(team, input.expressionName, expressions, entries, fields);
-      case "field":
-        const fieldIndex = fields.findIndex((field) => field.field.id == input.fieldId);
-        if (fieldIndex == -1) return 0;
-        return entries.map((entry) => entry.values[fieldIndex]);
-      default:
-        const unhandledInput: never = input;
-        throw new Error(`Unhandled from for input: ${(unhandledInput as ExpressionInput).from}`);
-    }
-  });
+  let values: any[] = [];
+  if (expression.from == "fields") {
+    values = expression.fieldIds.flatMap((fieldId) => {
+      const fieldIndex = fields.findIndex((field) => field.field.id == fieldId);
+      if (fieldIndex == -1) return 0;
+      return entries.map((entry) => entry.values[fieldIndex]);
+    });
+  } else if (expression.from == "expressions") {
+    values = expression.expressionNames.flatMap((expressionName) => {
+      return runExpression(team, expressionName, expressions, entries, fields);
+    });
+  }
 
   switch (expression.type) {
     case "average":

@@ -1,4 +1,5 @@
 import { schemaVersion } from "$lib";
+import type { Expression } from "./analysis";
 
 let idb: IDBDatabase | undefined = undefined;
 
@@ -136,6 +137,31 @@ function migrateSurveys(transaction: IDBTransaction) {
       }
 
       delete survey.fields;
+    }
+
+    if (Array.isArray(survey.expressions)) {
+      survey.expressions = survey.expressions.map((expression: any): Expression => {
+        if (!expression.scope) {
+          expression.scope = "survey";
+        }
+
+        if (Array.isArray(expression.inputs)) {
+          if (expression.inputs.every((input: any) => input.from == "field")) {
+            expression.from = "fields";
+            expression.fieldIds = expression.inputs.map((input: any) => input.fieldId);
+          } else if (expression.inputs.every((input: any) => input.from == "expression")) {
+            expression.from = "expressions";
+            expression.expressionNames = expression.inputs.map((input: any) => input.expressionName);
+          } else {
+            expression.from = "fields";
+            expression.fieldIds = [];
+          }
+
+          delete expression.inputs;
+        }
+
+        return expression;
+      });
     }
 
     migrateEntries(entryStore, survey.id);

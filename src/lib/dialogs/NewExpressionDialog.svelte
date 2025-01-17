@@ -20,48 +20,57 @@
     expressions: {
       derived: Expression[];
       primitive: Expression[];
-      mixed: Expression[];
     };
     input: "expressions" | "fields";
     oncreate: (expression: Expression) => void;
   } = $props();
 
-  let expression = $state<Expression>({ name: "", type: "average", inputs: [] });
+  let changes = $state<Expression>({
+    ...(input == "fields" ? { from: "fields", fieldIds: [] } : { from: "expressions", expressionNames: [] }),
+    name: "",
+    scope: "survey",
+    type: "average",
+  });
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      expression.name = expression.name.trim();
+      changes.name = changes.name.trim();
 
-      if (!expression.name) {
+      if (!changes.name) {
         error = "name can't be empty!";
         return;
       }
 
-      if (surveyRecord.expressions.find((e) => e.name == expression.name)) {
+      if (surveyRecord.expressions.find((e) => e.name == changes.name)) {
         error = "name must be unique!";
         return;
       }
 
-      if (expression.type == "divide" && expression.divisor == 0) {
+      if (changes.type == "divide" && changes.divisor == 0) {
         error = "divisor can't be 0!";
         return;
       }
 
-      if (expression.inputs.length == 0) {
+      if (changes.from == "fields" && changes.fieldIds.length == 0) {
         error = "no inputs selected!";
         return;
       }
 
-      if (expression.type == "convert") {
-        expression.converters = expression.converters.map(({ from, to }) => ({
+      if (changes.from == "expressions" && changes.expressionNames.length == 0) {
+        error = "no inputs selected!";
+        return;
+      }
+
+      if (changes.type == "convert") {
+        changes.converters = changes.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
           to: parseValueFromString(to),
         }));
-        expression.defaultTo = parseValueFromString(expression.defaultTo);
+        changes.defaultTo = parseValueFromString(changes.defaultTo);
       }
 
-      oncreate(expression);
+      oncreate(changes);
       closeDialog();
     },
   };
@@ -71,55 +80,70 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={expression.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <label class="flex flex-col">
   Type
   <select
-    value={expression.type}
+    value={changes.type}
     onchange={(e) => {
       switch (e.currentTarget.value) {
         case "average":
         case "min":
         case "max":
         case "sum":
-          expression = {
-            name: expression.name,
+          changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
+            name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
           };
           break;
         case "count":
-          expression = {
-            name: expression.name,
+          changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
+            name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             valueToCount: "",
           };
           break;
         case "convert":
-          expression = {
-            name: expression.name,
+          changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
+            name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             converters: [],
             defaultTo: "",
           };
           break;
         case "multiply":
-          expression = {
-            name: expression.name,
+          changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
+            name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             multiplier: 1,
           };
           break;
         case "divide":
-          expression = {
-            name: expression.name,
+          changes = {
+            ...(changes.from == "fields"
+              ? { from: "fields", fieldIds: changes.fieldIds }
+              : { from: "expressions", expressionNames: changes.expressionNames }),
+            name: changes.name,
+            scope: changes.scope,
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             divisor: 1,
           };
           break;
@@ -140,24 +164,24 @@
   </select>
 </label>
 
-{#if expression.type == "count"}
+{#if changes.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={expression.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={changes.valueToCount} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "convert"}
+{:else if changes.type == "convert"}
   <Button
     onclick={() => {
-      if (expression.type != "convert") return;
+      if (changes.type != "convert") return;
       openDialog(EditConvertersDialog, {
-        expression,
+        expression: changes,
         onedit(converters, defaultTo) {
-          if (expression.type != "convert") return;
-          expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
+          if (changes.type != "convert") return;
+          changes.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
             from: parseValueFromString(from),
             to: parseValueFromString(to),
           }));
-          expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+          changes.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
         },
       });
     }}
@@ -165,35 +189,35 @@
     <Icon name="pen" />
     Edit Converters
   </Button>
-{:else if expression.type == "multiply"}
+{:else if changes.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={expression.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={changes.multiplier} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "divide"}
+{:else if changes.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={expression.divisor} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={changes.divisor} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 
-{#if input == "expressions"}
+{#if changes.from == "expressions"}
   {#snippet expressionButton(exp: Expression)}
-    {@const inputIndex = expression.inputs.findIndex(
-      (input) => input.from == "expression" && input.expressionName == exp.name,
-    )}
-    {@const isInput = inputIndex != -1}
+    {@const inputIndex =
+      changes.from == "expressions" &&
+      changes.expressionNames.findIndex((expressionName) => expressionName == exp.name)}
 
     <Button
       onclick={() => {
-        if (isInput) {
-          expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+        if (changes.from != "expressions") return;
+        if (inputIndex != false && inputIndex != -1) {
+          changes.expressionNames = changes.expressionNames.toSpliced(inputIndex, 1);
         } else {
-          expression.inputs = [...expression.inputs, { from: "expression", expressionName: exp.name }];
+          changes.expressionNames = [...changes.expressionNames, exp.name];
         }
       }}
     >
-      {#if isInput}
+      {#if inputIndex != false && inputIndex != -1}
         <Icon name="square-check" />
         <strong>{exp.name}</strong>
       {:else}
@@ -220,34 +244,25 @@
         {/each}
       </div>
     {/if}
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <span>Expressions <small>(mixed)</small></span>
-        {#each expressions.mixed as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
   </div>
-{:else if input == "fields"}
+{:else if changes.from == "fields"}
   <span>Fields</span>
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each fields as field (field.field.id)}
-      {@const inputIndex = expression.inputs.findIndex(
-        (input) => input.from == "field" && input.fieldId == field.field.id,
-      )}
-      {@const isInput = inputIndex != -1}
+      {@const inputIndex =
+        changes.from == "fields" && changes.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
       <Button
         onclick={() => {
-          if (isInput) {
-            expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+          if (changes.from != "fields") return;
+          if (inputIndex != false && inputIndex != -1) {
+            changes.fieldIds = changes.fieldIds.toSpliced(inputIndex, 1);
           } else {
-            expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
+            changes.fieldIds = [...changes.fieldIds, field.field.id];
           }
         }}
       >
-        {#if isInput}
+        {#if inputIndex != false && inputIndex != -1}
           <Icon name="square-check" />
           <strong>{field.detailedName}</strong>
         {:else}

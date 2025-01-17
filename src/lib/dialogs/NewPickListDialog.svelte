@@ -11,7 +11,6 @@
     expressions: {
       derived: Expression[];
       primitive: Expression[];
-      mixed: Expression[];
     };
     oncreate: (pickList: PickList) => void;
   } = $props();
@@ -86,14 +85,6 @@
     <div class="flex flex-col gap-2">
       <span>Expressions <small>(from fields)</small></span>
       {#each expressions.primitive as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.mixed.length}
-    <div class="flex flex-col gap-2">
-      <span>Expressions <small>(mixed)</small></span>
-      {#each expressions.mixed as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>
