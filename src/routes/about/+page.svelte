@@ -8,14 +8,14 @@
   let tab = $state<"info" | "guides" | "qrfcode">("info");
 
   function getTabClass(matching: string) {
-    return tab == matching ? "font-bold underline" : "font-light";
+    return tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
 <Header title="About - MeanScout" heading="About MeanScout" {backLink} />
 
 <div class="flex flex-col gap-6" style="view-transition-name:about">
-  <div class="flex flex-wrap gap-2">
+  <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => (tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => (tab = "guides")} class={getTabClass("guides")}>Guides</Button>
     <Button onclick={() => (tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
@@ -182,8 +182,10 @@
       <h2 class="font-bold">Data analysis</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>Create expressions that transform (multiply, convert) and summarize (average, sum) your data</li>
-        <li>Build pick lists using those expressions with given weights</li>
-        <li>View the best teams for each pick list (and expressions)</li>
+        <li>Entry expressions (aka computed fields) produce per-entry values</li>
+        <li>Survey expressions combine those values across entries</li>
+        <li>Create pick lists that pull from survey expressions with given weights</li>
+        <li>View team rankings for each pick list (and expressions)</li>
       </ol>
     </div>
 
@@ -199,7 +201,8 @@
         <li>
           Enter that API key, and your team number, in the <a href="#/settings" class="underline">settings page</a>
         </li>
-        <li>In your survey's admin page, select one of your team's events (or enter any valid TBA event key), and</li>
+        <li>In your survey's admin page, select one of your team's events (or manually enter any TBA event key)</li>
+        <li>Pull match schedules and/or team info from the TBA event</li>
       </ol>
     </div>
 

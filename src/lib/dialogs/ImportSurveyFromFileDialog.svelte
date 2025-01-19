@@ -58,15 +58,15 @@
           importedSurvey.fieldIds = newIds;
           if (importedSurvey.type == "match") {
             importedSurvey.expressions = importedSurvey.expressions.map((e) => {
-              e.inputs = e.inputs.map((i) => {
-                if (i.from == "field" && oldNewMap.has(i.fieldId)) {
-                  const newId = oldNewMap.get(i.fieldId);
+              if (e.input.from == "fields") {
+                e.input.fieldIds = e.input.fieldIds.map((oldId) => {
+                  const newId = oldNewMap.get(oldId);
                   if (newId) {
-                    i.fieldId = newId;
+                    return newId;
                   }
-                }
-                return i;
-              });
+                  return oldId;
+                });
+              }
               return e;
             });
           }

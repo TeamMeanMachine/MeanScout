@@ -1,8 +1,9 @@
 import { matchSchema, schemaVersion, teamSchema } from "./";
 import { z } from "zod";
-import { expressionSchema, pickListSchema } from "./analysis";
+import { pickListSchema } from "./analysis";
 import type { Field } from "./field";
 import { compress, decompress } from "./compress";
+import { expressionSchema } from "./expression";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];

@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData, type Expression } from "$lib/analysis";
+  import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { MatchEntry } from "$lib/entry";
+  import type { Expression } from "$lib/expression";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
 
@@ -38,6 +39,9 @@
 </script>
 
 <span>{expression.name}</span>
+{#if expression.scope == "entry"}
+  <small>(Showing average across entries)</small>
+{/if}
 
 {#if sortedTeamData.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">

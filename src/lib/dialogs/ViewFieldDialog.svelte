@@ -30,8 +30,8 @@
   const isExpressionInput =
     surveyRecord.type == "match" &&
     surveyRecord.expressions.some((e) => {
-      if (e.from == "expressions") return false;
-      return e.fieldIds.some((id) => {
+      if (e.input.from == "expressions") return false;
+      return e.input.fieldIds.some((id) => {
         if (field.type == "group") {
           return field.fieldIds.some((innerId) => innerId == field.id);
         } else {
