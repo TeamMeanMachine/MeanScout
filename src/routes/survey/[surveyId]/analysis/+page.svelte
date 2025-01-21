@@ -65,27 +65,25 @@
     </div>
 
     {#if tab == "picklists"}
-      {#if data.surveyRecord.expressions.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="font-bold">Pick Lists</h2>
-          {#each data.surveyRecord.pickLists as pickList}
-            <Button
-              onclick={() => {
-                openDialog(ViewPickListDialog, {
-                  surveyRecord: data.surveyRecord,
-                  fields: data.fields,
-                  entriesByTeam: data.entriesByTeam,
-                  pickList,
-                });
-              }}
-            >
-              {pickList.name}
-            </Button>
-          {/each}
-        </div>
-      {/if}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Pick Lists</h2>
+        {#each data.surveyRecord.pickLists as pickList}
+          <Button
+            onclick={() => {
+              openDialog(ViewPickListDialog, {
+                surveyRecord: data.surveyRecord,
+                fields: data.fields,
+                entriesByTeam: data.entriesByTeam,
+                pickList,
+              });
+            }}
+          >
+            {pickList.name}
+          </Button>
+        {/each}
+      </div>
     {:else if tab == "survey"}
-      {#if expressions.surveyPrimitive.length}
+      {#if expressions.surveyDerived.length}
         <div class="flex flex-col gap-2">
           <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
           {#each expressions.surveyDerived as expression}
@@ -94,12 +92,14 @@
         </div>
       {/if}
 
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
-        {#each expressions.surveyPrimitive as expression}
-          {@render expressionButton(expression)}
-        {/each}
-      </div>
+      {#if expressions.surveyPrimitive.length}
+        <div class="flex flex-col gap-2">
+          <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
+          {#each expressions.surveyPrimitive as expression}
+            {@render expressionButton(expression)}
+          {/each}
+        </div>
+      {/if}
     {:else if tab == "entry"}
       {#if expressions.entryDerived.length}
         <div class="flex flex-col gap-2">

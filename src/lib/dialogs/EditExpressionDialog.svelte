@@ -306,10 +306,8 @@
 {/if}
 
 <Button
-  type="submit"
   disabled={!switchScopeButtonData.can}
-  onclick={(e) => {
-    e.preventDefault();
+  onclick={() => {
     scope = scope == "entry" ? "survey" : "entry";
     onupdate({ ...expression, scope });
     closeDialog();
