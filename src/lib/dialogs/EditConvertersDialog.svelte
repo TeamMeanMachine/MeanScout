@@ -1,23 +1,22 @@
 <script lang="ts">
-  import type { ConvertExpression } from "$lib/analysis";
+  import type { ConvertExpressionMethod } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
-    expression,
+    expressionMethod,
     onedit,
   }: {
-    expression: ConvertExpression;
-    onedit: (converters: ConvertExpression["converters"], defaultTo: ConvertExpression["defaultTo"]) => void;
+    expressionMethod: ConvertExpressionMethod;
+    onedit: (changes: ConvertExpressionMethod) => void;
   } = $props();
 
-  let converters = $state(structuredClone($state.snapshot(expression.converters)));
-  let defaultTo = $state(structuredClone($state.snapshot(expression.defaultTo)));
+  let changes = $state(structuredClone($state.snapshot(expressionMethod)));
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      onedit(converters, defaultTo);
+      onedit(changes);
       closeDialog();
     },
   };
@@ -25,9 +24,9 @@
 
 <span>Converters</span>
 
-{#each converters as converter, converterIndex}
+{#each changes.converters as converter, converterIndex}
   <div class="flex flex-wrap items-end gap-2">
-    <Button onclick={() => (converters = converters.toSpliced(converterIndex, 1))}>
+    <Button onclick={() => (changes.converters = changes.converters.toSpliced(converterIndex, 1))}>
       <Icon name="trash" />
     </Button>
     <div class="flex flex-wrap items-end">
@@ -46,13 +45,13 @@
   </div>
 {/each}
 
-<Button onclick={() => converters.push({ from: "", to: "" })}>
+<Button onclick={() => changes.converters.push({ from: "", to: "" })}>
   <Icon name="plus" />
   New converter
 </Button>
 
 <label class="flex flex-col">
   Default to
-  <input bind:value={defaultTo} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.defaultTo} class="bg-neutral-800 p-2 text-theme" />
   <small>Leave blank to keep input</small>
 </label>

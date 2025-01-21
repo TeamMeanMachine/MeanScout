@@ -1,4 +1,5 @@
-import { schemaVersion } from "$lib";
+import { schemaVersion } from "./";
+import type { Expression } from "./expression";
 
 let idb: IDBDatabase | undefined = undefined;
 
@@ -136,6 +137,99 @@ function migrateSurveys(transaction: IDBTransaction) {
       }
 
       delete survey.fields;
+    }
+
+    if (Array.isArray(survey.expressions)) {
+      survey.expressions = survey.expressions.map((expression: any): Expression => {
+        if (!expression.scope) {
+          expression.scope = "survey";
+        }
+
+        if (Array.isArray(expression.inputs)) {
+          if (expression.inputs.every((input: any) => input.from == "field")) {
+            expression.input = {
+              from: "fields",
+              fieldIds: expression.inputs.map((input: any) => input.fieldId),
+            };
+          } else if (expression.inputs.every((input: any) => input.from == "expression")) {
+            expression.input = {
+              from: "expressions",
+              expressionNames: expression.inputs.map((input: any) => input.expressionName),
+            };
+          } else {
+            expression.input = {
+              from: "fields",
+              fieldIds: [],
+            };
+          }
+
+          delete expression.inputs;
+        }
+
+        if (!expression.input) {
+          if (expression.from == "fields") {
+            expression.input = {
+              from: expression.from,
+              fieldIds: expression.fieldIds,
+            };
+            delete expression.fieldIds;
+          } else if (expression.from == "expressions") {
+            expression.input = {
+              from: expression.from,
+              expressionNames: expression.expressionNames,
+            };
+            delete expression.expressionNames;
+          }
+          delete expression.from;
+        }
+
+        if (expression.type && !expression.method) {
+          switch (expression.type) {
+            case "average":
+            case "min":
+            case "max":
+            case "sum":
+              expression.method = {
+                type: expression.type,
+              };
+              break;
+            case "count":
+              expression.method = {
+                type: expression.type,
+                valueToCount: expression.valueToCount,
+              };
+              delete expression.valueToCount;
+              break;
+            case "convert":
+              expression.method = {
+                type: expression.type,
+                converters: expression.converters,
+                defaultTo: expression.defaultTo,
+              };
+              delete expression.converters;
+              delete expression.defaultTo;
+              break;
+            case "multiply":
+              expression.method = {
+                type: expression.type,
+                multiplier: expression.multiplier,
+              };
+              delete expression.multiplier;
+              break;
+            case "divide":
+              expression.method = {
+                type: expression.type,
+                divisor: expression.divider,
+              };
+              delete expression.divisor;
+              break;
+          }
+
+          delete expression.type;
+        }
+
+        return expression;
+      });
     }
 
     migrateEntries(entryStore, survey.id);

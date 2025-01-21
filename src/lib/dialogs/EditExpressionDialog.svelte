@@ -1,6 +1,6 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
-  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/analysis";
+  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
@@ -15,120 +15,158 @@
     expression,
     index,
     usedExpressionNames,
-    input,
     onupdate,
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
     expressions: {
-      derived: Expression[];
-      primitive: Expression[];
-      mixed: Expression[];
+      entryDerived: Expression[];
+      entryPrimitive: Expression[];
+      surveyDerived: Expression[];
+      surveyPrimitive: Expression[];
     };
     expression: Expression;
     index: number;
     usedExpressionNames?: string[] | undefined;
-    input?: "expressions" | "fields";
     onupdate: (expression: Expression) => void;
     ondelete: () => void;
   } = $props();
 
-  let changes = $state(structuredClone($state.snapshot(expression)));
-  let inputTab = $state<"expressions" | "fields">(input ?? "expressions");
+  let { name, scope, input, method } = $state(structuredClone($state.snapshot(expression)));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      changes.name = changes.name.trim();
+      name = name.trim();
 
-      if (!changes.name) {
+      if (!name) {
         error = "name can't be empty!";
         return;
       }
 
-      if (surveyRecord.expressions.find((e, i) => e.name == changes.name && i != index)) {
+      if (surveyRecord.expressions.find((e, i) => e.name == name && i != index)) {
         error = "name must be unique!";
         return;
       }
 
-      if (changes.type == "divide" && changes.divisor == 0) {
+      if (method.type == "divide" && method.divisor == 0) {
         error = "divisor can't be 0!";
         return;
       }
 
-      if (changes.inputs.length == 0) {
+      if (input.from == "fields" && input.fieldIds.length == 0) {
         error = "no inputs selected!";
         return;
       }
 
-      if (changes.type == "convert") {
-        changes.converters = changes.converters.map(({ from, to }) => ({
+      if (input.from == "expressions" && input.expressionNames.length == 0) {
+        error = "no inputs selected!";
+        return;
+      }
+
+      if (method.type == "convert") {
+        method.converters = method.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
           to: parseValueFromString(to),
         }));
-        changes.defaultTo = parseValueFromString(changes.defaultTo);
+        method.defaultTo = parseValueFromString(method.defaultTo);
       }
 
-      onupdate(changes);
+      onupdate({ name, scope, input, method });
       closeDialog();
     },
   };
+
+  function getSwitchScopeButtonData(): { can: boolean; reason?: string } {
+    if (surveyRecord.pickLists.some((pl) => pl.weights.some((w) => w.expressionName == expression.name))) {
+      return { can: false, reason: "Used by picklist" };
+    }
+
+    if (
+      scope == "entry" &&
+      surveyRecord.expressions.some(
+        (e) =>
+          e.name != expression.name &&
+          e.scope == "entry" &&
+          e.input.from == "expressions" &&
+          e.input.expressionNames.includes(expression.name),
+      )
+    ) {
+      return { can: false, reason: "Used by entry expression" };
+    }
+
+    if (scope == "survey" && input.from == "expressions") {
+      if (
+        input.expressionNames.some((name) =>
+          surveyRecord.expressions.some((e) => e.scope == "survey" && e.name == name),
+        )
+      ) {
+        return { can: false, reason: "Uses survey expression" };
+      }
+
+      if (
+        surveyRecord.expressions.some(
+          (e) =>
+            e.name != expression.name &&
+            e.scope == "survey" &&
+            e.input.from == "expressions" &&
+            e.input.expressionNames.includes(expression.name),
+        )
+      ) {
+        return { can: false, reason: "Used by survey expression" };
+      }
+    }
+
+    return { can: true };
+  }
+
+  let switchScopeButtonData = getSwitchScopeButtonData();
 </script>
 
 <span>Edit expression</span>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <label class="flex flex-col">
   Type
   <select
-    value={changes.type}
+    value={method.type}
     onchange={(e) => {
       switch (e.currentTarget.value) {
         case "average":
         case "min":
         case "max":
         case "sum":
-          changes = {
-            name: changes.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: changes.inputs,
           };
           break;
         case "count":
-          changes = {
-            name: changes.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             valueToCount: "",
           };
           break;
         case "convert":
-          changes = {
-            name: changes.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             converters: [],
             defaultTo: "",
           };
           break;
         case "multiply":
-          changes = {
-            name: changes.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             multiplier: 1,
           };
           break;
         case "divide":
-          changes = {
-            name: changes.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: changes.inputs,
             divisor: 1,
           };
           break;
@@ -149,24 +187,19 @@
   </select>
 </label>
 
-{#if changes.type == "count"}
+{#if method.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={changes.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={method.valueToCount} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if changes.type == "convert"}
+{:else if method.type == "convert"}
   <Button
     onclick={() => {
-      if (changes.type != "convert") return;
+      if (method.type != "convert") return;
       openDialog(EditConvertersDialog, {
-        expression: changes,
-        onedit(converters, defaultTo) {
-          if (changes.type != "convert") return;
-          changes.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
-            from: parseValueFromString(from),
-            to: parseValueFromString(to),
-          }));
-          changes.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+        expressionMethod: method,
+        onedit(expressionMethod) {
+          method = expressionMethod;
         },
       });
     }}
@@ -174,47 +207,32 @@
     <Icon name="pen" />
     Edit Converters
   </Button>
-{:else if changes.type == "multiply"}
+{:else if method.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={changes.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.multiplier} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if changes.type == "divide"}
+{:else if method.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={changes.divisor} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.divisor} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 
-{#if !input}
-  <div class="flex flex-wrap items-center gap-2">
-    <span class="grow">Inputs</span>
-    <Button onclick={() => (inputTab = "expressions")} class={inputTab == "expressions" ? "font-bold" : "font-light"}>
-      Expressions
-    </Button>
-    <Button onclick={() => (inputTab = "fields")} class={inputTab == "fields" ? "font-bold" : "font-light"}>
-      Fields
-    </Button>
-  </div>
-{/if}
-
-{#if inputTab == "expressions"}
+{#if input.from == "expressions"}
   {#snippet expressionButton(exp: Expression)}
-    {@const inputIndex = changes.inputs.findIndex(
-      (input) => input.from == "expression" && input.expressionName == exp.name,
-    )}
-    {@const isInput = inputIndex != -1}
+    {@const inputIndex = input.expressionNames.findIndex((expressionName) => expressionName == exp.name)}
 
     <Button
       onclick={() => {
-        if (isInput) {
-          changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
+        if (inputIndex != -1) {
+          input.expressionNames = input.expressionNames.toSpliced(inputIndex, 1);
         } else {
-          changes.inputs = [...changes.inputs, { from: "expression", expressionName: exp.name }];
+          input.expressionNames = [...input.expressionNames, exp.name];
         }
       }}
     >
-      {#if isInput}
+      {#if inputIndex != -1}
         <Icon name="square-check" />
         <strong>{exp.name}</strong>
       {:else}
@@ -225,50 +243,57 @@
   {/snippet}
 
   <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
-    {#if expressions.derived.length}
+    {#if scope == "survey"}
+      {#if input.from == "expressions" && expressions.surveyDerived.length}
+        <div class="flex flex-col gap-2">
+          <span class="text-sm">Survey Expressions (from expressions)</span>
+          {#each expressions.surveyDerived as exp}
+            {@render expressionButton(exp)}
+          {/each}
+        </div>
+      {/if}
+      {#if expressions.surveyPrimitive.length}
+        <div class="flex flex-col gap-2">
+          <span class="text-sm">Survey Expressions (from fields)</span>
+          {#each expressions.surveyPrimitive as exp}
+            {@render expressionButton(exp)}
+          {/each}
+        </div>
+      {/if}
+    {/if}
+    {#if (scope == "survey" || input.from == "expressions") && expressions.entryDerived.length}
       <div class="flex flex-col gap-2">
-        <span>Expressions <small>(from expressions)</small></span>
-        {#each expressions.derived as exp}
+        <span class="text-sm">Entry Expressions (from expressions)</span>
+        {#each expressions.entryDerived as exp}
           {@render expressionButton(exp)}
         {/each}
       </div>
     {/if}
-    {#if expressions.primitive.length}
+    {#if expressions.entryPrimitive.length}
       <div class="flex flex-col gap-2">
-        <span>Expressions <small>(from fields)</small></span>
-        {#each expressions.primitive as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <span>Expressions <small>(mixed)</small></span>
-        {#each expressions.mixed as exp}
+        <span class="text-sm">Entry Expressions (from fields)</span>
+        {#each expressions.entryPrimitive as exp}
           {@render expressionButton(exp)}
         {/each}
       </div>
     {/if}
   </div>
-{:else if inputTab == "fields"}
+{:else if input.from == "fields"}
   <span>Fields</span>
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each fields as field (field.field.id)}
-      {@const inputIndex = changes.inputs.findIndex(
-        (input) => input.from == "field" && input.fieldId == field.field.id,
-      )}
-      {@const isInput = inputIndex != -1}
+      {@const inputIndex = input.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
       <Button
         onclick={() => {
-          if (isInput) {
-            changes.inputs = changes.inputs.toSpliced(inputIndex, 1);
+          if (inputIndex != -1) {
+            input.fieldIds = input.fieldIds.toSpliced(inputIndex, 1);
           } else {
-            changes.inputs = [...changes.inputs, { from: "field", fieldId: field.field.id }];
+            input.fieldIds = [...input.fieldIds, field.field.id];
           }
         }}
       >
-        {#if isInput}
+        {#if inputIndex != -1}
           <Icon name="square-check" />
           <strong>{field.detailedName}</strong>
         {:else}
@@ -279,6 +304,23 @@
     {/each}
   </div>
 {/if}
+
+<Button
+  disabled={!switchScopeButtonData.can}
+  onclick={() => {
+    scope = scope == "entry" ? "survey" : "entry";
+    onupdate({ ...expression, scope });
+    closeDialog();
+  }}
+>
+  <Icon name={scope == "entry" ? "expand" : "compress"} />
+  <div class="flex flex-col">
+    Switch to {scope == "entry" ? "survey" : "entry"} expression
+    {#if switchScopeButtonData.reason}
+      <small>{switchScopeButtonData.reason}</small>
+    {/if}
+  </div>
+</Button>
 
 {#if !usedExpressionNames?.includes(expression.name)}
   <Button

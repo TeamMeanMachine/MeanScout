@@ -1,6 +1,6 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
-  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/analysis";
+  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
@@ -12,56 +12,71 @@
     surveyRecord,
     fields,
     expressions,
-    input,
+    constrain,
     oncreate,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
     fields: DetailedSingleField[];
     expressions: {
-      derived: Expression[];
-      primitive: Expression[];
-      mixed: Expression[];
+      entryDerived: Expression[];
+      entryPrimitive: Expression[];
+      surveyDerived: Expression[];
+      surveyPrimitive: Expression[];
     };
-    input: "expressions" | "fields";
+    constrain: {
+      scope: "entry" | "survey";
+      input: "fields" | "expressions";
+    };
     oncreate: (expression: Expression) => void;
   } = $props();
 
-  let expression = $state<Expression>({ name: "", type: "average", inputs: [] });
+  let { name, scope, input, method } = $state<Expression>({
+    name: "",
+    scope: constrain.scope,
+    input:
+      constrain.input == "fields" ? { from: "fields", fieldIds: [] } : { from: "expressions", expressionNames: [] },
+    method: { type: "average" },
+  });
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      expression.name = expression.name.trim();
+      name = name.trim();
 
-      if (!expression.name) {
+      if (!name) {
         error = "name can't be empty!";
         return;
       }
 
-      if (surveyRecord.expressions.find((e) => e.name == expression.name)) {
+      if (surveyRecord.expressions.find((e) => e.name == name)) {
         error = "name must be unique!";
         return;
       }
 
-      if (expression.type == "divide" && expression.divisor == 0) {
+      if (method.type == "divide" && method.divisor == 0) {
         error = "divisor can't be 0!";
         return;
       }
 
-      if (expression.inputs.length == 0) {
+      if (input.from == "fields" && input.fieldIds.length == 0) {
         error = "no inputs selected!";
         return;
       }
 
-      if (expression.type == "convert") {
-        expression.converters = expression.converters.map(({ from, to }) => ({
+      if (input.from == "expressions" && input.expressionNames.length == 0) {
+        error = "no inputs selected!";
+        return;
+      }
+
+      if (method.type == "convert") {
+        method.converters = method.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
           to: parseValueFromString(to),
         }));
-        expression.defaultTo = parseValueFromString(expression.defaultTo);
+        method.defaultTo = parseValueFromString(method.defaultTo);
       }
 
-      oncreate(expression);
+      oncreate({ name, scope, input, method });
       closeDialog();
     },
   };
@@ -71,55 +86,45 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={expression.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <label class="flex flex-col">
   Type
   <select
-    value={expression.type}
+    value={method.type}
     onchange={(e) => {
       switch (e.currentTarget.value) {
         case "average":
         case "min":
         case "max":
         case "sum":
-          expression = {
-            name: expression.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: expression.inputs,
           };
           break;
         case "count":
-          expression = {
-            name: expression.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             valueToCount: "",
           };
           break;
         case "convert":
-          expression = {
-            name: expression.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             converters: [],
             defaultTo: "",
           };
           break;
         case "multiply":
-          expression = {
-            name: expression.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             multiplier: 1,
           };
           break;
         case "divide":
-          expression = {
-            name: expression.name,
+          method = {
             type: e.currentTarget.value,
-            inputs: expression.inputs,
             divisor: 1,
           };
           break;
@@ -140,24 +145,19 @@
   </select>
 </label>
 
-{#if expression.type == "count"}
+{#if method.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={expression.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={method.valueToCount} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "convert"}
+{:else if method.type == "convert"}
   <Button
     onclick={() => {
-      if (expression.type != "convert") return;
+      if (method.type != "convert") return;
       openDialog(EditConvertersDialog, {
-        expression,
-        onedit(converters, defaultTo) {
-          if (expression.type != "convert") return;
-          expression.converters = structuredClone($state.snapshot(converters)).map(({ from, to }) => ({
-            from: parseValueFromString(from),
-            to: parseValueFromString(to),
-          }));
-          expression.defaultTo = parseValueFromString(structuredClone($state.snapshot(defaultTo)));
+        expressionMethod: method,
+        onedit(expressionMethod) {
+          method = expressionMethod;
         },
       });
     }}
@@ -165,35 +165,32 @@
     <Icon name="pen" />
     Edit Converters
   </Button>
-{:else if expression.type == "multiply"}
+{:else if method.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={expression.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.multiplier} class="bg-neutral-800 p-2 text-theme" />
   </label>
-{:else if expression.type == "divide"}
+{:else if method.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={expression.divisor} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.divisor} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 
-{#if input == "expressions"}
+{#if input.from == "expressions"}
   {#snippet expressionButton(exp: Expression)}
-    {@const inputIndex = expression.inputs.findIndex(
-      (input) => input.from == "expression" && input.expressionName == exp.name,
-    )}
-    {@const isInput = inputIndex != -1}
+    {@const inputIndex = input.expressionNames.findIndex((expressionName) => expressionName == exp.name)}
 
     <Button
       onclick={() => {
-        if (isInput) {
-          expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+        if (inputIndex != -1) {
+          input.expressionNames = input.expressionNames.toSpliced(inputIndex, 1);
         } else {
-          expression.inputs = [...expression.inputs, { from: "expression", expressionName: exp.name }];
+          input.expressionNames = [...input.expressionNames, exp.name];
         }
       }}
     >
-      {#if isInput}
+      {#if inputIndex != -1}
         <Icon name="square-check" />
         <strong>{exp.name}</strong>
       {:else}
@@ -204,50 +201,57 @@
   {/snippet}
 
   <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
-    {#if expressions.derived.length}
+    {#if constrain.scope == "survey"}
+      {#if constrain.input == "expressions" && expressions.surveyDerived.length}
+        <div class="flex flex-col gap-2">
+          <span class="text-sm">Survey Expressions (from expressions)</span>
+          {#each expressions.surveyDerived as exp}
+            {@render expressionButton(exp)}
+          {/each}
+        </div>
+      {/if}
+      {#if expressions.surveyPrimitive.length}
+        <div class="flex flex-col gap-2">
+          <span class="text-sm">Survey Expressions (from fields)</span>
+          {#each expressions.surveyPrimitive as exp}
+            {@render expressionButton(exp)}
+          {/each}
+        </div>
+      {/if}
+    {/if}
+    {#if (constrain.scope == "survey" || constrain.input == "expressions") && expressions.entryDerived.length}
       <div class="flex flex-col gap-2">
-        <span>Expressions <small>(from expressions)</small></span>
-        {#each expressions.derived as exp}
+        <span class="text-sm">Entry Expressions (from expressions)</span>
+        {#each expressions.entryDerived as exp}
           {@render expressionButton(exp)}
         {/each}
       </div>
     {/if}
-    {#if expressions.primitive.length}
+    {#if expressions.entryPrimitive.length}
       <div class="flex flex-col gap-2">
-        <span>Expressions <small>(from fields)</small></span>
-        {#each expressions.primitive as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
-    {#if expressions.mixed.length}
-      <div class="flex flex-col gap-2">
-        <span>Expressions <small>(mixed)</small></span>
-        {#each expressions.mixed as exp}
+        <span class="text-sm">Entry Expressions (from fields)</span>
+        {#each expressions.entryPrimitive as exp}
           {@render expressionButton(exp)}
         {/each}
       </div>
     {/if}
   </div>
-{:else if input == "fields"}
+{:else if input.from == "fields"}
   <span>Fields</span>
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each fields as field (field.field.id)}
-      {@const inputIndex = expression.inputs.findIndex(
-        (input) => input.from == "field" && input.fieldId == field.field.id,
-      )}
-      {@const isInput = inputIndex != -1}
+      {@const inputIndex = input.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
       <Button
         onclick={() => {
-          if (isInput) {
-            expression.inputs = expression.inputs.toSpliced(inputIndex, 1);
+          if (inputIndex != -1) {
+            input.fieldIds = input.fieldIds.toSpliced(inputIndex, 1);
           } else {
-            expression.inputs = [...expression.inputs, { from: "field", fieldId: field.field.id }];
+            input.fieldIds = [...input.fieldIds, field.field.id];
           }
         }}
       >
-        {#if isInput}
+        {#if inputIndex != -1}
           <Icon name="square-check" />
           <strong>{field.detailedName}</strong>
         {:else}

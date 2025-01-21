@@ -3,7 +3,7 @@ import type { Entry } from "./entry";
 import type { MatchTarget, Target } from "./settings";
 import type { Survey } from "./survey";
 
-export const schemaVersion = 10;
+export const schemaVersion = 13;
 
 export type Heading = { type: "h1" | "sm"; text: string }[] | string;
 

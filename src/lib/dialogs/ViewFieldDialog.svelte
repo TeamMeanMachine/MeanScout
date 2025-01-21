@@ -29,22 +29,16 @@
 
   const isExpressionInput =
     surveyRecord.type == "match" &&
-    surveyRecord.expressions.some((e) =>
-      e.inputs.some((i) => {
-        if (i.from == "expression") return false;
-
+    surveyRecord.expressions.some((e) => {
+      if (e.input.from == "expressions") return false;
+      return e.input.fieldIds.some((id) => {
         if (field.type == "group") {
-          for (const innerId of field.fieldIds) {
-            if (i.fieldId == innerId) {
-              return true;
-            }
-          }
-          return false;
+          return field.fieldIds.some((innerId) => innerId == field.id);
         } else {
-          return i.fieldId == field.id;
+          return id == field.id;
         }
-      }),
-    );
+      });
+    });
 
   let error = $state("");
 

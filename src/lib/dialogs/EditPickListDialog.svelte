@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Expression, PickList } from "$lib/analysis";
+  import type { PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import type { Expression } from "$lib/expression";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
 
   let {
@@ -12,9 +13,10 @@
     ondelete,
   }: {
     expressions: {
-      derived: Expression[];
-      primitive: Expression[];
-      mixed: Expression[];
+      entryDerived: Expression[];
+      entryPrimitive: Expression[];
+      surveyDerived: Expression[];
+      surveyPrimitive: Expression[];
     };
     pickList: PickList;
     onupdate: (pickList: PickList) => void;
@@ -79,26 +81,18 @@
 {/snippet}
 
 <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
-  {#if expressions.derived.length}
+  {#if expressions.surveyDerived.length}
     <div class="flex flex-col gap-2">
-      <span>Expressions <small>(from expressions)</small></span>
-      {#each expressions.derived as exp}
+      <span>Survey Expressions <small>(from expressions)</small></span>
+      {#each expressions.surveyDerived as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>
   {/if}
-  {#if expressions.primitive.length}
+  {#if expressions.surveyPrimitive.length}
     <div class="flex flex-col gap-2">
-      <span>Expressions <small>(from fields)</small></span>
-      {#each expressions.primitive as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.mixed.length}
-    <div class="flex flex-col gap-2">
-      <span>Expressions <small>(mixed)</small></span>
-      {#each expressions.mixed as exp}
+      <span>Survey Expressions <small>(from fields)</small></span>
+      {#each expressions.surveyPrimitive as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>
