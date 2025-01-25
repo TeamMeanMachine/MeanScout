@@ -34,7 +34,7 @@ export function normalizeTeamData(teamData: Record<string, number>, percentage =
     if (bestValue == 0) {
       normalizedTeamData[team] = 0;
     } else {
-      normalizedTeamData[team] = (teamData[team] / bestValue) * percentage;
+      normalizedTeamData[team] = Math.max(0, (teamData[team] / bestValue) * percentage);
     }
   }
   return normalizedTeamData;
