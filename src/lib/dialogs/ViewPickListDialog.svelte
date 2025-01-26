@@ -144,6 +144,9 @@
   }
 
   const colors = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
+  function getTeamColor(team: string) {
+    return colors[Object.keys(entriesByTeam).findIndex((t) => team == t) % colors.length];
+  }
 
   function generateRaceData(toMatch: number) {
     const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
@@ -170,9 +173,7 @@
 
     return ranks.map(({ team, percentage }, i) => ({
       value: [team, i + 1, percentage],
-      itemStyle: {
-        color: colors[Object.keys(entriesByTeam).findIndex((t) => team == t) % colors.length],
-      },
+      itemStyle: { color: getTeamColor(team) },
     }));
   }
 
@@ -214,11 +215,12 @@
           color: "white",
         },
         inverse: true,
+        animationDuration: 500,
+        animationDurationUpdate: 500,
       },
       series: {
         realtimeSort: true,
         type: "bar",
-        dimensions: ["team", "rank", "percentage"],
         encode: {
           x: 2,
           y: 0,
@@ -237,7 +239,9 @@
         barWidth: 36,
       },
       animationDuration: 0,
-      animationDurationUpdate: 500,
+      animationDurationUpdate: 1000,
+      animationEasing: "linear",
+      animationEasingUpdate: "linear",
       grid: {
         top: 10,
         left: 0,
