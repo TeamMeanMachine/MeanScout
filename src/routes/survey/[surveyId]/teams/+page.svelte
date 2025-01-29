@@ -5,7 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
-  import type { Entry } from "$lib/entry";
+  import type { Entry, MatchEntry } from "$lib/entry";
   import { flushSync, onMount } from "svelte";
   import type { PageData } from "./$types";
   import Header from "$lib/components/Header.svelte";
@@ -265,7 +265,12 @@
 
         {#each displayedTeams as teamInfo (teamInfo.number)}
           <Button
-            onclick={() => openDialog(ViewTeamDialog, { data, teamInfo })}
+            onclick={() =>
+              openDialog(ViewTeamDialog, {
+                data,
+                teamInfo,
+                entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
+              })}
             class="col-span-full grid grid-cols-subgrid text-center"
           >
             <div class="flex flex-col text-left">

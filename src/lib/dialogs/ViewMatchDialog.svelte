@@ -198,6 +198,7 @@
         openDialog(ViewTeamDialog, {
           data: data as any,
           teamInfo,
+          entriesByTeam,
         });
       }}
       class="col-span-full grid grid-cols-subgrid gap-2 text-center"
