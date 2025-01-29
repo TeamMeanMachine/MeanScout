@@ -31,6 +31,7 @@ export type TeamInfo = Team & {
   matchCount: number;
   isCustom: boolean;
   pickListRanks?: number[] | undefined;
+  expressionRanks?: number[] | undefined;
 };
 
 export type EntryFilters = {

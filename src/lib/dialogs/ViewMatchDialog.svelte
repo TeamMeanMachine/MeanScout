@@ -89,18 +89,46 @@
       );
     });
 
+    const ranksPerExpression = data.surveyRecord.expressions.map((expression) => {
+      const expressionData: Record<string, number> = {};
+      for (const team in entriesByTeam) {
+        expressionData[team] = 0;
+      }
+
+      const teamData = calculateTeamData(expression.name, data.surveyRecord.expressions, entriesByTeam, fields);
+      const normalizedTeamData = normalizeTeamData(teamData);
+
+      for (const team in normalizedTeamData) {
+        expressionData[team] += normalizedTeamData[team];
+      }
+
+      const sortedTeamRankings = Object.keys(expressionData)
+        .map((team) => ({ team, percentage: normalizedTeamData[team] }))
+        .toSorted((a, b) => b.percentage - a.percentage)
+        .map((data, index) => ({ team: data.team, rank: index + 1 }));
+
+      const rankPerTeam: Record<string, number> = {};
+      for (const ranking of sortedTeamRankings) {
+        rankPerTeam[ranking.team] = ranking.rank;
+      }
+      return rankPerTeam;
+    });
+
     const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
 
     const teamInfos: TeamInfo[] = teams.map((team) => {
       const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
-      const ranks = ranksPerPickList.map((pickList) => pickList[team]);
+      const pickListRanks = ranksPerPickList.map((pickList) => pickList[team]);
+      const expressionRanks = ranksPerExpression.map((expression) => expression[team]);
+
       return {
         number: team,
         name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
         entryCount: matchingEntries.length,
         matchCount: 0,
         isCustom: data.surveyRecord.teams.some((t) => t.number == team),
-        pickListRanks: ranksPerPickList.length ? ranks : undefined,
+        pickListRanks: ranksPerPickList.length ? pickListRanks : undefined,
+        expressionRanks: expressionRanks.length ? expressionRanks : undefined,
       };
     });
 

@@ -9,6 +9,7 @@
   import { flushSync, onMount } from "svelte";
   import type { PageData } from "./$types";
   import Header from "$lib/components/Header.svelte";
+  import type { Expression } from "$lib/expression";
 
   let {
     data,
@@ -31,7 +32,12 @@
 
   let ranksPerPickList = $derived.by(() => {
     if (data.surveyType != "match") return [];
-    return data.surveyRecord.pickLists.map(createTeamRanking);
+    return data.surveyRecord.pickLists.map(createTeamPickListRanking);
+  });
+
+  let ranksPerExpression = $derived.by(() => {
+    if (data.surveyType != "match") return [];
+    return data.surveyRecord.expressions.map(createTeamExpressionRanking);
   });
 
   let sortBy = $state<"team" | number | "done">("team");
@@ -98,7 +104,7 @@
     return entriesByTeam;
   }
 
-  function createTeamRanking(pickList: PickList) {
+  function createTeamPickListRanking(pickList: PickList) {
     if (data.surveyType != "match") return {};
 
     const pickListData: Record<string, number> = {};
@@ -129,12 +135,44 @@
     return rankPerTeam;
   }
 
+  function createTeamExpressionRanking(expression: Expression) {
+    if (data.surveyType != "match") return {};
+
+    const expressionData: Record<string, number> = {};
+    for (const team in entriesByTeam) {
+      expressionData[team] = 0;
+    }
+
+    const teamData = calculateTeamData(expression.name, data.surveyRecord.expressions, entriesByTeam, data.fields);
+    const normalizedTeamData = normalizeTeamData(teamData);
+
+    for (const team in normalizedTeamData) {
+      expressionData[team] += normalizedTeamData[team];
+    }
+
+    const sortedTeamRankings = Object.keys(expressionData)
+      .map((team) => ({ team, percentage: normalizedTeamData[team] }))
+      .toSorted((a, b) => b.percentage - a.percentage)
+      .map((data, index) => ({ team: data.team, rank: index + 1 }));
+
+    const rankPerTeam: Record<string, number> = {};
+    for (const ranking of sortedTeamRankings) {
+      rankPerTeam[ranking.team] = ranking.rank;
+    }
+    return rankPerTeam;
+  }
+
   function createTeamInfo(team: string): TeamInfo {
     const matchingEntries = data.entryRecords.filter((entry) => entry.status != "draft" && entry.team == team);
 
     let pickListRanks: number[] | undefined = undefined;
     if (ranksPerPickList.length) {
       pickListRanks = ranksPerPickList.map((pickList) => pickList[team]);
+    }
+
+    let expressionRanks: number[] | undefined = undefined;
+    if (ranksPerExpression.length) {
+      expressionRanks = ranksPerExpression.map((expression) => expression[team]);
     }
 
     return {
@@ -144,6 +182,7 @@
       matchCount: matchCountPerTeam[team] ?? 0,
       isCustom: data.surveyRecord.teams.some((t) => t.number == team),
       pickListRanks,
+      expressionRanks,
     };
   }
 
