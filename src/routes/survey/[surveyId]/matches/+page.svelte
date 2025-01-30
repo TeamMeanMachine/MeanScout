@@ -53,7 +53,7 @@
 
 <div class="flex flex-col gap-3" style="view-transition-name:matches">
   {#if $teamStore}
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2 text-sm">
       <Button
         onclick={() => (filterMatches = false)}
         class={filterMatches ? "font-light" : "font-bold"}

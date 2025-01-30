@@ -236,7 +236,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="font-bold">Matches</h2>
           {#if $teamStore}
-            <div class="flex gap-2">
+            <div class="flex gap-2 text-sm">
               <Button
                 onclick={() => (filterMatches = false)}
                 class={filterMatches ? "font-light" : "font-bold"}

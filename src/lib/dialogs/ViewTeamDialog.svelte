@@ -1,16 +1,25 @@
 <script lang="ts">
   import type { TeamInfo } from "$lib";
-  import type { Entry } from "$lib/entry";
+  import Button from "$lib/components/Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import type { Entry, MatchEntry } from "$lib/entry";
   import { getDetailedNestedFields } from "$lib/field";
+  import type { MatchSurvey } from "$lib/survey";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import ViewExpressionDialog from "./ViewExpressionDialog.svelte";
+  import ViewPickListDialog from "./ViewPickListDialog.svelte";
 
   let {
     data,
     teamInfo,
+    entriesByTeam,
   }: {
     data: PageData;
     teamInfo: TeamInfo;
+    entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
   } = $props();
+
+  let tab = $state<"ranks" | "raw-data" | "raw-text">("ranks");
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
     data.surveyRecord.fieldIds,
@@ -18,6 +27,8 @@
   );
 
   let entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
+
+  const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
 
   function filterEntries(entry: IDBRecord<Entry>) {
     return entry.status != "draft" && entry.team == teamInfo.number;
@@ -30,6 +41,13 @@
 
     return b.match - a.match;
   }
+
+  function getOrdinal(n: number) {
+    if (n % 10 == 1 && n % 100 != 11) return "st";
+    if (n % 10 == 2 && n % 100 != 12) return "nd";
+    if (n % 10 == 3 && n % 100 != 13) return "rd";
+    return "th";
+  }
 </script>
 
 <div class="flex flex-col">
@@ -40,72 +58,222 @@
 </div>
 
 {#if entries.length}
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto text-sm">
-    <table>
-      {#if data.surveyType == "match"}
+  {#if data.surveyType == "match"}
+    <div class="flex flex-wrap gap-2 text-sm">
+      <Button onclick={() => (tab = "ranks")} class={tab == "ranks" ? "font-bold" : "font-light"}>Ranks</Button>
+      <Button onclick={() => (tab = "raw-data")} class={tab == "raw-data" ? "font-bold" : "font-light"}>
+        Raw Data
+      </Button>
+      <Button onclick={() => (tab = "raw-text")} class={tab == "raw-text" ? "font-bold" : "font-light"}>
+        Raw Text
+      </Button>
+    </div>
+  {/if}
+
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+    {#if tab == "ranks"}
+      <div class="flex flex-col gap-2 p-1">
+        {#if teamInfo.pickListRanks?.length && data.surveyType == "match"}
+          <h2 class="font-bold">Pick Lists</h2>
+          {#each teamInfo.pickListRanks as pickListRank, i}
+            <Button
+              onclick={() => {
+                openDialog(ViewPickListDialog, {
+                  surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
+                  fields: data.fields,
+                  entriesByTeam,
+                  pickList: data.surveyRecord.pickLists[i],
+                });
+              }}
+            >
+              <div class="flex flex-col">
+                <small>{data.surveyRecord.pickLists[i].name}</small>
+                <div class="text-base font-bold">
+                  {pickListRank}<small class="font-normal">{getOrdinal(pickListRank)}</small>
+                </div>
+              </div>
+            </Button>
+          {/each}
+        {/if}
+
+        {#if teamInfo.expressionRanks?.length && data.surveyType == "match"}
+          {@const surveyExpressionRanks = teamInfo.expressionRanks.filter(
+            (_, i) => data.surveyRecord.expressions[i].scope == "survey",
+          )}
+          {@const surveyExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "survey")}
+
+          {#if surveyExpressionRanks.length}
+            <h2 class="pt-2 font-bold">Survey Expressions</h2>
+            {#each surveyExpressionRanks as expressionRank, i}
+              <Button
+                onclick={() => {
+                  openDialog(ViewExpressionDialog, {
+                    surveyRecord: data.surveyRecord,
+                    fields: data.fields,
+                    entriesByTeam,
+                    expression: surveyExpressions[i],
+                  });
+                }}
+              >
+                <div class="flex flex-col">
+                  <small>{surveyExpressions[i].name}</small>
+                  <div class="text-base font-bold">
+                    {expressionRank}<small class="font-normal">{getOrdinal(expressionRank)}</small>
+                  </div>
+                </div>
+              </Button>
+            {/each}
+          {/if}
+
+          {@const entryExpressionRanks = teamInfo.expressionRanks.filter(
+            (_, i) => data.surveyRecord.expressions[i].scope == "entry",
+          )}
+          {@const entryExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "entry")}
+
+          {#if entryExpressionRanks.length}
+            <h2 class="pt-2 font-bold">Entry Expressions <small class="font-normal">(averages)</small></h2>
+            {#each entryExpressionRanks as expressionRank, i}
+              <Button
+                onclick={() => {
+                  openDialog(ViewExpressionDialog, {
+                    surveyRecord: data.surveyRecord,
+                    fields: data.fields,
+                    entriesByTeam,
+                    expression: entryExpressions[i],
+                  });
+                }}
+              >
+                <div class="flex flex-col">
+                  <small>{entryExpressions[i].name}</small>
+                  <div class="text-base font-bold">
+                    {expressionRank}<small class="font-normal">{getOrdinal(expressionRank)}</small>
+                  </div>
+                </div>
+              </Button>
+            {/each}
+          {/if}
+        {/if}
+      </div>
+    {:else if tab == "raw-data"}
+      <table class="text-sm">
         <thead class="sticky top-0 z-10 bg-neutral-800">
           <tr>
-            <th class="sticky left-0 z-10 w-0 bg-neutral-800 p-2 text-left text-sm">Match</th>
-            {#each entries as entry (entry.id)}
-              {#if entry.type == "match"}
-                <th class="p-2 text-center">{entry.match}</th>
+            {#if data.surveyType == "match"}
+              <th class="sticky left-0 z-10 bg-neutral-800 p-2 text-center">Match</th>
+            {/if}
+
+            {#if someAbsent}
+              <th class="p-2 text-center">Absent</th>
+            {/if}
+
+            {#each data.surveyRecord.fieldIds as fieldId}
+              {@const fieldDetails = detailedFields.get(fieldId)}
+
+              {#if fieldDetails?.type == "group"}
+                {#each fieldDetails.field.fieldIds as innerFieldId}
+                  {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+
+                  {#if innerFieldDetails && innerFieldDetails.field.type != "text"}
+                    <th class="p-2 text-center">
+                      <span class="font-light">{fieldDetails.field.name}</span>
+                      <div>{innerFieldDetails.field.name}</div>
+                    </th>
+                  {/if}
+                {/each}
+              {:else if fieldDetails && fieldDetails.field.type != "text"}
+                <th class="p-2 text-center">{fieldDetails.field.name}</th>
               {/if}
             {/each}
           </tr>
         </thead>
-      {/if}
 
-      <tbody>
-        {#if data.surveyType == "match" && entries.some((entry) => entry.type == "match" && entry.absent)}
-          <tr>
-            <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">Absent</th>
-            {#each entries as entry (entry.id)}
+        <tbody>
+          {#each entries as entry (entry.id)}
+            <tr>
               {#if entry.type == "match"}
+                <th class="sticky left-0 bg-neutral-800 p-2 text-center">{entry.match}</th>
+              {/if}
+
+              {#if entry.type == "match" && someAbsent}
                 <td class="p-2 text-center">{entry.absent}</td>
+              {/if}
+
+              {#if entry.type != "match" || !entry.absent}
+                {#each data.surveyRecord.fieldIds as fieldId}
+                  {@const fieldDetails = detailedFields.get(fieldId)}
+
+                  {#if fieldDetails?.type == "group"}
+                    {#each fieldDetails.field.fieldIds as innerFieldId}
+                      {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+
+                      {#if innerFieldDetails && innerFieldDetails.field.type != "text"}
+                        <td class="p-2 text-center">{entry.values[innerFieldDetails.valueIndex]}</td>
+                      {/if}
+                    {/each}
+                  {:else if fieldDetails && fieldDetails.field.type != "text"}
+                    <td class="p-2 text-center">{entry.values[fieldDetails.valueIndex]}</td>
+                  {/if}
+                {/each}
+              {/if}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {:else if tab == "raw-text"}
+      <table class="text-sm">
+        <thead class="sticky top-0 z-10 bg-neutral-800">
+          <tr>
+            {#if data.surveyType == "match"}
+              <th class="p-2 text-center">Match</th>
+            {/if}
+
+            {#each data.surveyRecord.fieldIds as fieldId}
+              {@const fieldDetails = detailedFields.get(fieldId)}
+
+              {#if fieldDetails?.type == "group"}
+                {#each fieldDetails.field.fieldIds as innerFieldId}
+                  {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+
+                  {#if innerFieldDetails?.field.type == "text"}
+                    <th class="p-2 text-center">
+                      <span class="font-light">{fieldDetails.field.name}</span>
+                      <div>{innerFieldDetails.field.name}</div>
+                    </th>
+                  {/if}
+                {/each}
+              {:else if fieldDetails?.field.type == "text"}
+                <th class="p-2 text-center">{fieldDetails.field.name}</th>
               {/if}
             {/each}
           </tr>
-        {/if}
+        </thead>
 
-        {#each data.surveyRecord.fieldIds as fieldId}
-          {@const fieldDetails = detailedFields.get(fieldId)}
-
-          {#if fieldDetails?.type == "group"}
-            {#each fieldDetails.field.fieldIds as innerFieldId}
-              {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
-
-              {#if innerFieldDetails}
-                <tr>
-                  <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">
-                    <span class="font-light">{fieldDetails.field.name}</span>
-                    <div>{innerFieldDetails.field.name}</div>
-                  </th>
-
-                  {#each entries as entry (entry.id)}
-                    <td class="p-2 text-center">
-                      {#if entry.type != "match" || !entry.absent}
-                        {entry.values[innerFieldDetails.valueIndex]}
-                      {/if}
-                    </td>
-                  {/each}
-                </tr>
-              {/if}
-            {/each}
-          {:else if fieldDetails}
+        <tbody>
+          {#each entries as entry (entry.id)}
             <tr>
-              <th class="sticky left-0 bg-neutral-800 p-2 text-left text-sm">{fieldDetails.field.name}</th>
+              {#if entry.type == "match"}
+                <th class="sticky left-0 bg-neutral-800 p-2 text-center">{entry.match}</th>
+              {/if}
 
-              {#each entries as entry (entry.id)}
-                <td class="p-2 text-center">
-                  {#if entry.type != "match" || !entry.absent}
-                    {entry.values[fieldDetails.valueIndex]}
-                  {/if}
-                </td>
+              {#each data.surveyRecord.fieldIds as fieldId}
+                {@const fieldDetails = detailedFields.get(fieldId)}
+
+                {#if fieldDetails?.type == "group"}
+                  {#each fieldDetails.field.fieldIds as innerFieldId}
+                    {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
+
+                    {#if innerFieldDetails?.field.type == "text"}
+                      <td class="p-2">"{entry.values[innerFieldDetails.valueIndex]}"</td>
+                    {/if}
+                  {/each}
+                {:else if fieldDetails?.field.type == "text"}
+                  <td class="p-2">"{entry.values[fieldDetails.valueIndex]}"</td>
+                {/if}
               {/each}
             </tr>
-          {/if}
-        {/each}
-      </tbody>
-    </table>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
   </div>
 {/if}

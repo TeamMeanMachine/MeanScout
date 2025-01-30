@@ -31,11 +31,7 @@ export function normalizeTeamData(teamData: Record<string, number>, percentage =
   const bestValue = Math.max(...Object.values(teamData));
   const normalizedTeamData: Record<string, number> = {};
   for (const team in teamData) {
-    if (bestValue == 0) {
-      normalizedTeamData[team] = 0;
-    } else {
-      normalizedTeamData[team] = (teamData[team] / bestValue) * percentage;
-    }
+    normalizedTeamData[team] = Math.max(0, (teamData[team] / (bestValue || 1)) * percentage);
   }
   return normalizedTeamData;
 }
@@ -96,7 +92,7 @@ function runExpression(
 function runExpressionMethod(method: ExpressionMethod, values: any[]) {
   switch (method.type) {
     case "average":
-      return values.reduce((prev, curr) => prev + curr, 0) / values.length;
+      return values.reduce((prev, curr) => prev + curr, 0) / (values.length || 1);
     case "min":
       return Math.min(...values);
     case "max":
@@ -120,7 +116,7 @@ function runExpressionMethod(method: ExpressionMethod, values: any[]) {
     case "multiply":
       return values.map((value) => value * method.multiplier);
     case "divide":
-      return values.map((value) => value / method.divisor);
+      return values.map((value) => value / (method.divisor || 1));
     case "abs":
       return values.map((value) => Math.abs(value));
     default:
