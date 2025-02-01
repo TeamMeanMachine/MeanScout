@@ -54,7 +54,7 @@ export async function tbaGetEventMatches(eventKey: string, authKey: string) {
     return response.data
       .filter((match) => match.comp_level == "qm")
       .map((match): Match => {
-        return {
+        const newMatch: Match = {
           number: match.match_number,
           red1: match.alliances.red.team_keys[0].replace("frc", ""),
           red2: match.alliances.red.team_keys[1].replace("frc", ""),
@@ -63,6 +63,16 @@ export async function tbaGetEventMatches(eventKey: string, authKey: string) {
           blue2: match.alliances.blue.team_keys[1].replace("frc", ""),
           blue3: match.alliances.blue.team_keys[2].replace("frc", ""),
         };
+
+        const redScore = Number(match.alliances.red.score);
+        const blueScore = Number(match.alliances.blue.score);
+
+        if (redScore > -1 && blueScore > -1) {
+          newMatch.redScore = redScore;
+          newMatch.blueScore = blueScore;
+        }
+
+        return newMatch;
       });
   }
 }

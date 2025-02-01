@@ -33,6 +33,7 @@
   <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
   {#if surveyRecord.type == "match"}
     <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
+    <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
     <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
   {/if}
   <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>

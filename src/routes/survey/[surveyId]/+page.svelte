@@ -333,6 +333,18 @@
   {/if}
 
   {#if $modeStore == "admin"}
+    {#if data.surveyType == "match" && data.surveyRecord.scouts}
+      <div class="flex flex-col gap-2" style="view-transition-name:predictions">
+        <h2 class="font-bold">Predictions</h2>
+
+        <Anchor route="survey/{data.surveyRecord.id}/predictions">
+          <Icon name="dice" />
+          <div class="flex grow flex-col">Predictions</div>
+          <Icon name="arrow-right" />
+        </Anchor>
+      </div>
+    {/if}
+
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Survey</h2>
 
