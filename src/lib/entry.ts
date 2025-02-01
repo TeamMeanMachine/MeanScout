@@ -12,6 +12,7 @@ const baseEntrySchema = z.object({
   status: z.enum(entryStatuses),
   team: z.string(),
   values: z.array(valueSchema),
+  scout: z.optional(z.string()),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });
@@ -21,6 +22,8 @@ const matchEntrySchema = baseEntrySchema.merge(
     type: z.literal("match"),
     match: matchValueSchema,
     absent: z.boolean(),
+    prediction: z.optional(z.literal("red").or(z.literal("blue"))),
+    predictionReason: z.optional(z.string()),
   }),
 );
 export type MatchEntry = z.infer<typeof matchEntrySchema>;
@@ -73,6 +76,9 @@ export function importEntries(
         match: entry.match || 0,
         absent: entry.absent || false,
         values: entry.values || [],
+        scout: entry.scout || undefined,
+        prediction: entry.prediction || undefined,
+        predictionReason: entry.predictionReason || undefined,
         created: new Date(),
         modified: new Date(),
       };
@@ -85,6 +91,7 @@ export function importEntries(
         status: "exported",
         team: entry.team || "",
         values: entry.values || [],
+        scout: entry.scout || undefined,
         created: new Date(),
         modified: new Date(),
       };

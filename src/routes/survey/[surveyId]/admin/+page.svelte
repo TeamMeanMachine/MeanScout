@@ -67,6 +67,25 @@
         <small>Edit name</small>
       </div>
     </Button>
+    <Button
+      onclick={() => {
+        data = {
+          ...data,
+          surveyRecord: {
+            ...data.surveyRecord,
+            scouts: data.surveyRecord.scouts ? undefined : [],
+            modified: new Date(),
+          },
+        } as PageData;
+        objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+      }}
+    >
+      {#if data.surveyRecord.scouts}
+        Disable scout names and prediction
+      {:else}
+        Enable scout names and prediction
+      {/if}
+    </Button>
   </div>
 
   {#if $tbaAuthKeyStore}

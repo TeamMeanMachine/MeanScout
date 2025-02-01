@@ -119,8 +119,7 @@
     <Button
       onclick={() => {
         openDialog(NewEntryDialog, {
-          surveyRecord: data.surveyRecord,
-          fields: data.fields,
+          data,
           prefilledTeam,
           prefilledMatch,
           oncreate(entry) {

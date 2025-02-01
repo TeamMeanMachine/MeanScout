@@ -50,6 +50,22 @@
         <span><small class="font-light">{teamName}</small></span>
       {/if}
     </div>
+    {#if data.entryRecord.scout}
+      <div class="flex flex-col">
+        <span><small>Scout</small> <strong>{data.entryRecord.scout}</strong></span>
+        {#if data.surveyType == "match" && data.entryRecord.prediction}
+          <span>
+            <small>Prediction</small>
+            <strong class="capitalize text-{data.entryRecord.prediction}">
+              {data.entryRecord.prediction} wins
+            </strong>
+          </span>
+          {#if data.entryRecord.predictionReason}
+            <span><small class="font-light">"{data.entryRecord.predictionReason}"</small></span>
+          {/if}
+        {/if}
+      </div>
+    {/if}
 
     <div class="flex flex-col flex-wrap gap-3">
       {#each data.surveyRecord.fieldIds as fieldId}

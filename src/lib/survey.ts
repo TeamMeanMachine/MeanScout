@@ -13,6 +13,7 @@ const baseSurveySchema = z.object({
   tbaEventKey: z.optional(z.string()),
   fieldIds: z.array(z.number()),
   teams: z.array(teamSchema),
+  scouts: z.optional(z.array(z.string())),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });

@@ -20,6 +20,8 @@ export const matchSchema = z.object({
   blue1: z.string(),
   blue2: z.string(),
   blue3: z.string(),
+  redScore: z.optional(z.number()),
+  blueScore: z.optional(z.number()),
 });
 export type Match = z.infer<typeof matchSchema>;
 
