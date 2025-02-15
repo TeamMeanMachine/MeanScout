@@ -1,4 +1,4 @@
-import type { MatchEntry } from "$lib/entry";
+import { getMatchEntriesByTeam } from "$lib/entry";
 import { getDetailedSingleFields } from "$lib/field";
 import { loadSurveyPageData } from "../loadSurveyPageData";
 import type { PageLoad } from "./$types";
@@ -10,13 +10,6 @@ export const load: PageLoad = async (event) => {
     throw new Error("Survey type is not a match!");
   }
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
-  const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
-  for (const entry of data.entryRecords) {
-    if (entry.team in entriesByTeam) {
-      entriesByTeam[entry.team] = [...entriesByTeam[entry.team], entry];
-    } else {
-      entriesByTeam[entry.team] = [entry];
-    }
-  }
+  const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
   return { ...data, fields, entriesByTeam };
 };

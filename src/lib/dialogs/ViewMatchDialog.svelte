@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Match, TeamInfo } from "$lib";
+  import { getOrdinal, type Match, type TeamInfo } from "$lib";
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
-  import type { MatchEntry } from "$lib/entry";
+  import { getMatchEntriesByTeam } from "$lib/entry";
   import type { Expression } from "$lib/expression";
   import { getDetailedSingleFields } from "$lib/field";
   import { teamStore } from "$lib/settings";
@@ -23,20 +23,7 @@
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
-  const entriesByTeam = data.entryRecords.reduce(
-    (acc, entry) => {
-      if (entry.type != "match") return acc;
-
-      if (entry.team in acc) {
-        acc[entry.team].push(entry);
-      } else {
-        acc[entry.team] = [entry];
-      }
-
-      return acc;
-    },
-    {} as Record<string, IDBRecord<MatchEntry>[]>,
-  );
+  const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
 
   const surveyExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "survey");
   const entryExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "entry");
@@ -132,22 +119,6 @@
       rankPerTeam[ranking.team] = ranking.rank;
     }
     return rankPerTeam;
-  }
-
-  function getOrdinal(n: number) {
-    if (n % 10 == 1 && n % 100 != 11) {
-      return "st";
-    }
-
-    if (n % 10 == 2 && n % 100 != 12) {
-      return "nd";
-    }
-
-    if (n % 10 == 3 && n % 100 != 13) {
-      return "rd";
-    }
-
-    return "th";
   }
 
   function getFontWeight(team: string) {

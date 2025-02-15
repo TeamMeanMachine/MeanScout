@@ -1,8 +1,9 @@
-import { matchValueSchema, valueSchema, type Value } from "$lib";
+import { download, matchValueSchema, share, valueSchema, type Value } from "$lib";
 import { z } from "zod";
 import type { Survey } from "./survey";
 import { getDefaultFieldValue, type DetailedSingleField, type SingleField } from "./field";
 import { compress, decompress } from "./compress";
+import type { Target } from "./settings";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];
@@ -200,4 +201,52 @@ export function csvToEntries(
       };
     });
   }
+}
+
+export function getMatchEntriesByTeam(entries: IDBRecord<MatchEntry>[]) {
+  const entriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
+  for (const entry of entries) {
+    if (entry.team in entriesByTeam) {
+      entriesByTeam[entry.team].push(entry);
+    } else {
+      entriesByTeam[entry.team] = [entry];
+    }
+  }
+  return entriesByTeam;
+}
+
+export function createEntryFileName(survey: Survey, entryOrEntries: Entry | Entry[], target?: Target) {
+  if (Array.isArray(entryOrEntries)) {
+    if (target) {
+      var fileName = `${survey.name}-entries-${target}.csv`;
+    } else {
+      var fileName = `${survey.name}-entries.csv`;
+    }
+  } else if (entryOrEntries.type == "match") {
+    var fileName = `${survey.name}-entry-${entryOrEntries.team}-${entryOrEntries.match}-${entryOrEntries.absent}.csv`;
+  } else {
+    var fileName = `${survey.name}-entry-${entryOrEntries.team}.csv`;
+  }
+
+  return fileName.replaceAll(" ", "_");
+}
+
+export function shareEntryAsFile(entryOrEntries: Entry | Entry[], survey: Survey) {
+  let csv = "";
+  if (Array.isArray(entryOrEntries)) {
+    csv = entryOrEntries.map(entryToCSV).join("\n");
+  } else {
+    csv = entryToCSV(entryOrEntries);
+  }
+  share(csv, createEntryFileName(survey, entryOrEntries), "text/csv");
+}
+
+export function saveEntryAsFile(entryOrEntries: Entry | Entry[], survey: Survey) {
+  let csv = "";
+  if (Array.isArray(entryOrEntries)) {
+    csv = entryOrEntries.map(entryToCSV).join("\n");
+  } else {
+    csv = entryToCSV(entryOrEntries);
+  }
+  download(csv, createEntryFileName(survey, entryOrEntries), "text/csv");
 }

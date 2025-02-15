@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { createEntryFileName, download, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, exportEntriesCompressed, type Entry } from "$lib/entry";
+  import { exportEntriesCompressed, saveEntryAsFile, shareEntryAsFile, type Entry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
@@ -17,8 +16,6 @@
     entryRecord: IDBRecord<Entry>;
     onexport: (entry: IDBRecord<Entry>) => void;
   } = $props();
-
-  const exportFileName = createEntryFileName(surveyRecord, entryRecord);
 
   let entry = $state.snapshot(entryRecord);
   let error = $state("");
@@ -43,14 +40,6 @@
       };
     },
   };
-
-  function shareEntryAsFile() {
-    share(entryToCSV(entry), exportFileName, "text/csv");
-  }
-
-  function saveEntryAsFile() {
-    download(entryToCSV(entry), exportFileName, "text/csv");
-  }
 </script>
 
 <span>Export entry</span>
@@ -60,12 +49,12 @@
 {/await}
 
 {#if "canShare" in navigator}
-  <Button onclick={shareEntryAsFile}>
+  <Button onclick={() => shareEntryAsFile(entry, surveyRecord)}>
     <Icon name="share-from-square" />
     Share
   </Button>
 {/if}
-<Button onclick={saveEntryAsFile}>
+<Button onclick={() => saveEntryAsFile(entry, surveyRecord)}>
   <Icon name="file-code" />
   Save
 </Button>

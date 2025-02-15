@@ -9,7 +9,7 @@
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
-  import type { MatchEntry } from "$lib/entry";
+  import { getMatchEntriesByTeam } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import { modeStore, targetStore, teamStore } from "$lib/settings";
   import type { MatchSurvey } from "$lib/survey";
@@ -32,23 +32,6 @@
     data.entryRecords
       .filter((entry) => entry.status == "draft")
       .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
-  );
-
-  let entriesByTeam = $derived(
-    data.entryRecords.reduce(
-      (acc, entry) => {
-        if (entry.type != "match") return acc;
-
-        if (entry.team in acc) {
-          acc[entry.team].push(entry);
-        } else {
-          acc[entry.team] = [entry];
-        }
-
-        return acc;
-      },
-      {} as Record<string, IDBRecord<MatchEntry>[]>,
-    ),
   );
 
   let filterMatches = $state(false);
@@ -202,6 +185,8 @@
       .slice(0, 3)}
 
     {#if data.surveyRecord.pickLists.length || data.surveyRecord.expressions.length}
+      {@const entriesByTeam = getMatchEntriesByTeam(data.entryRecords)}
+
       <div class="flex flex-col gap-2" style="view-transition-name:analysis">
         <h2 class="font-bold">Analysis</h2>
 

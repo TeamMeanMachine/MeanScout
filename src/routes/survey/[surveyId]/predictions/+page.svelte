@@ -11,92 +11,10 @@
 
   let tab = $state<"scouts" | "matches">("scouts");
 
-  function coopPointMultiplier(cooperators: number) {
-    return 1 + cooperators * 0.2;
-  }
-
   function winLoseWeight(winner: "red" | "blue" | undefined, matching: "red" | "blue" | undefined) {
     return winner && winner == matching ? "font-bold" : "text-sm font-light";
   }
-
-  const allScoutNames = [
-    ...new Set([
-      ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
-      ...(data.surveyRecord.scouts || []),
-    ]),
-  ];
-
-  const scouts = allScoutNames
-    .map((scout) => {
-      const entries = data.entryRecords.filter(
-        (entry) => entry.status != "draft" && entry.scout == scout && entry.prediction,
-      );
-      let correctGuesses = 0;
-      let points = 0;
-
-      for (const entry of entries) {
-        const match = data.surveyRecord.matches.find((m) => m.number == entry.match);
-        if (!match || !match.redScore || !match.blueScore) {
-          continue;
-        }
-
-        if (match.redScore > match.blueScore && entry.prediction == "red") {
-          const otherCorrectEntriesCount = data.entryRecords.filter(
-            (e) => e.scout != scout && e.match == match.number && e.prediction == "red",
-          ).length;
-          points += coopPointMultiplier(otherCorrectEntriesCount);
-          correctGuesses++;
-        }
-
-        if (match.blueScore > match.redScore && entry.prediction == "blue") {
-          const otherCorrectEntriesCount = data.entryRecords.filter(
-            (e) => e.scout != scout && e.match == match.number && e.prediction == "blue",
-          ).length;
-          points += coopPointMultiplier(otherCorrectEntriesCount);
-          correctGuesses++;
-        }
-      }
-
-      return {
-        scout,
-        points,
-        correctGuesses,
-      };
-    })
-    .toSorted((a, b) => b.points - a.points);
-
-  const matches = data.surveyRecord.matches
-    .filter((match) => match.redScore !== undefined && match.blueScore !== undefined)
-    .toSorted((a, b) => b.number - a.number)
-    .map((match) => {
-      const entries = data.entryRecords
-        .filter((entry) => entry.status != "draft" && entry.match == match.number && entry.scout && entry.prediction)
-        /*
-        .map((entry) => {
-          if (!entry.scout && !entry.prediction) {
-            entry.scout = "Scout";
-            entry.prediction = Math.random() > 0.5 ? "blue" : "red";
-          }
-          return entry;
-        })
-        //*/
-        .toSorted((a, b) => a.scout?.localeCompare(b.scout || "") || 0);
-
-      const redEntries = entries.filter((entry) => entry.prediction == "red");
-      const blueEntries = entries.filter((entry) => entry.prediction == "blue");
-      const predictedEntryCount = redEntries.length + blueEntries.length;
-
-      const redScore = Number(match.redScore);
-      const blueScore = Number(match.blueScore);
-      const winner: "red" | "blue" | undefined =
-        redScore > blueScore ? "red" : blueScore > redScore ? "blue" : undefined;
-
-      return { ...match, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount };
-    })
-    .filter((match) => match.predictedEntryCount);
 </script>
-
-<svelte:window {onscroll} />
 
 <Header
   title="Predictions - {data.surveyRecord.name} - MeanScout"
@@ -114,7 +32,7 @@
   </div>
 
   {#if tab == "scouts"}
-    {#if scouts?.length}
+    {#if data.scouts?.length}
       <div class="overflow-x-auto">
         <div class="grid gap-x-4 gap-y-3" style="grid-template-columns: repeat(3, min-content);">
           <div class="col-span-full grid grid-cols-subgrid text-sm">
@@ -122,7 +40,7 @@
             <div>Points</div>
             <div>Correct Guesses</div>
           </div>
-          {#each scouts as { scout, points, correctGuesses }}
+          {#each data.scouts as { scout, points, correctGuesses }}
             <div class="col-span-full grid grid-cols-subgrid">
               <div>{scout}</div>
               <div class="text-center">{points.toFixed(1)}</div>
@@ -135,7 +53,7 @@
       <span>No scouts.</span>
     {/if}
   {:else if tab == "matches"}
-    {#if matches.length}
+    {#if data.matches.length}
       <div class="overflow-x-auto">
         <div class="grid gap-x-4 gap-y-3" style="grid-template-columns: repeat(9, min-content);">
           <div class="col-span-full grid grid-cols-subgrid text-center text-sm">
@@ -144,7 +62,7 @@
             <div class="col-span-6">Predictions</div>
             <div>Blue</div>
           </div>
-          {#each matches as { number, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount }}
+          {#each data.matches as { number, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount }}
             <div class="col-span-full grid grid-cols-subgrid">
               <div class="text-center">{number}</div>
               <div class="text-end">

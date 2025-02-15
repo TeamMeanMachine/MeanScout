@@ -51,7 +51,7 @@
     const allFiles = await Promise.all([...files].map((file) => file.text()));
     const csv = allFiles.join("\n");
 
-    if (!csv.length || !csv[0].length) {
+    if (!csv.length) {
       error = "No input";
       return;
     }

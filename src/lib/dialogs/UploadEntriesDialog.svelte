@@ -67,7 +67,7 @@
     },
   };
 
-  function getFields(survey: typeof selectedSurveyRecord) {
+  function getFields(survey: IDBRecord<Survey> | undefined) {
     if (!survey) {
       fields = [];
       return;

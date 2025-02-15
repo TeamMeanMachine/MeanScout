@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TeamInfo } from "$lib";
+  import { getOrdinal, type TeamInfo } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -40,13 +40,6 @@
     }
 
     return b.match - a.match;
-  }
-
-  function getOrdinal(n: number) {
-    if (n % 10 == 1 && n % 100 != 11) return "st";
-    if (n % 10 == 2 && n % 100 != 12) return "nd";
-    if (n % 10 == 3 && n % 100 != 13) return "rd";
-    return "th";
   }
 </script>
 

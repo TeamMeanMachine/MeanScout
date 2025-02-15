@@ -124,3 +124,9 @@ function runExpressionMethod(method: ExpressionMethod, values: any[]) {
       throw new Error(`Unhandled type for expression method: ${(unhandledExpression as ExpressionMethod).type}`);
   }
 }
+
+const colors = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
+
+export function getTeamColor(team: string) {
+  return colors[parseInt(team) % colors.length];
+}

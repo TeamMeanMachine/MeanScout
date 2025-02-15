@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
+  import { calculateTeamData, getTeamColor, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import type { MatchEntry } from "$lib/entry";
@@ -23,11 +23,6 @@
   let tab = $state<"bar" | "table">("bar");
 
   let chartParentWidth = $state(0);
-
-  const colors = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
-  function getTeamColor(team: string) {
-    return colors[Object.keys(entriesByTeam).findIndex((t) => team == t) % colors.length];
-  }
 
   function getSortedTeamData() {
     const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);

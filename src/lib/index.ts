@@ -1,7 +1,5 @@
 import { z } from "zod";
-import type { Entry } from "./entry";
-import type { MatchTarget, Target } from "./settings";
-import type { Survey } from "./survey";
+import type { MatchTarget } from "./settings";
 
 export const schemaVersion = 13;
 
@@ -44,22 +42,6 @@ export type EntryFilters = {
   exported: boolean | undefined;
 };
 
-export function createEntryFileName(survey: Survey, entryOrEntries: Entry | Entry[], target?: Target) {
-  if (Array.isArray(entryOrEntries)) {
-    if (target) {
-      var fileName = `${survey.name}-entries-${target}.csv`;
-    } else {
-      var fileName = `${survey.name}-entries.csv`;
-    }
-  } else if (entryOrEntries.type == "match") {
-    var fileName = `${survey.name}-entry-${entryOrEntries.team}-${entryOrEntries.match}-${entryOrEntries.absent}.csv`;
-  } else {
-    var fileName = `${survey.name}-entry-${entryOrEntries.team}.csv`;
-  }
-
-  return fileName.replaceAll(" ", "_");
-}
-
 export function parseValueFromString(value: any) {
   if (typeof value !== "string") return value;
 
@@ -93,4 +75,11 @@ export function download(data: string, name: string, type: string) {
 export function share(data: string, name: string, type: string) {
   const file = new File([data], name, { type });
   navigator.share({ files: [file], title: file.name });
+}
+
+export function getOrdinal(n: number) {
+  if (n % 10 == 1 && n % 100 != 11) return "st";
+  if (n % 10 == 2 && n % 100 != 12) return "nd";
+  if (n % 10 == 3 && n % 100 != 13) return "rd";
+  return "th";
 }

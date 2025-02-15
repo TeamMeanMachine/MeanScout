@@ -7,7 +7,7 @@
   import { exportEntriesCompressed, type Entry } from "$lib/entry";
   import { getDefaultFieldValue } from "$lib/field";
   import { objectStore } from "$lib/idb";
-  import { targetStore, teamStore } from "$lib/settings";
+  import { targetStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
 
