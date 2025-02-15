@@ -20,7 +20,7 @@
     if (data.surveyType != "match") return;
     if (!data.surveyRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey, $tbaAuthKeyStore);
+    const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey);
     if (response) {
       data = {
         ...data,
@@ -33,7 +33,7 @@
   async function getTeamsFromTBAEvent() {
     if (!data.surveyRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventTeams(data.surveyRecord.tbaEventKey, $tbaAuthKeyStore);
+    const response = await tbaGetEventTeams(data.surveyRecord.tbaEventKey);
     if (response) {
       data = {
         ...data,

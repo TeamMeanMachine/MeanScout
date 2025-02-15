@@ -17,8 +17,6 @@
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
-  let teamName = $derived(data.surveyRecord.teams.find((t) => t.number == data.entryRecord.team)?.name);
-
   function onchange() {
     data = {
       ...data,
@@ -42,12 +40,12 @@
 <div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
   <div class="flex flex-col gap-4">
     <div class="flex flex-col">
-      {#if data.entryRecord.type == "match"}
+      {#if data.surveyType == "match"}
         <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
       {/if}
       <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
-      {#if teamName?.length}
-        <span><small class="font-light">{teamName}</small></span>
+      {#if data.teamName?.length}
+        <span><small class="font-light">{data.teamName}</small></span>
       {/if}
     </div>
     {#if data.entryRecord.scout}
@@ -118,11 +116,7 @@
           entryRecord: data.entryRecord,
           ondelete: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            if (data.entryRecord.status == "draft") {
-              location.hash = `/survey/${data.surveyRecord.id}`;
-            } else {
-              location.hash = `/survey/${data.surveyRecord.id}/entries`;
-            }
+            location.hash = `/survey/${data.surveyRecord.id}`;
           },
         })}
     >

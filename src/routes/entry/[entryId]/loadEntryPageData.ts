@@ -1,22 +1,24 @@
 import type { MatchEntry, PitEntry } from "$lib/entry";
-import type { Field } from "$lib/field";
+import {
+  getDetailedNestedFields,
+  getDetailedSingleFields,
+  type DetailedGroupField,
+  type DetailedSingleField,
+} from "$lib/field";
 import { transaction } from "$lib/idb";
-import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import type { MatchSurvey, PitSurvey, Survey } from "$lib/survey";
 
 export function loadEntryPageData(entryId: number) {
   return new Promise<
-    | {
-        surveyType: "match";
-        entryRecord: IDBRecord<MatchEntry>;
-        surveyRecord: IDBRecord<MatchSurvey>;
-        fieldRecords: IDBRecord<Field>[];
-      }
-    | {
-        surveyType: "pit";
-        entryRecord: IDBRecord<PitEntry>;
-        surveyRecord: IDBRecord<PitSurvey>;
-        fieldRecords: IDBRecord<Field>[];
-      }
+    (
+      | { surveyType: "match"; entryRecord: IDBRecord<MatchEntry>; surveyRecord: IDBRecord<MatchSurvey> }
+      | { surveyType: "pit"; entryRecord: IDBRecord<PitEntry>; surveyRecord: IDBRecord<PitSurvey> }
+    ) & {
+      fields: DetailedSingleField[];
+      detailedFields: Map<number, DetailedSingleField | DetailedGroupField>;
+      detailedInnerFields: Map<number, DetailedSingleField>;
+      teamName: string | undefined;
+    }
   >((resolve) => {
     const entryTransaction = transaction(["entries", "surveys", "fields"]);
 
@@ -35,7 +37,7 @@ export function loadEntryPageData(entryId: number) {
       const surveyRequest = entryTransaction.objectStore("surveys").get(entryRecord.surveyId);
 
       surveyRequest.onsuccess = () => {
-        const surveyRecord = surveyRequest.result;
+        const surveyRecord = surveyRequest.result as IDBRecord<Survey> | undefined;
         if (!surveyRecord) {
           return entryTransaction.abort();
         }
@@ -48,10 +50,31 @@ export function loadEntryPageData(entryId: number) {
             return entryTransaction.abort();
           }
 
+          const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
+          const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
+
+          const teamName = surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name;
+
           if (surveyRecord.type == "match") {
-            resolve({ surveyType: "match", entryRecord, surveyRecord, fieldRecords });
+            resolve({
+              surveyType: "match",
+              entryRecord,
+              surveyRecord,
+              fields,
+              detailedFields,
+              detailedInnerFields,
+              teamName,
+            });
           } else {
-            resolve({ surveyType: "pit", entryRecord, surveyRecord, fieldRecords });
+            resolve({
+              surveyType: "pit",
+              entryRecord,
+              surveyRecord,
+              fields,
+              detailedFields,
+              detailedInnerFields,
+              teamName,
+            });
           }
         };
       };

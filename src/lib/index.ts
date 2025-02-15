@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { MatchTarget } from "./settings";
+import { teamStore, type MatchTarget } from "./settings";
+import { get } from "svelte/store";
 
 export const schemaVersion = 13;
 
@@ -22,6 +23,13 @@ export const matchSchema = z.object({
   blueScore: z.optional(z.number()),
 });
 export type Match = z.infer<typeof matchSchema>;
+
+export function getMatchTeamFontWeight(team: string) {
+  const teamStoreValue = get(teamStore);
+  if (!teamStoreValue) return "";
+  if (team == teamStoreValue) return "font-bold underline";
+  return "font-light";
+}
 
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;

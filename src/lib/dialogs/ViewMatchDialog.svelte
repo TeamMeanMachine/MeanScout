@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getOrdinal, type Match, type TeamInfo } from "$lib";
+  import { getMatchTeamFontWeight, getOrdinal, type Match, type TeamInfo } from "$lib";
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -7,7 +7,6 @@
   import { getMatchEntriesByTeam } from "$lib/entry";
   import type { Expression } from "$lib/expression";
   import { getDetailedSingleFields } from "$lib/field";
-  import { teamStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/matches/$types";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
@@ -119,12 +118,6 @@
       rankPerTeam[ranking.team] = ranking.rank;
     }
     return rankPerTeam;
-  }
-
-  function getFontWeight(team: string) {
-    if (!$teamStore) return "";
-    if (team == $teamStore) return "font-bold underline";
-    return "font-light";
   }
 </script>
 
@@ -239,7 +232,7 @@
       class="col-span-full grid grid-cols-subgrid gap-2 pl-0 text-center"
     >
       <div class="sticky left-0 flex flex-col bg-neutral-800 px-2 text-left">
-        <span class="text-{alliance} {getFontWeight(teamInfo.number)}">{teamInfo.number}</span>
+        <span class="text-{alliance} {getMatchTeamFontWeight(teamInfo.number)}">{teamInfo.number}</span>
         {#if teamInfo.name}
           <small class="font-light">
             {teamInfo.name.replaceAll("Robotics", "").replaceAll("Team", "")}

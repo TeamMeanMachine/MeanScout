@@ -23,7 +23,7 @@
       if (
         importedSurvey.tbaEventKey?.length &&
         $tbaAuthKeyStore &&
-        !(await tbaEventExists(importedSurvey.tbaEventKey, $tbaAuthKeyStore))
+        !(await tbaEventExists(importedSurvey.tbaEventKey))
       ) {
         error = "TBA event key is invalid";
         return;

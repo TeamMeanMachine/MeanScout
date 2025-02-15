@@ -1,8 +1,14 @@
+import { browser } from "$app/environment";
 import { writable } from "svelte/store";
 
-function localStorageStore<T extends string>(key: string, value: T, subscriber?: ((val: T) => void) | undefined) {
-  const store = writable<T>((localStorage.getItem(key) as T) || value);
-  store.subscribe((val) => localStorage.setItem(key, val));
+function localStorageStore<T extends string>(
+  key: string,
+  defaultValue: T,
+  subscriber?: ((val: T) => void) | undefined,
+) {
+  const value = browser ? (localStorage.getItem(key) as T) || defaultValue : defaultValue;
+  const store = writable<T>(value);
+  store.subscribe((val) => browser && localStorage.setItem(key, val));
   if (subscriber) store.subscribe(subscriber);
   return store;
 }
@@ -23,6 +29,8 @@ export const targets = [...matchTargets, "pit"] as const;
 export type Target = (typeof targets)[number];
 
 export const targetStore = localStorageStore<Target>("target", "red 1", (target) => {
+  if (!browser) return;
+
   if (!targets.includes(target)) {
     target = "red 1";
     localStorage.setItem("target", target);

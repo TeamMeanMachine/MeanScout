@@ -1,8 +1,10 @@
+import { get } from "svelte/store";
 import type { Match, Team } from "./";
+import { tbaAuthKeyStore } from "./settings";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 
-export async function tbaFetch(endpoint: string, authKey: string) {
+export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore)) {
   const response = await fetch(`${API_URL}${endpoint}`, {
     headers: [["X-TBA-Auth-Key", authKey]],
   });
@@ -25,13 +27,13 @@ export async function tbaAuthKeyIsValid(authKey: string) {
   return response.status == "success";
 }
 
-export async function tbaEventExists(eventKey: string, authKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/simple`, authKey);
+export async function tbaEventExists(eventKey: string) {
+  const response = await tbaFetch(`/event/${eventKey}/simple`);
   return response.status == "success";
 }
 
-export async function tbaGetTeamEvents(team: string, authKey: string) {
-  const response = await tbaFetch(`/team/frc${team}/events/simple`, authKey);
+export async function tbaGetTeamEvents(team: string) {
+  const response = await tbaFetch(`/team/frc${team}/events/simple`);
 
   if (response.status == "success" && Array.isArray(response.data)) {
     const lastYear = new Date().getFullYear() - 1;
@@ -47,8 +49,8 @@ export async function tbaGetTeamEvents(team: string, authKey: string) {
   }
 }
 
-export async function tbaGetEventMatches(eventKey: string, authKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/matches/simple`, authKey);
+export async function tbaGetEventMatches(eventKey: string) {
+  const response = await tbaFetch(`/event/${eventKey}/matches/simple`);
 
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data
@@ -77,8 +79,8 @@ export async function tbaGetEventMatches(eventKey: string, authKey: string) {
   }
 }
 
-export async function tbaGetEventTeams(eventKey: string, authKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/teams/simple`, authKey);
+export async function tbaGetEventTeams(eventKey: string) {
+  const response = await tbaFetch(`/event/${eventKey}/teams/simple`);
 
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data.map((team): Team => {

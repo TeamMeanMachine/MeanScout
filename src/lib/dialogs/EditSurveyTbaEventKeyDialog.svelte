@@ -22,7 +22,7 @@
         return open();
       }
 
-      const response = await tbaGetTeamEvents($teamStore, $tbaAuthKeyStore);
+      const response = await tbaGetTeamEvents($teamStore);
 
       if (response.events) {
         events = response.events;
@@ -42,7 +42,7 @@
 
       const eventNotFound = !events.map((e) => e.key).includes(event);
 
-      if (eventNotFound || !(await tbaEventExists(event, $tbaAuthKeyStore))) {
+      if (eventNotFound || !(await tbaEventExists(event))) {
         error = "could not find event";
         return;
       }

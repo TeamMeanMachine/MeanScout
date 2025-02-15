@@ -33,7 +33,7 @@
       if (
         schemaResult.data.tbaEventKey?.length &&
         $tbaAuthKeyStore &&
-        !(await tbaEventExists(schemaResult.data.tbaEventKey, $tbaAuthKeyStore))
+        !(await tbaEventExists(schemaResult.data.tbaEventKey))
       ) {
         error = "Could not upload survey: TBA event key is invalid";
         return open();

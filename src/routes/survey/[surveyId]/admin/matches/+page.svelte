@@ -1,12 +1,11 @@
 <script lang="ts">
-  import type { Match } from "$lib";
+  import { getMatchTeamFontWeight, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { objectStore } from "$lib/idb";
-  import { teamStore } from "$lib/settings";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
 
@@ -15,12 +14,6 @@
   }: {
     data: PageData;
   } = $props();
-
-  function getFontWeight(team: string) {
-    if (!$teamStore) return "";
-    if (team == $teamStore) return "font-bold underline";
-    return "font-light";
-  }
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
@@ -83,12 +76,12 @@
           >
             <div>{match.number}</div>
             <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-              <div class="text-red {getFontWeight(match.red1)}">{match.red1}</div>
-              <div class="text-red {getFontWeight(match.red2)}">{match.red2}</div>
-              <div class="text-red {getFontWeight(match.red3)}">{match.red3}</div>
-              <div class="text-blue {getFontWeight(match.blue1)}">{match.blue1}</div>
-              <div class="text-blue {getFontWeight(match.blue2)}">{match.blue2}</div>
-              <div class="text-blue {getFontWeight(match.blue3)}">{match.blue3}</div>
+              <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
+              <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
+              <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
+              <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
+              <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
+              <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
             </div>
           </Button>
         {/each}
