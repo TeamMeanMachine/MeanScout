@@ -86,7 +86,7 @@ function migrateSurveys(transaction: IDBTransaction) {
       survey.type = "match";
     }
 
-    if (survey.type == "match" && !Array.isArray(survey.matches)) {
+    if (!Array.isArray(survey.matches)) {
       survey.matches = [];
     }
 

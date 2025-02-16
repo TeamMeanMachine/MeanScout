@@ -32,7 +32,7 @@
                 matches: [...data.surveyRecord.matches, match],
                 modified: new Date(),
               },
-            };
+            } as PageData;
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },
         })}
@@ -56,7 +56,7 @@
                   data = {
                     ...data,
                     surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
-                  };
+                  } as PageData;
                   objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
                 },
                 ondelete() {
@@ -67,7 +67,7 @@
                       matches: data.surveyRecord.matches.filter((m) => m.number != match.number),
                       modified: new Date(),
                     },
-                  };
+                  } as PageData;
                   objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
                 },
               });

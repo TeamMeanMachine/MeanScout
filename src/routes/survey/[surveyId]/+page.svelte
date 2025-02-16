@@ -12,7 +12,7 @@
   import { getMatchEntriesByTeam } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import { modeStore, targetStore, teamStore } from "$lib/settings";
-  import type { MatchSurvey } from "$lib/survey";
+  import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
   import type { PageData } from "./$types";
 
   let {
@@ -22,15 +22,39 @@
   } = $props();
 
   let prefilledMatch = $derived.by(() => {
-    data;
-    return getPrefilledMatch();
+    const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+    return 1 + Math.max(...recordedMatches, 0);
   });
-  let prefilledTeam = $derived(getPrefilledTeam(prefilledMatch));
+
+  let prefilledTeam = $derived.by(() => {
+    if (data.surveyType != "match") return "";
+
+    const matchData = data.surveyRecord.matches.find((match) => match.number == prefilledMatch);
+    if (!matchData) return "";
+
+    switch ($targetStore) {
+      case "red 1":
+        return matchData.red1;
+      case "red 2":
+        return matchData.red2;
+      case "red 3":
+        return matchData.red3;
+      case "blue 1":
+        return matchData.blue1;
+      case "blue 2":
+        return matchData.blue2;
+      case "blue 3":
+        return matchData.blue3;
+      default:
+        return "";
+    }
+  });
+
   let prefilledTeamName = $derived(data.surveyRecord.teams.find((t) => t.number == prefilledTeam)?.name);
 
   let drafts = $derived(
     data.entryRecords
-      .filter((entry) => entry.status == "draft")
+      .filter((e) => e.status == "draft")
       .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
   );
 
@@ -51,36 +75,7 @@
           ...data.surveyRecord.teams.map((team) => team.number),
         ]).size;
 
-  function getPrefilledMatch() {
-    if (data.surveyType != "match") return 1;
-
-    const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
-    return 1 + Math.max(...recordedMatches, 0);
-  }
-
-  function getPrefilledTeam(matchValue: number) {
-    if (data.surveyType != "match") return "";
-
-    const matchData = data.surveyRecord.matches.find((match) => match.number == matchValue);
-    if (!matchData) return "";
-
-    switch ($targetStore) {
-      case "red 1":
-        return matchData.red1;
-      case "red 2":
-        return matchData.red2;
-      case "red 3":
-        return matchData.red3;
-      case "blue 1":
-        return matchData.blue1;
-      case "blue 2":
-        return matchData.blue2;
-      case "blue 3":
-        return matchData.blue3;
-      default:
-        return "";
-    }
-  }
+  function getPrefilledTeam(matchValue: number) {}
 
   function matchHasTeamStore(match: Match) {
     return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes($teamStore);
@@ -116,13 +111,13 @@
         {#if data.surveyType == "match" && prefilledMatch}
           <span><small>Match</small> {prefilledMatch}</span>
         {/if}
-        {#if prefilledTeam.length}
+        {#if prefilledTeam}
           <span><small>Team</small> {prefilledTeam}</span>
-          {#if prefilledTeamName?.length}
+          {#if prefilledTeamName}
             <span><small class="font-light">{prefilledTeamName}</small></span>
           {/if}
         {/if}
-        {#if !prefilledMatch && !prefilledTeam}
+        {#if data.surveyType == "pit" || (!prefilledMatch && !prefilledTeam)}
           <span>New entry</span>
         {/if}
       </div>
@@ -130,6 +125,7 @@
 
     {#each drafts as draft (draft.id)}
       {@const teamName = data.surveyRecord.teams.find((t) => t.number == draft.team)?.name}
+
       <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
         <div class="flex grow flex-col">
           {#if draft.type == "match"}
@@ -154,146 +150,145 @@
     </Anchor>
   </div>
 
-  {#if data.surveyType == "match"}
-    {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
-      const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-      return data.entryRecords.find(
-        (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
-      );
-    }).length}
+  {#if data.surveyType == "match" && (data.surveyRecord.pickLists.length || data.surveyRecord.expressions.length)}
+    {@const entriesByTeam = getMatchEntriesByTeam(data.entryRecords)}
 
+    <div class="flex flex-col gap-2" style="view-transition-name:analysis">
+      <h2 class="font-bold">Analysis</h2>
+
+      {#each data.surveyRecord.pickLists as pickList}
+        <Button
+          onclick={() =>
+            openDialog(ViewPickListDialog, {
+              surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
+              fields: data.fields,
+              entriesByTeam,
+              pickList,
+            })}
+        >
+          {pickList.name}
+        </Button>
+      {/each}
+
+      <Anchor route="survey/{data.surveyRecord.id}/analysis">
+        <Icon name="chart-simple" />
+        <div class="flex grow flex-col">
+          Analysis
+          <small>Pick Lists, Expressions</small>
+        </div>
+        <Icon name="arrow-right" />
+      </Anchor>
+    </div>
+  {/if}
+
+  {#if data.surveyRecord.matches.length}
     {@const matches = filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
 
+    {@const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords)}
+
     {@const upcomingMatches = matches
-      .filter(
-        (match) => !data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
-      )
+      .filter((match) => match.number > lastCompletedMatch)
       .toSorted((a, b) => a.number - b.number)
       .slice(0, 3)}
 
     {@const previousMatches = matches
-      .filter((match) =>
-        data.entryRecords.some((e) => e.status != "draft" && e.type == "match" && e.match == match.number),
-      )
+      .filter((match) => match.number <= lastCompletedMatch)
       .toSorted((a, b) => b.number - a.number)
       .slice(0, 3)}
 
-    {#if data.surveyRecord.pickLists.length || data.surveyRecord.expressions.length}
-      {@const entriesByTeam = getMatchEntriesByTeam(data.entryRecords)}
-
-      <div class="flex flex-col gap-2" style="view-transition-name:analysis">
-        <h2 class="font-bold">Analysis</h2>
-
-        {#each data.surveyRecord.pickLists as pickList}
-          <Button
-            onclick={() =>
-              openDialog(ViewPickListDialog, {
-                surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-                fields: data.fields,
-                entriesByTeam,
-                pickList,
-              })}
-          >
-            {pickList.name}
-          </Button>
-        {/each}
-
-        <Anchor route="survey/{data.surveyRecord.id}/analysis">
-          <Icon name="chart-simple" />
-          <div class="flex grow flex-col">
-            Analysis
-            <small>Pick Lists, Expressions</small>
+    <div class="flex flex-col gap-2" style="view-transition-name:matches">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-bold">Matches</h2>
+        {#if $teamStore}
+          <div class="flex gap-2 text-sm">
+            <Button
+              onclick={() => (filterMatches = false)}
+              class={filterMatches ? "font-light" : "font-bold"}
+              style="view-transition-name:match-filter-all"
+            >
+              All
+            </Button>
+            <Button
+              onclick={() => (filterMatches = true)}
+              class={filterMatches ? "font-bold" : "font-light"}
+              style="view-transition-name:match-filter-team"
+            >
+              {$teamStore}
+            </Button>
           </div>
-          <Icon name="arrow-right" />
-        </Anchor>
+        {/if}
       </div>
-    {/if}
 
-    {#if data.surveyRecord.matches.length}
-      <div class="flex flex-col gap-2" style="view-transition-name:matches">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-bold">Matches</h2>
-          {#if $teamStore}
-            <div class="flex gap-2 text-sm">
-              <Button
-                onclick={() => (filterMatches = false)}
-                class={filterMatches ? "font-light" : "font-bold"}
-                style="view-transition-name:match-filter-all"
-              >
-                All
-              </Button>
-              <Button
-                onclick={() => (filterMatches = true)}
-                class={filterMatches ? "font-bold" : "font-light"}
-                style="view-transition-name:match-filter-team"
-              >
-                {$teamStore}
-              </Button>
+      {#if matches.length}
+        <div class="flex flex-wrap gap-2">
+          {#snippet teamRow(match: Match)}
+            <Button
+              onclick={() => {
+                openDialog(ViewMatchDialog, {
+                  data,
+                  match,
+                });
+              }}
+              class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
+            >
+              <div>{match.number}</div>
+              <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
+                <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
+                <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
+                <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
+                <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
+                <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
+                <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
+              </div>
+            </Button>
+          {/snippet}
+
+          {#if upcomingMatches.length}
+            <div class="flex grow flex-col">
+              <small>Upcoming</small>
+              <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+                {#each upcomingMatches as match}
+                  {@render teamRow(match)}
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          {#if previousMatches.length}
+            <div class="flex grow flex-col">
+              <small>Previous</small>
+              <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+                {#each previousMatches as match}
+                  {@render teamRow(match)}
+                {/each}
+              </div>
             </div>
           {/if}
         </div>
+      {/if}
 
-        {#if matches.length}
-          <div class="flex flex-wrap gap-2">
-            {#snippet teamRow(match: Match)}
-              <Button
-                onclick={() => {
-                  openDialog(ViewMatchDialog, {
-                    data: data as any,
-                    match,
-                  });
-                }}
-                class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
-              >
-                <div>{match.number}</div>
-                <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-                  <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
-                  <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
-                  <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
-                  <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
-                  <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
-                  <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
-                </div>
-              </Button>
-            {/snippet}
+      <Anchor route="survey/{data.surveyRecord.id}/matches">
+        <Icon name="table-list" />
+        <div class="flex grow flex-col">
+          Matches
+          <small>
+            {#if data.surveyType == "match"}
+              {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
+                const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+                return data.entryRecords.find(
+                  (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
+                );
+              }).length}
 
-            {#if upcomingMatches.length}
-              <div class="flex grow flex-col">
-                <small>Upcoming</small>
-                <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
-                  {#each upcomingMatches as match}
-                    {@render teamRow(match)}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            {#if previousMatches.length}
-              <div class="flex grow flex-col">
-                <small>Previous</small>
-                <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
-                  {#each previousMatches as match}
-                    {@render teamRow(match)}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        <Anchor route="survey/{data.surveyRecord.id}/matches">
-          <Icon name="table-list" />
-          <div class="flex grow flex-col">
-            Matches
-            <small>
               {matchesScouted} scouted,
-              {data.surveyRecord.matches.length} total
-            </small>
-          </div>
-          <Icon name="arrow-right" />
-        </Anchor>
-      </div>
-    {/if}
+            {/if}
+
+            {data.surveyRecord.matches.length} total
+          </small>
+        </div>
+        <Icon name="arrow-right" />
+      </Anchor>
+    </div>
   {/if}
 
   {#if teamCount}

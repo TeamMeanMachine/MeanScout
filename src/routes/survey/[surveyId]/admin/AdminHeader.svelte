@@ -34,8 +34,8 @@
   {#if surveyRecord.type == "match"}
     <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
     <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
-    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
   {/if}
+  <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
   <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
   <Anchor route="{routeBase}/danger" class={getAnchorClass("danger")}>Danger Zone</Anchor>
 </div>

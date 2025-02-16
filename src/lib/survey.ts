@@ -4,6 +4,7 @@ import { pickListSchema } from "./analysis";
 import type { Field } from "./field";
 import { compress, decompress } from "./compress";
 import { expressionSchema } from "./expression";
+import type { Entry } from "./entry";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
@@ -12,6 +13,7 @@ const baseSurveySchema = z.object({
   name: z.string(),
   tbaEventKey: z.optional(z.string()),
   fieldIds: z.array(z.number()),
+  matches: z.array(matchSchema),
   teams: z.array(teamSchema),
   scouts: z.optional(z.array(z.string())),
   created: z.coerce.date(),
@@ -21,9 +23,8 @@ const baseSurveySchema = z.object({
 const matchSurveySchema = baseSurveySchema.merge(
   z.object({
     type: z.literal("match"),
-    matches: z.array(matchSchema),
-    expressions: z.array(expressionSchema),
     pickLists: z.array(pickListSchema),
+    expressions: z.array(expressionSchema),
   }),
 );
 export type MatchSurvey = z.infer<typeof matchSurveySchema>;
@@ -102,4 +103,24 @@ export function importSurvey(
 
 export async function importSurveyCompressed(data: Uint8Array) {
   return importSurvey(await decompress(data));
+}
+
+export function getLastCompletedMatch(survey: Survey, entries: Entry[]) {
+  let lastCompletedMatch = 0;
+
+  if (survey.type == "match") {
+    for (const match of survey.matches) {
+      if (entries.some((e) => e.type == "match" && e.status != "draft" && e.match == match.number)) {
+        lastCompletedMatch = Math.max(lastCompletedMatch, match.number);
+      }
+    }
+  } else if (survey.type == "pit") {
+    for (const match of survey.matches) {
+      if (match.redScore && match.blueScore) {
+        lastCompletedMatch = Math.max(lastCompletedMatch, match.number);
+      }
+    }
+  }
+
+  return lastCompletedMatch;
 }

@@ -307,7 +307,7 @@
     <Button
       onclick={() => {
         openDialog(ViewMatchDialog, {
-          data: data as any,
+          data,
           match: matchData,
         });
       }}

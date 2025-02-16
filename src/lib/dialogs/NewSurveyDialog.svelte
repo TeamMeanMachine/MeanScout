@@ -33,6 +33,7 @@
           name,
           type,
           fieldIds: [],
+          matches: [],
           teams: [],
           created: new Date(),
           modified: new Date(),

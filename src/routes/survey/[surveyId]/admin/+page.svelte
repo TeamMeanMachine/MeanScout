@@ -17,7 +17,6 @@
   } = $props();
 
   async function getMatchesFromTBAEvent() {
-    if (data.surveyType != "match") return;
     if (!data.surveyRecord.tbaEventKey) return;
 
     const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey);
@@ -25,7 +24,7 @@
       data = {
         ...data,
         surveyRecord: { ...data.surveyRecord, matches: response, modified: new Date() },
-      };
+      } as PageData;
       objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
     }
   }

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { teamStore, type MatchTarget } from "./settings";
 import { get } from "svelte/store";
 
-export const schemaVersion = 13;
+export const schemaVersion = 14;
 
 export type Heading = { type: "h1" | "sm"; text: string }[] | string;
 

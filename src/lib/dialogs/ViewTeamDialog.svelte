@@ -16,10 +16,10 @@
   }: {
     data: PageData;
     teamInfo: TeamInfo;
-    entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
+    entriesByTeam: Record<string, IDBRecord<Entry>[]>;
   } = $props();
 
-  let tab = $state<"ranks" | "raw-data" | "raw-text">("ranks");
+  let tab = $state<"ranks" | "raw-data" | "raw-text">(data.surveyType == "match" ? "ranks" : "raw-data");
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
     data.surveyRecord.fieldIds,
@@ -51,17 +51,13 @@
 </div>
 
 {#if entries.length}
-  {#if data.surveyType == "match"}
-    <div class="flex flex-wrap gap-2 text-sm">
+  <div class="flex flex-wrap gap-2 text-sm">
+    {#if data.surveyType == "match"}
       <Button onclick={() => (tab = "ranks")} class={tab == "ranks" ? "font-bold" : "font-light"}>Ranks</Button>
-      <Button onclick={() => (tab = "raw-data")} class={tab == "raw-data" ? "font-bold" : "font-light"}>
-        Raw Data
-      </Button>
-      <Button onclick={() => (tab = "raw-text")} class={tab == "raw-text" ? "font-bold" : "font-light"}>
-        Raw Text
-      </Button>
-    </div>
-  {/if}
+    {/if}
+    <Button onclick={() => (tab = "raw-data")} class={tab == "raw-data" ? "font-bold" : "font-light"}>Raw Data</Button>
+    <Button onclick={() => (tab = "raw-text")} class={tab == "raw-text" ? "font-bold" : "font-light"}>Raw Text</Button>
+  </div>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
     {#if tab == "ranks"}
@@ -74,7 +70,7 @@
                 openDialog(ViewPickListDialog, {
                   surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
                   fields: data.fields,
-                  entriesByTeam,
+                  entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
                   pickList: data.surveyRecord.pickLists[i],
                 });
               }}
@@ -103,7 +99,7 @@
                   openDialog(ViewExpressionDialog, {
                     surveyRecord: data.surveyRecord,
                     fields: data.fields,
-                    entriesByTeam,
+                    entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
                     expression: surveyExpressions[i],
                   });
                 }}
@@ -131,7 +127,7 @@
                   openDialog(ViewExpressionDialog, {
                     surveyRecord: data.surveyRecord,
                     fields: data.fields,
-                    entriesByTeam,
+                    entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
                     expression: entryExpressions[i],
                   });
                 }}

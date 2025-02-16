@@ -5,6 +5,7 @@
   import { openDialog } from "$lib/dialog";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { teamStore } from "$lib/settings";
+  import { getLastCompletedMatch } from "$lib/survey";
   import type { PageData } from "./$types";
 
   let {
@@ -19,16 +20,14 @@
     filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches,
   );
 
+  const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords);
+
   let upcomingMatches = $derived(
-    matches
-      .filter((match) => !data.entryRecords.find((e) => e.status != "draft" && e.match == match.number))
-      .toSorted((a, b) => a.number - b.number),
+    matches.filter((match) => match.number > lastCompletedMatch).toSorted((a, b) => a.number - b.number),
   );
 
   let previousMatches = $derived(
-    matches
-      .filter((match) => data.entryRecords.find((e) => e.status != "draft" && e.match == match.number))
-      .toSorted((a, b) => b.number - a.number),
+    matches.filter((match) => match.number <= lastCompletedMatch).toSorted((a, b) => b.number - a.number),
   );
 
   function matchHasTeamStore(match: Match) {

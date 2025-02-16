@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { MatchSurvey } from "$lib/survey";
+  import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
     oncreate,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
+    surveyRecord: IDBRecord<Survey>;
     oncreate: (match: Match) => void;
   } = $props();
 
