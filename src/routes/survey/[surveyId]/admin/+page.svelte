@@ -16,27 +16,52 @@
     data: PageData;
   } = $props();
 
-  async function getMatchesFromTBAEvent() {
+  async function getDataFromTbaEvent() {
+    await getMatchesFromTbaEvent();
+    await getTeamsFromTbaEvent();
+  }
+
+  async function getMatchesFromTbaEvent() {
     if (!data.surveyRecord.tbaEventKey) return;
 
     const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey);
     if (response) {
+      const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
+      for (const match of response) {
+        const matchIndex = matches.findIndex((m) => m.number == match.number);
+        if (matchIndex == -1) {
+          matches.push(match);
+        } else {
+          matches[matchIndex] = match;
+        }
+      }
+
       data = {
         ...data,
-        surveyRecord: { ...data.surveyRecord, matches: response, modified: new Date() },
+        surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
       } as PageData;
       objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
     }
   }
 
-  async function getTeamsFromTBAEvent() {
+  async function getTeamsFromTbaEvent() {
     if (!data.surveyRecord.tbaEventKey) return;
 
     const response = await tbaGetEventTeams(data.surveyRecord.tbaEventKey);
     if (response) {
+      const teams = structuredClone($state.snapshot(data.surveyRecord.teams));
+      for (const team of response) {
+        const teamIndex = teams.findIndex((t) => t.number == team.number);
+        if (teamIndex == -1) {
+          teams.push(team);
+        } else {
+          teams[teamIndex] = team;
+        }
+      }
+
       data = {
         ...data,
-        surveyRecord: { ...data.surveyRecord, teams: response, modified: new Date() },
+        surveyRecord: { ...data.surveyRecord, teams, modified: new Date() },
       } as PageData;
       objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
     }
@@ -95,18 +120,11 @@
         {/if}
       </Button>
       {#if data.surveyRecord.tbaEventKey}
-        <Button onclick={getMatchesFromTBAEvent}>
-          <Icon name="table-list" />
+        <Button onclick={getDataFromTbaEvent}>
+          <Icon name="cloud-arrow-down" />
           <div class="flex flex-col">
-            Get matches from TBA
-            <small>Removes existing matches</small>
-          </div>
-        </Button>
-        <Button onclick={getTeamsFromTBAEvent}>
-          <Icon name="people-group" />
-          <div class="flex flex-col">
-            Get teams from TBA
-            <small>Removes existing teams</small>
+            Get data from TBA
+            <small>Matches, teams</small>
           </div>
         </Button>
       {/if}

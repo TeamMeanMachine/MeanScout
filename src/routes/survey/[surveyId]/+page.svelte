@@ -75,8 +75,6 @@
           ...data.surveyRecord.teams.map((team) => team.number),
         ]).size;
 
-  function getPrefilledTeam(matchValue: number) {}
-
   function matchHasTeamStore(match: Match) {
     return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes($teamStore);
   }
