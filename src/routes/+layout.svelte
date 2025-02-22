@@ -3,6 +3,7 @@
   import DialogBox from "$lib/components/DialogBox.svelte";
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import { closeAllDialogs, type DialogState, subscribeDialog } from "$lib/dialog";
+  import { animationStore } from "$lib/settings";
   import "../app.css";
 
   let { children } = $props();
@@ -25,7 +26,7 @@
   onNavigate((navigation) => {
     closeAllDialogs();
 
-    if (document.startViewTransition) {
+    if (document.startViewTransition && $animationStore == "full") {
       return new Promise((resolve) => {
         document.startViewTransition(async () => {
           resolve();

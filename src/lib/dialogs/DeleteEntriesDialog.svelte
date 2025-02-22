@@ -35,7 +35,6 @@
         cursor.delete();
         cursor.continue();
       };
-
     },
   };
 </script>
