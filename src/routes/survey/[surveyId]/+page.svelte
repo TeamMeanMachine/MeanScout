@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, type Match } from "$lib";
+  import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -20,6 +20,8 @@
   }: {
     data: PageData;
   } = $props();
+
+  const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 
   let prefilledMatch = $derived.by(() => {
     const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
@@ -57,8 +59,6 @@
       .filter((e) => e.status == "draft")
       .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
   );
-
-  let filterMatches = $state(false);
 
   const teamCount =
     data.surveyType == "pit"
@@ -180,7 +180,7 @@
   {/if}
 
   {#if data.surveyRecord.matches.length}
-    {@const matches = filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
+    {@const matches = $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
 
     {@const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords)}
 
@@ -200,15 +200,15 @@
         {#if $teamStore}
           <div class="flex gap-2 text-sm">
             <Button
-              onclick={() => (filterMatches = false)}
-              class={filterMatches ? "font-light" : "font-bold"}
+              onclick={() => ($filterMatches = "")}
+              class={$filterMatches ? "font-light" : "font-bold"}
               style="view-transition-name:match-filter-all"
             >
               All
             </Button>
             <Button
-              onclick={() => (filterMatches = true)}
-              class={filterMatches ? "font-bold" : "font-light"}
+              onclick={() => ($filterMatches = "true")}
+              class={$filterMatches ? "font-bold" : "font-light"}
               style="view-transition-name:match-filter-team"
             >
               {$teamStore}

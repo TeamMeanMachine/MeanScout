@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
 
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
 
-  let tab = $state<"info" | "guides" | "qrfcode">("info");
+  const tab = sessionStorageStore<"info" | "guides" | "qrfcode">("about-tab", "info");
 
   function getTabClass(matching: string) {
-    return tab == matching ? "font-bold" : "font-light";
+    return $tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
@@ -16,12 +17,12 @@
 
 <div class="flex flex-col gap-6" style="view-transition-name:about">
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => (tab = "info")} class={getTabClass("info")}>Info</Button>
-    <Button onclick={() => (tab = "guides")} class={getTabClass("guides")}>Guides</Button>
-    <Button onclick={() => (tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
+    <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
+    <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
+    <Button onclick={() => ($tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
   </div>
 
-  {#if tab == "info"}
+  {#if $tab == "info"}
     <span>A lightweight FRC scouting web app built with SvelteKit.</span>
 
     <div class="flex flex-col gap-2">
@@ -142,7 +143,7 @@
       </span>
       <span>&copy; 2020-2025 Aidan Linerud, Aran O'Day, FRC Team Mean Machine 2471</span>
     </div>
-  {:else if tab == "guides"}
+  {:else if $tab == "guides"}
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Target setting</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
@@ -230,7 +231,7 @@
         <li>To limit menus/controls for scouts, set those devices to scout mode</li>
       </ol>
     </div>
-  {:else if tab == "qrfcode"}
+  {:else if $tab == "qrfcode"}
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">What's a QRF code?</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">

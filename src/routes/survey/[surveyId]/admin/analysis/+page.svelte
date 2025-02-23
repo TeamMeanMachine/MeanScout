@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
@@ -17,7 +18,7 @@
     data: PageData;
   } = $props();
 
-  let tab = $state<"entry" | "survey" | "picklists">("entry");
+  const tab = sessionStorageStore<"entry" | "survey" | "picklists">("analysis-tab", "entry");
 
   let usedExpressionNames = $derived([
     ...data.surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
@@ -49,7 +50,7 @@
   }
 
   function tabClass(matching: string) {
-    return tab == matching ? "font-bold" : "font-light";
+    return $tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
@@ -60,18 +61,18 @@
     <span>To setup analysis, go create some fields.</span>
   {:else}
     <div class="flex flex-wrap gap-2 text-sm">
-      <Button onclick={() => (tab = "entry")} class={tabClass("entry")}>Entry</Button>
-      <Button onclick={() => (tab = "survey")} class={tabClass("survey")}>Survey</Button>
+      <Button onclick={() => ($tab = "entry")} class={tabClass("entry")}>Entry</Button>
+      <Button onclick={() => ($tab = "survey")} class={tabClass("survey")}>Survey</Button>
       <Button
         disabled={!expressions.surveyDerived.length && !expressions.surveyPrimitive.length}
-        onclick={() => (tab = "picklists")}
+        onclick={() => ($tab = "picklists")}
         class={tabClass("picklists")}
       >
         Pick Lists
       </Button>
     </div>
 
-    {#if tab == "entry"}
+    {#if $tab == "entry"}
       {#if expressions.entryPrimitive.length > 0}
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-2">
@@ -155,7 +156,7 @@
           </div>
         {/if}
       </div>
-    {:else if tab == "survey"}
+    {:else if $tab == "survey"}
       {#if expressions.surveyPrimitive.length || expressions.entryDerived.length || expressions.entryPrimitive.length}
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-2">
@@ -239,7 +240,7 @@
           </div>
         {/if}
       </div>
-    {:else if tab == "picklists"}
+    {:else if $tab == "picklists"}
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-2">
           <h2 class="font-bold">Pick Lists</h2>

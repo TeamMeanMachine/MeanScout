@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -17,7 +18,8 @@
     onexport: () => void;
   } = $props();
 
-  let isExporting = $state(false);
+  const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
+
   let compressedEntry = $state<Uint8Array>();
   let error = $state("");
 
@@ -42,7 +44,7 @@
 
       let submittedEntry: Entry = {
         ...$state.snapshot(entryRecord),
-        status: isExporting ? "exported" : "submitted",
+        status: $entryExport ? "exported" : "submitted",
         modified: new Date(),
       };
 
@@ -61,13 +63,13 @@
 
 <span>
   Submit
-  {#if isExporting}
+  {#if $entryExport}
     and export
   {/if}
 </span>
 
-<Button onclick={() => (isExporting = !isExporting)}>
-  {#if isExporting}
+<Button onclick={() => ($entryExport = $entryExport ? "" : "true")}>
+  {#if $entryExport}
     <Icon name="xmark" />
     Don't export
   {:else}
@@ -76,7 +78,7 @@
   {/if}
 </Button>
 
-{#if isExporting && compressedEntry}
+{#if $entryExport && compressedEntry}
   <QRCodeDisplay data={compressedEntry} />
 {/if}
 

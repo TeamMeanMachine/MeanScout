@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
   import { calculateTeamData, getTeamColor, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -20,7 +21,7 @@
     expression: Expression;
   } = $props();
 
-  let tab = $state<"bar" | "table">("bar");
+  const tab = sessionStorageStore<"bar" | "table">("view-expression-tab", "bar");
 
   let chartParentWidth = $state(0);
 
@@ -129,14 +130,14 @@
 
 {#if sortedTeamData.length}
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => (tab = "bar")} class={tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
-    <Button onclick={() => (tab = "table")} class={tab == "table" ? "font-bold" : "font-light"}>Table</Button>
+    <Button onclick={() => ($tab = "bar")} class={$tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
+    <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
   </div>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-y-auto" bind:clientWidth={chartParentWidth}>
-    {#if tab == "bar"}
+    {#if $tab == "bar"}
       <div use:barChart style="height: {40 * sortedTeamData.length}px"></div>
-    {:else if tab == "table"}
+    {:else if $tab == "table"}
       <table class="w-full text-right">
         <thead>
           <tr>

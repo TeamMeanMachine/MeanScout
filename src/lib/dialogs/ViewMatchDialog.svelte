@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, getOrdinal, type Match, type TeamInfo } from "$lib";
+  import { getMatchTeamFontWeight, getOrdinal, sessionStorageStore, type Match, type TeamInfo } from "$lib";
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -18,7 +18,7 @@
     match: Match;
   } = $props();
 
-  let tab = $state<"picklists" | "survey" | "entry">("picklists");
+  const tab = sessionStorageStore<"picklists" | "survey" | "entry">("view-match-tab", "picklists");
 
   const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
@@ -146,13 +146,13 @@
 
 {#if data.surveyType == "match"}
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => (tab = "picklists")} class={tab == "picklists" ? "font-bold" : "font-light"}>
+    <Button onclick={() => ($tab = "picklists")} class={$tab == "picklists" ? "font-bold" : "font-light"}>
       Pick Lists
     </Button>
-    <Button onclick={() => (tab = "survey")} class={tab == "survey" ? "font-bold" : "font-light"}>
+    <Button onclick={() => ($tab = "survey")} class={$tab == "survey" ? "font-bold" : "font-light"}>
       Survey Expressions
     </Button>
-    <Button onclick={() => (tab = "entry")} class={tab == "entry" ? "font-bold" : "font-light"}>
+    <Button onclick={() => ($tab = "entry")} class={$tab == "entry" ? "font-bold" : "font-light"}>
       Entry Expressions
     </Button>
   </div>
@@ -160,7 +160,7 @@
 
 <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
   {#if data.surveyType == "match" && surveyExpressions && entryExpressions}
-    {#if tab == "picklists"}
+    {#if $tab == "picklists"}
       <div
         class="m-1 grid gap-2"
         style="grid-template-columns: auto repeat({data.surveyRecord.pickLists.length +
@@ -187,7 +187,7 @@
           {@render teamRow(team, "blue")}
         {/each}
       </div>
-    {:else if tab == "survey"}
+    {:else if $tab == "survey"}
       <div
         class="m-1 grid gap-2"
         style="grid-template-columns: auto repeat({surveyExpressions.length + (showDoneColumn ? 1 : 0)}, min-content) 0"
@@ -213,7 +213,7 @@
           {@render teamRow(team, "blue")}
         {/each}
       </div>
-    {:else if tab == "entry"}
+    {:else if $tab == "entry"}
       <div
         class="m-1 grid gap-2"
         style="grid-template-columns: auto repeat({entryExpressions.length + (showDoneColumn ? 1 : 0)}, min-content) 0"
@@ -288,7 +288,7 @@
       </div>
 
       {#if data.surveyType == "match"}
-        {#if tab == "picklists" && teamInfo.pickListRanks?.length}
+        {#if $tab == "picklists" && teamInfo.pickListRanks?.length}
           {#each teamInfo.pickListRanks as pickListRank}
             <div>
               {#if pickListRank > 0}
@@ -298,7 +298,7 @@
           {/each}
         {/if}
 
-        {#if tab == "survey" && teamInfo.expressionRanks?.length}
+        {#if $tab == "survey" && teamInfo.expressionRanks?.length}
           {@const surveyExpressionRanks = teamInfo.expressionRanks.filter(
             (_, i) => data.surveyRecord.expressions[i].scope == "survey",
           )}
@@ -311,7 +311,7 @@
           {/each}
         {/if}
 
-        {#if tab == "entry" && teamInfo.expressionRanks?.length}
+        {#if $tab == "entry" && teamInfo.expressionRanks?.length}
           {@const entryExpressionRanks = teamInfo.expressionRanks.filter(
             (_, i) => data.surveyRecord.expressions[i].scope == "entry",
           )}

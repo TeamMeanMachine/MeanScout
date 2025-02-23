@@ -168,17 +168,19 @@
       <input bind:value={tbaAuthKeyInput} class="bg-neutral-800 p-2 text-theme" />
     </label>
 
-    <label class="flex flex-wrap items-center gap-2">
-      <Icon name="arrows-up-down-left-right" />
-      <div class="flex grow flex-col">
-        Animations
-        <small>They're fancy!</small>
-      </div>
-      <select bind:value={animationInput} class="bg-neutral-800 p-2 text-theme">
-        <option value="none">None</option>
-        <option value="full">Full</option>
-      </select>
-    </label>
+    {#if "startViewTransition" in document}
+      <label class="flex flex-wrap items-center gap-2">
+        <Icon name="arrows-up-down-left-right" />
+        <div class="flex grow flex-col">
+          Animations
+          <small>They're fancy!</small>
+        </div>
+        <select bind:value={animationInput} class="bg-neutral-800 p-2 text-theme">
+          <option value="none">None</option>
+          <option value="full">Full</option>
+        </select>
+      </label>
+    {/if}
 
     <hr class="border-neutral-500" />
   {/if}

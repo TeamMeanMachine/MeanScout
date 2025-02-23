@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Team } from "$lib";
+  import { sessionStorageStore, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -22,6 +22,8 @@
     prefilledMatch: number;
     oncreate: (entry: IDBRecord<Entry>) => void;
   } = $props();
+
+  const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
 
   const defaultValues = data.fields.map((field) => {
     switch (field.field.type) {
@@ -49,8 +51,6 @@
 
   let suggestedTeams = $derived(getSuggestedTeams(match));
   let teamName = $derived(data.surveyRecord.teams.find((t) => t.number == team)?.name || "");
-
-  let isExporting = $state(false);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -89,7 +89,7 @@
         entry = {
           surveyId: data.surveyRecord.id,
           type: data.surveyRecord.type,
-          status: absent ? (isExporting ? "exported" : "submitted") : "draft",
+          status: absent ? ($entryExport ? "exported" : "submitted") : "draft",
           team,
           match,
           absent,
@@ -360,12 +360,7 @@
 {/if}
 
 {#if data.surveyType == "match"}
-  <Button
-    onclick={() => {
-      absent = !absent;
-      isExporting = false;
-    }}
-  >
+  <Button onclick={() => (absent = !absent)}>
     {#if absent}
       <Icon name="square-check" />
     {:else}
@@ -375,8 +370,8 @@
   </Button>
 
   {#if absent}
-    <Button onclick={() => (isExporting = !isExporting)}>
-      {#if isExporting}
+    <Button onclick={() => ($entryExport = $entryExport ? "" : "true")}>
+      {#if $entryExport}
         <Icon name="xmark" />
         Don't export
       {:else}
@@ -385,7 +380,7 @@
       {/if}
     </Button>
 
-    {#if isExporting}
+    {#if $entryExport}
       {@const absentEntryCSV = exportEntriesCompressed([
         {
           id: 0,

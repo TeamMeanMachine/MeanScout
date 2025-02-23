@@ -6,6 +6,7 @@
   import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { PageData } from "./$types";
+  import { sessionStorageStore } from "$lib";
 
   let {
     data,
@@ -13,7 +14,7 @@
     data: PageData;
   } = $props();
 
-  let tab = $state<"picklists" | "survey" | "entry">("picklists");
+  const tab = sessionStorageStore<"picklists" | "survey" | "entry">("analysis-tab", "picklists");
 
   let expressions = $derived({
     entryDerived: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
@@ -23,7 +24,7 @@
   });
 
   function tabClass(matching: string) {
-    return tab == matching ? "font-bold" : "font-light";
+    return $tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
@@ -43,28 +44,28 @@
     <div class="flex flex-wrap gap-2 text-sm">
       <Button
         disabled={!data.surveyRecord.pickLists.length}
-        onclick={() => (tab = "picklists")}
+        onclick={() => ($tab = "picklists")}
         class={tabClass("picklists")}
       >
         Pick Lists
       </Button>
       <Button
         disabled={!expressions.surveyDerived.length && !expressions.surveyPrimitive.length}
-        onclick={() => (tab = "survey")}
+        onclick={() => ($tab = "survey")}
         class={tabClass("survey")}
       >
         Survey
       </Button>
       <Button
         disabled={!expressions.entryDerived.length && !expressions.entryPrimitive.length}
-        onclick={() => (tab = "entry")}
+        onclick={() => ($tab = "entry")}
         class={tabClass("entry")}
       >
         Entry
       </Button>
     </div>
 
-    {#if tab == "picklists"}
+    {#if $tab == "picklists"}
       <div class="flex flex-col gap-2">
         <h2 class="font-bold">Pick Lists</h2>
         {#each data.surveyRecord.pickLists as pickList}
@@ -82,7 +83,7 @@
           </Button>
         {/each}
       </div>
-    {:else if tab == "survey"}
+    {:else if $tab == "survey"}
       {#if expressions.surveyDerived.length}
         <div class="flex flex-col gap-2">
           <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
@@ -100,7 +101,7 @@
           {/each}
         </div>
       {/if}
-    {:else if tab == "entry"}
+    {:else if $tab == "entry"}
       {#if expressions.entryDerived.length}
         <div class="flex flex-col gap-2">
           <h2 class="font-bold">Entry Expressions <small>(from expressions)</small></h2>

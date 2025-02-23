@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { teamStore, type MatchTarget } from "./settings";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
+import { browser } from "$app/environment";
 
 export const schemaVersion = 14;
 
@@ -64,6 +65,13 @@ export function parseValueFromString(value: any) {
   }
 
   return value;
+}
+
+export function sessionStorageStore<T extends string>(key: string, defaultValue: T) {
+  const value = browser ? (sessionStorage.getItem(key) as T) || defaultValue : defaultValue;
+  const store = writable<T>(value);
+  store.subscribe((val) => browser && sessionStorage.setItem(key, val));
+  return store;
 }
 
 export function download(data: string, name: string, type: string) {

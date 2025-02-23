@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getOrdinal, type TeamInfo } from "$lib";
+  import { getOrdinal, sessionStorageStore, type TeamInfo } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -19,7 +19,10 @@
     entriesByTeam: Record<string, IDBRecord<Entry>[]>;
   } = $props();
 
-  let tab = $state<"ranks" | "raw-data" | "raw-text">(data.surveyType == "match" ? "ranks" : "raw-data");
+  const tab = sessionStorageStore<"ranks" | "raw-data" | "raw-text">(
+    "view-team-tab",
+    data.surveyType == "match" ? "ranks" : "raw-data",
+  );
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
     data.surveyRecord.fieldIds,
@@ -53,14 +56,16 @@
 {#if entries.length}
   <div class="flex flex-wrap gap-2 text-sm">
     {#if data.surveyType == "match"}
-      <Button onclick={() => (tab = "ranks")} class={tab == "ranks" ? "font-bold" : "font-light"}>Ranks</Button>
+      <Button onclick={() => ($tab = "ranks")} class={$tab == "ranks" ? "font-bold" : "font-light"}>Ranks</Button>
     {/if}
-    <Button onclick={() => (tab = "raw-data")} class={tab == "raw-data" ? "font-bold" : "font-light"}>Raw Data</Button>
-    <Button onclick={() => (tab = "raw-text")} class={tab == "raw-text" ? "font-bold" : "font-light"}>Raw Text</Button>
+    <Button onclick={() => ($tab = "raw-data")} class={$tab == "raw-data" ? "font-bold" : "font-light"}>Raw Data</Button
+    >
+    <Button onclick={() => ($tab = "raw-text")} class={$tab == "raw-text" ? "font-bold" : "font-light"}>Raw Text</Button
+    >
   </div>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
-    {#if tab == "ranks"}
+    {#if $tab == "ranks"}
       <div class="flex flex-col gap-2 p-1">
         {#if teamInfo.pickListRanks?.length && data.surveyType == "match"}
           <h2 class="font-bold">Pick Lists</h2>
@@ -143,7 +148,7 @@
           {/if}
         {/if}
       </div>
-    {:else if tab == "raw-data"}
+    {:else if $tab == "raw-data"}
       <table class="text-sm">
         <thead class="sticky top-0 z-10 bg-neutral-800">
           <tr>
@@ -208,7 +213,7 @@
           {/each}
         </tbody>
       </table>
-    {:else if tab == "raw-text"}
+    {:else if $tab == "raw-text"}
       <table class="text-sm">
         <thead class="sticky top-0 z-10 bg-neutral-800">
           <tr>

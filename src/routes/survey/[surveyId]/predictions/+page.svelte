@@ -2,6 +2,7 @@
   import type { PageData } from "./$types";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
+  import { sessionStorageStore } from "$lib";
 
   let {
     data,
@@ -9,7 +10,7 @@
     data: PageData;
   } = $props();
 
-  let tab = $state<"scouts" | "matches">("scouts");
+  const tab = sessionStorageStore<"scouts" | "matches">("predictions-tab", "scouts");
 
   function winLoseWeight(winner: "red" | "blue" | undefined, matching: "red" | "blue" | undefined) {
     return winner && winner == matching ? "font-bold" : "text-sm font-light";
@@ -27,11 +28,11 @@
 
 <div class="flex flex-col gap-6" style="view-transition-name:predictions">
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => (tab = "scouts")} class={tab == "scouts" ? "font-bold" : "font-light"}>Scouts</Button>
-    <Button onclick={() => (tab = "matches")} class={tab == "matches" ? "font-bold" : "font-light"}>Matches</Button>
+    <Button onclick={() => ($tab = "scouts")} class={$tab == "scouts" ? "font-bold" : "font-light"}>Scouts</Button>
+    <Button onclick={() => ($tab = "matches")} class={$tab == "matches" ? "font-bold" : "font-light"}>Matches</Button>
   </div>
 
-  {#if tab == "scouts"}
+  {#if $tab == "scouts"}
     {#if data.scouts?.length}
       <div class="overflow-x-auto">
         <div class="grid gap-x-4 gap-y-3" style="grid-template-columns: repeat(3, min-content);">
@@ -52,7 +53,7 @@
     {:else}
       <span>No scouts.</span>
     {/if}
-  {:else if tab == "matches"}
+  {:else if $tab == "matches"}
     {#if data.matches.length}
       <div class="overflow-x-auto">
         <div class="grid gap-x-4 gap-y-3" style="grid-template-columns: repeat(9, min-content);">

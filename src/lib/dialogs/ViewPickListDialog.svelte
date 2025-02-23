@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
   import { calculateTeamData, getTeamColor, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
@@ -19,7 +20,7 @@
     pickList: PickList;
   } = $props();
 
-  let tab = $state<"stacked" | "race" | "table">("stacked");
+  const tab = sessionStorageStore<"stacked" | "race" | "table">("view-pick-list-tab", "stacked");
 
   const sortedTeamData = getSortedTeamData();
 
@@ -284,17 +285,17 @@
 
 {#if sortedTeamData.length}
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => (tab = "stacked")} class={tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
-    <Button onclick={() => (tab = "race")} class={tab == "race" ? "font-bold" : "font-light"}>Race</Button>
-    <Button onclick={() => (tab = "table")} class={tab == "table" ? "font-bold" : "font-light"}>Table</Button>
+    <Button onclick={() => ($tab = "stacked")} class={$tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
+    <Button onclick={() => ($tab = "race")} class={$tab == "race" ? "font-bold" : "font-light"}>Race</Button>
+    <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
   </div>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-y-auto" bind:clientWidth={chartParentWidth}>
-    {#if tab == "stacked"}
+    {#if $tab == "stacked"}
       <div use:stackedChart style="height: {40 * sortedTeamData.length}px"></div>
-    {:else if tab == "race"}
+    {:else if $tab == "race"}
       <div use:raceChart style="height: {40 * sortedTeamData.length}px"></div>
-    {:else if tab == "table"}
+    {:else if $tab == "table"}
       <table class="w-full text-right">
         <thead>
           <tr>

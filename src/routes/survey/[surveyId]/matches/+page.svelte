@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, type Match } from "$lib";
+  import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
@@ -14,10 +14,10 @@
     data: PageData;
   } = $props();
 
-  let filterMatches = $state(false);
+  const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 
   let matches = $derived(
-    filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches,
+    $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches,
   );
 
   const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords);
@@ -48,15 +48,15 @@
   {#if $teamStore}
     <div class="flex flex-wrap gap-2 text-sm">
       <Button
-        onclick={() => (filterMatches = false)}
-        class={filterMatches ? "font-light" : "font-bold"}
+        onclick={() => ($filterMatches = "")}
+        class={$filterMatches ? "font-light" : "font-bold"}
         style="view-transition-name:match-filter-all"
       >
         All
       </Button>
       <Button
-        onclick={() => (filterMatches = true)}
-        class={filterMatches ? "font-bold" : "font-light"}
+        onclick={() => ($filterMatches = "true")}
+        class={$filterMatches ? "font-bold" : "font-light"}
         style="view-transition-name:match-filter-team"
       >
         {$teamStore}
