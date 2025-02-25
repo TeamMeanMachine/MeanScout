@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flushSync, onMount } from "svelte";
-  import type { EntryFilters } from "$lib";
+  import { sessionStorageStore, type EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
@@ -10,7 +10,7 @@
   import type { Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
-  import { cameraStore, matchTargets } from "$lib/settings";
+  import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
 
@@ -20,21 +20,73 @@
     data: PageData;
   } = $props();
 
+  const sortBy = sessionStorageStore<"team" | "match" | "absent" | "exported">(
+    "entries-sort",
+    data.surveyType == "match" ? "match" : "team",
+  );
+
   let dataGrid: HTMLDivElement;
 
-  let filters = $state<EntryFilters>({
-    team: undefined,
-    match: undefined,
-    absent: undefined,
-    target: undefined,
-    exported: undefined,
+  let filterableTeams = $derived.by(() => {
+    const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
+    return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
   });
+
+  let filterableMatches = $derived.by(() => {
+    if (data.surveyType != "match") return [];
+
+    const matchSet = new Set<number>();
+    for (const entry of data.entryRecords) {
+      if (entry.type != "match") continue;
+      matchSet.add(entry.match);
+    }
+
+    return [...matchSet].toSorted((a, b) => b - a);
+  });
+
+  const sessionStoredMatch = Number(sessionStorage.getItem("entries-filters-match") || NaN);
+
+  let filters = $state<EntryFilters>({
+    team: sessionStorage.getItem("entries-filters-team") || undefined,
+    match: Number.isNaN(sessionStoredMatch) ? undefined : sessionStoredMatch,
+    absent: JSON.parse(sessionStorage.getItem("entries-filters-absent") || "null") ?? undefined,
+    target: (sessionStorage.getItem("entries-filters-target") as MatchTarget) || undefined,
+    exported: JSON.parse(sessionStorage.getItem("entries-filters-exported") || "null") ?? undefined,
+  });
+
+  $effect(() =>
+    filters.team
+      ? sessionStorage.setItem("entries-filters-team", filters.team)
+      : sessionStorage.removeItem("entries-filters-team"),
+  );
+
+  $effect(() =>
+    filters.match
+      ? sessionStorage.setItem("entries-filters-match", filters.match.toString())
+      : sessionStorage.removeItem("entries-filters-match"),
+  );
+
+  $effect(() =>
+    filters.absent !== undefined
+      ? sessionStorage.setItem("entries-filters-absent", filters.absent ? "true" : "false")
+      : sessionStorage.removeItem("entries-filters-absent"),
+  );
+
+  $effect(() =>
+    filters.target
+      ? sessionStorage.setItem("entries-filters-target", filters.target)
+      : sessionStorage.removeItem("entries-filters-target"),
+  );
+
+  $effect(() =>
+    filters.exported !== undefined
+      ? sessionStorage.setItem("entries-filters-exported", filters.exported ? "true" : "false")
+      : sessionStorage.removeItem("entries-filters-exported"),
+  );
 
   let filtersApplied = $derived.by(() => {
     return Object.values(filters).filter((val) => val !== undefined).length;
   });
-
-  let sortBy = $state<"team" | "match" | "absent" | "exported">(data.surveyType == "match" ? "match" : "team");
 
   let filteredEntries = $derived(data.entryRecords.filter(filterEntry).toSorted(sortEntries));
 
@@ -73,11 +125,13 @@
     filters.absent;
     filters.target;
     filters.exported;
-    sortBy;
+    $sortBy;
 
     if (window.scrollY > dataGrid.getBoundingClientRect().top) {
       dataGrid.scrollIntoView();
     }
+
+    onscroll();
   });
 
   function filterEntry(entry: IDBRecord<Entry>) {
@@ -141,15 +195,15 @@
     const absentCompare = a.type == "match" && b.type == "match" ? Number(b.absent) - Number(a.absent) : 0;
     const exportedCompare = Number(a.status == "exported") - Number(b.status == "exported");
 
-    if (sortBy == "match") {
+    if ($sortBy == "match") {
       return matchCompare || teamCompare;
     }
 
-    if (sortBy == "absent") {
+    if ($sortBy == "absent") {
       return absentCompare || matchCompare || teamCompare;
     }
 
-    if (sortBy == "exported") {
+    if ($sortBy == "exported") {
       return exportedCompare || matchCompare || teamCompare;
     }
 
@@ -209,23 +263,6 @@
     };
   }
 
-  function getFilterableTeams() {
-    const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
-    return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
-  }
-
-  function getFilterableMatches() {
-    if (data.surveyType != "match") return [];
-
-    const matchSet = new Set<number>();
-    for (const entry of data.entryRecords) {
-      if (entry.type != "match") continue;
-      matchSet.add(entry.match);
-    }
-
-    return [...matchSet].toSorted((a, b) => b - a);
-  }
-
   function onscroll() {
     if (displayedCount >= filteredEntries.length) return;
 
@@ -234,6 +271,10 @@
       flushSync();
       onscroll();
     }
+  }
+
+  function sortButtonStyle(sort: string) {
+    return sort == $sortBy ? "font-bold" : "font-light";
   }
 </script>
 
@@ -304,7 +345,7 @@
               class:font-bold={filters.match !== undefined}
             >
               <option value={undefined}>--</option>
-              {#each getFilterableMatches() as match}
+              {#each filterableMatches as match}
                 <option>{match}</option>
               {/each}
             </select>
@@ -319,7 +360,7 @@
             class:font-bold={filters.team !== undefined}
           >
             <option value={undefined}>--</option>
-            {#each getFilterableTeams() as team}
+            {#each filterableTeams as team}
               <option>{team}</option>
             {/each}
           </select>
@@ -431,7 +472,7 @@
         {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
       {/if}
     </small>
-    <small>Sorting by {sortBy}</small>
+    <small>Sorting by {$sortBy}</small>
 
     <div
       bind:this={dataGrid}
@@ -440,20 +481,16 @@
     >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
         {#if data.surveyType == "match"}
-          <Button onclick={() => (sortBy = "match")} class="font-{sortBy == 'match' ? 'bold' : 'light'}">Match</Button>
+          <Button onclick={() => ($sortBy = "match")} class={sortButtonStyle("match")}>Match</Button>
         {/if}
-        <Button onclick={() => (sortBy = "team")} class="font-{sortBy == 'team' ? 'bold' : 'light'}">Team</Button>
+        <Button onclick={() => ($sortBy = "team")} class={sortButtonStyle("team")}>Team</Button>
         {#if data.surveyType == "match"}
-          <Button onclick={() => (sortBy = "absent")} class="font-{sortBy == 'absent' ? 'bold' : 'light'}">
-            Absent
-          </Button>
+          <Button onclick={() => ($sortBy = "absent")} class={sortButtonStyle("absent")}>Absent</Button>
         {/if}
-        <Button onclick={() => (sortBy = "exported")} class="font-{sortBy == 'exported' ? 'bold' : 'light'}">
-          Exported
-        </Button>
+        <Button onclick={() => ($sortBy = "exported")} class={sortButtonStyle("exported")}>Exported</Button>
       </div>
 
-      {#each displayedEntries as entry (entry.id)}
+      {#snippet entryButton(entry: IDBRecord<Entry>)}
         <Button
           onclick={() => {
             openDialog(ViewEntryDialog, {
@@ -482,7 +519,33 @@
             {/if}
           </div>
         </Button>
-      {/each}
+      {/snippet}
+
+      {#if $sortBy == "match" && !filters.team && !filters.target}
+        {#each filterableMatches as matchNumber}
+          {@const thisMatchEntries = displayedEntries.filter((e) => e.type == "match" && e.match == matchNumber)}
+          {#if thisMatchEntries.length}
+            {#each thisMatchEntries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+            <div class="col-span-full"></div>
+          {/if}
+        {/each}
+      {:else if $sortBy == "team" && !filters.match}
+        {#each filterableTeams as team}
+          {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
+          {#if thisTeamEntries.length}
+            {#each thisTeamEntries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+            <div class="col-span-full"></div>
+          {/if}
+        {/each}
+      {:else}
+        {#each displayedEntries as entry (entry.id)}
+          {@render entryButton(entry)}
+        {/each}
+      {/if}
     </div>
 
     {#if displayedEntries.length < filteredEntries.length}
