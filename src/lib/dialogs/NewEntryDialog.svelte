@@ -13,13 +13,15 @@
 
   let {
     data,
-    prefilledTeam,
     prefilledMatch,
+    prefilledTeam,
+    prefilledScout,
     oncreate,
   }: {
     data: PageData;
-    prefilledTeam: string;
     prefilledMatch: number;
+    prefilledTeam: string;
+    prefilledScout: string | undefined;
     oncreate: (entry: IDBRecord<Entry>) => void;
   } = $props();
 
@@ -39,7 +41,7 @@
   let match = $state(prefilledMatch);
   let team = $state(prefilledTeam);
 
-  let scout = $state<string | undefined>();
+  let scout = $state(prefilledScout);
   let customScout = $state<string | undefined>();
   let customScoutError = $state("");
 

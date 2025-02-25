@@ -20,7 +20,7 @@
     data: PageData;
   } = $props();
 
-  const sortBy = sessionStorageStore<"team" | "match" | "absent" | "exported">(
+  const sortBy = sessionStorageStore<"match" | "team" | "absent" | "exported">(
     "entries-sort",
     data.surveyType == "match" ? "match" : "team",
   );
@@ -44,26 +44,37 @@
     return [...matchSet].toSorted((a, b) => b - a);
   });
 
+  let filterableScouts = $derived.by(() => {
+    if (!data.surveyRecord.scouts) return undefined;
+    return [
+      ...new Set([
+        ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+        ...(data.surveyRecord.scouts || []),
+      ]),
+    ].toSorted((a, b) => a.localeCompare(b));
+  });
+
   const sessionStoredMatch = Number(sessionStorage.getItem("entries-filters-match") || NaN);
 
   let filters = $state<EntryFilters>({
-    team: sessionStorage.getItem("entries-filters-team") || undefined,
     match: Number.isNaN(sessionStoredMatch) ? undefined : sessionStoredMatch,
+    team: sessionStorage.getItem("entries-filters-team") || undefined,
     absent: JSON.parse(sessionStorage.getItem("entries-filters-absent") || "null") ?? undefined,
     target: (sessionStorage.getItem("entries-filters-target") as MatchTarget) || undefined,
     exported: JSON.parse(sessionStorage.getItem("entries-filters-exported") || "null") ?? undefined,
+    scout: sessionStorage.getItem("entries-filters-scout") || undefined,
   });
-
-  $effect(() =>
-    filters.team
-      ? sessionStorage.setItem("entries-filters-team", filters.team)
-      : sessionStorage.removeItem("entries-filters-team"),
-  );
 
   $effect(() =>
     filters.match
       ? sessionStorage.setItem("entries-filters-match", filters.match.toString())
       : sessionStorage.removeItem("entries-filters-match"),
+  );
+
+  $effect(() =>
+    filters.team
+      ? sessionStorage.setItem("entries-filters-team", filters.team)
+      : sessionStorage.removeItem("entries-filters-team"),
   );
 
   $effect(() =>
@@ -84,13 +95,19 @@
       : sessionStorage.removeItem("entries-filters-exported"),
   );
 
+  $effect(() =>
+    filters.scout
+      ? sessionStorage.setItem("entries-filters-scout", filters.scout)
+      : sessionStorage.removeItem("entries-filters-scout"),
+  );
+
   let filtersApplied = $derived.by(() => {
     return Object.values(filters).filter((val) => val !== undefined).length;
   });
 
   let filteredEntries = $derived(data.entryRecords.filter(filterEntry).toSorted(sortEntries));
 
-  let displayedCount = $state(10);
+  let displayedCount = $state(20);
   let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
 
   let duplicateEntryIds = $derived.by(() => {
@@ -119,21 +136,6 @@
 
   onMount(() => onscroll());
 
-  $effect(() => {
-    filters.team;
-    filters.match;
-    filters.absent;
-    filters.target;
-    filters.exported;
-    $sortBy;
-
-    if (window.scrollY > dataGrid.getBoundingClientRect().top) {
-      dataGrid.scrollIntoView();
-    }
-
-    onscroll();
-  });
-
   function filterEntry(entry: IDBRecord<Entry>) {
     if (entry.status == "draft") {
       return false;
@@ -148,6 +150,10 @@
     }
 
     if (filters.exported == false && entry.status == "exported") {
+      return false;
+    }
+
+    if (filters.scout?.length && entry.scout != filters.scout) {
       return false;
     }
 
@@ -253,6 +259,13 @@
     };
   }
 
+  function scrollToTop() {
+    if (window.scrollY > dataGrid.getBoundingClientRect().top) {
+      dataGrid.scrollIntoView();
+    }
+    onscroll();
+  }
+
   function resetFilters() {
     filters = {
       team: undefined,
@@ -260,14 +273,16 @@
       absent: undefined,
       target: undefined,
       exported: undefined,
+      scout: undefined,
     };
+    scrollToTop();
   }
 
   function onscroll() {
     if (displayedCount >= filteredEntries.length) return;
 
     if (document.body.offsetHeight <= window.scrollY + window.innerHeight * 2) {
-      displayedCount = Math.min(displayedCount + 10, filteredEntries.length);
+      displayedCount = Math.min(displayedCount + 20, filteredEntries.length);
       flushSync();
       onscroll();
     }
@@ -341,6 +356,7 @@
             Match
             <select
               bind:value={filters.match}
+              onchange={scrollToTop}
               class="bg-neutral-800 p-2 text-theme"
               class:font-bold={filters.match !== undefined}
             >
@@ -356,6 +372,7 @@
           Team
           <select
             bind:value={filters.team}
+            onchange={scrollToTop}
             class="bg-neutral-800 p-2 capitalize text-theme"
             class:font-bold={filters.team !== undefined}
           >
@@ -371,6 +388,7 @@
             Absent
             <select
               bind:value={filters.absent}
+              onchange={scrollToTop}
               class="bg-neutral-800 p-2 text-theme"
               class:font-bold={filters.absent !== undefined}
             >
@@ -385,6 +403,7 @@
           Exported
           <select
             bind:value={filters.exported}
+            onchange={scrollToTop}
             class="bg-neutral-800 p-2 text-theme"
             class:font-bold={filters.exported !== undefined}
           >
@@ -399,12 +418,30 @@
             Target
             <select
               bind:value={filters.target}
+              onchange={scrollToTop}
               class="bg-neutral-800 p-2 capitalize text-theme"
               class:font-bold={filters.target !== undefined}
             >
               <option value={undefined}>--</option>
               {#each matchTargets as value}
                 <option>{value}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+
+        {#if filterableScouts?.length}
+          <label class="flex grow flex-col">
+            Scout
+            <select
+              bind:value={filters.scout}
+              onchange={scrollToTop}
+              class="bg-neutral-800 p-2 text-theme"
+              class:font-bold={filters.scout !== undefined}
+            >
+              <option value={undefined}>--</option>
+              {#each filterableScouts as scout}
+                <option>{scout}</option>
               {/each}
             </select>
           </label>
@@ -481,13 +518,45 @@
     >
       <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
         {#if data.surveyType == "match"}
-          <Button onclick={() => ($sortBy = "match")} class={sortButtonStyle("match")}>Match</Button>
+          <Button
+            onclick={() => {
+              $sortBy = "match";
+              scrollToTop();
+            }}
+            class={sortButtonStyle("match")}
+          >
+            Match
+          </Button>
         {/if}
-        <Button onclick={() => ($sortBy = "team")} class={sortButtonStyle("team")}>Team</Button>
+        <Button
+          onclick={() => {
+            $sortBy = "team";
+            scrollToTop();
+          }}
+          class={sortButtonStyle("team")}
+        >
+          Team
+        </Button>
         {#if data.surveyType == "match"}
-          <Button onclick={() => ($sortBy = "absent")} class={sortButtonStyle("absent")}>Absent</Button>
+          <Button
+            onclick={() => {
+              $sortBy = "absent";
+              scrollToTop();
+            }}
+            class={sortButtonStyle("absent")}
+          >
+            Absent
+          </Button>
         {/if}
-        <Button onclick={() => ($sortBy = "exported")} class={sortButtonStyle("exported")}>Exported</Button>
+        <Button
+          onclick={() => {
+            $sortBy = "exported";
+            scrollToTop();
+          }}
+          class={sortButtonStyle("exported")}
+        >
+          Exported
+        </Button>
       </div>
 
       {#snippet entryButton(entry: IDBRecord<Entry>)}
@@ -546,13 +615,13 @@
           {@render entryButton(entry)}
         {/each}
       {/if}
-    </div>
 
-    {#if displayedEntries.length < filteredEntries.length}
-      <Button onclick={() => (displayedCount += 10)}>
-        <Icon name="arrow-down" />
-        Show more
-      </Button>
-    {/if}
+      {#if displayedEntries.length < filteredEntries.length}
+        <Button onclick={() => (displayedCount += 20)} class="col-span-full">
+          <Icon name="arrow-down" />
+          Show more
+        </Button>
+      {/if}
+    </div>
   </div>
 </div>

@@ -49,6 +49,7 @@ export type EntryFilters = {
   absent: boolean | undefined;
   target: MatchTarget | undefined;
   exported: boolean | undefined;
+  scout: string | undefined;
 };
 
 export function parseValueFromString(value: any) {

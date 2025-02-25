@@ -42,7 +42,7 @@ export const load: PageLoad = async (event) => {
           const otherCorrectEntriesCount = data.entryRecords.filter(
             (e) => e.scout != scout && e.match == match.number && e.prediction == "blue",
           ).length;
-          points += otherCorrectEntriesCount * 0.2;
+          points += 1 + otherCorrectEntriesCount * 0.2;
           correctGuesses++;
         }
       }

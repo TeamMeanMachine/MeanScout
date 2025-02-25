@@ -54,6 +54,13 @@
 
   let prefilledTeamName = $derived(data.surveyRecord.teams.find((t) => t.number == prefilledTeam)?.name);
 
+  let prefilledScout = $derived.by(() => {
+    const latestEntry = data.entryRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime())[0];
+    if (latestEntry && latestEntry.scout) {
+      return latestEntry.scout;
+    }
+  });
+
   let drafts = $derived(
     data.entryRecords
       .filter((e) => e.status == "draft")
@@ -90,8 +97,9 @@
       onclick={() => {
         openDialog(NewEntryDialog, {
           data,
-          prefilledTeam,
           prefilledMatch,
+          prefilledTeam,
+          prefilledScout,
           oncreate(entry) {
             data = {
               ...data,
