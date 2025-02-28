@@ -26,6 +26,7 @@
         {/if}
         <span><small>Team</small> <strong>####</strong></span>
       </div>
+
       <div class="flex flex-col flex-wrap gap-3">
         {#each data.surveyRecord.fieldIds as fieldId}
           {@const detailedField = detailedFields.get(fieldId)}
@@ -34,25 +35,21 @@
             <div class="flex w-full flex-col gap-1">
               <h2 class="font-bold">{detailedField.field.name}</h2>
 
-              <div class="mb-4 flex flex-col flex-wrap gap-3">
+              <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
                 {#each detailedField.field.fieldIds as innerFieldId}
                   {@const detailedInnerField = detailedInnerFields.get(innerFieldId)}
 
                   {#if detailedInnerField}
-                    <div class="flex flex-col">
-                      <FieldValueEditor
-                        field={detailedInnerField.field}
-                        value={getDefaultFieldValue(detailedInnerField.field)}
-                      />
-                    </div>
+                    <FieldValueEditor
+                      field={detailedInnerField.field}
+                      value={getDefaultFieldValue(detailedInnerField.field)}
+                    />
                   {/if}
                 {/each}
               </div>
             </div>
           {:else if detailedField}
-            <div class="flex flex-col">
-              <FieldValueEditor field={detailedField.field} value={getDefaultFieldValue(detailedField.field)} />
-            </div>
+            <FieldValueEditor field={detailedField.field} value={getDefaultFieldValue(detailedField.field)} />
           {/if}
         {/each}
       </div>

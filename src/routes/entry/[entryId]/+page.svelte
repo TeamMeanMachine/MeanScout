@@ -39,31 +39,33 @@
 
 <div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
   <div class="flex flex-col gap-4">
-    <div class="flex flex-col">
-      {#if data.surveyType == "match"}
-        <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
-      {/if}
-      <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
-      {#if data.teamName?.length}
-        <span><small class="font-light">{data.teamName}</small></span>
-      {/if}
-    </div>
-    {#if data.entryRecord.scout}
+    <div class="flex flex-wrap gap-x-6 gap-y-3">
       <div class="flex flex-col">
-        <span><small>Scout</small> <strong>{data.entryRecord.scout}</strong></span>
-        {#if data.surveyType == "match" && data.entryRecord.prediction}
-          <span>
-            <small>Prediction</small>
-            <strong class="capitalize text-{data.entryRecord.prediction}">
-              {data.entryRecord.prediction} wins
-            </strong>
-          </span>
-          {#if data.entryRecord.predictionReason}
-            <span><small class="font-light">"{data.entryRecord.predictionReason}"</small></span>
-          {/if}
+        {#if data.surveyType == "match"}
+          <span><small>Match</small> <strong>{data.entryRecord.match}</strong></span>
+        {/if}
+        <span><small>Team</small> <strong>{data.entryRecord.team}</strong></span>
+        {#if data.teamName?.length}
+          <span><small class="font-light">{data.teamName}</small></span>
         {/if}
       </div>
-    {/if}
+      {#if data.entryRecord.scout}
+        <div class="flex flex-col">
+          <span><small>Scout</small> <strong>{data.entryRecord.scout}</strong></span>
+          {#if data.surveyType == "match" && data.entryRecord.prediction}
+            <span>
+              <small>Prediction</small>
+              <strong class="capitalize text-{data.entryRecord.prediction}">
+                {data.entryRecord.prediction} wins
+              </strong>
+            </span>
+            {#if data.entryRecord.predictionReason}
+              <span><small class="font-light">"{data.entryRecord.predictionReason}"</small></span>
+            {/if}
+          {/if}
+        </div>
+      {/if}
+    </div>
 
     <div class="flex flex-col flex-wrap gap-3">
       {#each data.surveyRecord.fieldIds as fieldId}
@@ -73,7 +75,7 @@
           <div class="flex w-full flex-col gap-1">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
-            <div class="mb-4 flex flex-col flex-wrap gap-3">
+            <div class="mb-4 flex flex-wrap items-end gap-x-4 gap-y-3">
               {#each fieldDetails.field.fieldIds as innerFieldId}
                 {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
 
