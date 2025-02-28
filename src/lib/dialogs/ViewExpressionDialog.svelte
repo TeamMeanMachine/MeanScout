@@ -7,7 +7,8 @@
   import type { Expression } from "$lib/expression";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
-  import * as echarts from "echarts";
+  import type { EChartsOption } from "echarts";
+  import * as echarts from "echarts/core";
 
   let {
     surveyRecord,
@@ -106,7 +107,7 @@
         bottom: 0,
         containLabel: true,
       },
-    } satisfies echarts.EChartsOption;
+    } satisfies EChartsOption;
 
     const chart = echarts.init(div, null, { renderer: "svg" });
     chart.setOption(options);

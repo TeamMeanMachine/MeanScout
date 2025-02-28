@@ -75,7 +75,7 @@
           <div class="flex w-full flex-col gap-1">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
-            <div class="mb-4 flex flex-wrap items-end gap-x-4 gap-y-3">
+            <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
               {#each fieldDetails.field.fieldIds as innerFieldId}
                 {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
 

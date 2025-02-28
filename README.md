@@ -10,6 +10,7 @@ https://meanscout.team2471.org
 - [The Blue Alliance](https://www.thebluealliance.com/)
 - [jsQR](https://github.com/cozmo/jsQR)
 - [node-qrcode](https://github.com/soldair/node-qrcode)
+- [Apache Echarts](https://echarts.apache.org/)
 - [Zod](https://zod.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [FontAwesome](https://fontawesome.com/)

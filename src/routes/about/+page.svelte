@@ -6,7 +6,7 @@
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
 
-  const tab = sessionStorageStore<"info" | "guides" | "qrfcode">("about-tab", "info");
+  const tab = sessionStorageStore<"info" | "guides" | "prediction" | "qrfcode">("about-tab", "info");
 
   function getTabClass(matching: string) {
     return $tab == matching ? "font-bold" : "font-light";
@@ -19,6 +19,7 @@
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
+    <Button onclick={() => ($tab = "prediction")} class={getTabClass("prediction")}>Predictions</Button>
     <Button onclick={() => ($tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
   </div>
 
@@ -41,6 +42,7 @@
           </a>
         </li>
         <li>Data analysis (pick lists and expressions)</li>
+        <li>Optional scout names and match prediction game</li>
         <li>Stores data locally, in the browser</li>
         <li>Export/share survey configs and scouting data via QRF codes or files</li>
       </ul>
@@ -70,6 +72,12 @@
         <li>
           <a href="https://github.com/soldair/node-qrcode" target="_blank">
             <span class="underline">node-qrcode</span>
+            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+          </a>
+        </li>
+        <li>
+          <a href="https://echarts.apache.org/" target="_blank">
+            <span class="underline">Apache Echarts</span>
             <i class="fa-solid fa-up-right-from-square text-theme"></i>
           </a>
         </li>
@@ -167,6 +175,7 @@
         <li>Set up fields you need to scout</li>
         <li>Add match schedule data in the matches page</li>
         <li>If you don't have a match schedule, add teams in the teams page</li>
+        <li>Choose whether to enable scout names and match prediction game (only works with a match schedule)</li>
       </ol>
     </div>
 
@@ -176,6 +185,7 @@
         <li>Give each field a short, descriptive, and unique name</li>
         <li>Use groups to organize your fields (they don't have to just be "Auto" and "Teleop" either)</li>
         <li>Duplicate fields (and groups!) to quickly set up your survey</li>
+        <li>Drag-and-drop organization is supported, but experimental</li>
       </ul>
     </div>
 
@@ -231,6 +241,40 @@
         <li>To limit menus/controls for scouts, set those devices to scout mode</li>
       </ol>
     </div>
+  {:else if $tab == "prediction"}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Optional prediction game</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Enabled if scout names are enabled, requires match schedule & scores from TBA</li>
+        <li>Before each match, scouts can predict which alliance will win</li>
+        <li>When setting up a new entry, scouts can easily view analysis for data on their device</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Points</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Points for guessing correctly will be increased if more scouts vote for the same alliance</li>
+        <li>0.2 increment for every correct scout</li>
+        <li>1 point for 1 correct scout, 2 points for 6 correct scouts</li>
+        <li>Scouts that don't guess or guess incorrectly won't lose points, but won't gain any either</li>
+        <li>Admin mode has access to prediction results</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Cooperation</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>
+          Unless you manually sync data between all your devices every match, each device only has small portion of data
+        </li>
+        <li>
+          Scouts will have to talk to each other and compare data, ideas, opinions, etc. to make the best predictions
+        </li>
+        <li>Point system encourages cooperation among scouts</li>
+        <li>Come up with real-life prizes based on total points, like candy!</li>
+      </ul>
+    </div>
   {:else if $tab == "qrfcode"}
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">What's a QRF code?</h2>
@@ -249,6 +293,7 @@
         <li>You can scan QRF codes with a regular QR code scanner, but you probably can't do much with it</li>
       </ul>
     </div>
+
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Why is it called a "fountain" code?</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">

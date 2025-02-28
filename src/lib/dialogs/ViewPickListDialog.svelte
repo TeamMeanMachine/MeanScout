@@ -6,7 +6,8 @@
   import type { MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
-  import * as echarts from "echarts";
+  import type { EChartsOption, SeriesOption } from "echarts";
+  import * as echarts from "echarts/core";
 
   let {
     surveyRecord,
@@ -69,7 +70,7 @@
   }
 
   function stackedChart(div: HTMLElement) {
-    const options: echarts.EChartsOption = {
+    const options = {
       tooltip: {
         valueFormatter: (value) => Number(value).toFixed(2) + "%",
       },
@@ -110,7 +111,7 @@
         dimensions: ["team", ...pickList.weights.map((weight) => weight.expressionName)],
         source: sortedTeamData,
       },
-      series: pickList.weights.map((weight): echarts.SeriesOption => {
+      series: pickList.weights.map((weight): SeriesOption => {
         return {
           type: "bar",
           stack: "total",
@@ -130,7 +131,7 @@
         bottom: 0,
         containLabel: true,
       },
-    };
+    } satisfies EChartsOption;
 
     const chart = echarts.init(div, null, { renderer: "svg" });
     chart.setOption(options);
@@ -245,7 +246,7 @@
         bottom: 0,
         containLabel: true,
       },
-    } satisfies echarts.EChartsOption;
+    } satisfies EChartsOption;
 
     let timeout: NodeJS.Timeout;
     const chart = echarts.init(div, null, { renderer: "svg" });
