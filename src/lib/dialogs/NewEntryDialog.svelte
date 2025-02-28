@@ -9,6 +9,7 @@
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
 
   let {
@@ -42,8 +43,6 @@
   let team = $state(prefilledTeam);
 
   let scout = $state(prefilledScout);
-  let customScout = $state<string | undefined>();
-  let customScoutError = $state("");
 
   let prediction = $state<"red" | "blue" | undefined>();
   let predictionReason = $state<string | undefined>();
@@ -57,6 +56,8 @@
   export const { onconfirm }: DialogExports = {
     onconfirm() {
       team = team.trim();
+      scout = scout?.trim();
+      predictionReason = predictionReason?.trim();
 
       const teamHasInvalidFormat = !/^\d{1,5}[A-Z]?$/.test(team);
       const teamIsNotListed = suggestedTeams.length && !suggestedTeams.some((t) => t.number == team);
@@ -71,6 +72,11 @@
         return;
       }
 
+      if (data.surveyRecord.scouts && !scout) {
+        error = "scout name missing";
+        return;
+      }
+
       if (data.surveyType == "match") {
         if (!/\d{1,3}/.test(`${match}`)) {
           error = "invalid value for match";
@@ -82,9 +88,6 @@
           return;
         }
       }
-
-      scout = scout?.trim();
-      predictionReason = predictionReason?.trim();
 
       let entry: Entry;
       if (data.surveyType == "match") {
@@ -193,28 +196,6 @@
       .map((team): Team => data.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
       .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
   }
-
-  function newScout() {
-    customScout = customScout?.trim();
-    if (!customScout) {
-      customScoutError = "No input";
-      return;
-    }
-
-    if (data.surveyRecord.scouts && data.surveyRecord.scouts.includes(customScout)) {
-      customScoutError = "Name already exists";
-      return;
-    }
-
-    data = {
-      ...data,
-      surveyRecord: { ...data.surveyRecord, scouts: [...(data.surveyRecord.scouts || []), customScout] },
-    } as PageData;
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-    scout = customScout;
-    customScout = undefined;
-    customScoutError = "";
-  }
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -260,7 +241,7 @@
     <div class="flex flex-col">
       Your name
       <div class="flex flex-wrap gap-2">
-        {#if customScout === undefined && data.surveyRecord.scouts.length}
+        {#if data.surveyRecord.scouts}
           <select bind:value={scout} class="grow bg-neutral-800 p-2 text-theme">
             {#each data.surveyRecord.scouts as scout}
               <option>{scout}</option>
@@ -268,39 +249,23 @@
           </select>
           <Button
             onclick={() => {
-              customScout = "";
-              customScoutError = "";
+              openDialog(NewScoutDialog, {
+                scouts: data.surveyRecord.scouts ?? [],
+                onadd(newScout) {
+                  data = {
+                    ...data,
+                    surveyRecord: { ...data.surveyRecord, scouts: [...(data.surveyRecord.scouts || []), newScout] },
+                  } as PageData;
+                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  scout = newScout;
+                },
+              });
             }}
           >
             <Icon name="plus" />
           </Button>
-        {:else}
-          <!-- svelte-ignore a11y_autofocus -->
-          <input
-            bind:value={customScout}
-            onkeypress={(e) => {
-              if (e.key == "Enter") {
-                e.preventDefault();
-                newScout();
-              }
-            }}
-            autofocus
-            placeholder="Custom"
-            class="grow bg-neutral-800 p-2 text-theme"
-          />
-          <Button onclick={newScout}>
-            <Icon name="check" />
-          </Button>
-          {#if data.surveyRecord.scouts.length}
-            <Button onclick={() => (customScout = undefined)}>
-              <Icon name="xmark" />
-            </Button>
-          {/if}
         {/if}
       </div>
-      {#if customScout !== undefined && customScoutError}
-        <small>{customScoutError}</small>
-      {/if}
     </div>
   {/if}
 {:else if tab == "predict" && data.surveyType == "match"}
@@ -325,6 +290,8 @@
         <div class="text-blue">{matchData.blue3}</div>
       </div>
     </Button>
+  {:else}
+    <small>Match {match}</small>
   {/if}
 
   <div class="flex flex-col">
