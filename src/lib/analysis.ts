@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Entry } from "./entry";
 import type { DetailedSingleField } from "./field";
-import type { Expression, ExpressionMethod } from "./expression";
+import { reduceExpressionTypes, type Expression, type ExpressionMethod } from "./expression";
 
 export const pickListSchema = z.object({
   name: z.string(),
@@ -16,9 +16,13 @@ export function calculateTeamData(
   entriesByTeam: Record<string, IDBRecord<Entry>[]>,
   fields: DetailedSingleField[],
 ) {
+  const expression = expressions.find((e) => e.name == expressionName);
   const teamData: Record<string, number> = {};
   for (const team in entriesByTeam) {
     let value = runExpression(team, expressionName, expressions, entriesByTeam[team], fields);
+    if (Array.isArray(value) && expression && reduceExpressionTypes.includes(expression.method.type as any)) {
+      value = runExpressionMethod(expression.method, value);
+    }
     if (Array.isArray(value)) {
       value = value.reduce((prev, curr) => prev + curr, 0) / value.length;
     }
