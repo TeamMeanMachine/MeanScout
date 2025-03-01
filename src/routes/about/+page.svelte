@@ -24,7 +24,7 @@
   </div>
 
   {#if $tab == "info"}
-    <span>A lightweight FRC scouting web app built with SvelteKit.</span>
+    <span>A highly configurable peer-to-peer FRC scouting web app.</span>
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Features</h2>
@@ -32,7 +32,7 @@
         <li>Full offline support (progressive web app)</li>
         <li>Lightweight mobile-first design</li>
         <li>Customizable fields: toggles, numbers, selectors, textfields, ratings, and timers</li>
-        <li>Options for scouting matches and pits</li>
+        <li>Supports both match scouting and non-match (pit) scouting</li>
         <li>Configurable match schedules and team lists</li>
         <li>
           Pull schedules/teams from
@@ -41,7 +41,7 @@
             <i class="fa-solid fa-up-right-from-square text-theme"></i>
           </a>
         </li>
-        <li>Data analysis (pick lists and expressions)</li>
+        <li>Customizable data analysis (pick lists and expressions)</li>
         <li>Optional scout names and match prediction game</li>
         <li>Stores data locally, in the browser</li>
         <li>Export/share survey configs and scouting data via QRF codes or files</li>
@@ -53,7 +53,7 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>
           <a href="https://svelte.dev/" target="_blank">
-            <span class="underline">SvelteKit</span>
+            <span class="underline">Svelte</span>
             <i class="fa-solid fa-up-right-from-square text-theme"></i>
           </a>
         </li>
@@ -125,11 +125,11 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>You don't have to use The Blue Alliance to use MeanScout</li>
         <li>
-          All survey configuration and scouting data can be locally exported, so try not to put any sensitive data in
-          those places
+          Survey configuration and scouting data are stored as, and can be exported as, plaintext, so try not to put any
+          sensitive data in those places
         </li>
         <li>
-          This applies only to the official version of the app, which is deployed at
+          This applies only to the version of the app deployed at
           <a href="https://meanscout.team2471.org" target="_blank">
             <span class="underline">https://meanscout.team2471.org</span>
             <i class="fa-solid fa-up-right-from-square text-theme"></i>

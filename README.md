@@ -1,19 +1,21 @@
 # MeanScout
 
-A lightweight FRC scouting web app built with SvelteKit.
+A highly configurable peer-to-peer FRC scouting web app.
 
 https://meanscout.team2471.org
 
+Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for features, guides, and other information about the app.
+
 ## Powered by
 
-- [SvelteKit](https://kit.svelte.dev/)
+- [Svelte](https://svelte.dev/)
 - [The Blue Alliance](https://www.thebluealliance.com/)
 - [jsQR](https://github.com/cozmo/jsQR)
 - [node-qrcode](https://github.com/soldair/node-qrcode)
 - [Apache Echarts](https://echarts.apache.org/)
 - [Zod](https://zod.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [FontAwesome](https://fontawesome.com/)
+- [Font Awesome](https://fontawesome.com/)
 - [Fira Code](https://github.com/tonsky/FiraCode)
 
 ## Contributing
