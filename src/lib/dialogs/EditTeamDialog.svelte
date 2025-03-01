@@ -28,7 +28,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 <Button

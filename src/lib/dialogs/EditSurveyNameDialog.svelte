@@ -30,7 +30,7 @@
 
 <span>Edit name:</span>
 
-<input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+<input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 
 {#if error}
   <span>{error}</span>

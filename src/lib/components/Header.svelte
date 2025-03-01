@@ -46,6 +46,6 @@
     {#if $modeStore == "admin"}
       <small>Admin</small>
     {/if}
-    <small class="font-bold capitalize text-theme">{$targetStore}</small>
+    <small class="text-theme font-bold capitalize">{$targetStore}</small>
   </div>
 </header>

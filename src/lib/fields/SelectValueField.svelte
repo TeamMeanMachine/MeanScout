@@ -14,7 +14,7 @@
 
 <label class="flex flex-col self-start">
   {field.name}
-  <select bind:value {onchange} class="bg-neutral-800 p-2 capitalize text-theme">
+  <select bind:value {onchange} class="text-theme bg-neutral-800 p-2 capitalize">
     {#each field.values as val}
       <option value={val}>{val}</option>
     {/each}

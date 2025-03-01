@@ -32,7 +32,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={pickList.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={pickList.name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 {#snippet expressionButton(expression: Expression)}
@@ -66,7 +66,7 @@
           max="100"
           step="1"
           bind:value={pickList.weights[weightIndex].percentage}
-          class="bg-neutral-800 p-2 text-theme"
+          class="text-theme bg-neutral-800 p-2"
         />
       </label>
     {/if}

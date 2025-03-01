@@ -10,4 +10,4 @@
   } = $props();
 </script>
 
-<i class="fa-{style} fa-{name} fa-fw text-xl/6 text-{color}"></i>
+<i class="fa-{style} fa-{name} fa-fw !text-xl/6 text-{color}"></i>

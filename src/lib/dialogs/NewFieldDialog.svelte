@@ -129,7 +129,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={field.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={field.name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 {#if field.type != "group"}
@@ -138,7 +138,7 @@
     <select
       value={field.type}
       onchange={(e) => changeType(e.currentTarget.value)}
-      class="bg-neutral-800 p-2 capitalize text-theme"
+      class="text-theme bg-neutral-800 p-2 capitalize"
     >
       {#each singleFieldTypes as fieldType}
         <option>{fieldType}</option>
@@ -159,7 +159,7 @@
     Values
     {#each field.values as _, i}
       <div class="flex gap-2">
-        <input bind:value={field.values[i]} class="grow bg-neutral-800 p-2 text-theme" />
+        <input bind:value={field.values[i]} class="text-theme grow bg-neutral-800 p-2" />
         <Button onclick={() => deleteSelectValue(i)}>
           <Icon name="trash" />
         </Button>
@@ -182,7 +182,7 @@
 
   <label class="flex flex-col">
     Tip
-    <input bind:value={field.tip} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={field.tip} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 

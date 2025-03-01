@@ -91,4 +91,4 @@
 </script>
 
 <video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>
-<span class="overflow-hidden overflow-ellipsis whitespace-nowrap text-nowrap">scanned: {scanned}</span>
+<span class="overflow-hidden text-nowrap text-ellipsis whitespace-nowrap">scanned: {scanned}</span>

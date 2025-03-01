@@ -72,11 +72,11 @@
                   },
                 });
               }}
-              class="col-span-full grid grid-cols-subgrid text-left"
+              class="col-span-full grid grid-cols-subgrid"
             >
               <div class="font-bold">{team.number}</div>
               {#if team.name}
-                <div class="font-light">{team.name}</div>
+                <div class="text-sm font-light">{team.name}</div>
               {/if}
             </Button>
           {/each}

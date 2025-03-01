@@ -167,7 +167,7 @@
           (showDoneColumn ? 1 : 0)}, min-content) 0"
       >
         <div
-          class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid gap-2 gap-x-3 text-nowrap bg-neutral-900 text-sm font-bold"
+          class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid gap-2 gap-x-3 bg-neutral-900 text-sm font-bold text-nowrap"
         >
           <div class="sticky left-0 bg-neutral-900 pl-2">Team</div>
           {#if teamInfos.some((teamInfo) => teamInfo.pickListRanks?.length)}
@@ -276,7 +276,7 @@
           entriesByTeam,
         });
       }}
-      class="col-span-full grid grid-cols-subgrid gap-2 pl-0 text-center"
+      class="col-span-full grid grid-cols-subgrid gap-2 pl-0 text-center!"
     >
       <div class="sticky left-0 flex flex-col bg-neutral-800 px-2 text-left">
         <span class="text-{alliance} {getMatchTeamFontWeight(teamInfo.number)}">{teamInfo.number}</span>

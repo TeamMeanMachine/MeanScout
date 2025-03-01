@@ -357,7 +357,7 @@
             <select
               bind:value={filters.match}
               onchange={scrollToTop}
-              class="bg-neutral-800 p-2 text-theme"
+              class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.match !== undefined}
             >
               <option value={undefined}>--</option>
@@ -373,7 +373,7 @@
           <select
             bind:value={filters.team}
             onchange={scrollToTop}
-            class="bg-neutral-800 p-2 capitalize text-theme"
+            class="text-theme bg-neutral-800 p-2 capitalize"
             class:font-bold={filters.team !== undefined}
           >
             <option value={undefined}>--</option>
@@ -389,7 +389,7 @@
             <select
               bind:value={filters.absent}
               onchange={scrollToTop}
-              class="bg-neutral-800 p-2 text-theme"
+              class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.absent !== undefined}
             >
               <option value={undefined}>--</option>
@@ -404,7 +404,7 @@
           <select
             bind:value={filters.exported}
             onchange={scrollToTop}
-            class="bg-neutral-800 p-2 text-theme"
+            class="text-theme bg-neutral-800 p-2"
             class:font-bold={filters.exported !== undefined}
           >
             <option value={undefined}>--</option>
@@ -419,7 +419,7 @@
             <select
               bind:value={filters.target}
               onchange={scrollToTop}
-              class="bg-neutral-800 p-2 capitalize text-theme"
+              class="text-theme bg-neutral-800 p-2 capitalize"
               class:font-bold={filters.target !== undefined}
             >
               <option value={undefined}>--</option>
@@ -436,7 +436,7 @@
             <select
               bind:value={filters.scout}
               onchange={scrollToTop}
-              class="bg-neutral-800 p-2 text-theme"
+              class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.scout !== undefined}
             >
               <option value={undefined}>--</option>
@@ -569,7 +569,7 @@
               onchange: refresh,
             });
           }}
-          class="col-span-full grid grid-cols-subgrid text-center"
+          class="col-span-full grid grid-cols-subgrid text-center!"
         >
           {#if entry.type == "match"}
             <div>{entry.match}</div>

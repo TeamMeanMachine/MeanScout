@@ -60,7 +60,7 @@
     <option value={key}>{name}</option>
   {/each}
 </datalist>
-<input bind:value={event} list="events-list" class="bg-neutral-800 p-2 text-theme" />
+<input bind:value={event} list="events-list" class="text-theme bg-neutral-800 p-2" />
 
 {#if error}
   <span>Error: {error}</span>

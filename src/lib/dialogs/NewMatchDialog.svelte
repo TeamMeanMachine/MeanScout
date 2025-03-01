@@ -67,36 +67,36 @@
 
 <label class="flex flex-col">
   Number
-  <input type="number" pattern="[0-9]*" bind:value={match.number} class="bg-neutral-800 p-2 text-theme" />
+  <input type="number" pattern="[0-9]*" bind:value={match.number} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 <div class="flex gap-2">
   <label class="flex flex-col">
     Red 1
-    <input maxlength="5" bind:value={match.red1} class="w-full bg-neutral-800 p-2 text-red" />
+    <input maxlength="5" bind:value={match.red1} class="text-red w-full bg-neutral-800 p-2" />
   </label>
   <label class="flex flex-col">
     Red 2
-    <input maxlength="5" bind:value={match.red2} class="w-full bg-neutral-800 p-2 text-red" />
+    <input maxlength="5" bind:value={match.red2} class="text-red w-full bg-neutral-800 p-2" />
   </label>
   <label class="flex flex-col">
     Red 3
-    <input maxlength="5" bind:value={match.red3} class="w-full bg-neutral-800 p-2 text-red" />
+    <input maxlength="5" bind:value={match.red3} class="text-red w-full bg-neutral-800 p-2" />
   </label>
 </div>
 
 <div class="flex gap-2">
   <label class="flex flex-col">
     Blue 1
-    <input maxlength="5" bind:value={match.blue1} class="w-full bg-neutral-800 p-2 text-blue" />
+    <input maxlength="5" bind:value={match.blue1} class="text-blue w-full bg-neutral-800 p-2" />
   </label>
   <label class="flex flex-col">
     Blue 2
-    <input maxlength="5" bind:value={match.blue2} class="w-full bg-neutral-800 p-2 text-blue" />
+    <input maxlength="5" bind:value={match.blue2} class="text-blue w-full bg-neutral-800 p-2" />
   </label>
   <label class="flex flex-col">
     Blue 3
-    <input maxlength="5" bind:value={match.blue3} class="w-full bg-neutral-800 p-2 text-blue" />
+    <input maxlength="5" bind:value={match.blue3} class="text-blue w-full bg-neutral-800 p-2" />
   </label>
 </div>
 

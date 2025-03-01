@@ -217,7 +217,7 @@
         bind:value={match}
         oninput={() => (team = suggestedTeams[0].number)}
         min="1"
-        class="bg-neutral-800 p-2 text-theme"
+        class="text-theme bg-neutral-800 p-2"
       />
     </label>
   {/if}
@@ -234,7 +234,7 @@
         <span class="text-sm font-light">{teamName}</span>
       {/if}
     </div>
-    <input list="teams-list" bind:value={team} class="bg-neutral-800 p-2 text-theme" />
+    <input list="teams-list" bind:value={team} class="text-theme bg-neutral-800 p-2" />
   </label>
 
   {#if data.surveyRecord.scouts}
@@ -242,7 +242,7 @@
       Your name
       <div class="flex flex-wrap gap-2">
         {#if data.surveyRecord.scouts}
-          <select bind:value={scout} class="grow bg-neutral-800 p-2 text-theme">
+          <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
             {#each data.surveyRecord.scouts as scout}
               <option>{scout}</option>
             {/each}
@@ -278,7 +278,7 @@
           match: matchData,
         });
       }}
-      class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2 gap-x-3 text-center"
+      class="grid grid-cols-[repeat(4,min-content)_auto] gap-2 gap-x-3 text-center!"
     >
       <div>{matchData.number}</div>
       <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
@@ -299,7 +299,7 @@
     <div class="flex flex-wrap gap-2">
       <Button
         onclick={() => (prediction = prediction == "red" ? undefined : "red")}
-        class="grow basis-[150px] text-red {prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
+        class="text-red grow basis-[150px] {prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
       >
         {#if prediction == "red"}
           <Icon name="square-check" color="red" />
@@ -310,7 +310,7 @@
       </Button>
       <Button
         onclick={() => (prediction = prediction == "blue" ? undefined : "blue")}
-        class="grow basis-[150px] text-blue {prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
+        class="text-blue grow basis-[150px] {prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
       >
         {#if prediction == "blue"}
           <Icon name="square-check" color="blue" />
@@ -324,7 +324,7 @@
 
   <label class="flex flex-col">
     Reason
-    <input bind:value={predictionReason} placeholder="Optional" class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={predictionReason} placeholder="Optional" class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 

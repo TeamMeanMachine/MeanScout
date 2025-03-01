@@ -1,13 +1,20 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+
+@theme {
+  --font-mono: Fira Code VF, monospace;
+
+  --color-red: rgb(var(--theme-red));
+  --color-blue: rgb(var(--theme-blue));
+  --color-orange: rgb(var(--theme-orange));
+
+  --color-theme: rgb(var(--theme-color));
+}
 
 @layer base {
   :root {
     --theme-red: 244 67 54;
     --theme-blue: 33 150 243;
     --theme-orange: 255 152 0;
-    color-scheme: dark;
   }
 
   :root[data-theme="red"] {
@@ -23,16 +30,16 @@
   }
 
   :root:has(dialog[open]) {
-    overflow-y: hidden !important;
+    @apply overflow-hidden!;
   }
 
   :disabled {
-    @apply !cursor-default opacity-50 !outline-none;
+    @apply cursor-default! opacity-50 outline-none!;
   }
 
   :is(input, select, textarea, a, button, .button, summary):focus,
   :is(input, select, textarea, a, button, .button, summary):hover {
-    @apply z-10 outline outline-2 outline-neutral-300;
+    @apply z-10 outline-2 outline-neutral-300;
   }
 
   ::marker {
@@ -52,7 +59,7 @@
     ::view-transition-group(*),
     ::view-transition-old(*),
     ::view-transition-new(*) {
-      @apply !animate-none;
+      @apply animate-none!;
     }
   }
 }

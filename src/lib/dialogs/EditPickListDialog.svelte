@@ -39,7 +39,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 {#snippet expressionButton(expression: Expression)}
@@ -73,7 +73,7 @@
           max="100"
           step="1"
           bind:value={changes.weights[weightIndex].percentage}
-          class="bg-neutral-800 p-2 text-theme"
+          class="text-theme bg-neutral-800 p-2"
         />
       </label>
     {/if}

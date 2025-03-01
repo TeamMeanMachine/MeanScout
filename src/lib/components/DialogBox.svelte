@@ -51,7 +51,7 @@
   bind:this={box}
   onclose={closeDialog}
   onmouseup={onboxmouseup}
-  class="max-h-dvh w-[540px] bg-neutral-900 shadow-2xl [max-width:100vw] backdrop:backdrop-blur"
+  class="m-auto max-h-dvh w-[540px] [max-width:100vw] bg-neutral-900 shadow-2xl backdrop:backdrop-blur-sm"
 >
   <form
     method="dialog"

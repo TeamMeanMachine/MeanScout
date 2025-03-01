@@ -107,7 +107,7 @@
   accept=".json,.txt"
   bind:files
   {onchange}
-  class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
+  class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
 />
 
 {#if importedSurvey}

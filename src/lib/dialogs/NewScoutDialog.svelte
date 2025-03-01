@@ -33,7 +33,7 @@
 
 <label class="flex flex-col">
   New scout
-  <input bind:value={scoutInput} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={scoutInput} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 {#if error}

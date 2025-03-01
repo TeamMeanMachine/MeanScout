@@ -113,7 +113,7 @@
 {#if surveyRecords.length}
   <label class="flex flex-col">
     To survey
-    <select bind:value={selectedSurveyId} class="bg-neutral-800 p-2 capitalize text-theme">
+    <select bind:value={selectedSurveyId} class="text-theme bg-neutral-800 p-2 capitalize">
       {#each surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
         <option value={survey.id}>{survey.name}</option>
       {/each}

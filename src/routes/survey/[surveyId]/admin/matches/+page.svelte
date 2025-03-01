@@ -72,7 +72,7 @@
                 },
               });
             }}
-            class="col-span-5 grid grid-cols-subgrid gap-x-3 text-center"
+            class="col-span-5 grid grid-cols-subgrid gap-x-3 text-center!"
           >
             <div>{match.number}</div>
             <div class="col-span-3 grid grid-cols-subgrid gap-x-3">

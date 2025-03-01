@@ -32,14 +32,14 @@
     <div class="flex flex-wrap items-end">
       <label class="flex flex-col">
         From
-        <input bind:value={converter.from} class="w-36 bg-neutral-800 p-2 text-theme" />
+        <input bind:value={converter.from} class="text-theme w-36 bg-neutral-800 p-2" />
       </label>
       <div class="p-2">
         <Icon name="arrow-right" />
       </div>
       <label class="flex flex-col">
         To
-        <input bind:value={converter.to} class="w-36 bg-neutral-800 p-2 text-theme" />
+        <input bind:value={converter.to} class="text-theme w-36 bg-neutral-800 p-2" />
       </label>
     </div>
   </div>
@@ -52,6 +52,6 @@
 
 <label class="flex flex-col">
   Default to
-  <input bind:value={changes.defaultTo} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={changes.defaultTo} class="text-theme bg-neutral-800 p-2" />
   <small>Leave blank to keep input</small>
 </label>

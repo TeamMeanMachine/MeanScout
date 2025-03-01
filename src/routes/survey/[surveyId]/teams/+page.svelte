@@ -97,7 +97,7 @@
               {#each data.surveyRecord.pickLists as pickList, i}
                 <Button
                   onclick={() => (sortBy = i)}
-                  class="{sortBy == i ? 'font-bold' : 'font-light'} text-nowrap text-xs"
+                  class="{sortBy == i ? 'font-bold' : 'font-light'} text-xs text-nowrap"
                 >
                   {pickList.name}
                 </Button>
@@ -120,7 +120,7 @@
                 teamInfo,
                 entriesByTeam: data.entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
               })}
-            class="col-span-full grid grid-cols-subgrid text-center"
+            class="col-span-full grid grid-cols-subgrid text-center!"
           >
             <div class="flex flex-col text-left">
               {#if teamInfo.name}

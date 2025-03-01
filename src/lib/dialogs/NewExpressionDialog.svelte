@@ -86,7 +86,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 <label class="flex flex-col">
@@ -130,7 +130,7 @@
           break;
       }
     }}
-    class="bg-neutral-800 p-2 capitalize text-theme"
+    class="text-theme bg-neutral-800 p-2 capitalize"
   >
     <optgroup label="Reducers">
       {#each reduceExpressionTypes as expressionType}
@@ -148,7 +148,7 @@
 {#if method.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={method.valueToCount} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={method.valueToCount} class="text-theme bg-neutral-800 p-2" />
   </label>
 {:else if method.type == "convert"}
   <Button
@@ -168,12 +168,12 @@
 {:else if method.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={method.multiplier} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.multiplier} class="text-theme bg-neutral-800 p-2" />
   </label>
 {:else if method.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={method.divisor} class="bg-neutral-800 p-2 text-theme" />
+    <input type="number" bind:value={method.divisor} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 

@@ -65,11 +65,11 @@
 
 <label class="flex flex-col">
   Survey name
-  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
 <label class="flex flex-col">
   Survey type
-  <select bind:value={type} class="bg-neutral-800 p-2 capitalize text-theme">
+  <select bind:value={type} class="text-theme bg-neutral-800 p-2 capitalize">
     {#each surveyTypes as surveyType}
       <option>{surveyType}</option>
     {/each}

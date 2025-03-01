@@ -44,7 +44,7 @@
 
 <label class="flex flex-col">
   New scouts(s)
-  <input bind:value={scoutInput} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={scoutInput} class="text-theme bg-neutral-800 p-2" />
   <small class="pt-1">Separate multiple scouts with commas</small>
 </label>
 

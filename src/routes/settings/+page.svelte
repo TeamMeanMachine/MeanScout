@@ -107,7 +107,7 @@
       Mode
       <small>Scout mode limits menus/controls</small>
     </div>
-    <select bind:value={modeInput} class="bg-neutral-800 p-2 capitalize text-theme">
+    <select bind:value={modeInput} class="text-theme bg-neutral-800 p-2 capitalize">
       {#each modes as mode}
         <option>{mode}</option>
       {/each}
@@ -123,7 +123,7 @@
         Target
         <small>Which robot you're scouting</small>
       </div>
-      <select bind:value={targetInput} class="bg-neutral-800 p-2 capitalize text-theme">
+      <select bind:value={targetInput} class="text-theme bg-neutral-800 p-2 capitalize">
         {#each targets as target}
           <option>{target}</option>
         {/each}
@@ -137,7 +137,7 @@
         <small>Used to scan QRF codes</small>
       </div>
       {#if cameras.length}
-        <select bind:value={cameraInput} class="bg-neutral-800 p-2 capitalize text-theme">
+        <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
           <option value="">Select</option>
           {#each cameras as { id, name }}
             <option value={id}>{name}</option>
@@ -156,7 +156,7 @@
         Your team
         <small>Used w/ TBA data, upcoming match views</small>
       </div>
-      <input bind:value={teamInput} class="w-32 bg-neutral-800 p-2 text-theme" />
+      <input bind:value={teamInput} class="text-theme w-32 bg-neutral-800 p-2" />
     </label>
 
     <label class="flex flex-wrap items-center gap-2">
@@ -165,7 +165,7 @@
         Auth key
         <small>From TBA</small>
       </div>
-      <input bind:value={tbaAuthKeyInput} class="bg-neutral-800 p-2 text-theme" />
+      <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
     </label>
 
     {#if "startViewTransition" in document}
@@ -175,7 +175,7 @@
           Animations
           <small>They're fancy!</small>
         </div>
-        <select bind:value={animationInput} class="bg-neutral-800 p-2 text-theme">
+        <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
           <option value="none">None</option>
           <option value="full">Full</option>
         </select>

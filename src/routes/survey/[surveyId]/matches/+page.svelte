@@ -73,7 +73,7 @@
             match,
           });
         }}
-        class="col-span-full grid grid-cols-subgrid gap-x-3 text-center"
+        class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
       >
         <div>{match.number}</div>
         <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
@@ -91,7 +91,7 @@
       {#if upcomingMatches.length}
         <div class="flex grow basis-0 flex-col">
           <small>Upcoming</small>
-          <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+          <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
             {#each upcomingMatches as match (match)}
               {@render teamRow(match)}
             {/each}
@@ -102,7 +102,7 @@
       {#if previousMatches.length}
         <div class="flex grow basis-0 flex-col">
           <small>Previous</small>
-          <div class="grid grid-cols-[repeat(4,_min-content)_auto] gap-2">
+          <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
             {#each previousMatches as match (match)}
               {@render teamRow(match)}
             {/each}
