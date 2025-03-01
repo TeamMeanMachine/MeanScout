@@ -20,7 +20,7 @@
         return;
       }
 
-      if (scouts.some((s) => s == scoutInput)) {
+      if (scouts.some((s) => s.toLowerCase() == scoutInput.toLowerCase())) {
         error = `${scoutInput} already exists`;
         return;
       }

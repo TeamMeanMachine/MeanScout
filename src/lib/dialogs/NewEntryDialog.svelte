@@ -243,7 +243,7 @@
       <div class="flex flex-wrap gap-2">
         {#if data.surveyRecord.scouts}
           <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
-            {#each data.surveyRecord.scouts as scout}
+            {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
               <option>{scout}</option>
             {/each}
           </select>
@@ -291,7 +291,7 @@
       </div>
     </Button>
   {:else}
-    <small>Match {match}</small>
+    <span><small>Match</small> <strong>{match}</strong></span>
   {/if}
 
   <div class="flex flex-col">

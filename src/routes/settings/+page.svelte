@@ -14,6 +14,7 @@
   } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
   import { onMount } from "svelte";
+  import { prefersReducedMotion } from "svelte/motion";
 
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
@@ -168,7 +169,7 @@
       <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
     </label>
 
-    {#if "startViewTransition" in document}
+    {#if "startViewTransition" in document && !prefersReducedMotion.current}
       <label class="flex flex-wrap items-center gap-2">
         <Icon name="arrows-up-down-left-right" />
         <div class="flex grow flex-col">

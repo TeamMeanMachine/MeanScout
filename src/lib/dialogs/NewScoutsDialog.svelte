@@ -30,7 +30,7 @@
       }
 
       for (const scout of scoutInputs) {
-        if (scouts.some((s) => s == scout)) {
+        if (scouts.some((s) => s.toLowerCase() == scout)) {
           error = `${scout} already exists`;
           return;
         }

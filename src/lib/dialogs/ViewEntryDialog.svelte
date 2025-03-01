@@ -88,7 +88,26 @@
           {/if}
         </td>
       </tr>
-      {#if entryRecord.type == "match"}
+      {#if entryRecord.scout}
+        <tr>
+          <td class="w-0 p-2 text-sm">Scout</td>
+          <td class="p-2 font-bold">
+            {entryRecord.scout}
+          </td>
+        </tr>
+        {#if entryRecord.type == "match" && entryRecord.prediction}
+          <tr>
+            <td class="w-0 p-2 text-sm">Prediction</td>
+            <td class="p-2">
+              <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
+              {#if entryRecord.predictionReason}
+                <div><small class="font-light">"{entryRecord.predictionReason}"</small></div>
+              {/if}
+            </td>
+          </tr>
+        {/if}
+      {/if}
+      {#if entryRecord.type == "match" && entryRecord.absent}
         <tr>
           <td class="p-2 text-sm">Absent</td>
           <td class="p-2 font-bold">{entryRecord.absent}</td>
