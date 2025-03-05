@@ -307,7 +307,7 @@
 <div class="flex flex-wrap gap-3" style="view-transition-name:entries">
   <div class="grow basis-0">
     <div class="flex flex-wrap gap-2 pb-2">
-      {#if $cameraStore}
+      {#if DecompressionStream && $cameraStore}
         <Button
           onclick={() => {
             openDialog(ImportEntriesFromQRCodeDialog, {
@@ -450,23 +450,25 @@
 
       {#if filteredEntries.length}
         <div class="flex flex-wrap gap-2">
-          <Button
-            onclick={() => {
-              openDialog(ExportEntriesDialog, {
-                surveyRecord: data.surveyRecord,
-                filteredEntries,
-                type: "qrcode",
-                onexport: refresh,
-              });
-            }}
-            class="grow"
-          >
-            <Icon name="qrcode" />
-            <div class="flex flex-col">
-              Export
-              <small>QRF code</small>
-            </div>
-          </Button>
+          {#if CompressionStream}
+            <Button
+              onclick={() => {
+                openDialog(ExportEntriesDialog, {
+                  surveyRecord: data.surveyRecord,
+                  filteredEntries,
+                  type: "qrcode",
+                  onexport: refresh,
+                });
+              }}
+              class="grow"
+            >
+              <Icon name="qrcode" />
+              <div class="flex flex-col">
+                Export
+                <small>QRF code</small>
+              </div>
+            </Button>
+          {/if}
           <Button
             onclick={() => {
               openDialog(ExportEntriesDialog, {

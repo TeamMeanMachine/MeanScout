@@ -329,21 +329,23 @@
       <h2 class="font-bold">Survey</h2>
 
       <div class="flex flex-wrap gap-2">
-        <Button
-          onclick={() =>
-            openDialog(ExportSurveyDialog, {
-              surveyRecord: data.surveyRecord,
-              fieldRecords: data.fieldRecords,
-              type: "qrcode",
-            })}
-          class="grow basis-0"
-        >
-          <Icon name="qrcode" />
-          <div class="flex flex-col">
-            Export
-            <small>QRF code</small>
-          </div>
-        </Button>
+        {#if CompressionStream}
+          <Button
+            onclick={() =>
+              openDialog(ExportSurveyDialog, {
+                surveyRecord: data.surveyRecord,
+                fieldRecords: data.fieldRecords,
+                type: "qrcode",
+              })}
+            class="grow basis-0"
+          >
+            <Icon name="qrcode" />
+            <div class="flex flex-col">
+              Export
+              <small>QRF code</small>
+            </div>
+          </Button>
+        {/if}
         <Button
           onclick={() =>
             openDialog(ExportSurveyDialog, {

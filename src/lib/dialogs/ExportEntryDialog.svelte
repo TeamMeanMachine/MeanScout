@@ -44,9 +44,11 @@
 
 <span>Export entry</span>
 
-{#await exportEntriesCompressed([entry]) then data}
-  <QrCodeDisplay {data} />
-{/await}
+{#if CompressionStream}
+  {#await exportEntriesCompressed([entry]) then data}
+    <QrCodeDisplay {data} />
+  {/await}
+{/if}
 
 {#if "canShare" in navigator}
   <Button onclick={() => shareEntryAsFile(entry, surveyRecord)}>

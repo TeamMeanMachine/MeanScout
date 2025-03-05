@@ -78,7 +78,7 @@
   {/if}
 </Button>
 
-{#if $entryExport && compressedEntry}
+{#if CompressionStream && $entryExport && compressedEntry}
   <QRCodeDisplay data={compressedEntry} />
 {/if}
 

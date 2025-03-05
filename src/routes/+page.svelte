@@ -33,7 +33,7 @@
 
   {#if $modeStore == "admin"}
     <div class="flex flex-wrap gap-2">
-      {#if $cameraStore}
+      {#if DecompressionStream && $cameraStore}
         <Button onclick={() => openDialog(ImportSurveyFromQrCodeDialog, {})} class="grow basis-0">
           <Icon name="qrcode" />
           <div class="flex flex-col">

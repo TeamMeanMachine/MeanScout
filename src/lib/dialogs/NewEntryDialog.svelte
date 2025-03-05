@@ -349,7 +349,7 @@
       {/if}
     </Button>
 
-    {#if $entryExport}
+    {#if CompressionStream && $entryExport}
       {@const absentEntryCSV = exportEntriesCompressed([
         {
           id: 0,
