@@ -89,6 +89,12 @@
     }
   }
 
+  function toggleRadio() {
+    if (changes.type == "select") {
+      changes.radio = !changes.radio;
+    }
+  }
+
   function deleteSelectValue(index: number) {
     if (changes.type == "select") {
       changes.values = changes.values.filter((_, i) => i != index);
@@ -145,6 +151,14 @@
       Allow negative
     </Button>
   {:else if changes.type == "select"}
+    <Button onclick={toggleRadio}>
+      {#if changes.radio}
+        <Icon name="square-check" />
+      {:else}
+        <Icon style="regular" name="square" />
+      {/if}
+      Radio
+    </Button>
     Values
     {#each changes.values as _, i}
       <div class="flex gap-2">

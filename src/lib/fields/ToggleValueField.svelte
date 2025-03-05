@@ -23,10 +23,11 @@
   <Button onclick={toggle} class="self-start">
     {#if value}
       <Icon name="square-check" />
+      <strong>{field.name}</strong>
     {:else}
       <Icon style="regular" name="square" />
+      {field.name}
     {/if}
-    {field.name}
   </Button>
   {#if field.tip}
     <small class="pt-1">{field.tip}</small>

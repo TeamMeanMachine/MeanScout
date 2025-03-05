@@ -13,7 +13,7 @@
 </script>
 
 <label class="flex w-full flex-col">
-  {field.name}
+  <span class="font-light">{field.name}</span>
   {#if field.long}
     <textarea bind:value {onchange} class="text-theme h-72 resize-none bg-neutral-800 p-2"> </textarea>
   {:else}

@@ -32,6 +32,7 @@ const selectFieldSchema = baseSingleFieldSchema.merge(
   z.object({
     type: z.literal("select"),
     values: z.array(z.string()),
+    radio: z.optional(z.boolean()),
   }),
 );
 export type SelectField = z.infer<typeof selectFieldSchema>;
