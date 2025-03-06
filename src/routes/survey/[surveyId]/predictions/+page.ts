@@ -1,9 +1,11 @@
+import { getDetailedSingleFields } from "$lib/field";
 import { loadSurveyPageData } from "../loadSurveyPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
   const surveyId = Number(event.params.surveyId);
   const data = await loadSurveyPageData(surveyId);
+  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
 
   if (data.surveyType != "match") {
     throw new Error("Survey type is not a match!");
@@ -18,9 +20,9 @@ export const load: PageLoad = async (event) => {
 
   const scouts = allScoutNames
     .map((scout) => {
-      const entries = data.entryRecords.filter(
-        (entry) => entry.status != "draft" && entry.scout == scout && entry.prediction,
-      );
+      const entries = data.entryRecords
+        .filter((entry) => entry.status != "draft" && entry.scout == scout && entry.prediction)
+        .toSorted((a, b) => b.match - a.match);
       let correctGuesses = 0;
       let points = 0;
 
@@ -49,11 +51,15 @@ export const load: PageLoad = async (event) => {
 
       return {
         scout,
+        entries,
         points,
         correctGuesses,
       };
     })
     .toSorted((a, b) => b.points - a.points);
+
+  const totalPoints = scouts.reduce((prev, curr) => curr.points + prev, 0);
+  const totalCorrectGuesses = scouts.reduce((prev, curr) => curr.correctGuesses + prev, 0);
 
   const matches = data.surveyRecord.matches
     .filter((match) => match.redScore !== undefined && match.blueScore !== undefined)
@@ -84,5 +90,6 @@ export const load: PageLoad = async (event) => {
       return { ...match, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount };
     })
     .filter((match) => match.predictedEntryCount);
-  return { ...data, scouts, matches };
+
+  return { ...data, fields, scouts, totalPoints, totalCorrectGuesses, matches };
 };
