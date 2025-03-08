@@ -92,9 +92,11 @@ export function importSurvey(
       for (const innerFieldId of field.fieldIds) {
         const innerField = json.fields.find((field) => field.id == innerFieldId);
         if (!innerField) continue;
+        delete (innerField as any).id;
         fields.set(innerFieldId, { ...innerField, surveyId: 0 });
       }
     }
+    delete (field as any).id;
     fields.set(fieldId, { ...field, surveyId: 0 });
   }
 
