@@ -4,8 +4,6 @@
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
-  import ImportEntriesFromFileDialog from "$lib/dialogs/ImportEntriesFromFileDialog.svelte";
-  import ImportEntriesFromQRCodeDialog from "$lib/dialogs/ImportEntriesFromQRCodeDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
@@ -13,6 +11,7 @@
   import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
+  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
 
   let {
     data,
@@ -306,38 +305,26 @@
 
 <div class="flex flex-wrap gap-3" style="view-transition-name:entries">
   <div class="grow basis-0">
-    <div class="flex flex-wrap gap-2 pb-2">
-      {#if DecompressionStream && $cameraStore}
-        <Button
-          onclick={() => {
-            openDialog(ImportEntriesFromQRCodeDialog, {
-              surveyRecord: data.surveyRecord,
-              onimport: refresh,
-            });
-          }}
-          class="grow"
-        >
-          <Icon name="qrcode" />
-          <div class="flex flex-col">
-            Import
-            <small>QRF code</small>
-          </div>
-        </Button>
-      {/if}
+    <div class="flex flex-col pb-2">
       <Button
         onclick={() => {
-          openDialog(ImportEntriesFromFileDialog, {
+          openDialog(ImportEntriesDialog, {
             surveyRecord: data.surveyRecord,
             fields: data.fields,
             onimport: refresh,
           });
         }}
-        class="grow"
       >
-        <Icon name="paste" />
+        <Icon name="file-import" />
         <div class="flex flex-col">
           Import
-          <small>File</small>
+          <small>
+            {#if $cameraStore && DecompressionStream}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </small>
         </div>
       </Button>
     </div>
@@ -449,44 +436,27 @@
       </div>
 
       {#if filteredEntries.length}
-        <div class="flex flex-wrap gap-2">
-          {#if CompressionStream}
-            <Button
-              onclick={() => {
-                openDialog(ExportEntriesDialog, {
-                  surveyRecord: data.surveyRecord,
-                  filteredEntries,
-                  type: "qrcode",
-                  onexport: refresh,
-                });
-              }}
-              class="grow"
-            >
-              <Icon name="qrcode" />
-              <div class="flex flex-col">
-                Export
-                <small>QRF code</small>
-              </div>
-            </Button>
-          {/if}
-          <Button
-            onclick={() => {
-              openDialog(ExportEntriesDialog, {
-                surveyRecord: data.surveyRecord,
-                filteredEntries,
-                type: "file",
-                onexport: refresh,
-              });
-            }}
-            class="grow"
-          >
-            <Icon name="copy" />
-            <div class="flex flex-col">
-              Export
-              <small>File</small>
-            </div>
-          </Button>
-        </div>
+        <Button
+          onclick={() => {
+            openDialog(ExportEntriesDialog, {
+              surveyRecord: data.surveyRecord,
+              entries: filteredEntries,
+              onexport: () => refresh(),
+            });
+          }}
+        >
+          <Icon name="share-from-square" />
+          <div class="flex flex-col">
+            Export
+            <small>
+              {#if CompressionStream}
+                QRF code, File
+              {:else}
+                File
+              {/if}
+            </small>
+          </div>
+        </Button>
       {/if}
     </div>
   </div>

@@ -4,8 +4,7 @@
   import Header from "$lib/components/Header.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
-  import ImportSurveyFromFileDialog from "$lib/dialogs/ImportSurveyFromFileDialog.svelte";
-  import ImportSurveyFromQrCodeDialog from "$lib/dialogs/ImportSurveyFromQRCodeDialog.svelte";
+  import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { cameraStore, modeStore } from "$lib/settings";
   import type { PageData } from "./$types";
@@ -33,20 +32,17 @@
 
   {#if $modeStore == "admin"}
     <div class="flex flex-wrap gap-2">
-      {#if DecompressionStream && $cameraStore}
-        <Button onclick={() => openDialog(ImportSurveyFromQrCodeDialog, {})} class="grow basis-0">
-          <Icon name="qrcode" />
-          <div class="flex flex-col">
-            Import
-            <small>QRF code</small>
-          </div>
-        </Button>
-      {/if}
-      <Button onclick={() => openDialog(ImportSurveyFromFileDialog, {})} class="grow basis-0">
-        <Icon name="paste" />
+      <Button onclick={() => openDialog(ImportSurveyDialog, {})} class="grow basis-0">
+        <Icon name="file-import" />
         <div class="flex flex-col">
           Import
-          <small>File</small>
+          <small>
+            {#if $cameraStore && DecompressionStream}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </small>
         </div>
       </Button>
       <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">

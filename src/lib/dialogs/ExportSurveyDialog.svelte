@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { download, share } from "$lib";
+  import { download, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -9,12 +9,12 @@
   let {
     surveyRecord,
     fieldRecords,
-    type,
   }: {
     surveyRecord: IDBRecord<Survey>;
     fieldRecords: IDBRecord<Field>[];
-    type: "qrcode" | "file";
   } = $props();
+
+  const tab = sessionStorageStore<"qrfcode" | "file">("export-data-tab", CompressionStream ? "qrfcode" : "file");
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
@@ -35,19 +35,32 @@
 
 <span>Export survey</span>
 
-{#if type == "qrcode"}
+{#if CompressionStream}
+  <div class="flex flex-wrap gap-2 text-sm">
+    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
+    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+  </div>
+{/if}
+
+{#if $tab == "qrfcode" && CompressionStream}
   {#await exportSurveyCompressed($state.snapshot(surveyRecord), $state.snapshot(fieldRecords)) then data}
     <QrCodeDisplay {data} />
   {/await}
-{:else if type == "file"}
+{:else}
   {#if "canShare" in navigator}
     <Button onclick={shareSurveyAsFile}>
       <Icon name="share-from-square" />
-      Share
+      <div class="flex flex-col">
+        Share
+        <small>As JSON</small>
+      </div>
     </Button>
   {/if}
   <Button onclick={saveSurveyAsFile}>
     <Icon name="file-code" />
-    Save
+    <div class="flex flex-col">
+      Save
+      <small>As JSON</small>
+    </div>
   </Button>
 {/if}

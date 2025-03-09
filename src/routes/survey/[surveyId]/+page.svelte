@@ -325,42 +325,25 @@
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Survey</h2>
-
-      <div class="flex flex-wrap gap-2">
-        {#if CompressionStream}
-          <Button
-            onclick={() =>
-              openDialog(ExportSurveyDialog, {
-                surveyRecord: data.surveyRecord,
-                fieldRecords: data.fieldRecords,
-                type: "qrcode",
-              })}
-            class="grow basis-0"
-          >
-            <Icon name="qrcode" />
-            <div class="flex flex-col">
-              Export
-              <small>QRF code</small>
-            </div>
-          </Button>
-        {/if}
-        <Button
-          onclick={() =>
-            openDialog(ExportSurveyDialog, {
-              surveyRecord: data.surveyRecord,
-              fieldRecords: data.fieldRecords,
-              type: "file",
-            })}
-          class="grow basis-0"
-        >
-          <Icon name="copy" />
-          <div class="flex flex-col">
-            Export
-            <small>File</small>
-          </div>
-        </Button>
-      </div>
-
+      <Button
+        onclick={() =>
+          openDialog(ExportSurveyDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+          })}
+      >
+        <Icon name="share-from-square" />
+        <div class="flex flex-col">
+          Export
+          <small>
+            {#if CompressionStream}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </small>
+        </div>
+      </Button>
       <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
         <Icon name="toolbox" />
         <div class="flex grow flex-col">

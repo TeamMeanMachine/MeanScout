@@ -8,7 +8,7 @@
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
-  import ExportEntryDialog from "./ExportEntryDialog.svelte";
+  import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
 
   let {
     surveyRecord,
@@ -135,45 +135,50 @@
   </table>
 </div>
 
-<Button
-  onclick={() =>
-    openDialog(ExportEntryDialog, {
-      surveyRecord,
-      entryRecord: entry,
-      onexport(newEntry) {
-        entry = newEntry;
-        onchange?.();
-      },
-    })}
->
-  <Icon name="share-from-square" />
-  {#if entry.status == "exported"}
-    Re-export
-  {:else}
-    Export
-  {/if}
-</Button>
+{#if onchange}
+  <Button
+    onclick={() =>
+      openDialog(ExportEntriesDialog, {
+        surveyRecord,
+        entries: [entry],
+        onexport(newEntry) {
+          if (newEntry) {
+            entry = newEntry;
+            onchange();
+          }
+        },
+      })}
+  >
+    <Icon name="share-from-square" />
+    {#if entry.status == "exported"}
+      Re-export
+    {:else}
+      Export
+    {/if}
+  </Button>
 
-{#if entry.type != "match" || !entry.absent}
-  <Button onclick={editEntry}>
-    <Icon name="pen" />
-    Convert to draft and edit
+  {#if entry.type != "match" || !entry.absent}
+    <Button onclick={editEntry}>
+      <Icon name="pen" />
+      Convert to draft and edit
+    </Button>
+  {/if}
+
+  <Button
+    onclick={() =>
+      openDialog(DeleteEntryDialog, {
+        surveyRecord,
+        entryRecord,
+        ondelete: () => {
+          onchange();
+          closeDialog();
+        },
+      })}
+  >
+    <Icon name="trash" />
+    Delete
   </Button>
 {/if}
-<Button
-  onclick={() =>
-    openDialog(DeleteEntryDialog, {
-      surveyRecord,
-      entryRecord,
-      ondelete: () => {
-        onchange?.();
-        closeDialog();
-      },
-    })}
->
-  <Icon name="trash" />
-  Delete
-</Button>
 
 {#if error}
   <span>{error}</span>

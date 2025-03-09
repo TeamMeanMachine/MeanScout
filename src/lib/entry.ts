@@ -39,24 +39,24 @@ export type PitEntry = z.infer<typeof pitEntrySchema>;
 const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);
 export type Entry = z.infer<typeof entrySchema>;
 
-export function exportEntries(entryRecords: IDBRecord<Entry>[]) {
-  const entries = entryRecords.map((entry) => {
-    return {
-      ...entry,
-      id: undefined,
-      type: undefined,
-      surveyId: undefined,
-      status: undefined,
-      created: undefined,
-      modified: undefined,
-    };
-  });
-
-  return JSON.stringify(entries);
+export function exportEntries(entries: Entry[]) {
+  return JSON.stringify(
+    entries.map((entry) => {
+      return {
+        ...entry,
+        id: undefined,
+        type: undefined,
+        surveyId: undefined,
+        status: undefined,
+        created: undefined,
+        modified: undefined,
+      };
+    }),
+  );
 }
 
-export function exportEntriesCompressed(entryRecords: IDBRecord<Entry>[]) {
-  return compress(exportEntries(entryRecords));
+export function exportEntriesCompressed(entries: Entry[]) {
+  return compress(exportEntries(entries));
 }
 
 export function importEntries(
@@ -213,40 +213,4 @@ export function getMatchEntriesByTeam(entries: IDBRecord<MatchEntry>[]) {
     }
   }
   return entriesByTeam;
-}
-
-export function createEntryFileName(survey: Survey, entryOrEntries: Entry | Entry[], target?: Target) {
-  if (Array.isArray(entryOrEntries)) {
-    if (target) {
-      var fileName = `${survey.name}-entries-${target}.csv`;
-    } else {
-      var fileName = `${survey.name}-entries.csv`;
-    }
-  } else if (entryOrEntries.type == "match") {
-    var fileName = `${survey.name}-entry-${entryOrEntries.team}-${entryOrEntries.match}-${entryOrEntries.absent}.csv`;
-  } else {
-    var fileName = `${survey.name}-entry-${entryOrEntries.team}.csv`;
-  }
-
-  return fileName.replaceAll(" ", "_");
-}
-
-export function shareEntryAsFile(entryOrEntries: Entry | Entry[], survey: Survey) {
-  let csv = "";
-  if (Array.isArray(entryOrEntries)) {
-    csv = entryOrEntries.map(entryToCSV).join("\n");
-  } else {
-    csv = entryToCSV(entryOrEntries);
-  }
-  share(csv, createEntryFileName(survey, entryOrEntries), "text/csv");
-}
-
-export function saveEntryAsFile(entryOrEntries: Entry | Entry[], survey: Survey) {
-  let csv = "";
-  if (Array.isArray(entryOrEntries)) {
-    csv = entryOrEntries.map(entryToCSV).join("\n");
-  } else {
-    csv = entryToCSV(entryOrEntries);
-  }
-  download(csv, createEntryFileName(survey, entryOrEntries), "text/csv");
 }

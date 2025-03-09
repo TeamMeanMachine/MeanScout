@@ -1,8 +1,13 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import Icon from "$lib/components/Icon.svelte";
+  import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { csvToEntries, type Entry } from "$lib/entry";
+  import { csvToEntries, importEntriesCompressed, type Entry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { transaction } from "$lib/idb";
+  import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -14,6 +19,11 @@
     fields: DetailedSingleField[];
     onimport: () => void;
   } = $props();
+
+  const tab = sessionStorageStore<"qrfcode" | "file">(
+    "import-data-tab",
+    $cameraStore && DecompressionStream ? "qrfcode" : "file",
+  );
 
   let files = $state<FileList | undefined>();
   let importedEntries = $state<Entry[]>([]);
@@ -58,19 +68,63 @@
 
     importedEntries = csvToEntries(csv, surveyRecord, fields);
   }
+
+  async function onread(data: Uint8Array) {
+    if (!data.length) {
+      error = "No input";
+      return;
+    }
+
+    const result = await importEntriesCompressed(surveyRecord, data);
+    if (!result.success) {
+      error = result.error;
+      return;
+    }
+
+    importedEntries = result.entries;
+  }
+
+  function retry() {
+    error = "";
+    importedEntries = [];
+  }
 </script>
 
 <span>Import entries</span>
 
-<input
-  type="file"
-  accept=".csv"
-  bind:files
-  {onchange}
-  class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
-/>
+{#if $cameraStore && DecompressionStream}
+  <div class="flex flex-wrap gap-2 text-sm">
+    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
+    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+  </div>
+{/if}
 
-{#if importedEntries.length}
+{#if $tab == "qrfcode" && $cameraStore && DecompressionStream}
+  {#if importedEntries.length}
+    {@render preview()}
+
+    <Button onclick={retry}>
+      <Icon name="arrow-rotate-left" />
+      Retry
+    </Button>
+  {:else}
+    <QrCodeReader {onread} />
+  {/if}
+{:else}
+  <input
+    type="file"
+    accept=".csv,.json,.txt"
+    bind:files
+    {onchange}
+    class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
+  />
+
+  {#if importedEntries.length}
+    {@render preview()}
+  {/if}
+{/if}
+
+{#snippet preview()}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
     <table class="w-full text-left">
       <thead>
@@ -98,7 +152,7 @@
     </table>
   </div>
   <span>Entries: {importedEntries.length}</span>
-{/if}
+{/snippet}
 
 {#if error}
   <span>{error}</span>
