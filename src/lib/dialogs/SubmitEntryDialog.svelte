@@ -19,19 +19,7 @@
 
   let error = $state("");
 
-  export const { onopen, onconfirm }: DialogExports = {
-    async onopen(open) {
-      for (let i = 0; i < entryRecord.values.length; i++) {
-        const value = entryRecord.values[i];
-        if (value == undefined || typeof value !== typeof getDefaultFieldValue(fields[i].field)) {
-          error = `Invalid value for ${fields[i].field.name}`;
-          open();
-          return;
-        }
-      }
-
-      open();
-    },
+  export const { onconfirm }: DialogExports = {
     onconfirm() {
       if (error) {
         return;
@@ -42,6 +30,10 @@
         status: $entryExport ? "exported" : "submitted",
         modified: new Date(),
       };
+
+      if (submittedEntry.type == "match" && submittedEntry.absent) {
+        submittedEntry.values = fields.map((field) => getDefaultFieldValue(field.field));
+      }
 
       const submitRequest = objectStore("entries", "readwrite").put(submittedEntry);
       submitRequest.onerror = () => {
@@ -58,9 +50,9 @@
 
 <span>
   {#if $entryExport}
-    Submit as exported?
+    Submit this entry <strong>as exported?</strong>
   {:else}
-    Submit?
+    Submit this entry?
   {/if}
 </span>
 

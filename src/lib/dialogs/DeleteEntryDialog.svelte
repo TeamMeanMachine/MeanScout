@@ -28,7 +28,7 @@
   };
 </script>
 
-<span>Delete this entry?</span>
+<span>Are you sure you want to <strong>delete this entry?</strong></span>
 {#if error}
   <span>{error}</span>
 {/if}

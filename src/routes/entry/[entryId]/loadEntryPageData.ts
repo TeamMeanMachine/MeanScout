@@ -1,5 +1,7 @@
+import type { Value } from "$lib";
 import type { MatchEntry, PitEntry } from "$lib/entry";
 import {
+  getDefaultFieldValue,
   getDetailedNestedFields,
   getDetailedSingleFields,
   type DetailedGroupField,
@@ -17,6 +19,7 @@ export function loadEntryPageData(entryId: number) {
       fields: DetailedSingleField[];
       detailedFields: Map<number, DetailedSingleField | DetailedGroupField>;
       detailedInnerFields: Map<number, DetailedSingleField>;
+      defaultValues: Value[];
       teamName: string | undefined;
     }
   >((resolve) => {
@@ -52,6 +55,7 @@ export function loadEntryPageData(entryId: number) {
 
           const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
           const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
+          const defaultValues = fields.map((field) => getDefaultFieldValue(field.field));
 
           const teamName = surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name;
 
@@ -63,6 +67,7 @@ export function loadEntryPageData(entryId: number) {
               fields,
               detailedFields,
               detailedInnerFields,
+              defaultValues,
               teamName,
             });
           } else {
@@ -73,6 +78,7 @@ export function loadEntryPageData(entryId: number) {
               fields,
               detailedFields,
               detailedInnerFields,
+              defaultValues,
               teamName,
             });
           }

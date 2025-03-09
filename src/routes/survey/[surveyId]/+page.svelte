@@ -100,13 +100,11 @@
           prefilledMatch,
           prefilledTeam,
           prefilledScout,
-          oncreate(entry) {
+          onnewscout(newScout) {
             data = {
               ...data,
-              surveyRecord: { ...data.surveyRecord, modified: new Date() },
-              entryRecords: [...data.entryRecords, entry],
+              surveyRecord: { ...data.surveyRecord, scouts: [...(data.surveyRecord.scouts || []), newScout] },
             } as PageData;
-
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },
         });

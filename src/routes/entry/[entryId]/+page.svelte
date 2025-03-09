@@ -10,9 +10,9 @@
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { exportEntriesCompressed } from "$lib/entry";
   import { objectStore } from "$lib/idb";
-  import { onMount } from "svelte";
   import type { PageData } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
+  import { getDefaultFieldValue } from "$lib/field";
 
   let {
     data,
@@ -27,9 +27,15 @@
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
   let compressedEntry = $state<Uint8Array>();
 
+  let error = $state("");
+
   $effect(() => {
     entry;
-    exportEntriesCompressed([entry]).then((result) => (compressedEntry = result));
+    if (entry.type == "match" && entry.absent) {
+      exportEntriesCompressed([{ ...entry, values: data.defaultValues }]).then((result) => (compressedEntry = result));
+    } else {
+      exportEntriesCompressed([entry]).then((result) => (compressedEntry = result));
+    }
   });
 
   async function onchange() {
@@ -209,7 +215,15 @@
 
   <div class="mb-4 flex flex-wrap justify-between gap-2">
     <Button
-      onclick={() =>
+      onclick={() => {
+        for (let i = 0; i < entry.values.length; i++) {
+          const value = entry.values[i];
+          if (typeof value !== typeof getDefaultFieldValue(data.fields[i].field)) {
+            error = `Invalid value for ${data.fields[i].field.name}`;
+            return;
+          }
+        }
+
         openDialog(SubmitEntryDialog, {
           fields: data.fields,
           entryRecord: data.entryRecord,
@@ -217,10 +231,14 @@
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             location.hash = `/survey/${data.surveyRecord.id}`;
           },
-        })}
+        });
+      }}
     >
       <Icon name="floppy-disk" />
       Submit
+      {#if $entryExport}
+        as exported
+      {/if}
     </Button>
 
     <Button
@@ -235,5 +253,9 @@
     >
       <Icon name="trash" />
     </Button>
+
+    {#if error}
+      <span class="w-full">Error: {error}</span>
+    {/if}
   </div>
 </div>
