@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { csvToEntries, importEntriesCompressed, type Entry } from "$lib/entry";
+  import { csvToEntries, importEntries, importEntriesCompressed, type Entry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
@@ -58,15 +58,24 @@
       return;
     }
 
-    const allFiles = await Promise.all([...files].map((file) => file.text()));
-    const csv = allFiles.join("\n");
+    const allFiles = await Promise.all(
+      [...files].map(async (file) => {
+        return { type: file.type, data: await file.text() };
+      }),
+    );
 
-    if (!csv.length) {
-      error = "No input";
-      return;
+    for (const { type, data } of allFiles) {
+      if (type == "text/csv") {
+        importedEntries.push(...csvToEntries(data, surveyRecord, fields));
+      } else {
+        const result = importEntries(surveyRecord, data);
+        if (!result.success) {
+          error = result.error;
+          return;
+        }
+        importedEntries.push(...result.entries);
+      }
     }
-
-    importedEntries = csvToEntries(csv, surveyRecord, fields);
   }
 
   async function onread(data: Uint8Array) {
