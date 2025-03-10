@@ -255,10 +255,22 @@
       <h2 class="font-bold">Points</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Points for guessing correctly will be increased if more scouts vote for the same alliance</li>
-        <li>0.2 increment for every correct scout</li>
-        <li>1 point for 1 correct scout, 2 points for 6 correct scouts</li>
+        <li>1 extra point to correct scouts for every correct scout</li>
+        <li>1 point for only 1 correct scout, 6 points each for all 6 correct scouts</li>
         <li>Scouts that don't guess or guess incorrectly won't lose points, but won't gain any either</li>
+        <li>Tied matches don't count towards points</li>
         <li>Admin mode has access to prediction results</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Adjusted Points</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Adjusted points multiply scout's points by their accuracy with guessing right</li>
+        <li>
+          Gives scouts with less matches and higher accuracy a chance to contend with scouts who have more matches and
+          lower accuracy
+        </li>
       </ul>
     </div>
 

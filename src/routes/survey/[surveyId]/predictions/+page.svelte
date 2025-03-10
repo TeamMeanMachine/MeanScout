@@ -20,11 +20,6 @@
   function winLoseWeight(winner: "red" | "blue" | undefined, matching: "red" | "blue" | undefined) {
     return winner && winner == matching ? "font-bold" : "text-sm font-light";
   }
-
-  function pointPercentage(points: number) {
-    if (data.totalPoints == 0) return "0%";
-    return (points / data.totalPoints) * 100 + "%";
-  }
 </script>
 
 <Header
@@ -43,15 +38,20 @@
   </div>
 
   {#if $tab == "scouts" && data.scouts.length}
-    <div class="grid gap-2" style="grid-template-columns: repeat(4, min-content) auto;">
+    <div
+      class="-mx-1 grid gap-x-4 gap-y-3 overflow-x-auto px-1"
+      style="grid-template-columns: repeat(7, min-content) auto;"
+    >
       <div class="col-span-full grid grid-cols-subgrid items-end gap-x-4 px-2 text-center text-sm">
         <div class="text-left">Scout</div>
-        <div>Points</div>
-        <div class=" text-nowrap">% Total</div>
-        <div>Correct Guesses</div>
+        <div>Adjusted Points</div>
+        <div>Total Points</div>
+        <div>Coop Points</div>
+        <div>Correct</div>
+        <div>Accuracy</div>
       </div>
 
-      {#each data.scouts as { scout, entries, points, correctGuesses }}
+      {#each data.scouts as { scout, entries, points, coopPoints, correctGuesses, accuracy, adjustedPoints }}
         <Button
           onclick={() => {
             if (selectedScout == scout) {
@@ -63,9 +63,11 @@
           class="col-span-full grid grid-cols-subgrid {selectedScout == scout ? 'font-bold' : 'font-light'}"
         >
           <div>{scout}</div>
-          <div class="text-center">{points.toFixed(1)}</div>
-          <div class="text-center">{pointPercentage(points)}</div>
-          <div class="text-center">{correctGuesses}</div>
+          <div class="text-center">{adjustedPoints.toFixed(2)}</div>
+          <div class="text-center">{points}</div>
+          <div class="text-center">{coopPoints}</div>
+          <div class="text-center">{correctGuesses}<small class="font-light">/{entries.length}</small></div>
+          <div class="text-center">{(accuracy * 100).toFixed(1)}%</div>
         </Button>
 
         {#if selectedScout == scout && entries.length}
@@ -100,14 +102,19 @@
       {/each}
 
       <div class="col-span-full grid grid-cols-subgrid p-2 text-center text-sm">
-        <div></div>
-        <div>{data.totalPoints.toFixed(1)}</div>
-        <div>{data.totalPoints ? "100%" : "0%"}</div>
-        <div>{data.totalCorrectGuesses}</div>
+        <div class="text-left">Overall</div>
+        <div>{data.totalAdjustedPoints.toFixed(2)}</div>
+        <div>{data.totalPoints}</div>
+        <div>{data.totalCoopPoints}</div>
+        <div>{data.totalCorrectGuesses}<small class="font-light">/{data.entryRecords.length}</small></div>
+        <div>{(data.overallAccuracy * 100).toFixed(1)}%</div>
       </div>
     </div>
   {:else if $tab == "matches" && data.matches.length}
-    <div class="grid gap-x-4 gap-y-3" style="grid-template-columns: repeat(9, min-content) auto;">
+    <div
+      class="-mx-1 grid gap-x-4 gap-y-3 overflow-x-auto px-1"
+      style="grid-template-columns: repeat(9, min-content) auto;"
+    >
       <div class="col-span-full grid grid-cols-subgrid text-center text-sm">
         <div>#</div>
         <div>Red</div>
@@ -153,7 +160,7 @@
         {#if selectedMatch == number}
           <div
             class="col-span-full mb-2 ml-2 grid gap-x-3 gap-y-2 text-sm"
-            style="grid-template-columns: min-content min-content auto"
+            style="grid-template-columns: min-content auto"
           >
             {#each [...redEntries, ...blueEntries] as entry}
               {@const predictionWeight = winLoseWeight(
