@@ -1,9 +1,8 @@
-import { download, matchValueSchema, share, valueSchema, type Value } from "$lib";
+import { matchValueSchema, valueSchema, type Value } from "$lib";
 import { z } from "zod";
 import type { Survey } from "./survey";
 import { getDefaultFieldValue, type DetailedSingleField, type SingleField } from "./field";
 import { compress, decompress } from "./compress";
-import type { Target } from "./settings";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];
@@ -109,10 +108,10 @@ export async function importEntriesCompressed(surveyRecord: IDBRecord<Survey>, d
 }
 
 function valueToCSV(value: Value) {
-  if (value === 0 || value === false) {
-    return "";
+  if (value === false) {
+    return "false";
   } else if (value === true) {
-    return "1";
+    return "true";
   } else if (typeof value == "string") {
     return value.replaceAll(",", ";").replaceAll("\n", "; ").trim();
   } else {
@@ -121,21 +120,31 @@ function valueToCSV(value: Value) {
 }
 
 export function entryToCSV(entry: Entry) {
-  const values = [valueToCSV(entry.team)];
+  const values: Value[] = [entry.team];
+
   if (entry.type == "match") {
-    values.push(valueToCSV(entry.match), valueToCSV(entry.absent));
+    values.push(entry.match, entry.absent);
+    if (!entry.absent) {
+      values.push(...entry.values);
+    }
+    if (entry.scout) {
+      values.push(entry.scout, entry.prediction || "", entry.predictionReason || "");
+    }
+  } else {
+    values.push(...entry.values);
+    if (entry.scout) {
+      values.push(entry.scout);
+    }
   }
-  if (entry.type != "match" || !entry.absent) {
-    values.push(...entry.values.map(valueToCSV));
-  }
-  return values.join(",");
+
+  return values.map(valueToCSV).join(",");
 }
 
 function csvToValue(csv: string, field: SingleField) {
   if (field.type == "number") {
     return Number(csv);
   } else if (field.type == "toggle") {
-    return !!csv;
+    return csv == "true";
   } else if (field.type == "rating") {
     return Number(csv);
   } else if (field.type == "timer") {
@@ -156,49 +165,59 @@ export function csvToEntries(
 
   if (surveyRecord.type == "match") {
     return entries.map((entryCSV): MatchEntry => {
-      const absent = !!entryCSV[2];
+      const [team, match, absent, ...rest] = entryCSV;
 
-      let values: Value[] = [];
-
-      if (absent) {
-        values = singleFields.map((field) => getDefaultFieldValue(field.field));
-      } else {
-        const compressedValues = entryCSV.slice(3);
-        for (let i = 0; i < compressedValues.length; i++) {
-          values.push(csvToValue(compressedValues[i].trim(), singleFields[i].field));
-        }
-      }
-
-      return {
+      const entry: MatchEntry = {
         surveyId: surveyRecord.id,
         type: "match",
         status: "exported",
-        team: entryCSV[0],
-        match: parseInt(entryCSV[1]),
-        absent,
-        values,
+        team,
+        match: Number(match),
+        absent: absent == "true",
+        values: [],
         created: new Date(),
         modified: new Date(),
       };
+
+      if (entry.absent) {
+        entry.values = singleFields.map((field) => getDefaultFieldValue(field.field));
+      } else {
+        entry.values = singleFields.map((field, i) => csvToValue(rest[i], field.field));
+      }
+
+      const [scout, prediction, predictionReason] = entry.absent ? rest : rest.slice(singleFields.length);
+
+      if (scout) {
+        entry.scout = scout;
+        if (prediction == "red" || prediction == "blue") {
+          entry.prediction = prediction;
+          if (predictionReason) {
+            entry.predictionReason = predictionReason;
+          }
+        }
+      }
+
+      return entry;
     });
   } else {
     return entries.map((entryCSV): PitEntry => {
-      const compressedValues = entryCSV.slice(1);
+      const [team, ...rest] = entryCSV;
 
-      let values: Value[] = [];
-      for (let i = 0; i < compressedValues.length; i++) {
-        values.push(csvToValue(compressedValues[i].trim(), singleFields[i].field));
-      }
-
-      return {
+      const entry: PitEntry = {
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "exported",
-        team: entryCSV[0],
-        values,
+        team,
+        values: singleFields.map((field, i) => csvToValue(rest[i], field.field)),
         created: new Date(),
         modified: new Date(),
       };
+
+      if (rest[singleFields.length]) {
+        entry.scout = rest[singleFields.length];
+      }
+
+      return entry;
     });
   }
 }
