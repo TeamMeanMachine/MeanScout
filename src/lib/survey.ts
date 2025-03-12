@@ -47,9 +47,31 @@ export function exportSurvey(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
     modified: undefined,
   };
 
-  const fields = fieldRecords.map((field) => {
-    return { ...structuredClone(field), surveyId: undefined };
-  });
+  const fieldIdMap = new Map<number, number>();
+
+  const fields = fieldRecords
+    .map((field, index) => {
+      fieldIdMap.set(field.id, index);
+      return { ...field, surveyId: undefined };
+    })
+    .map((field) => {
+      if (field.type == "group") {
+        field.fieldIds = field.fieldIds.map((id) => fieldIdMap.get(id)!);
+      }
+      field.id = fieldIdMap.get(field.id)!;
+      return field;
+    });
+
+  survey.fieldIds = survey.fieldIds.map((id) => fieldIdMap.get(id)!);
+
+  if (survey.type == "match") {
+    survey.expressions = survey.expressions.map((e) => {
+      if (e.input.from == "fields") {
+        e.input.fieldIds = e.input.fieldIds.map((id) => fieldIdMap.get(id)!);
+      }
+      return e;
+    });
+  }
 
   return JSON.stringify({ version: schemaVersion, survey, fields });
 }
