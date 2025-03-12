@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
@@ -8,14 +7,14 @@
   let {
     fields,
     entryRecord,
+    exporting,
     onexport,
   }: {
     fields: DetailedSingleField[];
     entryRecord: IDBRecord<Entry>;
+    exporting: boolean;
     onexport: () => void;
   } = $props();
-
-  const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
 
   let error = $state("");
 
@@ -27,7 +26,7 @@
 
       let submittedEntry: Entry = {
         ...$state.snapshot(entryRecord),
-        status: $entryExport ? "exported" : "submitted",
+        status: exporting ? "exported" : "submitted",
         modified: new Date(),
       };
 
@@ -49,7 +48,7 @@
 </script>
 
 <span>
-  {#if $entryExport}
+  {#if exporting}
     Submit this entry <strong>as exported?</strong>
   {:else}
     Submit this entry?

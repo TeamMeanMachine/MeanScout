@@ -22,7 +22,7 @@
 
   const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
 
-  let exportButton: HTMLDivElement;
+  let exportButtonDiv = $state<HTMLDivElement>();
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
   let compressedEntry = $state<Uint8Array>();
@@ -31,6 +31,7 @@
 
   $effect(() => {
     entry;
+    if (!CompressionStream) return;
     if (entry.type == "match" && entry.absent) {
       exportEntriesCompressed([{ ...entry, values: data.defaultValues }]).then((result) => (compressedEntry = result));
     } else {
@@ -176,42 +177,44 @@
     {/if}
   </div>
 
-  <div bind:this={exportButton} class="flex flex-col">
-    <Button
-      onclick={() => {
-        $entryExport = $entryExport ? "" : "true";
-        if ($entryExport == "true") {
-          setTimeout(() => exportButton.scrollIntoView(), 0);
-        }
-      }}
-      class="w-[516px] max-w-full self-start"
-    >
-      {#if $entryExport}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <Icon name="square-check" />
-            <div class="flex grow flex-col">
-              <strong>Export</strong>
-              <small>QRF code</small>
+  {#if CompressionStream}
+    <div bind:this={exportButtonDiv} class="flex flex-col">
+      <Button
+        onclick={() => {
+          $entryExport = $entryExport ? "" : "true";
+          if ($entryExport == "true") {
+            setTimeout(() => exportButtonDiv?.scrollIntoView(), 0);
+          }
+        }}
+        class="w-[516px] max-w-full self-start"
+      >
+        {#if $entryExport}
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <Icon name="square-check" />
+              <div class="flex grow flex-col">
+                <strong>Export</strong>
+                <small>QRF code</small>
+              </div>
+              <Icon name="caret-up" />
             </div>
-            <Icon name="caret-up" />
+            {#if compressedEntry}
+              {#key compressedEntry}
+                <QrCodeDisplay data={compressedEntry} />
+              {/key}
+            {/if}
           </div>
-          {#if CompressionStream && compressedEntry}
-            {#key compressedEntry}
-              <QrCodeDisplay data={compressedEntry} />
-            {/key}
-          {/if}
-        </div>
-      {:else}
-        <Icon style="regular" name="square" />
-        <div class="flex grow flex-col">
-          Export
-          <small>QRF code</small>
-        </div>
-        <Icon name="caret-down" />
-      {/if}
-    </Button>
-  </div>
+        {:else}
+          <Icon style="regular" name="square" />
+          <div class="flex grow flex-col">
+            Export
+            <small>QRF code</small>
+          </div>
+          <Icon name="caret-down" />
+        {/if}
+      </Button>
+    </div>
+  {/if}
 
   <div class="mb-4 flex flex-wrap justify-between gap-2">
     <Button
@@ -227,6 +230,7 @@
         openDialog(SubmitEntryDialog, {
           fields: data.fields,
           entryRecord: data.entryRecord,
+          exporting: !!($entryExport && CompressionStream),
           onexport: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             location.hash = `/survey/${data.surveyRecord.id}`;
@@ -236,7 +240,7 @@
     >
       <Icon name="floppy-disk" />
       Submit
-      {#if $entryExport}
+      {#if $entryExport && CompressionStream}
         as exported
       {/if}
     </Button>
