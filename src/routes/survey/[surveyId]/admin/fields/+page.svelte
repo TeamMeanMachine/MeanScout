@@ -1,7 +1,6 @@
 <script lang="ts">
   import Sortable from "sortablejs";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
@@ -10,6 +9,7 @@
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
   import { onMount } from "svelte";
+  import { GroupIcon, PlusIcon } from "@lucide/svelte";
 
   let {
     data,
@@ -204,7 +204,7 @@
                   }}
                   class="handle"
                 >
-                  <Icon name={fieldIcons["group"]} />
+                  <GroupIcon class="text-theme" />
                   Group
                 </Button>
               {/if}
@@ -215,6 +215,7 @@
                     {@const detailedInnerField = detailedInnerFields.get(innerFieldId)}
 
                     {#if detailedInnerField}
+                      {@const Icon = fieldIcons[detailedInnerField.field.type]}
                       <div data-parent-id={fieldId} data-id={innerFieldId} class="single flex flex-col">
                         <Button
                           disabled={data.disabled}
@@ -232,7 +233,7 @@
                           }}
                           class="handle"
                         >
-                          <Icon name={fieldIcons[detailedInnerField.field.type]} />
+                          <Icon class="text-theme" />
                           <div class="flex flex-col">
                             {detailedInnerField.field.name}
                             <small class="capitalize">{detailedInnerField.field.type}</small>
@@ -257,12 +258,14 @@
                   }}
                   class="group-fields"
                 >
-                  <Icon name="plus" />
+                  <PlusIcon class="text-theme" />
                   New {detailedField.field.name} field
                 </Button>
               {/if}
             </div>
           {:else if detailedField}
+            {@const Icon = fieldIcons[detailedField.field.type]}
+
             <div data-id={fieldId} class="single flex flex-col">
               <Button
                 disabled={data.disabled}
@@ -305,7 +308,7 @@
                 }}
                 class="handle"
               >
-                <Icon name={fieldIcons[detailedField.field.type]} />
+                <Icon class="text-theme" />
                 <div class="flex flex-col">
                   {detailedField.field.name}
                   <small class="capitalize">{detailedField.field.type}</small>
@@ -340,7 +343,7 @@
           });
         }}
       >
-        <Icon name="plus" />
+        <PlusIcon class="text-theme" />
         New group
       </Button>
       <Button
@@ -361,7 +364,7 @@
           });
         }}
       >
-        <Icon name="plus" />
+        <PlusIcon class="text-theme" />
         New field
       </Button>
     </div>

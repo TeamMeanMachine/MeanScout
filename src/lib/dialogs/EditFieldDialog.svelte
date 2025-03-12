@@ -1,10 +1,10 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { singleFieldTypes, type Field, type GroupField, type SingleFieldType } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
+  import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -144,18 +144,18 @@
   {#if changes.type == "number"}
     <Button onclick={toggleAllowNegative}>
       {#if changes.allowNegative}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
       {/if}
       Allow negative
     </Button>
   {:else if changes.type == "select"}
     <Button onclick={toggleRadio}>
       {#if changes.radio}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
       {/if}
       Radio
     </Button>
@@ -164,20 +164,20 @@
       <div class="flex gap-2">
         <input bind:value={changes.values[i]} class="text-theme grow bg-neutral-800 p-2" />
         <Button onclick={() => deleteSelectValue(i)}>
-          <Icon name="trash" />
+          <Trash2Icon class="text-theme" />
         </Button>
       </div>
     {/each}
     <Button onclick={newSelectValue}>
-      <Icon name="plus" />
+      <PlusIcon class="text-theme" />
       New value
     </Button>
   {:else if changes.type == "text"}
     <Button onclick={toggleLong}>
       {#if changes.long}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
       {/if}
       Long
     </Button>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import type { DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
@@ -9,6 +8,7 @@
   import { cameraStore, tbaAuthKeyStore } from "$lib/settings";
   import { importSurvey, importSurveyCompressed, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
+  import { Undo2Icon } from "@lucide/svelte";
 
   const tab = sessionStorageStore<"qrfcode" | "file">(
     "import-data-tab",
@@ -147,7 +147,7 @@
     {@render preview()}
 
     <Button onclick={retry}>
-      <Icon name="arrow-rotate-left" />
+      <Undo2Icon class="text-theme" />
       Retry
     </Button>
   {:else}

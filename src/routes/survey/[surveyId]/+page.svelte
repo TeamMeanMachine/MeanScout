@@ -3,7 +3,6 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
@@ -13,6 +12,20 @@
   import { objectStore } from "$lib/idb";
   import { modeStore, targetStore, teamStore } from "$lib/settings";
   import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
+  import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ChartBarBigIcon,
+    DicesIcon,
+    InfoIcon,
+    ListOrderedIcon,
+    NotepadTextIcon,
+    PlusIcon,
+    Settings2Icon,
+    SettingsIcon,
+    ShareIcon,
+    UsersIcon,
+  } from "@lucide/svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -110,7 +123,7 @@
         });
       }}
     >
-      <Icon name="plus" />
+      <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         {#if data.surveyType == "match" && prefilledMatch}
           <span><small>Match</small> {prefilledMatch}</span>
@@ -140,17 +153,17 @@
             <span><small class="font-light">{teamName}</small></span>
           {/if}
         </div>
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </Anchor>
     {/each}
 
     <Anchor route="survey/{data.surveyRecord.id}/entries" style="view-transition-name:entries">
-      <Icon name="list-ol" />
+      <NotepadTextIcon class="text-theme" />
       <div class="flex grow flex-col">
         Entries
         <small>{data.entryRecords.length - drafts.length} completed</small>
       </div>
-      <Icon name="arrow-right" />
+      <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
 
@@ -175,12 +188,12 @@
       {/each}
 
       <Anchor route="survey/{data.surveyRecord.id}/analysis">
-        <Icon name="chart-simple" />
+        <ChartBarBigIcon class="text-theme" />
         <div class="flex grow flex-col">
           Analysis
           <small>Pick Lists, Expressions</small>
         </div>
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
   {/if}
@@ -272,7 +285,7 @@
       {/if}
 
       <Anchor route="survey/{data.surveyRecord.id}/matches">
-        <Icon name="table-list" />
+        <ListOrderedIcon class="text-theme" />
         <div class="flex grow flex-col">
           Matches
           <small>
@@ -290,7 +303,7 @@
             {data.surveyRecord.matches.length} total
           </small>
         </div>
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
   {/if}
@@ -300,12 +313,12 @@
       <h2 class="font-bold">Teams</h2>
 
       <Anchor route="survey/{data.surveyRecord.id}/teams">
-        <Icon name="people-group" />
+        <UsersIcon class="text-theme" />
         <div class="flex grow flex-col">
           Teams
           <small>{teamCount} total</small>
         </div>
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
   {/if}
@@ -316,9 +329,9 @@
         <h2 class="font-bold">Predictions</h2>
 
         <Anchor route="survey/{data.surveyRecord.id}/predictions">
-          <Icon name="dice" />
+          <DicesIcon class="text-theme" />
           <div class="flex grow flex-col">Predictions</div>
-          <Icon name="arrow-right" />
+          <ArrowRightIcon class="text-theme" />
         </Anchor>
       </div>
     {/if}
@@ -332,7 +345,7 @@
             fieldRecords: data.fieldRecords,
           })}
       >
-        <Icon name="share-from-square" />
+        <ShareIcon class="text-theme" />
         <div class="flex flex-col">
           Export
           <small>
@@ -345,12 +358,12 @@
         </div>
       </Button>
       <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
-        <Icon name="toolbox" />
+        <Settings2Icon class="text-theme" />
         <div class="flex grow flex-col">
           Admin
           <small>Setup, Configure</small>
         </div>
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
   {/if}
@@ -358,27 +371,27 @@
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
     <h2 class="font-bold">MeanScout</h2>
     <Anchor route="">
-      <Icon name="arrow-left" />
+      <ArrowLeftIcon class="text-theme" />
       <div class="flex grow flex-col">
         Main page
         <small>Switch survey</small>
       </div>
     </Anchor>
     <Anchor route="settings" style="view-transition-name:settings">
-      <Icon name="gears" />
+      <SettingsIcon class="text-theme" />
       <div class="flex grow flex-col">
         Settings
         <small>App config</small>
       </div>
-      <Icon name="arrow-right" />
+      <ArrowRightIcon class="text-theme" />
     </Anchor>
     <Anchor route="about" style="view-transition-name:about">
-      <Icon name="info-circle" />
+      <InfoIcon class="text-theme" />
       <div class="flex grow flex-col">
         About
         <small>Info, Guides</small>
       </div>
-      <Icon name="arrow-right" />
+      <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
 </div>

@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { Expression } from "$lib/expression";
+  import { SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
 
   let {
@@ -57,10 +57,10 @@
       }}
     >
       {#if isWeight}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
         <strong>{expression.name}</strong>
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
         {expression.name}
       {/if}
     </Button>
@@ -111,6 +111,6 @@
     });
   }}
 >
-  <Icon name="trash" />
+  <Trash2Icon class="text-theme" />
   Delete
 </Button>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { TimerField } from "$lib/field";
+  import { PauseIcon, PlayIcon, TimerResetIcon } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
   let {
@@ -55,13 +55,17 @@
   <span class="font-light">{field.name}</span>
   <div class="flex flex-wrap">
     <Button onclick={running ? pause : start}>
-      <Icon name={running ? "pause" : "play"} />
+      {#if running}
+        <PauseIcon class="text-theme" />
+      {:else}
+        <PlayIcon class="text-theme" />
+      {/if}
     </Button>
     <span class="w-12 bg-neutral-800 p-2 text-center {value > 0 && !running ? 'font-bold' : 'font-light'}">
       {display.toFixed(1)}
     </span>
     <Button onclick={reset}>
-      <Icon name="stop" />
+      <TimerResetIcon class="text-theme" />
     </Button>
   </div>
   {#if field.tip}

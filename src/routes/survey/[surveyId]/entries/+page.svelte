@@ -2,7 +2,6 @@
   import { flushSync, onMount } from "svelte";
   import { sessionStorageStore, type EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
@@ -12,6 +11,7 @@
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
+  import { ArrowDownIcon, CheckIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
 
   let {
     data,
@@ -315,7 +315,7 @@
           });
         }}
       >
-        <Icon name="file-import" />
+        <ImportIcon class="text-theme" />
         <div class="flex flex-col">
           Import
           <small>
@@ -333,7 +333,7 @@
       <div class="flex flex-wrap items-center">
         <h2 class="grow font-bold">Filter</h2>
         <Button onclick={resetFilters} disabled={!filtersApplied}>
-          <Icon name="arrow-rotate-left" />
+          <Undo2Icon class="text-theme" />
         </Button>
       </div>
 
@@ -445,7 +445,7 @@
             });
           }}
         >
-          <Icon name="share-from-square" />
+          <ShareIcon class="text-theme" />
           <div class="flex flex-col">
             Export
             <small>
@@ -464,7 +464,7 @@
   <div class="flex grow flex-col">
     {#if duplicateEntryIds.length}
       <Button onclick={fixEntries}>
-        <Icon name="wrench" />
+        <WrenchIcon class="text-theme" />
         <div class="flex flex-col">
           Fix entries
           <small>{duplicateEntryIds.length} duplicate entries were found</small>
@@ -550,13 +550,13 @@
           {#if entry.type == "match"}
             <div>
               {#if entry.absent}
-                <Icon name="check" />
+                <CheckIcon class="text-theme w-full" />
               {/if}
             </div>
           {/if}
           <div>
             {#if entry.status == "exported"}
-              <Icon name="check" />
+              <CheckIcon class="text-theme w-full" />
             {/if}
           </div>
         </Button>
@@ -590,7 +590,7 @@
 
       {#if displayedEntries.length < filteredEntries.length}
         <Button onclick={() => (displayedCount += 20)} class="col-span-full">
-          <Icon name="arrow-down" />
+          <ArrowDownIcon class="text-theme" />
           Show more
         </Button>
       {/if}

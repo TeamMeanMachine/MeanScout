@@ -15,7 +15,7 @@ Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for f
 - [Apache Echarts](https://echarts.apache.org/)
 - [Zod](https://zod.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [Font Awesome](https://fontawesome.com/)
+- [Lucide](https://lucide.dev/)
 - [Fira Code](https://github.com/tonsky/FiraCode)
 
 ## Contributing

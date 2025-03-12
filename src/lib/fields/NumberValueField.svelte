@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { NumberField } from "$lib/field";
+  import { MinusIcon, PlusIcon } from "@lucide/svelte";
 
   let {
     field,
@@ -28,13 +28,13 @@
   <span class="font-light">{field.name}</span>
   <div class="flex flex-wrap">
     <Button onclick={increment}>
-      <Icon name="plus" />
+      <PlusIcon class="text-theme" />
     </Button>
     <span class="w-12 bg-neutral-800 p-2 text-center {value > 0 ? 'font-bold' : 'font-light'}">
       {value}
     </span>
     <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
-      <Icon name="minus" />
+      <MinusIcon class="text-theme" />
     </Button>
   </div>
   {#if field.tip}

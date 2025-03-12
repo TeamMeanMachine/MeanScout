@@ -1,8 +1,8 @@
 <script lang="ts" generics="Props extends Record<string, any>">
   import { flushSync, mount, onDestroy, onMount, unmount, type Component } from "svelte";
   import Button from "./Button.svelte";
-  import Icon from "./Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { CheckIcon, XIcon } from "@lucide/svelte";
 
   let {
     component,
@@ -67,7 +67,7 @@
 
     <div class="flex flex-wrap justify-between gap-3">
       <Button onclick={() => box.close()}>
-        <Icon name="xmark" />
+        <XIcon class="text-theme" />
         {#if dialog?.onconfirm}
           Cancel
         {:else}
@@ -77,7 +77,7 @@
 
       {#if dialog?.onconfirm}
         <Button type="submit">
-          <Icon name="check" />
+          <CheckIcon class="text-theme" />
           Confirm
         </Button>
       {/if}

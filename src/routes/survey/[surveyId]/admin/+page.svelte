@@ -1,12 +1,12 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
   import { objectStore } from "$lib/idb";
   import { tbaAuthKeyStore } from "$lib/settings";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { CalendarDaysIcon, CloudDownloadIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import AdminHeader from "./AdminHeader.svelte";
 
@@ -85,7 +85,7 @@
           },
         })}
     >
-      <Icon name="pen" />
+      <SquarePenIcon class="text-theme" />
       <div class="flex flex-col">
         {data.surveyRecord.name}
         <small>Edit name</small>
@@ -109,7 +109,7 @@
             },
           })}
       >
-        <Icon name="calendar-days" />
+        <CalendarDaysIcon class="text-theme" />
         {#if data.surveyRecord.tbaEventKey}
           <div class="flex flex-col">
             {data.surveyRecord.tbaEventKey}
@@ -121,7 +121,7 @@
       </Button>
       {#if data.surveyRecord.tbaEventKey}
         <Button onclick={getDataFromTbaEvent}>
-          <Icon name="cloud-arrow-down" />
+          <CloudDownloadIcon class="text-theme" />
           <div class="flex flex-col">
             Get data from TBA
             <small>Matches, teams</small>

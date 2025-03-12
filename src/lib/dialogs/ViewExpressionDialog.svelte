@@ -2,11 +2,11 @@
   import { sessionStorageStore } from "$lib";
   import { calculateTeamData, getTeamColor, normalizeTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { MatchEntry } from "$lib/entry";
   import type { Expression } from "$lib/expression";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
+  import { ClipboardCopyIcon, Share2Icon } from "@lucide/svelte";
   import type { EChartsOption } from "echarts";
   import * as echarts from "echarts/core";
 
@@ -163,14 +163,14 @@
   <div class="flex gap-3">
     {#if "canShare" in navigator}
       <Button onclick={() => navigator.share({ text })} class="grow basis-0">
-        <Icon name="share" />
+        <Share2Icon class="text-theme" />
         Share
       </Button>
     {/if}
 
     {#if "clipboard" in navigator}
       <Button onclick={() => navigator.clipboard.writeText(text)} class="grow basis-0">
-        <Icon name="copy" />
+        <ClipboardCopyIcon class="text-theme" />
         Copy
       </Button>
     {/if}

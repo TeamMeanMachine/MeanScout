@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { RatingField } from "$lib/field";
+  import { StarIcon } from "@lucide/svelte";
 
   let {
     field,
@@ -28,7 +28,7 @@
   <div class="flex flex-wrap">
     {#each Array(5) as _, i}
       <Button onclick={() => rate(i)} class="px-1.5">
-        <Icon style={value > i ? "solid" : "regular"} name="star" />
+        <StarIcon class="text-theme" fill={value > i ? "currentColor" : "transparent"} />
       </Button>
     {/each}
   </div>

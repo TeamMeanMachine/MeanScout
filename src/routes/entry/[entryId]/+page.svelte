@@ -3,7 +3,6 @@
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
@@ -13,6 +12,15 @@
   import type { PageData } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { getDefaultFieldValue } from "$lib/field";
+  import {
+    ChevronDownIcon,
+    ChevronUpIcon,
+    PlusIcon,
+    SaveIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
   let {
     data,
@@ -101,7 +109,7 @@
                     });
                   }}
                 >
-                  <Icon name="plus" />
+                  <PlusIcon class="text-theme" />
                 </Button>
               {/if}
             </div>
@@ -133,10 +141,10 @@
         class="self-start"
       >
         {#if entry.absent}
-          <Icon name="square-check" />
+          <SquareCheckBigIcon class="text-theme" />
           <strong>Absent</strong>
         {:else}
-          <Icon style="regular" name="square" />
+          <SquareIcon class="text-theme" />
           Absent
         {/if}
       </Button>
@@ -191,12 +199,12 @@
         {#if $entryExport}
           <div class="flex flex-col gap-2">
             <div class="flex flex-wrap items-center gap-2">
-              <Icon name="square-check" />
+              <SquareCheckBigIcon class="text-theme" />
               <div class="flex grow flex-col">
                 <strong>Export</strong>
                 <small>QRF code</small>
               </div>
-              <Icon name="caret-up" />
+              <ChevronUpIcon class="text-theme" />
             </div>
             {#if compressedEntry}
               {#key compressedEntry}
@@ -205,12 +213,12 @@
             {/if}
           </div>
         {:else}
-          <Icon style="regular" name="square" />
+          <SquareIcon class="text-theme" />
           <div class="flex grow flex-col">
             Export
             <small>QRF code</small>
           </div>
-          <Icon name="caret-down" />
+          <ChevronDownIcon class="text-theme" />
         {/if}
       </Button>
     </div>
@@ -238,7 +246,7 @@
         });
       }}
     >
-      <Icon name="floppy-disk" />
+      <SaveIcon class="text-theme" />
       Submit
       {#if $entryExport && CompressionStream}
         as exported
@@ -255,7 +263,7 @@
           },
         })}
     >
-      <Icon name="trash" />
+      <Trash2Icon class="text-theme" />
     </Button>
 
     {#if error}

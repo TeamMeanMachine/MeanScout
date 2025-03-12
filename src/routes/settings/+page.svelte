@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import {
     animationStore,
     cameraStore,
@@ -13,6 +12,18 @@
     teamStore,
   } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
+  import {
+    BringToFrontIcon,
+    CameraIcon,
+    CrosshairIcon,
+    KeyIcon,
+    LoaderIcon,
+    LockIcon,
+    SaveIcon,
+    Undo2Icon,
+    UnlockIcon,
+    UsersIcon,
+  } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { prefersReducedMotion } from "svelte/motion";
 
@@ -103,7 +114,11 @@
 
 <div class="flex flex-col gap-6" style="view-transition-name:settings">
   <label class="flex flex-wrap items-center gap-2">
-    <Icon name={$modeStore == "admin" ? "lock-open" : "lock"} />
+    {#if $modeStore == "admin"}
+      <UnlockIcon class="text-theme" />
+    {:else}
+      <LockIcon class="text-theme" />
+    {/if}
     <div class="flex grow flex-col">
       Mode
       <small>Scout mode limits menus/controls</small>
@@ -119,7 +134,7 @@
 
   {#if modeInput == "admin"}
     <label class="flex flex-wrap items-center gap-2">
-      <Icon name="bullseye" />
+      <CrosshairIcon class="text-theme" />
       <div class="flex grow flex-col">
         Target
         <small>Which robot you're scouting</small>
@@ -132,7 +147,7 @@
     </label>
 
     <label class="flex flex-wrap items-center gap-2">
-      <Icon name="camera" />
+      <CameraIcon class="text-theme" />
       <div class="flex grow flex-col">
         Camera
         <small>Used to scan QRF codes</small>
@@ -148,7 +163,7 @@
         {:else if noCamera}
           <span>No camera</span>
         {:else}
-          <div><i class="fa-solid fa-sync fa-spin"></i></div>
+          <LoaderIcon class="text-theme animate-spin" />
         {/if}
       {:else}
         <div class="text-sm">Your device doesn't support data compression!</div>
@@ -156,7 +171,7 @@
     </label>
 
     <label class="flex flex-wrap items-center gap-2">
-      <Icon name="user-group" />
+      <UsersIcon class="text-theme" />
       <div class="flex grow flex-col">
         Your team
         <small>Used w/ TBA data, upcoming match views</small>
@@ -165,7 +180,7 @@
     </label>
 
     <label class="flex flex-wrap items-center gap-2">
-      <Icon name="key" />
+      <KeyIcon class="text-theme" />
       <div class="flex grow flex-col">
         Auth key
         <small>From TBA</small>
@@ -175,7 +190,7 @@
 
     {#if "startViewTransition" in document && !prefersReducedMotion.current}
       <label class="flex flex-wrap items-center gap-2">
-        <Icon name="arrows-up-down-left-right" />
+        <BringToFrontIcon class="text-theme" />
         <div class="flex grow flex-col">
           Animations
           <small>They're fancy!</small>
@@ -192,11 +207,11 @@
 
   <div class="flex flex-wrap gap-3">
     <Button onclick={save} disabled={!unsavedChanges}>
-      <Icon name="floppy-disk" />
+      <SaveIcon class="text-theme" />
       Save
     </Button>
     <Button onclick={revert} disabled={!unsavedChanges}>
-      <Icon name="arrow-rotate-left" />
+      <Undo2Icon class="text-theme" />
       Revert
     </Button>
   </div>

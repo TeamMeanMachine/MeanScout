@@ -1,7 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
   import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
@@ -9,6 +8,7 @@
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import type { Expression } from "$lib/expression";
   import { objectStore } from "$lib/idb";
+  import { PlusIcon } from "@lucide/svelte";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
 
@@ -101,7 +101,7 @@
                 });
               }}
             >
-              <Icon name="plus" />
+              <PlusIcon class="text-theme" />
               From expressions
             </Button>
           </div>
@@ -143,7 +143,7 @@
               });
             }}
           >
-            <Icon name="plus" />
+            <PlusIcon class="text-theme" />
             From fields
           </Button>
         </div>
@@ -185,7 +185,7 @@
                 });
               }}
             >
-              <Icon name="plus" />
+              <PlusIcon class="text-theme" />
               From expressions
             </Button>
           </div>
@@ -227,7 +227,7 @@
               });
             }}
           >
-            <Icon name="plus" />
+            <PlusIcon class="text-theme" />
             From fields
           </Button>
         </div>
@@ -263,7 +263,7 @@
               });
             }}
           >
-            <Icon name="plus" />
+            <PlusIcon class="text-theme" />
             New pick list
           </Button>
         </div>

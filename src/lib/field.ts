@@ -1,5 +1,16 @@
 import { z } from "zod";
 import type { Survey } from "./survey";
+import {
+  CheckIcon,
+  GroupIcon,
+  HashIcon,
+  SquareCheckBigIcon,
+  SquareChevronDownIcon,
+  StarIcon,
+  TextCursorInputIcon,
+  TimerIcon,
+  type Icon,
+} from "@lucide/svelte";
 
 export const singleFieldTypes = ["toggle", "number", "select", "text", "rating", "timer"] as const;
 export type SingleFieldType = (typeof singleFieldTypes)[number];
@@ -80,14 +91,13 @@ export type GroupField = z.infer<typeof groupFieldSchema>;
 export const fieldSchema = z.discriminatedUnion("type", [...singleFieldSchema.options, groupFieldSchema]);
 export type Field = z.infer<typeof fieldSchema>;
 
-export const fieldIcons: Record<FieldType, string> = {
-  toggle: "check",
-  number: "hashtag",
-  select: "square-caret-down",
-  text: "font",
-  rating: "star",
-  timer: "clock",
-  group: "list-check",
+export const fieldIcons: Record<SingleFieldType, typeof Icon> = {
+  toggle: SquareCheckBigIcon,
+  number: HashIcon,
+  select: SquareChevronDownIcon,
+  text: TextCursorInputIcon,
+  rating: StarIcon,
+  timer: TimerIcon,
 };
 
 export function getDefaultFieldValue(field: SingleField) {

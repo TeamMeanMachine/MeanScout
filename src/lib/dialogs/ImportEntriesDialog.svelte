@@ -1,7 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { csvToEntries, importEntries, importEntriesCompressed, type Entry } from "$lib/entry";
@@ -9,6 +8,7 @@
   import { transaction } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
+  import { Undo2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -113,7 +113,7 @@
     {@render preview()}
 
     <Button onclick={retry}>
-      <Icon name="arrow-rotate-left" />
+      <Undo2Icon class="text-theme" />
       Retry
     </Button>
   {:else}

@@ -1,10 +1,10 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteEntriesDialog from "$lib/dialogs/DeleteEntriesDialog.svelte";
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import { objectStore } from "$lib/idb";
+  import { Trash2Icon } from "@lucide/svelte";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
 
@@ -34,7 +34,7 @@
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           }}
         >
-          <Icon name="trash" />
+          <Trash2Icon class="text-theme" />
           Delete
           {data.surveyRecord.scouts.length}
           {data.surveyRecord.scouts.length > 1 ? "scouts" : "scout"}
@@ -51,7 +51,7 @@
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           }}
         >
-          <Icon name="trash" />
+          <Trash2Icon class="text-theme" />
           Delete
           {data.surveyRecord.matches.length}
           {data.surveyRecord.matches.length > 1 ? "matches" : "match"}
@@ -68,7 +68,7 @@
             objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           }}
         >
-          <Icon name="trash" />
+          <Trash2Icon class="text-theme" />
           Delete
           {data.surveyRecord.teams.length}
           {data.surveyRecord.teams.length > 1 ? "teams" : "team"}
@@ -86,7 +86,7 @@
           openDialog(DeleteEntriesDialog, { surveyRecord: data.surveyRecord, entryCount: data.entryRecords.length });
         }}
       >
-        <Icon name="trash" />
+        <Trash2Icon class="text-theme" />
         <div class="flex flex-col">
           Delete {data.entryRecords.length}
           {data.entryRecords.length > 1 ? "entries" : "entry"}&hellip;
@@ -99,7 +99,7 @@
         openDialog(DeleteSurveyDialog, { surveyRecord: data.surveyRecord, entryCount: data.entryRecords.length });
       }}
     >
-      <Icon name="trash" />
+      <Trash2Icon class="text-theme" />
       <div class="flex flex-col">
         Delete ENTIRE survey&hellip;
         {#if data.entryRecords.length}

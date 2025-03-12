@@ -2,11 +2,11 @@
   import { parseValueFromString } from "$lib";
   import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { type DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
+  import { PenSquareIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -162,7 +162,7 @@
       });
     }}
   >
-    <Icon name="pen" />
+    <PenSquareIcon class="text-theme" />
     Edit Converters
   </Button>
 {:else if method.type == "multiply"}
@@ -191,10 +191,10 @@
       }}
     >
       {#if inputIndex != -1}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
         <strong>{exp.name}</strong>
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
         {exp.name}
       {/if}
     </Button>
@@ -252,10 +252,10 @@
         }}
       >
         {#if inputIndex != -1}
-          <Icon name="square-check" />
+          <SquareCheckBigIcon class="text-theme" />
           <strong>{field.detailedName}</strong>
         {:else}
-          <Icon style="regular" name="square" />
+          <SquareIcon class="text-theme" />
           {field.detailedName}
         {/if}
       </Button>

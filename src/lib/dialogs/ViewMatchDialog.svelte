@@ -2,11 +2,11 @@
   import { getMatchTeamFontWeight, getOrdinal, sessionStorageStore, type Match, type TeamInfo } from "$lib";
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import type { Expression } from "$lib/expression";
   import { getDetailedSingleFields } from "$lib/field";
+  import { CheckIcon } from "@lucide/svelte";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
@@ -327,7 +327,7 @@
 
       <div>
         {#if entry}
-          <Icon name="check" />
+          <CheckIcon class="text-theme" />
         {/if}
       </div>
     </Button>

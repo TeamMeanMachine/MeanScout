@@ -1,12 +1,12 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
   import type { PageData } from "./$types";
   import { objectStore } from "$lib/idb";
   import AdminHeader from "../AdminHeader.svelte";
+  import { PlusIcon } from "@lucide/svelte";
 
   let {
     data,
@@ -38,7 +38,7 @@
           })}
         class="flex-nowrap text-nowrap"
       >
-        <Icon name="plus" />
+        <PlusIcon class="text-theme" />
         New team(s)
       </Button>
 

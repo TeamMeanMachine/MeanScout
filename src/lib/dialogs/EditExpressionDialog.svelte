@@ -2,11 +2,18 @@
   import { parseValueFromString } from "$lib";
   import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
+  import {
+    MaximizeIcon,
+    MinimizeIcon,
+    PenSquareIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -204,7 +211,7 @@
       });
     }}
   >
-    <Icon name="pen" />
+    <PenSquareIcon class="text-theme" />
     Edit Converters
   </Button>
 {:else if method.type == "multiply"}
@@ -233,10 +240,10 @@
       }}
     >
       {#if inputIndex != -1}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
         <strong>{exp.name}</strong>
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
         {exp.name}
       {/if}
     </Button>
@@ -294,10 +301,10 @@
         }}
       >
         {#if inputIndex != -1}
-          <Icon name="square-check" />
+          <SquareCheckBigIcon class="text-theme" />
           <strong>{field.detailedName}</strong>
         {:else}
-          <Icon style="regular" name="square" />
+          <SquareIcon class="text-theme" />
           {field.detailedName}
         {/if}
       </Button>
@@ -313,7 +320,11 @@
     closeDialog();
   }}
 >
-  <Icon name={scope == "entry" ? "expand" : "compress"} />
+  {#if scope == "entry"}
+    <MaximizeIcon class="text-theme" />
+  {:else}
+    <MinimizeIcon class="text-theme" />
+  {/if}
   <div class="flex flex-col">
     Switch to {scope == "entry" ? "survey" : "entry"} expression
     {#if switchScopeButtonData.reason}
@@ -329,7 +340,7 @@
       closeDialog();
     }}
   >
-    <Icon name="trash" />
+    <Trash2Icon class="text-theme" />
     Delete
   </Button>
 {/if}

@@ -2,6 +2,7 @@
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
+  import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
 
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
@@ -38,7 +39,7 @@
           Pull schedules/teams from
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>Customizable data analysis (pick lists and expressions)</li>
@@ -54,55 +55,55 @@
         <li>
           <a href="https://svelte.dev/" target="_blank">
             <span class="underline">Svelte</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/cozmo/jsQR" target="_blank">
             <span class="underline">jsQR</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/soldair/node-qrcode" target="_blank">
             <span class="underline">node-qrcode</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://echarts.apache.org/" target="_blank">
             <span class="underline">Apache Echarts</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://zod.dev/" target="_blank">
             <span class="underline">Zod</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://tailwindcss.com/" target="_blank">
             <span class="underline">Tailwind CSS</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
-          <a href="https://fontawesome.com/" target="_blank">
-            <span class="underline">Font Awesome</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+          <a href="https://lucide.dev/" target="_blank">
+            <span class="underline">Lucide</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/tonsky/FiraCode" target="_blank">
             <span class="underline">Fira Code</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
       </ul>
@@ -132,7 +133,7 @@
           This applies only to the version of the app deployed at
           <a href="https://meanscout.team2471.org" target="_blank">
             <span class="underline">https://meanscout.team2471.org</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>Other versions/forks may have more or different online features</li>
@@ -145,7 +146,7 @@
         MeanScout is Free and Open Source Software.
         <a href="https://github.com/TeamMeanMachine/MeanScout" target="_blank">
           <span class="underline">Visit MeanScout's GitHub repository</span>
-          <i class="fa-solid fa-up-right-from-square text-theme"></i>
+          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
         </a>
         to browse the source code, provide feedback, and/or contribute to the project.
       </span>
@@ -206,7 +207,7 @@
         <li>
           <a href="https://www.thebluealliance.com/account/login" target="_blank">
             <span class="underline">Create an account and Read API Key</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>
@@ -296,7 +297,7 @@
           QRF codes combine QR codes with a technology called
           <a href="https://en.wikipedia.org/wiki/Fountain_code" target="_blank">
             <span class="underline">fountain codes</span>
-            <i class="fa-solid fa-up-right-from-square text-theme"></i>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
         <li>Any amount of data can be transmitted from endlessly generating QR codes</li>

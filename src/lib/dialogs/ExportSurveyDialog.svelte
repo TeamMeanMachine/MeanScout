@@ -1,10 +1,10 @@
 <script lang="ts">
   import { download, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import type { Field } from "$lib/field";
   import { exportSurvey, exportSurveyCompressed, type Survey } from "$lib/survey";
+  import { FileJsonIcon, Share2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -49,7 +49,7 @@
 {:else}
   {#if "canShare" in navigator}
     <Button onclick={shareSurveyAsFile}>
-      <Icon name="share-from-square" />
+      <Share2Icon class="text-theme" />
       <div class="flex flex-col">
         Share
         <small>As JSON</small>
@@ -57,7 +57,7 @@
     </Button>
   {/if}
   <Button onclick={saveSurveyAsFile}>
-    <Icon name="file-code" />
+    <FileJsonIcon class="text-theme" />
     <div class="flex flex-col">
       Save
       <small>As JSON</small>

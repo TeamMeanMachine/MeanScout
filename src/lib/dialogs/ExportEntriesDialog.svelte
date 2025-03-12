@@ -1,13 +1,13 @@
 <script lang="ts">
   import { download, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryToCSV, exportEntries, exportEntriesCompressed, type Entry } from "$lib/entry";
   import { objectStore, transaction } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
+  import { FileJsonIcon, FileSpreadsheetIcon, Share2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -133,14 +133,14 @@
   {#if "canShare" in navigator}
     <div class="flex flex-wrap gap-2">
       <Button onclick={shareEntryAsCsvFile} class="grow">
-        <Icon name="share-from-square" />
+        <Share2Icon class="text-theme" />
         <div class="flex flex-col">
           Share
           <small>As CSV</small>
         </div>
       </Button>
       <Button onclick={shareEntryAsJsonFile} class="grow">
-        <Icon name="share-from-square" />
+        <Share2Icon class="text-theme" />
         <div class="flex flex-col">
           Share
           <small>As JSON</small>
@@ -151,14 +151,14 @@
 
   <div class="flex flex-wrap gap-2">
     <Button onclick={saveEntryAsCsvFile} class="grow">
-      <Icon name="file-code" />
+      <FileSpreadsheetIcon class="text-theme" />
       <div class="flex flex-col">
         Save
         <small>As CSV</small>
       </div>
     </Button>
     <Button onclick={saveEntryAsJsonFile} class="grow">
-      <Icon name="file-code" />
+      <FileJsonIcon class="text-theme" />
       <div class="flex flex-col">
         Save
         <small>As JSON</small>

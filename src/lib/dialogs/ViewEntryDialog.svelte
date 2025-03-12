@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { getDetailedNestedFields, type Field, type SingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
+  import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
 
@@ -149,7 +149,7 @@
         },
       })}
   >
-    <Icon name="share-from-square" />
+    <ShareIcon class="text-theme" />
     {#if entry.status == "exported"}
       Re-export
     {:else}
@@ -159,7 +159,7 @@
 
   {#if entry.type != "match" || !entry.absent}
     <Button onclick={editEntry}>
-      <Icon name="pen" />
+      <SquarePenIcon class="text-theme" />
       Convert to draft and edit
     </Button>
   {/if}
@@ -175,7 +175,7 @@
         },
       })}
   >
-    <Icon name="trash" />
+    <Trash2Icon class="text-theme" />
     Delete
   </Button>
 {/if}

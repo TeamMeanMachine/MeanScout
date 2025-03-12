@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { Trash2Icon } from "@lucide/svelte";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
 
   let {
@@ -105,7 +105,7 @@
       },
     })}
 >
-  <Icon name="trash" />
+  <Trash2Icon class="text-theme" />
   Delete
 </Button>
 

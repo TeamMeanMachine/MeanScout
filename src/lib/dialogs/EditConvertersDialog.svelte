@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { ConvertExpressionMethod } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { ArrowRightIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     expressionMethod,
@@ -27,7 +27,7 @@
 {#each changes.converters as converter, converterIndex}
   <div class="flex flex-wrap items-end gap-2">
     <Button onclick={() => (changes.converters = changes.converters.toSpliced(converterIndex, 1))}>
-      <Icon name="trash" />
+      <Trash2Icon class="text-theme" />
     </Button>
     <div class="flex flex-wrap items-end">
       <label class="flex flex-col">
@@ -35,7 +35,7 @@
         <input bind:value={converter.from} class="text-theme w-36 bg-neutral-800 p-2" />
       </label>
       <div class="p-2">
-        <Icon name="arrow-right" />
+        <ArrowRightIcon class="text-theme" />
       </div>
       <label class="flex flex-col">
         To
@@ -46,7 +46,7 @@
 {/each}
 
 <Button onclick={() => changes.converters.push({ from: "", to: "" })}>
-  <Icon name="plus" />
+  <PlusIcon class="text-theme" />
   New converter
 </Button>
 

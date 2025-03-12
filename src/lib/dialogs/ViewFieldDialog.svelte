@@ -1,10 +1,10 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import { type DetailedSingleField, type Field, type GroupField, type SingleField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
+  import { ArrowDownIcon, ArrowUpIcon, CopyIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
   import EditFieldDialog from "./EditFieldDialog.svelte";
 
   let {
@@ -176,27 +176,27 @@
 </span>
 
 <Button onclick={editField}>
-  <Icon name="pen" />
+  <PenSquareIcon class="text-theme" />
   Edit {field.type}
 </Button>
 {#if index > 0}
   <Button onclick={() => moveField(-1)}>
-    <Icon name="arrow-up" />
+    <ArrowUpIcon class="text-theme" />
     Move up
   </Button>
 {/if}
 {#if index < (parentField ? parentField.fieldIds.length : surveyRecord.fieldIds.length) - 1}
   <Button onclick={() => moveField(1)}>
-    <Icon name="arrow-down" />
+    <ArrowDownIcon class="text-theme" />
     Move down
   </Button>
 {/if}
 <Button onclick={duplicateField}>
-  <Icon name="clone" />
+  <CopyIcon class="text-theme" />
   Duplicate
 </Button>
 <Button onclick={deleteField} disabled={isExpressionInput}>
-  <Icon name="trash" />
+  <Trash2Icon class="text-theme" />
   {#if isExpressionInput}
     <div class="flex flex-col">
       Delete

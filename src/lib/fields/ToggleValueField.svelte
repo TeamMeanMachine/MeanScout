@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { ToggleField } from "$lib/field";
+  import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     field,
@@ -22,10 +22,10 @@
 <div class="flex flex-col">
   <Button onclick={toggle} class="self-start">
     {#if value}
-      <Icon name="square-check" />
+      <SquareCheckBigIcon class="text-theme" />
       <strong>{field.name}</strong>
     {:else}
-      <Icon style="regular" name="square" />
+      <SquareIcon class="text-theme" />
       {field.name}
     {/if}
   </Button>

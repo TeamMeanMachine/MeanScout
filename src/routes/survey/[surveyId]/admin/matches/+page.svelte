@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getMatchTeamFontWeight, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { objectStore } from "$lib/idb";
+  import { PlusIcon } from "@lucide/svelte";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
 
@@ -37,7 +37,7 @@
           },
         })}
     >
-      <Icon name="plus" />
+      <PlusIcon class="text-theme" />
       New match
     </Button>
 

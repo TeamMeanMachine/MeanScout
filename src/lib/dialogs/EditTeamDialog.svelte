@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { Trash2Icon } from "@lucide/svelte";
 
   let {
     team,
@@ -37,6 +37,6 @@
     closeDialog();
   }}
 >
-  <Icon name="trash" />
+  <Trash2Icon class="text-theme" />
   Delete
 </Button>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import type { SelectField } from "$lib/field";
+  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
 
   let {
     field,
@@ -21,10 +21,10 @@
       {#each field.values as val}
         <Button onclick={() => (value = val)}>
           {#if value == val}
-            <Icon name="circle-dot" />
+            <CircleCheckBigIcon class="text-theme" />
             <strong>{val}</strong>
           {:else}
-            <Icon style="regular" name="circle" />
+            <CircleIcon class="text-theme" />
             {val}
           {/if}
         </Button>

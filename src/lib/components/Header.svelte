@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Heading } from "$lib";
   import { modeStore, targetStore } from "$lib/settings";
+  import { XIcon } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
-  import Icon from "./Icon.svelte";
 
   let {
     title = "MeanScout",
@@ -24,7 +24,7 @@
     <img src="./logo.svg" alt="" width="25" height="25" />
   {:else}
     <Anchor route={backLink}>
-      <Icon name="xmark" />
+      <XIcon class="text-theme" />
     </Anchor>
   {/if}
 

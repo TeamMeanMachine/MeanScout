@@ -1,12 +1,12 @@
 <script lang="ts">
   import { type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
+  import { PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
@@ -214,7 +214,7 @@
             });
           }}
         >
-          <Icon name="plus" />
+          <PlusIcon class="text-theme" />
           {#if !data.surveyRecord.scouts.length}
             New scout
           {/if}
@@ -287,9 +287,9 @@
         class="text-red grow basis-[150px] {prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
       >
         {#if prediction == "red"}
-          <Icon name="square-check" color="red" />
+          <SquareCheckBigIcon />
         {:else}
-          <Icon style="regular" name="square" color="red" />
+          <SquareIcon />
         {/if}
         Red wins
       </Button>
@@ -298,9 +298,9 @@
         class="text-blue grow basis-[150px] {prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
       >
         {#if prediction == "blue"}
-          <Icon name="square-check" color="blue" />
+          <SquareCheckBigIcon />
         {:else}
-          <Icon style="regular" name="square" color="blue" />
+          <SquareIcon />
         {/if}
         Blue wins
       </Button>

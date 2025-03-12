@@ -4,8 +4,8 @@
   import type { PageData } from "./$types";
   import AdminHeader from "../AdminHeader.svelte";
   import { openDialog } from "$lib/dialog";
-  import Icon from "$lib/components/Icon.svelte";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
+  import { PlusIcon } from "@lucide/svelte";
 
   let {
     data,
@@ -39,7 +39,7 @@
             });
           }}
         >
-          <Icon name="plus" />
+          <PlusIcon class="text-theme" />
           New scout(s)
         </Button>
       {:else}

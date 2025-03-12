@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import Icon from "$lib/components/Icon.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Expression } from "$lib/expression";
+  import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     expressions,
@@ -50,10 +50,10 @@
       }}
     >
       {#if isWeight}
-        <Icon name="square-check" />
+        <SquareCheckBigIcon class="text-theme" />
         <strong>{expression.name}</strong>
       {:else}
-        <Icon style="regular" name="square" />
+        <SquareIcon class="text-theme" />
         {expression.name}
       {/if}
     </Button>
