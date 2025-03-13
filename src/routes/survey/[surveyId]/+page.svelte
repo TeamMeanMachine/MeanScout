@@ -27,6 +27,7 @@
     UsersIcon,
   } from "@lucide/svelte";
   import type { PageData } from "./$types";
+  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
 
   let {
     data,
@@ -80,6 +81,40 @@
       .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
   );
 
+  let entries = $derived.by(() => {
+    if (data.surveyType == "pit") {
+      return data.entryRecords
+        .filter((e) => e.status != "draft")
+        .toSorted((a, b) => b.modified.getTime() - a.modified.getTime())
+        .slice(0, 2);
+    }
+
+    return data.entryRecords
+      .filter((e) => {
+        if (e.status == "draft") return false;
+        return data.surveyRecord.matches.some((m) => {
+          if (m.number != e.match) return false;
+          switch ($targetStore) {
+            case "red 1":
+              return m.red1 == e.team;
+            case "red 2":
+              return m.red2 == e.team;
+            case "red 3":
+              return m.red3 == e.team;
+            case "blue 1":
+              return m.blue1 == e.team;
+            case "blue 2":
+              return m.blue2 == e.team;
+            case "blue 3":
+              return m.blue3 == e.team;
+          }
+          return false;
+        });
+      })
+      .toSorted((a, b) => b.match - a.match)
+      .slice(0, 2);
+  });
+
   const teamCount =
     data.surveyType == "pit"
       ? data.surveyRecord.teams.length
@@ -98,14 +133,49 @@
   function matchHasTeamStore(match: Match) {
     return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes($teamStore);
   }
+
+  function refresh() {
+    const entriesRequest = objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
+
+    entriesRequest.onerror = () => {
+      location.reload();
+    };
+
+    entriesRequest.onsuccess = () => {
+      if (!entriesRequest.result) {
+        location.reload();
+        return;
+      }
+
+      data = {
+        ...data,
+        entryRecords: entriesRequest.result,
+      };
+    };
+  }
 </script>
 
 <Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} />
 
 <div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Entries</h2>
+  {#snippet entryOverview(match: number | undefined, team: string | undefined, teamName: string | undefined)}
+    <div class="flex items-center gap-x-4 gap-y-2">
+      {#if match !== undefined}
+        <div class="flex flex-col">
+          <small class="font-light">Match</small>
+          <span>{match}</span>
+        </div>
+      {/if}
+      {#if team}
+        <div class="flex flex-col">
+          <small class="font-light text-wrap">{teamName || "Team"}</small>
+          <span>{team}</span>
+        </div>
+      {/if}
+    </div>
+  {/snippet}
 
+  <div class="flex flex-col gap-2">
     <Button
       onclick={() => {
         openDialog(NewEntryDialog, {
@@ -122,39 +192,49 @@
           },
         });
       }}
+      class="flex-col items-start"
     >
-      <PlusIcon class="text-theme" />
-      <div class="flex flex-col">
-        {#if data.surveyType == "match" && prefilledMatch}
-          <span><small>Match</small> {prefilledMatch}</span>
-        {/if}
-        {#if prefilledTeam}
-          <span><small>Team</small> {prefilledTeam}</span>
-          {#if prefilledTeamName}
-            <span><small class="font-light">{prefilledTeamName}</small></span>
-          {/if}
-        {/if}
-        {#if data.surveyType == "pit" || (!prefilledMatch && !prefilledTeam)}
-          <span>New entry</span>
-        {/if}
+      <div class="flex gap-2">
+        <PlusIcon class="text-theme shrink-0" />
+        <span>New entry</span>
       </div>
+      {@render entryOverview(data.surveyType == "match" ? prefilledMatch : undefined, prefilledTeam, prefilledTeamName)}
     </Button>
 
     {#each drafts as draft (draft.id)}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == draft.team)?.name}
-
       <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
-        <div class="flex grow flex-col">
-          {#if draft.type == "match"}
-            <span><small>Match</small> {draft.match}</span>
-          {/if}
-          <span><small>Team</small> {draft.team}</span>
-          {#if teamName?.length}
-            <span><small class="font-light">{teamName}</small></span>
-          {/if}
+        <div class="grow">
+          {@render entryOverview(
+            draft.type == "match" ? draft.match : undefined,
+            draft.team,
+            data.surveyRecord.teams.find((t) => t.number == draft.team)?.name,
+          )}
         </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
+    {/each}
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Entries</h2>
+
+    {#each entries as entry (entry.id)}
+      <Button
+        onclick={() => {
+          openDialog(ViewEntryDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+            entryRecord: entry,
+            onchange: refresh,
+          });
+        }}
+      >
+        {@render entryOverview(
+          entry.type == "match" ? entry.match : undefined,
+          entry.team,
+          data.surveyRecord.teams.find((t) => t.number == entry.team)?.name,
+        )}
+      </Button>
     {/each}
 
     <Anchor route="survey/{data.surveyRecord.id}/entries" style="view-transition-name:entries">

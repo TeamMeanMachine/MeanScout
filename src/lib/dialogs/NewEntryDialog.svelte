@@ -213,6 +213,7 @@
               },
             });
           }}
+          class={data.surveyRecord.scouts.length ? "" : "w-full"}
         >
           <PlusIcon class="text-theme" />
           {#if !data.surveyRecord.scouts.length}

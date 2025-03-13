@@ -279,12 +279,10 @@
       class="col-span-full grid grid-cols-subgrid gap-2 pl-0 text-center!"
     >
       <div class="sticky left-0 flex flex-col bg-neutral-800 px-2 text-left">
-        <span class="text-{alliance} {getMatchTeamFontWeight(teamInfo.number)}">{teamInfo.number}</span>
         {#if teamInfo.name}
-          <small class="font-light">
-            {teamInfo.name.replaceAll("Robotics", "").replaceAll("Team", "")}
-          </small>
+          <small class="{getMatchTeamFontWeight(teamInfo.number)} no-underline!">{teamInfo.name}</small>
         {/if}
+        <span class="text-{alliance} {getMatchTeamFontWeight(teamInfo.number)}">{teamInfo.number}</span>
       </div>
 
       {#if data.surveyType == "match"}

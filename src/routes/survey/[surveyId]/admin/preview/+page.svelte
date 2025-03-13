@@ -20,11 +20,17 @@
 
   {#if data.surveyRecord.fieldIds.length}
     <div class="flex flex-col gap-4">
-      <div class="flex flex-col">
+      <div class="flex flex-wrap gap-x-6 gap-y-3">
         {#if data.surveyRecord.type == "match"}
-          <span><small>Match</small> <strong>##</strong></span>
+          <div class="flex flex-col">
+            <small>Match</small>
+            <strong>##</strong>
+          </div>
         {/if}
-        <span><small>Team</small> <strong>####</strong></span>
+        <div class="flex flex-col">
+          <small>Team</small>
+          <strong>####</strong>
+        </div>
       </div>
 
       <div class="flex flex-col flex-wrap gap-3">

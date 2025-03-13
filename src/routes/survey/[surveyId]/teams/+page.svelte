@@ -124,10 +124,8 @@
           >
             <div class="flex flex-col text-left">
               {#if teamInfo.name}
+                <small class="max-h-10 overflow-hidden font-light">{teamInfo.name}</small>
                 <span class="font-bold">{teamInfo.number}</span>
-                <small class="max-h-10 overflow-hidden font-light">
-                  {teamInfo.name.replaceAll("Robotics", "").replaceAll("Team", "")}
-                </small>
               {:else}
                 {teamInfo.number}
               {/if}
