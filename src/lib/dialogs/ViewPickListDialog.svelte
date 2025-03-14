@@ -1,12 +1,12 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
-  import { calculateTeamData, getTeamColor, normalizeTeamData, type PickList } from "$lib/analysis";
+  import { calculateTeamData, colors, getTeamColor, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import type { MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
-  import type { EChartsOption, SeriesOption } from "echarts";
+  import type { EChartsOption } from "echarts";
   import * as echarts from "echarts/core";
 
   let {
@@ -21,7 +21,7 @@
     pickList: PickList;
   } = $props();
 
-  const tab = sessionStorageStore<"stacked" | "race" | "table">("view-pick-list-tab", "stacked");
+  const tab = sessionStorageStore<"bar" | "stacked" | "race" | "table">("view-pick-list-tab", "bar");
 
   const sortedTeamData = getSortedTeamData();
 
@@ -56,7 +56,8 @@
       .map((team) => ({
         team,
         percentage: normalizedPickListData[team],
-        ...weightsDataObject(weightsData[team]),
+        weights: weightsDataObject(weightsData[team]),
+        color: getTeamColor(team),
       }))
       .toSorted((a, b) => b.percentage - a.percentage);
   }
@@ -67,82 +68,6 @@
       obj[pickList.weights[i].expressionName] = weights[i];
     }
     return obj;
-  }
-
-  function stackedChart(div: HTMLElement) {
-    const options = {
-      tooltip: {
-        valueFormatter: (value) => Number(value).toFixed(2) + "%",
-      },
-      legend: {
-        textStyle: {
-          color: "white",
-        },
-        orient: "vertical",
-        left: 0,
-      },
-      textStyle: {
-        fontFamily: "Fira Code VF",
-        fontSize: 14,
-      },
-      xAxis: {
-        show: false,
-        position: "top",
-        type: "value",
-        axisLabel: {
-          fontFamily: "Fira Code VF",
-          fontSize: 14,
-        },
-        splitLine: {
-          show: false,
-        },
-      },
-      yAxis: {
-        type: "category",
-        axisLabel: {
-          interval: 0,
-          fontFamily: "Fira Code VF",
-          fontSize: 14,
-          color: "white",
-        },
-        inverse: true,
-      },
-      dataset: {
-        dimensions: ["team", ...pickList.weights.map((weight) => weight.expressionName)],
-        source: sortedTeamData,
-      },
-      series: pickList.weights.map((weight): SeriesOption => {
-        return {
-          type: "bar",
-          stack: "total",
-          label: {
-            show: true,
-            formatter: ({ value }) => (value as Record<string, number>)[weight.expressionName].toFixed(0) + "%",
-          },
-          emphasis: {
-            focus: "series",
-          },
-          barWidth: 36,
-        };
-      }),
-      grid: {
-        left: 0,
-        right: 25,
-        bottom: 0,
-        containLabel: true,
-      },
-    } satisfies EChartsOption;
-
-    const chart = echarts.init(div, null, { renderer: "svg" });
-    chart.setOption(options);
-
-    $effect(() => {
-      if (chartParentWidth > 100) {
-        chart.resize({ width: chartParentWidth, height: 40 * sortedTeamData.length });
-      }
-    });
-
-    return { destroy: () => chart.dispose() };
   }
 
   function generateRaceData(toMatch: number) {
@@ -286,14 +211,55 @@
 
 {#if sortedTeamData.length}
   <div class="flex flex-wrap gap-2 text-sm">
+    <Button onclick={() => ($tab = "bar")} class={$tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
     <Button onclick={() => ($tab = "stacked")} class={$tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
     <Button onclick={() => ($tab = "race")} class={$tab == "race" ? "font-bold" : "font-light"}>Race</Button>
     <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
   </div>
 
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-y-auto" bind:clientWidth={chartParentWidth}>
-    {#if $tab == "stacked"}
-      <div use:stackedChart style="height: {40 * sortedTeamData.length}px"></div>
+  <div class="flex max-h-[500px] flex-col gap-4 overflow-y-auto" bind:clientWidth={chartParentWidth}>
+    {#if $tab == "bar"}
+      {#each sortedTeamData as { team, percentage, color }}
+        <div class="pr-1" style="width:{percentage.toFixed(2)}%">
+          <div class="flex justify-between gap-3">
+            <span>{team}</span>
+            {percentage.toFixed(1)}%
+          </div>
+          <div style="background-color:{color};height:6px"></div>
+        </div>
+      {/each}
+    {:else if $tab == "stacked"}
+      <div class="flex flex-col gap-2 text-sm">
+        {#each pickList.weights as weight, i}
+          {@const color = colors[i % colors.length]}
+          <div>
+            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+            {weight.expressionName} ({weight.percentage}%)
+          </div>
+        {/each}
+      </div>
+      {#each sortedTeamData as { team, percentage, weights }}
+        <div class="pr-1" style="width:{percentage.toFixed(2)}%">
+          <div class="flex justify-between gap-3">
+            <span>{team}</span>
+            {percentage.toFixed(1)}%
+          </div>
+          <div class="flex gap-1 bg-neutral-800">
+            {#each pickList.weights as weight, i}
+              {@const color = colors[i % colors.length]}
+              {@const divWidth = weights[weight.expressionName] * percentage}
+              {#if divWidth}
+                <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div style="background-color:{color};height:6px"></div>
+                  <div class="bg-neutral-900 text-center text-sm font-light">
+                    {((weights[weight.expressionName] / weight.percentage) * 100).toFixed(0)}%
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {/each}
     {:else if $tab == "race"}
       <div use:raceChart style="height: {40 * sortedTeamData.length}px"></div>
     {:else if $tab == "table"}

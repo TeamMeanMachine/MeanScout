@@ -7,8 +7,6 @@
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import { ClipboardCopyIcon, Share2Icon } from "@lucide/svelte";
-  import type { EChartsOption } from "echarts";
-  import * as echarts from "echarts/core";
 
   let {
     surveyRecord,
@@ -24,8 +22,6 @@
 
   const tab = sessionStorageStore<"bar" | "table">("view-expression-tab", "bar");
 
-  let chartParentWidth = $state(0);
-
   function getSortedTeamData() {
     const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);
     const normalizedTeamData = normalizeTeamData(teamData);
@@ -40,86 +36,6 @@
   const text = sortedTeamData
     .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}%`)
     .join("\n");
-
-  function barChart(div: HTMLElement) {
-    const barData = sortedTeamData.map(({ team, value, color }) => ({
-      value: [team, value],
-      itemStyle: { color },
-    }));
-
-    const options = {
-      tooltip: {
-        valueFormatter: (value) => Number(value).toFixed(2),
-      },
-      legend: {
-        textStyle: {
-          color: "white",
-        },
-        orient: "vertical",
-        left: 0,
-      },
-      textStyle: {
-        fontFamily: "Fira Code VF",
-        fontSize: 14,
-      },
-      xAxis: {
-        show: false,
-        max: "dataMax",
-        position: "bottom",
-        type: "value",
-        axisLabel: {
-          fontFamily: "Fira Code VF",
-          fontSize: 14,
-        },
-        splitLine: {
-          show: false,
-        },
-      },
-      yAxis: {
-        type: "category",
-        axisLabel: {
-          interval: 0,
-          fontFamily: "Fira Code VF",
-          fontSize: 14,
-          color: "white",
-        },
-        inverse: true,
-      },
-      series: {
-        type: "bar",
-        data: barData,
-        encode: {
-          x: 1,
-          y: 0,
-        },
-        label: {
-          show: true,
-          formatter: ({ value }) => (value as number[])[1].toFixed(2),
-          position: "right",
-          color: "white",
-        },
-        barWidth: 36,
-      },
-      grid: {
-        top: 0,
-        left: 0,
-        right: 50,
-        bottom: 0,
-        containLabel: true,
-      },
-    } satisfies EChartsOption;
-
-    const chart = echarts.init(div, null, { renderer: "svg" });
-    chart.setOption(options);
-
-    $effect(() => {
-      if (chartParentWidth > 100) {
-        chart.resize({ width: chartParentWidth, height: 40 * sortedTeamData.length });
-      }
-    });
-
-    return { destroy: () => chart.dispose() };
-  }
 </script>
 
 <div class="flex flex-col">
@@ -135,9 +51,20 @@
     <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
   </div>
 
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-y-auto" bind:clientWidth={chartParentWidth}>
+  <div class="flex max-h-[500px] flex-col gap-4 overflow-y-auto">
     {#if $tab == "bar"}
-      <div use:barChart style="height: {40 * sortedTeamData.length}px"></div>
+      {@const maxValue = Math.max(...sortedTeamData.map(({ value }) => value))}
+      {@const minValue = Math.min(...sortedTeamData.map(({ value }) => value))}
+      {#each sortedTeamData as { team, value, color }}
+        {@const divWidth = Math.abs(((value - Math.min(minValue, 0)) / (maxValue || minValue || value || 1)) * 100)}
+        <div class="pr-1" style="width:{divWidth.toFixed(2)}%">
+          <div class="flex justify-between gap-3">
+            <span>{team}</span>
+            {value.toFixed(2)}
+          </div>
+          <div style="background-color:{color};height:6px"></div>
+        </div>
+      {/each}
     {:else if $tab == "table"}
       <table class="w-full text-right">
         <thead>
