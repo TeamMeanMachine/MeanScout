@@ -1,6 +1,8 @@
+import { browser } from "$app/environment";
+
 const method: CompressionFormat = "deflate-raw";
 
-export const supportsCompressionApi = "CompressionStream" in window && "DecompressionStream" in window;
+export const supportsCompressionApi = browser && "CompressionStream" in window && "DecompressionStream" in window;
 
 export async function compress(data: string) {
   if (!supportsCompressionApi) {
