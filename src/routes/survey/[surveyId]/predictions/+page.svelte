@@ -37,7 +37,7 @@
     <Button onclick={() => ($tab = "matches")} class={$tab == "matches" ? "font-bold" : "font-light"}>Matches</Button>
   </div>
 
-  {#if $tab == "scouts" && data.scouts.length}
+  {#if $tab == "scouts" && data.predictionsPerScout.length}
     <div
       class="-mx-1 grid gap-x-4 gap-y-3 overflow-x-auto px-1"
       style="grid-template-columns: repeat(7, min-content) auto;"
@@ -51,7 +51,7 @@
         <div>Accuracy</div>
       </div>
 
-      {#each data.scouts as { scout, entries, points, coopPoints, correctGuesses, accuracy, adjustedPoints }}
+      {#each data.predictionsPerScout as { scout, entries, points, coopPoints, correctGuesses, accuracy, adjustedPoints }}
         <Button
           onclick={() => {
             if (selectedScout == scout) {
@@ -75,7 +75,7 @@
             <div class="grid gap-x-3 gap-y-2" style="grid-template-columns: min-content min-content auto">
               {#each entries as entry}
                 {@const predictionWeight = winLoseWeight(
-                  data.matches.find((m) => m.number == entry.match)?.winner,
+                  data.predictionsPerMatch.find((m) => m.number == entry.match)?.winner,
                   entry.prediction,
                 )}
 
@@ -110,7 +110,7 @@
         <div>{(data.overallAccuracy * 100).toFixed(1)}%</div>
       </div>
     </div>
-  {:else if $tab == "matches" && data.matches.length}
+  {:else if $tab == "matches" && data.predictionsPerMatch.length}
     <div
       class="-mx-1 grid gap-x-4 gap-y-3 overflow-x-auto px-1"
       style="grid-template-columns: repeat(9, min-content) auto;"
@@ -122,7 +122,7 @@
         <div>Blue</div>
       </div>
 
-      {#each data.matches as { number, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount }}
+      {#each data.predictionsPerMatch as { number, redScore, blueScore, winner, redEntries, blueEntries, predictedEntryCount }}
         <Button
           onclick={() => {
             if (selectedMatch == number) {
@@ -164,7 +164,7 @@
           >
             {#each [...redEntries, ...blueEntries] as entry}
               {@const predictionWeight = winLoseWeight(
-                data.matches.find((m) => m.number == entry.match)?.winner,
+                data.predictionsPerMatch.find((m) => m.number == entry.match)?.winner,
                 entry.prediction,
               )}
 

@@ -28,6 +28,7 @@
   } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import { getPredictionsPerScout } from "$lib/prediction";
 
   let {
     data,
@@ -405,12 +406,19 @@
 
   {#if $modeStore == "admin"}
     {#if data.surveyType == "match" && data.surveyRecord.scouts}
+      {@const { overallAccuracy } = getPredictionsPerScout(data.surveyRecord, data.entryRecords)}
+
       <div class="flex flex-col gap-2" style="view-transition-name:predictions">
         <h2 class="font-bold">Predictions</h2>
 
         <Anchor route="survey/{data.surveyRecord.id}/predictions">
           <DicesIcon class="text-theme" />
-          <div class="flex grow flex-col">Predictions</div>
+          <div class="flex grow flex-col">
+            Predictions
+            {#if overallAccuracy}
+              <small>{(overallAccuracy * 100).toFixed(1)}% accuracy</small>
+            {/if}
+          </div>
           <ArrowRightIcon class="text-theme" />
         </Anchor>
       </div>
