@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
+  import { supportsCompressionApi } from "$lib/compress";
   import {
     animationStore,
     cameraStore,
@@ -152,7 +153,7 @@
         Camera
         <small>Used to scan QRF codes</small>
       </div>
-      {#if CompressionStream && DecompressionStream}
+      {#if supportsCompressionApi}
         {#if cameras.length}
           <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
             <option value="">Select</option>

@@ -2,6 +2,7 @@
   import { download, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
+  import { supportsCompressionApi } from "$lib/compress";
   import type { Field } from "$lib/field";
   import { exportSurvey, exportSurveyCompressed, type Survey } from "$lib/survey";
   import { FileJsonIcon, Share2Icon } from "@lucide/svelte";
@@ -14,7 +15,7 @@
     fieldRecords: IDBRecord<Field>[];
   } = $props();
 
-  const tab = sessionStorageStore<"qrfcode" | "file">("export-data-tab", CompressionStream ? "qrfcode" : "file");
+  const tab = sessionStorageStore<"qrfcode" | "file">("export-data-tab", supportsCompressionApi ? "qrfcode" : "file");
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
@@ -35,14 +36,14 @@
 
 <span>Export survey</span>
 
-{#if CompressionStream}
+{#if supportsCompressionApi}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
     <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 {/if}
 
-{#if $tab == "qrfcode" && CompressionStream}
+{#if $tab == "qrfcode" && supportsCompressionApi}
   {#await exportSurveyCompressed($state.snapshot(surveyRecord), $state.snapshot(fieldRecords)) then data}
     <QrCodeDisplay {data} />
   {/await}

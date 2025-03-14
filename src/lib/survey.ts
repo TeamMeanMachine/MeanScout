@@ -83,11 +83,18 @@ export function exportSurveyCompressed(surveyRecord: IDBRecord<Survey>, fieldRec
 export function importSurvey(
   data: string,
 ): { success: true; survey: Survey; fields: Map<number, Field> } | { success: false; error: string } {
-  const json: {
+  let json: {
     version: number;
     survey: Survey & { created?: Date | undefined; modified?: Date | undefined };
     fields: IDBRecord<Field & { surveyId?: number | undefined }>[];
-  } = JSON.parse(data);
+  };
+
+  try {
+    json = JSON.parse(data);
+  } catch (e) {
+    console.error("JSON failed to parse imported survey:", data);
+    return { success: false, error: e instanceof Error ? e.message : "JSON failed to parse" };
+  }
 
   if (json.version < schemaVersion) {
     return { success: false, error: "Outdated version" };

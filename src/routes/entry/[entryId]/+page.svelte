@@ -21,6 +21,7 @@
     SquareIcon,
     Trash2Icon,
   } from "@lucide/svelte";
+  import { supportsCompressionApi } from "$lib/compress";
 
   let {
     data,
@@ -39,7 +40,7 @@
 
   $effect(() => {
     entry;
-    if (!CompressionStream) return;
+    if (!supportsCompressionApi) return;
     if (entry.type == "match" && entry.absent) {
       exportEntriesCompressed([{ ...entry, values: data.defaultValues }]).then((result) => (compressedEntry = result));
     } else {
@@ -178,7 +179,7 @@
     </div>
   {/if}
 
-  {#if CompressionStream}
+  {#if supportsCompressionApi}
     <div bind:this={exportButtonDiv} class="flex flex-col">
       <Button
         onclick={() => {
@@ -231,7 +232,7 @@
         openDialog(SubmitEntryDialog, {
           fields: data.fields,
           entryRecord: data.entryRecord,
-          exporting: !!($entryExport && CompressionStream),
+          exporting: !!($entryExport && supportsCompressionApi),
           onexport: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             location.hash = `/survey/${data.surveyRecord.id}`;
@@ -241,7 +242,7 @@
     >
       <SaveIcon class="text-theme" />
       Submit
-      {#if $entryExport && CompressionStream}
+      {#if $entryExport && supportsCompressionApi}
         as exported
       {/if}
     </Button>

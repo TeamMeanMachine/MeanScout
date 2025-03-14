@@ -62,7 +62,14 @@ export function importEntries(
   surveyRecord: IDBRecord<Survey>,
   data: string,
 ): { success: true; entries: Entry[] } | { success: false; error: string } {
-  let decompressed: Partial<Entry>[] = JSON.parse(data);
+  let decompressed: Partial<Entry>[];
+
+  try {
+    decompressed = JSON.parse(data);
+  } catch (e) {
+    console.error("JSON failed to parse imported entries:", data);
+    return { success: false, error: e instanceof Error ? e.message : "JSON failed to parse" };
+  }
 
   let entries: Entry[];
 

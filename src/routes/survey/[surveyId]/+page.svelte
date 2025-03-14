@@ -29,6 +29,7 @@
   import type { PageData } from "./$types";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
+  import { supportsCompressionApi } from "$lib/compress";
 
   let {
     data,
@@ -437,7 +438,7 @@
         <div class="flex flex-col">
           Export
           <small>
-            {#if CompressionStream}
+            {#if supportsCompressionApi}
               QRF code, File
             {:else}
               File

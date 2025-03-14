@@ -8,6 +8,7 @@
   import { cameraStore, modeStore } from "$lib/settings";
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
+  import { supportsCompressionApi } from "$lib/compress";
 
   let {
     data,
@@ -37,7 +38,7 @@
         <div class="flex flex-col">
           Import
           <small>
-            {#if $cameraStore && DecompressionStream}
+            {#if $cameraStore && supportsCompressionApi}
               QRF code, File
             {:else}
               File

@@ -2,6 +2,7 @@
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
+  import { supportsCompressionApi } from "$lib/compress";
   import type { DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
@@ -12,7 +13,7 @@
 
   const tab = sessionStorageStore<"qrfcode" | "file">(
     "import-data-tab",
-    $cameraStore && DecompressionStream ? "qrfcode" : "file",
+    $cameraStore && supportsCompressionApi ? "qrfcode" : "file",
   );
 
   let files = $state<FileList | undefined>();
@@ -135,14 +136,14 @@
 
 <span>Import survey</span>
 
-{#if $cameraStore && DecompressionStream}
+{#if $cameraStore && supportsCompressionApi}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
     <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 {/if}
 
-{#if $tab == "qrfcode" && $cameraStore && DecompressionStream}
+{#if $tab == "qrfcode" && $cameraStore && supportsCompressionApi}
   {#if importedSurvey}
     {@render preview()}
 

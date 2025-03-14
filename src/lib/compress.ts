@@ -1,6 +1,12 @@
 const method: CompressionFormat = "deflate-raw";
 
+export const supportsCompressionApi = "CompressionStream" in window && "DecompressionStream" in window;
+
 export async function compress(data: string) {
+  if (!supportsCompressionApi) {
+    throw new Error("Device does not support Compression Stream API");
+  }
+
   const bytes = new TextEncoder().encode(data);
   const stream = new Blob([bytes]).stream();
   const compressedStream = stream.pipeThrough(new CompressionStream(method));
@@ -8,6 +14,10 @@ export async function compress(data: string) {
 }
 
 export async function decompress(data: Uint8Array) {
+  if (!supportsCompressionApi) {
+    throw new Error("Device does not support Compression Stream API");
+  }
+
   const stream = new Blob([data]).stream();
   const decompressedStream = stream.pipeThrough(new DecompressionStream(method));
   const bytes = await getDataFromStream(decompressedStream);
