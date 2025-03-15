@@ -1,7 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { supportsCompressionApi } from "$lib/compress";
   import {
     animationStore,
     cameraStore,
@@ -153,21 +152,17 @@
         Camera
         <small>Used to scan QRF codes</small>
       </div>
-      {#if supportsCompressionApi}
-        {#if cameras.length}
-          <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
-            <option value="">Select</option>
-            {#each cameras as { id, name }}
-              <option value={id}>{name}</option>
-            {/each}
-          </select>
-        {:else if noCamera}
-          <span>No camera</span>
-        {:else}
-          <LoaderIcon class="text-theme animate-spin" />
-        {/if}
+      {#if cameras.length}
+        <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
+          <option value="">Select</option>
+          {#each cameras as { id, name }}
+            <option value={id}>{name}</option>
+          {/each}
+        </select>
+      {:else if noCamera}
+        <span>No camera</span>
       {:else}
-        <div class="text-sm">Your device doesn't support data compression!</div>
+        <LoaderIcon class="text-theme animate-spin" />
       {/if}
     </label>
 

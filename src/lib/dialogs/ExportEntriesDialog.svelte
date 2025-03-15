@@ -2,9 +2,8 @@
   import { download, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
-  import { supportsCompressionApi } from "$lib/compress";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { entryToCSV, exportEntries, exportEntriesCompressed, type Entry } from "$lib/entry";
+  import { entryToCSV, exportEntries, type Entry } from "$lib/entry";
   import { objectStore, transaction } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -20,7 +19,7 @@
     onexport: (newEntry?: IDBRecord<Entry>) => void;
   } = $props();
 
-  const tab = sessionStorageStore<"qrfcode" | "file">("export-data-tab", supportsCompressionApi ? "qrfcode" : "file");
+  const tab = sessionStorageStore<"qrfcode" | "file">("export-data-tab", "qrfcode");
 
   let error = $state("");
 
@@ -119,17 +118,13 @@
   {/if}
 </span>
 
-{#if supportsCompressionApi}
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
-    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
-  </div>
-{/if}
+<div class="flex flex-wrap gap-2 text-sm">
+  <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
+  <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+</div>
 
-{#if $tab == "qrfcode" && supportsCompressionApi}
-  {#await exportEntriesCompressed($state.snapshot(entries)) then data}
-    <QRCodeDisplay {data} />
-  {/await}
+{#if $tab == "qrfcode"}
+  <QRCodeDisplay data={entriesAsCSV()} />
 {:else}
   {#if "canShare" in navigator}
     <div class="flex flex-wrap gap-2">

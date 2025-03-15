@@ -12,7 +12,6 @@
   import type { PageData } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ArrowDownIcon, CheckIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
-  import { supportsCompressionApi } from "$lib/compress";
 
   let {
     data,
@@ -320,7 +319,7 @@
         <div class="flex flex-col">
           Import
           <small>
-            {#if $cameraStore && supportsCompressionApi}
+            {#if $cameraStore}
               QRF code, File
             {:else}
               File
@@ -449,13 +448,7 @@
           <ShareIcon class="text-theme" />
           <div class="flex flex-col">
             Export
-            <small>
-              {#if supportsCompressionApi}
-                QRF code, File
-              {:else}
-                File
-              {/if}
-            </small>
+            <small>QRF code, File</small>
           </div>
         </Button>
       {/if}

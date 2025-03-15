@@ -2,19 +2,15 @@
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
-  import { supportsCompressionApi } from "$lib/compress";
   import type { DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { cameraStore, tbaAuthKeyStore } from "$lib/settings";
-  import { importSurvey, importSurveyCompressed, surveySchema, type Survey } from "$lib/survey";
+  import { importSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
   import { Undo2Icon } from "@lucide/svelte";
 
-  const tab = sessionStorageStore<"qrfcode" | "file">(
-    "import-data-tab",
-    $cameraStore && supportsCompressionApi ? "qrfcode" : "file",
-  );
+  const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
 
   let files = $state<FileList | undefined>();
   let importedSurvey = $state<Survey | undefined>();
@@ -110,8 +106,8 @@
     importedFields = jsonResult.fields;
   }
 
-  async function onread(data: Uint8Array) {
-    const jsonResult = await importSurveyCompressed(data);
+  function onread(data: string) {
+    const jsonResult = importSurvey(data);
     if (!jsonResult.success) {
       error = jsonResult.error;
       return;
@@ -136,14 +132,14 @@
 
 <span>Import survey</span>
 
-{#if $cameraStore && supportsCompressionApi}
+{#if $cameraStore}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
     <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 {/if}
 
-{#if $tab == "qrfcode" && $cameraStore && supportsCompressionApi}
+{#if $tab == "qrfcode" && $cameraStore}
   {#if importedSurvey}
     {@render preview()}
 

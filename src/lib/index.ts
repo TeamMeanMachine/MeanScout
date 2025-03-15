@@ -69,7 +69,7 @@ export function parseValueFromString(value: any) {
 }
 
 export function sessionStorageStore<T extends string>(key: string, defaultValue: T) {
-  const value = browser ? (sessionStorage.getItem(key) as T) || defaultValue : defaultValue;
+  const value = browser ? ((sessionStorage.getItem(key) as T) ?? defaultValue) : defaultValue;
   const store = writable<T>(value);
   store.subscribe((val) => browser && sessionStorage.setItem(key, val));
   return store;

@@ -232,6 +232,11 @@ export class FountainDecoder {
       offset += data.length;
     }
 
-    this.ondecode?.(messageData);
+    const lastDataIndex = messageData.findLastIndex((value) => value != 0);
+    if (lastDataIndex != -1 && lastDataIndex < messageData.length - 1) {
+      this.ondecode?.(messageData.slice(0, lastDataIndex + 1));
+    } else {
+      this.ondecode?.(messageData);
+    }
   }
 }

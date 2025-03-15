@@ -29,7 +29,6 @@
   import type { PageData } from "./$types";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
-  import { supportsCompressionApi } from "$lib/compress";
 
   let {
     data,
@@ -437,13 +436,7 @@
         <ShareIcon class="text-theme" />
         <div class="flex flex-col">
           Export
-          <small>
-            {#if supportsCompressionApi}
-              QRF code, File
-            {:else}
-              File
-            {/if}
-          </small>
+          <small>QRF code, File</small>
         </div>
       </Button>
       <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">

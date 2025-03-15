@@ -2,9 +2,8 @@
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
-  import { supportsCompressionApi } from "$lib/compress";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { csvToEntries, importEntries, importEntriesCompressed, type Entry } from "$lib/entry";
+  import { csvToEntries, importEntries, type Entry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
@@ -21,10 +20,7 @@
     onimport: () => void;
   } = $props();
 
-  const tab = sessionStorageStore<"qrfcode" | "file">(
-    "import-data-tab",
-    $cameraStore && supportsCompressionApi ? "qrfcode" : "file",
-  );
+  const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
 
   let files = $state<FileList | undefined>();
   let importedEntries = $state<Entry[]>([]);
@@ -79,13 +75,13 @@
     }
   }
 
-  async function onread(data: Uint8Array) {
+  function onread(data: string) {
     if (!data.length) {
       error = "No input";
       return;
     }
 
-    const result = await importEntriesCompressed(surveyRecord, data);
+    const result = importEntries(surveyRecord, data);
     if (!result.success) {
       error = result.error;
       return;
@@ -102,14 +98,14 @@
 
 <span>Import entries</span>
 
-{#if $cameraStore && supportsCompressionApi}
+{#if $cameraStore}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
     <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 {/if}
 
-{#if $tab == "qrfcode" && $cameraStore && supportsCompressionApi}
+{#if $tab == "qrfcode" && $cameraStore}
   {#if importedEntries.length}
     {@render preview()}
 
