@@ -12,7 +12,6 @@ Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for f
 - [The Blue Alliance](https://www.thebluealliance.com/)
 - [jsQR](https://github.com/cozmo/jsQR)
 - [node-qrcode](https://github.com/soldair/node-qrcode)
-- [Apache Echarts](https://echarts.apache.org/)
 - [Zod](https://zod.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide](https://lucide.dev/)

@@ -4,10 +4,6 @@
   import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import { closeAllDialogs, type DialogState, subscribeDialog } from "$lib/dialog";
   import { animationStore } from "$lib/settings";
-  import { BarChart } from "echarts/charts";
-  import { TooltipComponent, GridComponent, TitleComponent } from "echarts/components";
-  import * as echarts from "echarts/core";
-  import { SVGRenderer } from "echarts/renderers";
   import "../app.css";
 
   let { children } = $props();
@@ -26,8 +22,6 @@
   subscribeDialog((state) => {
     dialogStack = state;
   });
-
-  echarts.use([BarChart, TooltipComponent, GridComponent, TitleComponent, SVGRenderer]);
 
   onNavigate((navigation) => {
     closeAllDialogs();

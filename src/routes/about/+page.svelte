@@ -77,12 +77,6 @@
           </a>
         </li>
         <li>
-          <a href="https://echarts.apache.org/" target="_blank">
-            <span class="underline">Apache Echarts</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
           <a href="https://zod.dev/" target="_blank">
             <span class="underline">Zod</span>
             <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
