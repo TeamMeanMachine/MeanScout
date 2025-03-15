@@ -21,22 +21,24 @@
   let fountainEncoder: FountainEncoder;
 
   async function initFountainEncoder() {
+    clearInterval(interval);
+
     const dataToEncode = $useCompression ? await compress(data) : new TextEncoder().encode(data);
     fountainEncoder = new FountainEncoder(dataToEncode, bytesPerFrame);
-  }
-
-  let canvas: HTMLCanvasElement;
-  let interval: NodeJS.Timeout | undefined = undefined;
-  let drawing = true;
-
-  onMount(async () => {
-    await initFountainEncoder();
 
     update();
 
     if (fountainEncoder.blocks.length > 1) {
       interval = setInterval(update, 1000 / framesPerSecond);
     }
+  }
+
+  let canvas: HTMLCanvasElement;
+  let interval: NodeJS.Timeout | undefined = undefined;
+  let drawing = true;
+
+  onMount(() => {
+    initFountainEncoder();
   });
 
   onDestroy(() => {
@@ -60,6 +62,7 @@
 </canvas>
 
 <Button
+  disabled={!supportsCompressionApi}
   onclick={() => {
     $useCompression = $useCompression ? "" : "true";
     initFountainEncoder();
@@ -70,8 +73,5 @@
   {:else}
     <SquareIcon class="text-theme" />
   {/if}
-  <div class="flex flex-col">
-    <span class={$useCompression == "true" ? "font-bold" : "font-light"}>Compress data</span>
-    <small>Uncheck for Apple devices</small>
-  </div>
+  <span class={$useCompression == "true" ? "font-bold" : "font-light"}>Compress</span>
 </Button>

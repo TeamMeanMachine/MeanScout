@@ -18,18 +18,16 @@
 
   const cleanedSurveyName = surveyRecord.name.replaceAll(" ", "_");
 
-  function surveyAsJSON() {
-    return exportSurvey($state.snapshot(surveyRecord), $state.snapshot(fieldRecords));
-  }
+  const json = exportSurvey($state.snapshot(surveyRecord), $state.snapshot(fieldRecords));
 
   function shareSurveyAsFile() {
     // Web Share API does not allow JSON files.
     // https://docs.google.com/document/d/1tKPkHA5nnJtmh2TgqWmGSREUzXgMUFDL6yMdVZHqUsg
-    share(surveyAsJSON(), `${cleanedSurveyName}-survey.txt`, "text/plain");
+    share(json, `${cleanedSurveyName}-survey.txt`, "text/plain");
   }
 
   function saveSurveyAsFile() {
-    download(surveyAsJSON(), `${cleanedSurveyName}-survey.json`, "application/json");
+    download(json, `${cleanedSurveyName}-survey.json`, "application/json");
   }
 </script>
 
@@ -41,7 +39,7 @@
 </div>
 
 {#if $tab == "qrfcode"}
-  <QrCodeDisplay data={surveyAsJSON()} />
+  <QrCodeDisplay data={json} />
 {:else}
   {#if "canShare" in navigator}
     <Button onclick={shareSurveyAsFile}>

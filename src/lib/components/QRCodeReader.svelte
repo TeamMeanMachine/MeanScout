@@ -3,18 +3,13 @@
   import { FountainDecoder } from "$lib/fountain";
   import { cameraStore } from "$lib/settings";
   import jsQR from "jsqr";
-  import { sessionStorageStore } from "$lib";
-  import { decompress, supportsCompressionApi } from "$lib/compress";
-  import Button from "./Button.svelte";
-  import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { decompress } from "$lib/compress";
 
   let {
     onread,
   }: {
     onread: (data: string) => void;
   } = $props();
-
-  const useCompression = sessionStorageStore<"true" | "">("use-compression", supportsCompressionApi ? "true" : "");
 
   // Using the experimental BarcodeDetector API resulted in issues when sharing between Apple and Android devices.
   // For now, we just use a library to scan QR codes.
@@ -36,13 +31,11 @@
     };
 
     fountainDecoder = new FountainDecoder();
-    fountainDecoder.ondecode = async (message) => {
+    fountainDecoder.ondecode = (message) => {
       stop();
-      if ($useCompression) {
-        onread(await decompress(message));
-      } else {
-        onread(new TextDecoder().decode(message));
-      }
+      decompress(message)
+        .then((data) => onread(data || new TextDecoder().decode(message)))
+        .catch(() => onread(new TextDecoder().decode(message)));
     };
 
     stream = await navigator.mediaDevices.getUserMedia({
@@ -102,18 +95,3 @@
 
 <video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>
 <span class="overflow-hidden text-nowrap text-ellipsis whitespace-nowrap">scanned: {scanned}</span>
-<Button
-  onclick={() => {
-    $useCompression = $useCompression ? "" : "true";
-  }}
->
-  {#if $useCompression}
-    <SquareCheckBigIcon class="text-theme" />
-  {:else}
-    <SquareIcon class="text-theme" />
-  {/if}
-  <div class="flex flex-col">
-    <span class={$useCompression == "true" ? "font-bold" : "font-light"}>Compress data</span>
-    <small>Uncheck for Apple devices</small>
-  </div>
-</Button>

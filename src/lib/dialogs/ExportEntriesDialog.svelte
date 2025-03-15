@@ -124,7 +124,7 @@
 </div>
 
 {#if $tab == "qrfcode"}
-  <QRCodeDisplay data={entriesAsCSV()} />
+  <QRCodeDisplay data={exportEntries(entries)} />
 {:else}
   {#if "canShare" in navigator}
     <div class="flex flex-wrap gap-2">
