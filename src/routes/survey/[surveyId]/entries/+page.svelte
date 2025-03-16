@@ -19,7 +19,10 @@
     data: PageData;
   } = $props();
 
-  const sortBy = sessionStorageStore<"match" | "team">("entries-sort", data.surveyType == "match" ? "match" : "team");
+  const groupBy = sessionStorageStore<"match" | "team" | "scout">(
+    "entries-group",
+    data.surveyType == "match" ? "match" : "team",
+  );
 
   let filterableTeams = $derived.by(() => {
     const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
@@ -192,9 +195,23 @@
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
     const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
+    const scoutCompare = a.scout?.localeCompare(b.scout || "");
 
-    if ($sortBy == "match") {
+    if ($groupBy == "match") {
+      if (matchCompare == 0 && a.type == "match" && b.type == "match") {
+        const match = data.surveyRecord.matches.find((m) => m.number == a.match);
+        if (match) {
+          const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+          const targetA = targets.findIndex((t) => t == a.team);
+          const targetB = targets.findIndex((t) => t == b.team);
+          return targetA - targetB || matchCompare || teamCompare;
+        }
+      }
       return matchCompare || teamCompare;
+    }
+
+    if ($groupBy == "scout") {
+      return scoutCompare || matchCompare || teamCompare;
     }
 
     return teamCompare || matchCompare;
@@ -305,7 +322,7 @@
             <select
               bind:value={filters.match}
               onchange={() => {
-                if (filters.match) $sortBy = "match";
+                if (filters.match) $groupBy = "match";
                 onscroll();
               }}
               class="text-theme bg-neutral-800 p-2"
@@ -324,7 +341,7 @@
           <select
             bind:value={filters.team}
             onchange={() => {
-              if (filters.team) $sortBy = "team";
+              if (filters.team) $groupBy = "team";
               onscroll();
             }}
             class="text-theme bg-neutral-800 p-2 capitalize"
@@ -389,7 +406,10 @@
             Scout
             <select
               bind:value={filters.scout}
-              onchange={onscroll}
+              onchange={() => {
+                if (filters.scout) $groupBy = "scout";
+                onscroll();
+              }}
               class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.scout !== undefined}
             >
@@ -405,7 +425,7 @@
 
     <div>
       {#if filtersApplied}
-        {filteredEntries.length} / {data.entryRecords.length}
+        {filteredEntries.length}<small class="font-light">/{data.entryRecords.length}</small>
         - {filtersApplied}
         {filtersApplied == 1 ? "filter" : "filters"}
       {:else}
@@ -457,22 +477,27 @@
 
     {#if data.surveyType == "match" && filteredEntries.length}
       <div class="flex flex-col">
-        <span>Sort by</span>
+        <span>Group by</span>
         <div class="flex flex-wrap gap-2">
-          <Button onclick={() => ($sortBy = "match")} class={$sortBy == "match" ? "font-bold" : "font-light"}>
-            Match
-          </Button>
-          <Button onclick={() => ($sortBy = "team")} class={$sortBy == "team" ? "font-bold" : "font-light"}>
+          {#if data.surveyType == "match"}
+            <Button onclick={() => ($groupBy = "match")} class={$groupBy == "match" ? "font-bold" : "font-light"}>
+              Match
+            </Button>
+          {/if}
+          <Button onclick={() => ($groupBy = "team")} class={$groupBy == "team" ? "font-bold" : "font-light"}>
             Team
           </Button>
+          {#if filterableScouts?.length}
+            <Button onclick={() => ($groupBy = "scout")} class={$groupBy == "scout" ? "font-bold" : "font-light"}>
+              Scout
+            </Button>
+          {/if}
         </div>
       </div>
     {/if}
   </div>
 
   {#snippet entryButton(entry: IDBRecord<Entry>)}
-    {@const teamName = data.surveyRecord.teams.find((t) => t.number == entry.team)?.name}
-
     <Button
       onclick={() => {
         openDialog(ViewEntryDialog, {
@@ -484,19 +509,25 @@
       }}
       class="gap-x-4"
     >
-      {#if entry.type == "match" && $sortBy != "match"}
+      {#if entry.type == "match" && $groupBy != "match"}
         <div class="flex flex-col">
           <small class="font-light">Match</small>
           <span>{entry.match}</span>
         </div>
       {/if}
-      {#if $sortBy != "team"}
-        <div class="flex flex-col">
-          <small class="font-light text-wrap">{teamName || "Team"}</small>
+      {#if $groupBy != "team"}
+        {@const teamName = data.surveyRecord.teams.find((t) => t.number == entry.team)?.name}
+        <div class="flex w-32 max-w-full flex-col">
+          <small class="overflow-hidden font-light text-nowrap text-ellipsis">{teamName || "Team"}</small>
           <span>{entry.team}</span>
         </div>
       {/if}
-      <div class="grow"></div>
+      {#if $groupBy != "scout" && entry.type == "match"}
+        <div class="flex w-24 max-w-full flex-col">
+          <small class="font-light text-wrap">Scout</small>
+          <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+        </div>
+      {/if}
       <div class="flex flex-col">
         {#if entry.type == "match"}
           <small>{entry.absent ? "Absent" : ""}</small>
@@ -506,13 +537,28 @@
     </Button>
   {/snippet}
 
-  {#if $sortBy == "match" && data.surveyType == "match"}
+  {#if $groupBy == "match" && data.surveyType == "match"}
     {#each filterableMatches as matchNumber}
       {@const thisMatchEntries = displayedEntries.filter((e) => e.type == "match" && e.match == matchNumber)}
       {#if thisMatchEntries.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="sticky top-0 bg-neutral-900 font-bold">Match {matchNumber}</h2>
+        <div class="-mx-1 flex flex-col gap-2 px-1">
+          <h2 class="sticky top-0 z-20 bg-neutral-900 font-bold">Match {matchNumber}</h2>
           {#each thisMatchEntries as entry (entry.id)}
+            {@render entryButton(entry)}
+          {/each}
+        </div>
+      {/if}
+    {/each}
+  {:else if $groupBy == "scout" && filterableScouts?.length}
+    {#each ["", ...filterableScouts] as scout}
+      {@const thisScoutEntries = displayedEntries.filter((e) => e.type == "match" && (e.scout || "") == scout)}
+      {#if thisScoutEntries.length}
+        <div class="-mx-1 flex flex-col gap-2 px-1">
+          <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
+            <h2 class="font-bold">{scout}</h2>
+            <small>{thisScoutEntries.length} {thisScoutEntries.length == 1 ? "entry" : "entries"}</small>
+          </div>
+          {#each thisScoutEntries as entry (entry.id)}
             {@render entryButton(entry)}
           {/each}
         </div>
@@ -523,12 +569,15 @@
       {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
       {#if thisTeamEntries.length}
         {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name}
-        <div class="flex flex-col gap-2">
-          <div class="sticky top-0 flex flex-col bg-neutral-900">
-            <h2 class="font-bold">Team {team}</h2>
-            {#if teamName}
-              <small>{teamName}</small>
-            {/if}
+        <div class="-mx-1 flex flex-col gap-2 px-1">
+          <div class="sticky top-0 flex flex-wrap items-end justify-between gap-x-2 bg-neutral-900">
+            <div class="flex flex-col">
+              <h2 class="font-bold">Team {team}</h2>
+              {#if teamName}
+                <small>{teamName}</small>
+              {/if}
+            </div>
+            <small>{thisTeamEntries.length} {thisTeamEntries.length == 1 ? "entry" : "entries"}</small>
           </div>
           {#each thisTeamEntries as entry (entry.id)}
             {@render entryButton(entry)}

@@ -70,9 +70,24 @@
   let prefilledTeamName = $derived(data.surveyRecord.teams.find((t) => t.number == prefilledTeam)?.name);
 
   let prefilledScout = $derived.by(() => {
-    const latestEntry = data.entryRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime())[0];
-    if (latestEntry && latestEntry.scout) {
-      return latestEntry.scout;
+    const latestEntries = data.entryRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
+
+    if (data.surveyType == "match") {
+      for (const entry of latestEntries) {
+        if (
+          entry.scout &&
+          entry.type == "match" &&
+          data.surveyRecord.matches.some(
+            (m) => m.number == entry.match && m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+          )
+        ) {
+          return entry.scout;
+        }
+      }
+    }
+
+    if (latestEntries[0] && latestEntries[0].scout) {
+      return latestEntries[0].scout;
     }
   });
 
