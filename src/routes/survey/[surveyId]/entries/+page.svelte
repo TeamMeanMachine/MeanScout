@@ -11,7 +11,7 @@
   import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import { ArrowDownIcon, CheckIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
+  import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
 
   let {
     data,
@@ -19,12 +19,7 @@
     data: PageData;
   } = $props();
 
-  const sortBy = sessionStorageStore<"match" | "team" | "absent" | "exported">(
-    "entries-sort",
-    data.surveyType == "match" ? "match" : "team",
-  );
-
-  let dataGrid: HTMLDivElement;
+  const sortBy = sessionStorageStore<"match" | "team">("entries-sort", data.surveyType == "match" ? "match" : "team");
 
   let filterableTeams = $derived.by(() => {
     const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
@@ -64,41 +59,41 @@
     scout: sessionStorage.getItem("entries-filters-scout") || undefined,
   });
 
-  $effect(() =>
+  $effect(() => {
     filters.match
       ? sessionStorage.setItem("entries-filters-match", filters.match.toString())
-      : sessionStorage.removeItem("entries-filters-match"),
-  );
+      : sessionStorage.removeItem("entries-filters-match");
+  });
 
-  $effect(() =>
+  $effect(() => {
     filters.team
       ? sessionStorage.setItem("entries-filters-team", filters.team)
-      : sessionStorage.removeItem("entries-filters-team"),
-  );
+      : sessionStorage.removeItem("entries-filters-team");
+  });
 
-  $effect(() =>
+  $effect(() => {
     filters.absent !== undefined
       ? sessionStorage.setItem("entries-filters-absent", filters.absent ? "true" : "false")
-      : sessionStorage.removeItem("entries-filters-absent"),
-  );
+      : sessionStorage.removeItem("entries-filters-absent");
+  });
 
-  $effect(() =>
+  $effect(() => {
     filters.target
       ? sessionStorage.setItem("entries-filters-target", filters.target)
-      : sessionStorage.removeItem("entries-filters-target"),
-  );
+      : sessionStorage.removeItem("entries-filters-target");
+  });
 
-  $effect(() =>
+  $effect(() => {
     filters.exported !== undefined
       ? sessionStorage.setItem("entries-filters-exported", filters.exported ? "true" : "false")
-      : sessionStorage.removeItem("entries-filters-exported"),
-  );
+      : sessionStorage.removeItem("entries-filters-exported");
+  });
 
-  $effect(() =>
+  $effect(() => {
     filters.scout
       ? sessionStorage.setItem("entries-filters-scout", filters.scout)
-      : sessionStorage.removeItem("entries-filters-scout"),
-  );
+      : sessionStorage.removeItem("entries-filters-scout");
+  });
 
   let filtersApplied = $derived.by(() => {
     return Object.values(filters).filter((val) => val !== undefined).length;
@@ -197,19 +192,9 @@
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
     const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
-    const absentCompare = a.type == "match" && b.type == "match" ? Number(b.absent) - Number(a.absent) : 0;
-    const exportedCompare = Number(a.status == "exported") - Number(b.status == "exported");
 
     if ($sortBy == "match") {
       return matchCompare || teamCompare;
-    }
-
-    if ($sortBy == "absent") {
-      return absentCompare || matchCompare || teamCompare;
-    }
-
-    if ($sortBy == "exported") {
-      return exportedCompare || matchCompare || teamCompare;
     }
 
     return teamCompare || matchCompare;
@@ -258,13 +243,6 @@
     };
   }
 
-  function scrollToTop() {
-    if (window.scrollY > dataGrid.getBoundingClientRect().top) {
-      dataGrid.scrollIntoView();
-    }
-    onscroll();
-  }
-
   function resetFilters() {
     filters = {
       team: undefined,
@@ -274,7 +252,7 @@
       exported: undefined,
       scout: undefined,
     };
-    scrollToTop();
+    onscroll();
   }
 
   function onscroll() {
@@ -285,10 +263,6 @@
       flushSync();
       onscroll();
     }
-  }
-
-  function sortButtonStyle(sort: string) {
-    return sort == $sortBy ? "font-bold" : "font-light";
   }
 </script>
 
@@ -303,47 +277,37 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-wrap gap-3" style="view-transition-name:entries">
-  <div class="grow basis-0">
-    <div class="flex flex-col pb-2">
-      <Button
-        onclick={() => {
-          openDialog(ImportEntriesDialog, {
-            surveyRecord: data.surveyRecord,
-            fields: data.fields,
-            onimport: refresh,
-          });
-        }}
-      >
-        <ImportIcon class="text-theme" />
-        <div class="flex flex-col">
-          Import
-          <small>
-            {#if $cameraStore}
-              QRF code, File
-            {:else}
-              File
-            {/if}
-          </small>
-        </div>
-      </Button>
-    </div>
+<div class="flex flex-col gap-6" style="view-transition-name:entries">
+  {#if duplicateEntryIds.length}
+    <Button onclick={fixEntries}>
+      <WrenchIcon class="text-theme" />
+      <div class="flex flex-col">
+        Fix entries
+        <small>{duplicateEntryIds.length} duplicate entries were found</small>
+      </div>
+    </Button>
+  {/if}
 
-    <div class="sticky top-0 flex flex-col gap-2 bg-neutral-900 pt-2">
-      <div class="flex flex-wrap items-center">
-        <h2 class="grow font-bold">Filter</h2>
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-wrap gap-4">
+      <div class="flex flex-col">
+        <h2 class="font-bold">Filters</h2>
         <Button onclick={resetFilters} disabled={!filtersApplied}>
           <Undo2Icon class="text-theme" />
+          Reset
         </Button>
       </div>
 
-      <div class="mb-2 flex flex-wrap gap-2">
+      <div class="flex grow flex-wrap gap-2">
         {#if data.surveyType == "match"}
           <label class="flex grow flex-col">
             Match
             <select
               bind:value={filters.match}
-              onchange={scrollToTop}
+              onchange={() => {
+                if (filters.match) $sortBy = "match";
+                onscroll();
+              }}
               class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.match !== undefined}
             >
@@ -359,7 +323,10 @@
           Team
           <select
             bind:value={filters.team}
-            onchange={scrollToTop}
+            onchange={() => {
+              if (filters.team) $sortBy = "team";
+              onscroll();
+            }}
             class="text-theme bg-neutral-800 p-2 capitalize"
             class:font-bold={filters.team !== undefined}
           >
@@ -375,7 +342,7 @@
             Absent
             <select
               bind:value={filters.absent}
-              onchange={scrollToTop}
+              onchange={onscroll}
               class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.absent !== undefined}
             >
@@ -390,7 +357,7 @@
           Exported
           <select
             bind:value={filters.exported}
-            onchange={scrollToTop}
+            onchange={onscroll}
             class="text-theme bg-neutral-800 p-2"
             class:font-bold={filters.exported !== undefined}
           >
@@ -405,7 +372,7 @@
             Target
             <select
               bind:value={filters.target}
-              onchange={scrollToTop}
+              onchange={onscroll}
               class="text-theme bg-neutral-800 p-2 capitalize"
               class:font-bold={filters.target !== undefined}
             >
@@ -422,7 +389,7 @@
             Scout
             <select
               bind:value={filters.scout}
-              onchange={scrollToTop}
+              onchange={onscroll}
               class="text-theme bg-neutral-800 p-2"
               class:font-bold={filters.scout !== undefined}
             >
@@ -434,39 +401,9 @@
           </label>
         {/if}
       </div>
-
-      {#if filteredEntries.length}
-        <Button
-          onclick={() => {
-            openDialog(ExportEntriesDialog, {
-              surveyRecord: data.surveyRecord,
-              entries: filteredEntries,
-              onexport: () => refresh(),
-            });
-          }}
-        >
-          <ShareIcon class="text-theme" />
-          <div class="flex flex-col">
-            Export
-            <small>QRF code, File</small>
-          </div>
-        </Button>
-      {/if}
     </div>
-  </div>
 
-  <div class="flex grow flex-col">
-    {#if duplicateEntryIds.length}
-      <Button onclick={fixEntries}>
-        <WrenchIcon class="text-theme" />
-        <div class="flex flex-col">
-          Fix entries
-          <small>{duplicateEntryIds.length} duplicate entries were found</small>
-        </div>
-      </Button>
-    {/if}
-
-    <small>
+    <div>
       {#if filtersApplied}
         {filteredEntries.length} / {data.entryRecords.length}
         - {filtersApplied}
@@ -474,120 +411,137 @@
       {:else}
         {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
       {/if}
-    </small>
-    <small>Sorting by {$sortBy}</small>
+    </div>
 
-    <div
-      bind:this={dataGrid}
-      class="grid gap-2 pt-1"
-      style="grid-template-columns: repeat({data.surveyType == 'match' ? 4 : 2}, min-content) auto;"
-    >
-      <div class="sticky top-0 z-20 col-span-full grid grid-cols-subgrid bg-neutral-900 py-2">
-        {#if data.surveyType == "match"}
-          <Button
-            onclick={() => {
-              $sortBy = "match";
-              scrollToTop();
-            }}
-            class={sortButtonStyle("match")}
-          >
+    <div class="flex flex-wrap gap-2">
+      <Button
+        onclick={() => {
+          openDialog(ExportEntriesDialog, {
+            surveyRecord: data.surveyRecord,
+            entries: filteredEntries,
+            onexport: () => refresh(),
+          });
+        }}
+        disabled={!filteredEntries.length}
+        class="grow basis-48"
+      >
+        <ShareIcon class="text-theme" />
+        <div class="flex flex-col">
+          Export
+          <small>QRF code, File</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          openDialog(ImportEntriesDialog, {
+            surveyRecord: data.surveyRecord,
+            fields: data.fields,
+            onimport: refresh,
+          });
+        }}
+        class="grow basis-48"
+      >
+        <ImportIcon class="text-theme" />
+        <div class="flex flex-col">
+          Import
+          <small>
+            {#if $cameraStore}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </small>
+        </div>
+      </Button>
+    </div>
+
+    {#if data.surveyType == "match" && filteredEntries.length}
+      <div class="flex flex-col">
+        <span>Sort by</span>
+        <div class="flex flex-wrap gap-2">
+          <Button onclick={() => ($sortBy = "match")} class={$sortBy == "match" ? "font-bold" : "font-light"}>
             Match
           </Button>
-        {/if}
-        <Button
-          onclick={() => {
-            $sortBy = "team";
-            scrollToTop();
-          }}
-          class={sortButtonStyle("team")}
-        >
-          Team
-        </Button>
-        {#if data.surveyType == "match"}
-          <Button
-            onclick={() => {
-              $sortBy = "absent";
-              scrollToTop();
-            }}
-            class={sortButtonStyle("absent")}
-          >
-            Absent
+          <Button onclick={() => ($sortBy = "team")} class={$sortBy == "team" ? "font-bold" : "font-light"}>
+            Team
           </Button>
-        {/if}
-        <Button
-          onclick={() => {
-            $sortBy = "exported";
-            scrollToTop();
-          }}
-          class={sortButtonStyle("exported")}
-        >
-          Exported
-        </Button>
+        </div>
       </div>
+    {/if}
+  </div>
 
-      {#snippet entryButton(entry: IDBRecord<Entry>)}
-        <Button
-          onclick={() => {
-            openDialog(ViewEntryDialog, {
-              surveyRecord: data.surveyRecord,
-              fieldRecords: data.fieldRecords,
-              entryRecord: entry,
-              onchange: refresh,
-            });
-          }}
-          class="col-span-full grid grid-cols-subgrid text-center!"
-        >
-          {#if entry.type == "match"}
-            <div>{entry.match}</div>
-          {/if}
-          <div>{entry.team}</div>
-          {#if entry.type == "match"}
-            <div>
-              {#if entry.absent}
-                <CheckIcon class="text-theme w-full" />
-              {/if}
-            </div>
-          {/if}
-          <div>
-            {#if entry.status == "exported"}
-              <CheckIcon class="text-theme w-full" />
+  {#snippet entryButton(entry: IDBRecord<Entry>)}
+    {@const teamName = data.surveyRecord.teams.find((t) => t.number == entry.team)?.name}
+
+    <Button
+      onclick={() => {
+        openDialog(ViewEntryDialog, {
+          surveyRecord: data.surveyRecord,
+          fieldRecords: data.fieldRecords,
+          entryRecord: entry,
+          onchange: refresh,
+        });
+      }}
+      class="gap-x-4"
+    >
+      {#if entry.type == "match" && $sortBy != "match"}
+        <div class="flex flex-col">
+          <small class="font-light">Match</small>
+          <span>{entry.match}</span>
+        </div>
+      {/if}
+      {#if $sortBy != "team"}
+        <div class="flex flex-col">
+          <small class="font-light text-wrap">{teamName || "Team"}</small>
+          <span>{entry.team}</span>
+        </div>
+      {/if}
+      <div class="grow"></div>
+      <div class="flex flex-col">
+        {#if entry.type == "match"}
+          <small>{entry.absent ? "Absent" : ""}</small>
+        {/if}
+        <small>{entry.status == "exported" ? "Exported" : ""}</small>
+      </div>
+    </Button>
+  {/snippet}
+
+  {#if $sortBy == "match" && data.surveyType == "match"}
+    {#each filterableMatches as matchNumber}
+      {@const thisMatchEntries = displayedEntries.filter((e) => e.type == "match" && e.match == matchNumber)}
+      {#if thisMatchEntries.length}
+        <div class="flex flex-col gap-2">
+          <h2 class="sticky top-0 bg-neutral-900 font-bold">Match {matchNumber}</h2>
+          {#each thisMatchEntries as entry (entry.id)}
+            {@render entryButton(entry)}
+          {/each}
+        </div>
+      {/if}
+    {/each}
+  {:else}
+    {#each filterableTeams as team}
+      {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
+      {#if thisTeamEntries.length}
+        {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name}
+        <div class="flex flex-col gap-2">
+          <div class="sticky top-0 flex flex-col bg-neutral-900">
+            <h2 class="font-bold">Team {team}</h2>
+            {#if teamName}
+              <small>{teamName}</small>
             {/if}
           </div>
-        </Button>
-      {/snippet}
-
-      {#if $sortBy == "match" && !filters.team && !filters.target}
-        {#each filterableMatches as matchNumber}
-          {@const thisMatchEntries = displayedEntries.filter((e) => e.type == "match" && e.match == matchNumber)}
-          {#if thisMatchEntries.length}
-            {#each thisMatchEntries as entry (entry.id)}
-              {@render entryButton(entry)}
-            {/each}
-            <div class="col-span-full"></div>
-          {/if}
-        {/each}
-      {:else if $sortBy == "team" && !filters.match}
-        {#each filterableTeams as team}
-          {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
-          {#if thisTeamEntries.length}
-            {#each thisTeamEntries as entry (entry.id)}
-              {@render entryButton(entry)}
-            {/each}
-            <div class="col-span-full"></div>
-          {/if}
-        {/each}
-      {:else}
-        {#each displayedEntries as entry (entry.id)}
-          {@render entryButton(entry)}
-        {/each}
+          {#each thisTeamEntries as entry (entry.id)}
+            {@render entryButton(entry)}
+          {/each}
+        </div>
       {/if}
+    {/each}
+  {/if}
 
-      {#if displayedEntries.length < filteredEntries.length}
-        <Button onclick={() => (displayedCount += 20)} class="col-span-full">
-          <ArrowDownIcon class="text-theme" />
-          Show more
-        </Button>
-      {/if}
-    </div>
-  </div>
+  {#if displayedEntries.length < filteredEntries.length}
+    <Button onclick={() => (displayedCount += 20)}>
+      <ArrowDownIcon class="text-theme" />
+      Show more
+    </Button>
+  {/if}
 </div>
