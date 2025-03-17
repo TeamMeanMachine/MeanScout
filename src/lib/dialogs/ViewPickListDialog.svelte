@@ -78,7 +78,7 @@
     <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
   </div>
 
-  <div class="flex max-h-[500px] flex-col gap-4 overflow-y-auto">
+  <div class="-mx-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto px-1">
     {#if $tab == "bar"}
       {#each sortedTeamData as { team, percentage, color }}
         <div class="pr-1" style="width:{percentage.toFixed(2)}%">

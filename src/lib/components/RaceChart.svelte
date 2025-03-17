@@ -75,26 +75,42 @@
         clearTimeout(interval);
       } else {
         match++;
-        const newData = generateRaceData(match);
-        data = data
-          .map((team) => {
-            const newPercentage = newData.find((d) => d.team == team.team)?.percentage;
-            if (newPercentage) {
-              team.percentage.target = newPercentage;
-            }
-            return team;
-          })
-          .toSorted((a, b) => b.percentage.target - a.percentage.target);
+        update();
       }
     }, updateDuration);
   });
+
+  function update() {
+    const newData = generateRaceData(match);
+    data = data
+      .map((team) => {
+        const newPercentage = newData.find((d) => d.team == team.team)?.percentage;
+        if (newPercentage !== undefined) {
+          team.percentage.target = newPercentage;
+        }
+        return team;
+      })
+      .toSorted((a, b) => b.percentage.target - a.percentage.target);
+  }
 
   onDestroy(() => {
     clearInterval(interval);
   });
 </script>
 
-<span>Match {match}</span>
+<div class="flex flex-col">
+  <span>Match {match}</span>
+
+  <input
+    type="range"
+    min="1"
+    max={Math.max(...surveyRecord.matches.map((m) => m.number))}
+    bind:value={match}
+    oninput={() => clearInterval(interval)}
+    onchange={update}
+    class="accent-theme"
+  />
+</div>
 
 {#each data as { team, percentage, color } (team)}
   <div
