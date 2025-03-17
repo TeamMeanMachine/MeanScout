@@ -522,7 +522,7 @@
           <span>{entry.team}</span>
         </div>
       {/if}
-      {#if $groupBy != "scout" && entry.type == "match"}
+      {#if $groupBy != "scout" && entry.type == "match" && entry.scout}
         <div class="flex w-24 max-w-full flex-col">
           <small class="font-light text-wrap">Scout</small>
           <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
@@ -554,10 +554,7 @@
       {@const thisScoutEntries = displayedEntries.filter((e) => e.type == "match" && (e.scout || "") == scout)}
       {#if thisScoutEntries.length}
         <div class="-mx-1 flex flex-col gap-2 px-1">
-          <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
-            <h2 class="font-bold">{scout}</h2>
-            <small>{thisScoutEntries.length} {thisScoutEntries.length == 1 ? "entry" : "entries"}</small>
-          </div>
+          <h2 class="sticky top-0 z-20 flex flex-col bg-neutral-900 font-bold">{scout || "No name"}</h2>
           {#each thisScoutEntries as entry (entry.id)}
             {@render entryButton(entry)}
           {/each}
@@ -570,14 +567,11 @@
       {#if thisTeamEntries.length}
         {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name}
         <div class="-mx-1 flex flex-col gap-2 px-1">
-          <div class="sticky top-0 flex flex-wrap items-end justify-between gap-x-2 bg-neutral-900">
-            <div class="flex flex-col">
-              <h2 class="font-bold">Team {team}</h2>
-              {#if teamName}
-                <small>{teamName}</small>
-              {/if}
-            </div>
-            <small>{thisTeamEntries.length} {thisTeamEntries.length == 1 ? "entry" : "entries"}</small>
+          <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
+            <h2 class="font-bold">Team {team}</h2>
+            {#if teamName}
+              <small>{teamName}</small>
+            {/if}
           </div>
           {#each thisTeamEntries as entry (entry.id)}
             {@render entryButton(entry)}

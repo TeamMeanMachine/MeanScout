@@ -2,7 +2,7 @@ import { initIDB } from "$lib/idb";
 import type { ClientInit } from "@sveltejs/kit";
 
 export const init: ClientInit = async () => {
-  if (!localStorage.getItem("init")) {
+  if (!localStorage.getItem("init") && !location.hash.includes("about")) {
     location.hash = `/settings`;
   } else if (localStorage.getItem("survey") && location.hash.replaceAll("/", "") == "") {
     location.hash = `/survey/${localStorage.getItem("survey")}`;

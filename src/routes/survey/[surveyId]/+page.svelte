@@ -10,7 +10,7 @@
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import { getMatchEntriesByTeam } from "$lib/entry";
   import { objectStore } from "$lib/idb";
-  import { modeStore, targetStore, teamStore } from "$lib/settings";
+  import { cameraStore, modeStore, targetStore, teamStore } from "$lib/settings";
   import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
   import {
     ArrowLeftIcon,
@@ -21,6 +21,7 @@
     ListOrderedIcon,
     NotepadTextIcon,
     PlusIcon,
+    ReplaceIcon,
     Settings2Icon,
     SettingsIcon,
     ShareIcon,
@@ -29,6 +30,7 @@
   import type { PageData } from "./$types";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
+  import OverwriteSurveyDialog from "$lib/dialogs/OverwriteSurveyDialog.svelte";
 
   let {
     data,
@@ -231,7 +233,7 @@
     {/each}
   </div>
 
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2" style="view-transition-name:entries">
     <h2 class="font-bold">Entries</h2>
 
     {#each entries as entry (entry.id)}
@@ -253,7 +255,7 @@
       </Button>
     {/each}
 
-    <Anchor route="survey/{data.surveyRecord.id}/entries" style="view-transition-name:entries">
+    <Anchor route="survey/{data.surveyRecord.id}/entries">
       <NotepadTextIcon class="text-theme" />
       <div class="flex grow flex-col">
         Entries
@@ -441,19 +443,45 @@
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Survey</h2>
-      <Button
-        onclick={() =>
-          openDialog(ExportSurveyDialog, {
-            surveyRecord: data.surveyRecord,
-            fieldRecords: data.fieldRecords,
-          })}
-      >
-        <ShareIcon class="text-theme" />
-        <div class="flex flex-col">
-          Export
-          <small>QRF code, File</small>
-        </div>
-      </Button>
+      <div class="flex flex-wrap gap-2">
+        <Button
+          onclick={() => {
+            openDialog(ExportSurveyDialog, {
+              surveyRecord: data.surveyRecord,
+              fieldRecords: data.fieldRecords,
+            });
+          }}
+          class="grow basis-0"
+        >
+          <ShareIcon class="text-theme" />
+          <div class="flex flex-col">
+            Export
+            <small>QRF code, File</small>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            openDialog(OverwriteSurveyDialog, {
+              surveyRecord: data.surveyRecord,
+              fieldRecords: data.fieldRecords,
+              entryCount: data.entryRecords.length,
+            });
+          }}
+          class="grow basis-0"
+        >
+          <ReplaceIcon class="text-theme" />
+          <div class="flex flex-col">
+            Overwrite
+            <small>
+              {#if $cameraStore}
+                QRF code, File
+              {:else}
+                File
+              {/if}
+            </small>
+          </div>
+        </Button>
+      </div>
       <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
         <Settings2Icon class="text-theme" />
         <div class="flex grow flex-col">
