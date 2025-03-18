@@ -18,7 +18,7 @@
   let reading = $state(false);
   let scanned = $state<number[] | string>("--");
 
-  let video: HTMLVideoElement;
+  let video: HTMLVideoElement | undefined = undefined;
   let stream: MediaStream;
   let fountainDecoder: FountainDecoder;
 
@@ -46,8 +46,13 @@
       audio: false,
     });
 
-    video.srcObject = stream;
+    // QRCodeReader might be destroyed while we're getting user media.
+    if (!video) {
+      stop();
+      return;
+    }
 
+    video.srcObject = stream;
     reading = true;
 
     if ("requestVideoFrameCallback" in video) {
@@ -57,10 +62,10 @@
     }
   });
 
-  onDestroy(() => stop());
+  onDestroy(stop);
 
   async function update() {
-    if (!reading) return;
+    if (!reading || !video) return;
     scanned = "--";
 
     if (video.readyState == video.HAVE_ENOUGH_DATA) {
@@ -76,7 +81,6 @@
       }
     }
 
-    if (!reading) return;
     if ("requestVideoFrameCallback" in video) {
       video.requestVideoFrameCallback(update);
     } else {
@@ -93,5 +97,5 @@
   }
 </script>
 
-<video bind:this={video} autoplay muted class={reading ? "block" : "hidden"}></video>
+<video bind:this={video} autoplay playsinline muted class={reading ? "block" : "hidden"}></video>
 <span class="overflow-hidden text-nowrap text-ellipsis whitespace-nowrap">scanned: {scanned}</span>
