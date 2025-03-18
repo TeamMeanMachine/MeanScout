@@ -1,28 +1,19 @@
 <script lang="ts">
-  import { getOrdinal, sessionStorageStore, type TeamInfo } from "$lib";
+  import { sessionStorageStore, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import type { Entry, MatchEntry } from "$lib/entry";
+  import type { Entry } from "$lib/entry";
   import { getDetailedNestedFields } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
-  import ViewExpressionDialog from "./ViewExpressionDialog.svelte";
-  import ViewPickListDialog from "./ViewPickListDialog.svelte";
 
   let {
     data,
-    teamInfo,
-    entriesByTeam,
+    team,
   }: {
     data: PageData;
-    teamInfo: TeamInfo;
-    entriesByTeam: Record<string, IDBRecord<Entry>[]>;
+    team: Team;
   } = $props();
 
-  const tab = sessionStorageStore<"ranks" | "raw-data" | "raw-text">(
-    "view-team-tab",
-    data.surveyType == "match" ? "ranks" : "raw-data",
-  );
+  const tab = sessionStorageStore<"raw-data" | "raw-text">("view-team-tab", "raw-data");
 
   const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
     data.surveyRecord.fieldIds,
@@ -34,7 +25,7 @@
   const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
 
   function filterEntries(entry: IDBRecord<Entry>) {
-    return entry.status != "draft" && entry.team == teamInfo.number;
+    return entry.status != "draft" && entry.team == team.number;
   }
 
   function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
@@ -47,108 +38,24 @@
 </script>
 
 <div class="flex flex-col">
-  <span>Team {teamInfo.number}</span>
-  {#if teamInfo.name}
-    <small>{teamInfo.name}</small>
+  <span>Team {team.number}</span>
+  {#if team.name}
+    <small>{team.name}</small>
   {/if}
 </div>
 
 {#if entries.length}
   <div class="flex flex-wrap gap-2 text-sm">
-    {#if data.surveyType == "match"}
-      <Button onclick={() => ($tab = "ranks")} class={$tab == "ranks" ? "font-bold" : "font-light"}>Ranks</Button>
-    {/if}
-    <Button onclick={() => ($tab = "raw-data")} class={$tab == "raw-data" ? "font-bold" : "font-light"}>Raw Data</Button
-    >
-    <Button onclick={() => ($tab = "raw-text")} class={$tab == "raw-text" ? "font-bold" : "font-light"}>Raw Text</Button
-    >
+    <Button onclick={() => ($tab = "raw-data")} class={$tab == "raw-data" ? "font-bold" : "font-light"}>
+      Raw Data
+    </Button>
+    <Button onclick={() => ($tab = "raw-text")} class={$tab == "raw-text" ? "font-bold" : "font-light"}>
+      Raw Text
+    </Button>
   </div>
 
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
-    {#if $tab == "ranks"}
-      <div class="flex flex-col gap-2 p-1">
-        {#if teamInfo.pickListRanks?.length && data.surveyType == "match"}
-          <h2 class="font-bold">Pick Lists</h2>
-          {#each teamInfo.pickListRanks as pickListRank, i}
-            <Button
-              onclick={() => {
-                openDialog(ViewPickListDialog, {
-                  surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-                  fields: data.fields,
-                  entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
-                  pickList: data.surveyRecord.pickLists[i],
-                });
-              }}
-            >
-              <div class="flex flex-col">
-                <small>{data.surveyRecord.pickLists[i].name}</small>
-                <div class="text-base font-bold">
-                  {pickListRank}<small class="font-normal">{getOrdinal(pickListRank)}</small>
-                </div>
-              </div>
-            </Button>
-          {/each}
-        {/if}
-
-        {#if teamInfo.expressionRanks?.length && data.surveyType == "match"}
-          {@const surveyExpressionRanks = teamInfo.expressionRanks.filter(
-            (_, i) => data.surveyRecord.expressions[i].scope == "survey",
-          )}
-          {@const surveyExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "survey")}
-
-          {#if surveyExpressionRanks.length}
-            <h2 class="pt-2 font-bold">Survey Expressions</h2>
-            {#each surveyExpressionRanks as expressionRank, i}
-              <Button
-                onclick={() => {
-                  openDialog(ViewExpressionDialog, {
-                    surveyRecord: data.surveyRecord,
-                    fields: data.fields,
-                    entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
-                    expression: surveyExpressions[i],
-                  });
-                }}
-              >
-                <div class="flex flex-col">
-                  <small>{surveyExpressions[i].name}</small>
-                  <div class="text-base font-bold">
-                    {expressionRank}<small class="font-normal">{getOrdinal(expressionRank)}</small>
-                  </div>
-                </div>
-              </Button>
-            {/each}
-          {/if}
-
-          {@const entryExpressionRanks = teamInfo.expressionRanks.filter(
-            (_, i) => data.surveyRecord.expressions[i].scope == "entry",
-          )}
-          {@const entryExpressions = data.surveyRecord.expressions.filter((e) => e.scope == "entry")}
-
-          {#if entryExpressionRanks.length}
-            <h2 class="pt-2 font-bold">Entry Expressions <small class="font-normal">(averages)</small></h2>
-            {#each entryExpressionRanks as expressionRank, i}
-              <Button
-                onclick={() => {
-                  openDialog(ViewExpressionDialog, {
-                    surveyRecord: data.surveyRecord,
-                    fields: data.fields,
-                    entriesByTeam: entriesByTeam as Record<string, IDBRecord<MatchEntry>[]>,
-                    expression: entryExpressions[i],
-                  });
-                }}
-              >
-                <div class="flex flex-col">
-                  <small>{entryExpressions[i].name}</small>
-                  <div class="text-base font-bold">
-                    {expressionRank}<small class="font-normal">{getOrdinal(expressionRank)}</small>
-                  </div>
-                </div>
-              </Button>
-            {/each}
-          {/if}
-        {/if}
-      </div>
-    {:else if $tab == "raw-data"}
+    {#if $tab == "raw-data"}
       <table class="text-sm">
         <thead class="sticky top-0 z-10 bg-neutral-800">
           <tr>

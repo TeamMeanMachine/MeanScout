@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
-  import { calculateTeamData, getTeamColor, normalizeTeamData } from "$lib/analysis";
+  import { calculateTeamData, getTeamColor } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import type { MatchEntry } from "$lib/entry";
   import type { Expression } from "$lib/expression";
@@ -24,9 +24,8 @@
 
   function getSortedTeamData() {
     const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);
-    const normalizedTeamData = normalizeTeamData(teamData);
 
-    return Object.keys(normalizedTeamData)
+    return Object.keys(teamData)
       .map((team) => ({ team, value: teamData[team], color: getTeamColor(team) }))
       .toSorted((a, b) => b.value - a.value);
   }
