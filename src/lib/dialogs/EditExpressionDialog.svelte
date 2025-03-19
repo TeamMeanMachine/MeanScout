@@ -6,14 +6,7 @@
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
-  import {
-    MaximizeIcon,
-    MinimizeIcon,
-    PenSquareIcon,
-    SquareCheckBigIcon,
-    SquareIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { PenSquareIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -84,51 +77,6 @@
       closeDialog();
     },
   };
-
-  function getSwitchScopeButtonData(): { can: boolean; reason?: string } {
-    if (surveyRecord.pickLists.some((pl) => pl.weights.some((w) => w.expressionName == expression.name))) {
-      return { can: false, reason: "Used by picklist" };
-    }
-
-    if (
-      scope == "entry" &&
-      surveyRecord.expressions.some(
-        (e) =>
-          e.name != expression.name &&
-          e.scope == "entry" &&
-          e.input.from == "expressions" &&
-          e.input.expressionNames.includes(expression.name),
-      )
-    ) {
-      return { can: false, reason: "Used by entry expression" };
-    }
-
-    if (scope == "survey" && input.from == "expressions") {
-      if (
-        input.expressionNames.some((name) =>
-          surveyRecord.expressions.some((e) => e.scope == "survey" && e.name == name),
-        )
-      ) {
-        return { can: false, reason: "Uses survey expression" };
-      }
-
-      if (
-        surveyRecord.expressions.some(
-          (e) =>
-            e.name != expression.name &&
-            e.scope == "survey" &&
-            e.input.from == "expressions" &&
-            e.input.expressionNames.includes(expression.name),
-        )
-      ) {
-        return { can: false, reason: "Used by survey expression" };
-      }
-    }
-
-    return { can: true };
-  }
-
-  let switchScopeButtonData = getSwitchScopeButtonData();
 </script>
 
 <span>Edit expression</span>
@@ -313,37 +261,20 @@
 {/if}
 
 <Button
-  disabled={!switchScopeButtonData.can}
+  disabled={usedExpressionNames?.includes(expression.name)}
   onclick={() => {
-    scope = scope == "entry" ? "survey" : "entry";
-    onupdate({ ...expression, scope });
+    ondelete();
     closeDialog();
   }}
 >
-  {#if scope == "entry"}
-    <MaximizeIcon class="text-theme" />
-  {:else}
-    <MinimizeIcon class="text-theme" />
-  {/if}
+  <Trash2Icon class="text-theme" />
   <div class="flex flex-col">
-    Switch to {scope == "entry" ? "survey" : "entry"} expression
-    {#if switchScopeButtonData.reason}
-      <small>{switchScopeButtonData.reason}</small>
+    Delete
+    {#if usedExpressionNames?.includes(expression.name)}
+      <small>Used elsewhere</small>
     {/if}
   </div>
 </Button>
-
-{#if !usedExpressionNames?.includes(expression.name)}
-  <Button
-    onclick={() => {
-      ondelete();
-      closeDialog();
-    }}
-  >
-    <Trash2Icon class="text-theme" />
-    Delete
-  </Button>
-{/if}
 
 {#if error}
   <span>Error: {error}</span>

@@ -10,6 +10,8 @@
     oncreate,
   }: {
     expressions: {
+      entryDerived: Expression[];
+      entryPrimitive: Expression[];
       surveyDerived: Expression[];
       surveyPrimitive: Expression[];
     };
@@ -86,6 +88,22 @@
     <div class="flex flex-col gap-2">
       <span>Survey Expressions <small>(from fields)</small></span>
       {#each expressions.surveyPrimitive as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
+  {#if expressions.entryDerived.length}
+    <div class="flex flex-col gap-2">
+      <span>Entry Expressions <small>(from expressions)</small></span>
+      {#each expressions.entryDerived as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
+  {#if expressions.entryPrimitive.length}
+    <div class="flex flex-col gap-2">
+      <span>Entry Expressions <small>(from fields)</small></span>
+      {#each expressions.entryPrimitive as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>
