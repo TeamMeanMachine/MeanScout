@@ -52,7 +52,10 @@
 </script>
 
 <div class="flex flex-col">
-  <span class="font-light">{field.name}</span>
+  <span>{field.name}</span>
+  {#if field.tip}
+    <small class="font-light">{field.tip}</small>
+  {/if}
   <div class="flex flex-wrap">
     <Button onclick={running ? pause : start}>
       {#if running}
@@ -68,7 +71,4 @@
       <TimerResetIcon class="text-theme" />
     </Button>
   </div>
-  {#if field.tip}
-    <small class="pt-1">{field.tip}</small>
-  {/if}
 </div>

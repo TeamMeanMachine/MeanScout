@@ -13,13 +13,13 @@
 </script>
 
 <label class="flex w-full flex-col">
-  <span class="font-light">{field.name}</span>
+  <span>{field.name}</span>
+  {#if field.tip}
+    <small class="font-light">{field.tip}</small>
+  {/if}
   {#if field.long}
     <textarea bind:value {onchange} class="text-theme h-72 resize-none bg-neutral-800 p-2"> </textarea>
   {:else}
     <input bind:value {onchange} class="text-theme bg-neutral-800 p-2" />
-  {/if}
-  {#if field.tip}
-    <small class="pt-1">{field.tip}</small>
   {/if}
 </label>

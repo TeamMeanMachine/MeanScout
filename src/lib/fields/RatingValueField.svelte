@@ -24,7 +24,10 @@
 </script>
 
 <div class="flex flex-col">
-  <span class="font-light">{field.name}</span>
+  <span>{field.name}</span>
+  {#if field.tip}
+    <small class="font-light">{field.tip}</small>
+  {/if}
   <div class="flex flex-wrap">
     {#each Array(5) as _, i}
       <Button onclick={() => rate(i)} class="px-1.5">
@@ -32,7 +35,4 @@
       </Button>
     {/each}
   </div>
-  {#if field.tip}
-    <small class="pt-1">{field.tip}</small>
-  {/if}
 </div>

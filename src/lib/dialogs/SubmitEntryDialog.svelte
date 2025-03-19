@@ -1,20 +1,30 @@
 <script lang="ts">
+  import { sessionStorageStore } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { type Entry } from "$lib/entry";
+  import { exportEntries, type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
+  import { SquareCheckBigIcon, ChevronUpIcon, SquareIcon, ChevronDownIcon } from "@lucide/svelte";
 
   let {
     fields,
     entryRecord,
-    exporting,
     onexport,
   }: {
     fields: DetailedSingleField[];
     entryRecord: IDBRecord<Entry>;
-    exporting: boolean;
     onexport: () => void;
   } = $props();
+
+  const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
+
+  const defaultValues = fields.map((field) => getDefaultFieldValue(field.field));
+
+  const entryJson = exportEntries([
+    entryRecord.type == "match" && entryRecord.absent ? { ...entryRecord, values: defaultValues } : entryRecord,
+  ]);
 
   let error = $state("");
 
@@ -26,12 +36,12 @@
 
       let submittedEntry: Entry = {
         ...$state.snapshot(entryRecord),
-        status: exporting ? "exported" : "submitted",
+        status: $entryExport ? "exported" : "submitted",
         modified: new Date(),
       };
 
       if (submittedEntry.type == "match" && submittedEntry.absent) {
-        submittedEntry.values = fields.map((field) => getDefaultFieldValue(field.field));
+        submittedEntry.values = defaultValues;
       }
 
       const submitRequest = objectStore("entries", "readwrite").put(submittedEntry);
@@ -48,12 +58,34 @@
 </script>
 
 <span>
-  {#if exporting}
+  {#if $entryExport}
     Submit this entry <strong>as exported?</strong>
   {:else}
     Submit this entry?
   {/if}
 </span>
+
+<Button onclick={() => ($entryExport = $entryExport ? "" : "true")}>
+  {#if $entryExport}
+    <SquareCheckBigIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      <strong>Export</strong>
+      <small>QRF code</small>
+    </div>
+    <ChevronUpIcon class="text-theme" />
+  {:else}
+    <SquareIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Export
+      <small>QRF code</small>
+    </div>
+    <ChevronDownIcon class="text-theme" />
+  {/if}
+</Button>
+
+{#if $entryExport}
+  <QrCodeDisplay data={entryJson} />
+{/if}
 
 {#if error}
   <span>{error}</span>

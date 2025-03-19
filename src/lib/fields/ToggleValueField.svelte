@@ -23,13 +23,14 @@
   <Button onclick={toggle} class="self-start">
     {#if value}
       <SquareCheckBigIcon class="text-theme" />
-      <strong>{field.name}</strong>
     {:else}
       <SquareIcon class="text-theme" />
-      {field.name}
     {/if}
+    <div class="flex flex-col">
+      <span class:font-bold={value}>{field.name}</span>
+      {#if field.tip}
+        <small class="font-light">{field.tip}</small>
+      {/if}
+    </div>
   </Button>
-  {#if field.tip}
-    <small class="pt-1">{field.tip}</small>
-  {/if}
 </div>

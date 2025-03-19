@@ -1,26 +1,15 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { exportEntries } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import type { PageData } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { getDefaultFieldValue } from "$lib/field";
-  import {
-    ChevronDownIcon,
-    ChevronUpIcon,
-    PlusIcon,
-    SaveIcon,
-    SquareCheckBigIcon,
-    SquareIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     data,
@@ -28,19 +17,7 @@
     data: PageData;
   } = $props();
 
-  const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
-
-  let exportButtonDiv = $state<HTMLDivElement>();
-
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
-
-  let entryCSV = $derived.by(() => {
-    if (entry.type == "match" && entry.absent) {
-      return exportEntries([{ ...entry, values: data.defaultValues }]);
-    } else {
-      return exportEntries([entry]);
-    }
-  });
 
   let error = $state("");
 
@@ -137,11 +114,13 @@
     >
       {#if entry.absent}
         <SquareCheckBigIcon class="text-theme" />
-        <strong>Absent</strong>
       {:else}
         <SquareIcon class="text-theme" />
-        Absent
       {/if}
+      <div class="flex flex-col">
+        <span class:font-bold={entry.absent}>Absent</span>
+        <small class="font-light">Robot no-showed</small>
+      </div>
     </Button>
   {/if}
 
@@ -151,7 +130,7 @@
         {@const fieldDetails = data.detailedFields.get(fieldId)}
 
         {#if fieldDetails?.type == "group"}
-          <div class="flex w-full flex-col gap-1">
+          <div class="flex w-full flex-col gap-2">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
             <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
@@ -175,39 +154,6 @@
     </div>
   {/if}
 
-  <div bind:this={exportButtonDiv} class="flex w-[516px] max-w-full flex-col gap-2">
-    <Button
-      onclick={() => {
-        $entryExport = $entryExport ? "" : "true";
-        if ($entryExport == "true") {
-          setTimeout(() => exportButtonDiv?.scrollIntoView(), 0);
-        }
-      }}
-    >
-      {#if $entryExport}
-        <SquareCheckBigIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          <strong>Export</strong>
-          <small>QRF code</small>
-        </div>
-        <ChevronUpIcon class="text-theme" />
-      {:else}
-        <SquareIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Export
-          <small>QRF code</small>
-        </div>
-        <ChevronDownIcon class="text-theme" />
-      {/if}
-    </Button>
-
-    {#if $entryExport}
-      {#key entryCSV}
-        <QrCodeDisplay data={entryCSV} />
-      {/key}
-    {/if}
-  </div>
-
   <div class="mb-4 flex flex-wrap justify-between gap-2">
     <Button
       onclick={() => {
@@ -222,7 +168,6 @@
         openDialog(SubmitEntryDialog, {
           fields: data.fields,
           entryRecord: data.entryRecord,
-          exporting: $entryExport == "true",
           onexport: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             location.hash = `/survey/${data.surveyRecord.id}`;
@@ -232,9 +177,6 @@
     >
       <SaveIcon class="text-theme" />
       Submit
-      {#if $entryExport}
-        as exported
-      {/if}
     </Button>
 
     <Button
