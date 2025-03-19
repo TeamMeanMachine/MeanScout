@@ -13,13 +13,13 @@
     onchange?: (() => void) | undefined;
   } = $props();
 
-  function increment() {
-    value++;
+  function decrement() {
+    value--;
     onchange && onchange();
   }
 
-  function decrement() {
-    value--;
+  function increment() {
+    value++;
     onchange && onchange();
   }
 </script>
@@ -30,14 +30,14 @@
     <small class="font-light">{field.tip}</small>
   {/if}
   <div class="flex flex-wrap">
-    <Button onclick={increment}>
-      <PlusIcon class="text-theme" />
+    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
+      <MinusIcon class="text-theme" />
     </Button>
     <span class="w-12 bg-neutral-800 p-2 text-center {value > 0 ? 'font-bold' : 'font-light'}">
       {value}
     </span>
-    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
-      <MinusIcon class="text-theme" />
+    <Button onclick={increment}>
+      <PlusIcon class="text-theme" />
     </Button>
   </div>
 </div>
