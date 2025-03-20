@@ -14,17 +14,50 @@
     data: PageData;
   } = $props();
 
-  const tab = sessionStorageStore<"picklists" | "survey" | "entry">("analysis-tab", "picklists");
+  let search = sessionStorageStore("analysis-search", "");
+  let formattedSearch = $derived(formatName($search));
 
-  let expressions = $derived({
-    entryDerived: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-    entryPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-    surveyDerived: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-    surveyPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+  let filteredExpressions = $derived.by(() => {
+    return data.surveyRecord.expressions.filter((e) => {
+      if (!formattedSearch || formatName(e.name).includes(formattedSearch)) {
+        return true;
+      }
+
+      if (
+        e.input.from == "expressions" &&
+        e.input.expressionNames.some((en) => formatName(en).includes(formattedSearch))
+      ) {
+        return true;
+      }
+
+      return false;
+    });
   });
 
-  function tabClass(matching: string) {
-    return $tab == matching ? "font-bold" : "font-light";
+  let expressions = $derived({
+    entryDerived: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryPrimitive: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+    surveyDerived: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyPrimitive: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+  });
+
+  let pickLists = $derived.by(() => {
+    return data.surveyRecord.pickLists.filter((pl) => {
+      if (!formattedSearch || formatName(pl.name).includes(formattedSearch)) {
+        return true;
+      }
+
+      return pl.weights.some((w) => formatName(w.expressionName).includes(formattedSearch));
+    });
+  });
+
+  function formatName(name: string) {
+    return name.trim().replaceAll(" ", "").toLowerCase();
+  }
+
+  function nameWeight(name: string) {
+    if (!formattedSearch) return "";
+    return formatName(name).includes(formattedSearch) ? "font-bold" : "font-light";
   }
 </script>
 
@@ -41,84 +74,118 @@
   {#if data.fields.length == 0}
     <span>No fields.</span>
   {:else}
-    <div class="flex flex-wrap gap-2 text-sm">
-      <Button
-        disabled={!data.surveyRecord.pickLists.length}
-        onclick={() => ($tab = "picklists")}
-        class={tabClass("picklists")}
-      >
-        Pick Lists
-      </Button>
-      <Button
-        disabled={!expressions.surveyDerived.length && !expressions.surveyPrimitive.length}
-        onclick={() => ($tab = "survey")}
-        class={tabClass("survey")}
-      >
-        Survey
-      </Button>
-      <Button
-        disabled={!expressions.entryDerived.length && !expressions.entryPrimitive.length}
-        onclick={() => ($tab = "entry")}
-        class={tabClass("entry")}
-      >
-        Entry
-      </Button>
+    <div class="flex flex-wrap gap-2">
+      <label class="flex flex-col">
+        Search
+        <input bind:value={$search} class="text-theme bg-neutral-800 p-2" />
+      </label>
     </div>
 
-    {#if $tab == "picklists"}
+    {#if data.surveyRecord.pickLists.length}
       <div class="flex flex-col gap-2">
         <h2 class="font-bold">Pick Lists</h2>
-        {#each data.surveyRecord.pickLists as pickList}
-          <Button
-            onclick={() => {
-              openDialog(ViewPickListDialog, {
-                surveyRecord: data.surveyRecord,
-                fields: data.fields,
-                entriesByTeam: data.entriesByTeam,
-                pickList,
-              });
-            }}
-          >
-            {pickList.name}
-          </Button>
+        {#each pickLists as pickList}
+          <div class="flex flex-col gap-2">
+            <Button
+              onclick={() => {
+                openDialog(ViewPickListDialog, {
+                  surveyRecord: data.surveyRecord,
+                  fields: data.fields,
+                  entriesByTeam: data.entriesByTeam,
+                  pickList,
+                });
+              }}
+              class={nameWeight(pickList.name)}
+            >
+              {pickList.name}
+            </Button>
+
+            <div class="mb-3 ml-3 flex flex-col gap-2">
+              {#each pickList.weights as { expressionName, percentage }}
+                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
+                {#if expression}
+                  <Button
+                    onclick={() => {
+                      openDialog(ViewExpressionDialog, {
+                        surveyRecord: data.surveyRecord,
+                        fields: data.fields,
+                        entriesByTeam: data.entriesByTeam,
+                        expression,
+                      });
+                    }}
+                    class="flex-col items-start gap-0! {nameWeight(expression.name)}"
+                  >
+                    {expression.name}
+                    <small class="font-light">{percentage}%</small>
+                  </Button>
+                {/if}
+              {/each}
+            </div>
+          </div>
         {/each}
       </div>
-    {:else if $tab == "survey"}
-      {#if expressions.surveyDerived.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
-          {#each expressions.surveyDerived as expression}
-            {@render expressionButton(expression)}
-          {/each}
-        </div>
-      {/if}
+    {/if}
 
-      {#if expressions.surveyPrimitive.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
+    {#if expressions.surveyDerived.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
+        {#each expressions.surveyDerived as expression}
+          {@const expressionNames = expression.input.from == "expressions" ? expression.input.expressionNames : []}
+          <div class="flex flex-col gap-3">
+            {@render expressionButton(expression)}
+            <div class="mb-3 ml-3 flex flex-col gap-2">
+              {#each expressionNames as expressionName}
+                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
+                {#if expression}
+                  {@render expressionButton(expression)}
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if expressions.surveyPrimitive.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
+        <div class="flex flex-col gap-4">
           {#each expressions.surveyPrimitive as expression}
             {@render expressionButton(expression)}
           {/each}
         </div>
-      {/if}
-    {:else if $tab == "entry"}
-      {#if expressions.entryDerived.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="font-bold">Entry Expressions <small>(from expressions)</small></h2>
-          {#each expressions.entryDerived as expression}
-            {@render expressionButton(expression)}
-          {/each}
-        </div>
-      {/if}
+      </div>
+    {/if}
 
-      {#if expressions.entryPrimitive.length}
-        <div class="flex flex-col gap-2">
-          <h2 class="font-bold">Entry Expressions <small>(from fields)</small></h2>
+    {#if expressions.entryDerived.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Entry Expressions <small>(from expressions)</small></h2>
+        {#each expressions.entryDerived as expression}
+          {@const expressionNames = expression.input.from == "expressions" ? expression.input.expressionNames : []}
+          <div class="flex flex-col gap-3">
+            {@render expressionButton(expression)}
+            <div class="mb-3 ml-3 flex flex-col gap-2">
+              {#each expressionNames as expressionName}
+                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
+                {#if expression}
+                  {@render expressionButton(expression)}
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if expressions.entryPrimitive.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Entry Expressions <small>(from fields)</small></h2>
+        <div class="flex flex-col gap-4">
           {#each expressions.entryPrimitive as expression}
             {@render expressionButton(expression)}
           {/each}
         </div>
-      {/if}
+      </div>
     {/if}
   {/if}
 </div>
@@ -133,6 +200,7 @@
         expression,
       });
     }}
+    class={nameWeight(expression.name)}
   >
     {expression.name}
   </Button>
