@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData, getTeamColor, type PickList } from "$lib/analysis";
+  import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import type { MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
@@ -23,8 +23,11 @@
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
 
-  const initData = generateRaceData(1).map(({ team, color, percentage }) => {
-    return { team, color, percentage: new Tween(percentage, { delay: 0, easing: linear, duration: changeDuration }) };
+  const initData = generateRaceData(1).map((data) => {
+    return {
+      ...data,
+      percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
+    };
   });
 
   let match = $state(1);
@@ -65,7 +68,11 @@
     const normalizedPickListData = normalizeTeamData(pickListData);
 
     return Object.keys(normalizedPickListData)
-      .map((team) => ({ team, percentage: normalizedPickListData[team], color: getTeamColor(team) }))
+      .map((team) => ({
+        team,
+        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        percentage: normalizedPickListData[team],
+      }))
       .toSorted((a, b) => b.percentage - a.percentage);
   }
 
@@ -112,20 +119,29 @@
   />
 </div>
 
-{#each data as { team, percentage, color } (team)}
-  <div
-    animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
-    class="pr-1"
-    style="width:{percentage.current.toFixed(2)}%"
-  >
-    <div class="flex justify-between gap-3">
-      {#if matchData?.includes(team)}
-        <strong class="underline">{team}</strong>
-      {:else}
-        <span>{team}</span>
-      {/if}
-      {percentage.current.toFixed(1)}%
+<div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+  {#each data as { team, teamName, percentage }, i (team)}
+    {@const color = `rgb(var(--theme-color) / ${percentage.current.toFixed(2)}%)`}
+
+    <div
+      animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
+      class="col-span-full grid grid-cols-subgrid pr-1"
+    >
+      <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
+      <div>
+        <div class="flex items-end justify-between gap-3">
+          <div class="flex flex-col">
+            <strong class:underline={matchData?.includes(team)}>{team}</strong>
+            {#if teamName}
+              <small class={matchData?.includes(team) ? "font-bold" : "font-light"}>{teamName}</small>
+            {/if}
+          </div>
+          {percentage.current.toFixed(1)}%
+        </div>
+        <div class="bg-neutral-800">
+          <div style="background-color:{color};width:{percentage.current.toFixed(2)}%;height:6px"></div>
+        </div>
+      </div>
     </div>
-    <div style="background-color:{color};height:6px"></div>
-  </div>
-{/each}
+  {/each}
+</div>

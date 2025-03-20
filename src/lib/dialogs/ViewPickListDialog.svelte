@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
-  import { calculateTeamData, colors, getTeamColor, normalizeTeamData, type PickList } from "$lib/analysis";
+  import { calculateTeamData, colors, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import RaceChart from "$lib/components/RaceChart.svelte";
   import type { MatchEntry } from "$lib/entry";
@@ -20,13 +20,20 @@
     pickList: PickList;
   } = $props();
 
-  const tab = sessionStorageStore<"bar" | "stacked" | "race" | "table">("view-pick-list-tab", "bar");
+  const tab = sessionStorageStore<"bar" | "race" | "stacked">("view-pick-list-tab", "bar");
 
   const sortedTeamData = getSortedTeamData();
 
   const text = sortedTeamData
     .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.percentage.toFixed(2)}%`)
     .join("\n");
+
+  let overflowDiv = $state<HTMLDivElement>();
+
+  $effect(() => {
+    $tab;
+    overflowDiv?.scrollTo({ top: 0 });
+  });
 
   function getSortedTeamData() {
     const pickListData: Record<string, number> = {};
@@ -52,9 +59,9 @@
     return Object.keys(normalizedPickListData)
       .map((team) => ({
         team,
+        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
         percentage: normalizedPickListData[team],
         weights: weightsDataObject(weightsData[team]),
-        color: getTeamColor(team),
       }))
       .toSorted((a, b) => b.percentage - a.percentage);
   }
@@ -68,27 +75,40 @@
   }
 </script>
 
-<span>{pickList.name}</span>
+<strong>{pickList.name}</strong>
 
 {#if sortedTeamData.length}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "bar")} class={$tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
-    <Button onclick={() => ($tab = "stacked")} class={$tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
     <Button onclick={() => ($tab = "race")} class={$tab == "race" ? "font-bold" : "font-light"}>Race</Button>
-    <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
+    <Button onclick={() => ($tab = "stacked")} class={$tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
   </div>
 
-  <div class="-mx-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto px-1">
+  <div bind:this={overflowDiv} class="-mx-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto px-1">
     {#if $tab == "bar"}
-      {#each sortedTeamData as { team, percentage, color }}
-        <div class="pr-1" style="width:{percentage.toFixed(2)}%">
-          <div class="flex justify-between gap-3">
-            <span>{team}</span>
-            {percentage.toFixed(1)}%
+      <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+        {#each sortedTeamData as { team, teamName, percentage }, i}
+          {@const color = `rgb(var(--theme-color) / ${percentage.toFixed(2)}%)`}
+
+          <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
+          <div class="pr-1">
+            <div class="flex items-end justify-between gap-3">
+              <div class="flex flex-col">
+                <strong>{team}</strong>
+                {#if teamName}
+                  <small class="font-light">{teamName}</small>
+                {/if}
+              </div>
+              {percentage.toFixed(1)}%
+            </div>
+            <div class="bg-neutral-800">
+              <div style="background-color:{color};width:{percentage.toFixed(2)}%;height:6px"></div>
+            </div>
           </div>
-          <div style="background-color:{color};height:6px"></div>
-        </div>
-      {/each}
+        {/each}
+      </div>
+    {:else if $tab == "race"}
+      <RaceChart {surveyRecord} {fields} {entriesByTeam} {pickList} />
     {:else if $tab == "stacked"}
       <div class="flex flex-col gap-2 text-sm">
         {#each pickList.weights as weight, i}
@@ -99,49 +119,50 @@
           </div>
         {/each}
       </div>
-      {#each sortedTeamData as { team, percentage, weights }}
-        <div class="pr-1" style="width:{percentage.toFixed(2)}%">
-          <div class="flex justify-between gap-3">
-            <span>{team}</span>
-            {percentage.toFixed(1)}%
-          </div>
-          <div class="flex gap-1 bg-neutral-800">
-            {#each pickList.weights as weight, i}
-              {@const color = colors[i % colors.length]}
-              {@const divWidth = weights[weight.expressionName] * percentage}
-              {#if divWidth}
-                <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                  <div style="background-color:{color};height:6px"></div>
-                  <div class="bg-neutral-900 text-center text-sm font-light">
-                    {((weights[weight.expressionName] / weight.percentage) * 100).toFixed(0)}%
+
+      <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+        {#each sortedTeamData as { team, teamName, percentage, weights }, i}
+          <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
+
+          <div class="pr-1">
+            <div class="flex items-end justify-between gap-3">
+              <div class="flex flex-col">
+                <strong>{team}</strong>
+                {#if teamName}
+                  <small class="font-light">{teamName}</small>
+                {/if}
+              </div>
+              {percentage.toFixed(1)}%
+            </div>
+            <div class="bg-neutral-800">
+              <div class="flex gap-1" style="width:{percentage.toFixed(2)}%">
+                {#each pickList.weights as weight, i}
+                  {@const color = colors[i % colors.length]}
+                  {@const opacity = ((weights[weight.expressionName] / weight.percentage) * 100).toFixed(2)}
+                  {@const divWidth = weights[weight.expressionName] * percentage}
+                  {#if divWidth}
+                    <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                      <div style="background-color:{color};height:6px;opacity:{opacity}%"></div>
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+            <div class="flex gap-1" style="width:{percentage.toFixed(2)}%">
+              {#each pickList.weights as weight}
+                {@const divWidth = weights[weight.expressionName] * percentage}
+                {#if divWidth}
+                  <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                    <div class="text-center text-sm font-light">
+                      {((weights[weight.expressionName] / weight.percentage) * 100).toFixed(0)}%
+                    </div>
                   </div>
-                </div>
-              {/if}
-            {/each}
+                {/if}
+              {/each}
+            </div>
           </div>
-        </div>
-      {/each}
-    {:else if $tab == "race"}
-      <RaceChart {surveyRecord} {fields} {entriesByTeam} {pickList} />
-    {:else if $tab == "table"}
-      <table class="w-full text-right">
-        <thead>
-          <tr>
-            <th class="p-2">Rank</th>
-            <th class="p-2">Team</th>
-            <th class="p-2">Percent</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each sortedTeamData as teamValue, i}
-            <tr>
-              <td class="p-2">{i + 1}</td>
-              <td class="p-2">{teamValue.team}</td>
-              <td class="p-2">{teamValue.percentage.toFixed(2)}%</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+        {/each}
+      </div>
     {/if}
   </div>
 

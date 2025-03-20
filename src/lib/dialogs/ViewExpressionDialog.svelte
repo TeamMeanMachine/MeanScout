@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
-  import { calculateTeamData, getTeamColor } from "$lib/analysis";
+  import { calculateTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import type { MatchEntry } from "$lib/entry";
   import type { Expression } from "$lib/expression";
@@ -20,70 +19,59 @@
     expression: Expression;
   } = $props();
 
-  const tab = sessionStorageStore<"bar" | "table">("view-expression-tab", "bar");
-
   function getSortedTeamData() {
     const teamData = calculateTeamData(expression.name, surveyRecord.expressions, entriesByTeam, fields);
 
     return Object.keys(teamData)
-      .map((team) => ({ team, value: teamData[team], color: getTeamColor(team) }))
+      .map((team) => ({
+        team,
+        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        value: teamData[team],
+      }))
       .toSorted((a, b) => b.value - a.value);
   }
 
   const sortedTeamData = getSortedTeamData();
 
   const text = sortedTeamData
-    .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}%`)
+    .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}`)
     .join("\n");
 </script>
 
-<div class="flex flex-col">
-  <span>{expression.name}</span>
+<div class="flex flex-wrap items-end justify-between gap-x-2">
+  <strong>{expression.name}</strong>
   {#if expression.scope == "entry"}
-    <small>(Showing average across entries)</small>
+    <small>(Average)</small>
   {/if}
 </div>
 
 {#if sortedTeamData.length}
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "bar")} class={$tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
-    <Button onclick={() => ($tab = "table")} class={$tab == "table" ? "font-bold" : "font-light"}>Table</Button>
-  </div>
+  {@const maxValue = Math.max(...sortedTeamData.map(({ value }) => value))}
+  {@const minValue = Math.min(...sortedTeamData.map(({ value }) => value))}
 
   <div class="flex max-h-[500px] flex-col gap-4 overflow-y-auto">
-    {#if $tab == "bar"}
-      {@const maxValue = Math.max(...sortedTeamData.map(({ value }) => value))}
-      {@const minValue = Math.min(...sortedTeamData.map(({ value }) => value))}
-      {#each sortedTeamData as { team, value, color }}
-        {@const divWidth = Math.abs(((value - Math.min(minValue, 0)) / (maxValue || minValue || value || 1)) * 100)}
-        <div class="pr-1" style="width:{divWidth.toFixed(2)}%">
-          <div class="flex justify-between gap-3">
-            <span>{team}</span>
+    <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+      {#each sortedTeamData as { team, teamName, value }, i}
+        {@const percentage = Math.abs(((value - Math.min(minValue, 0)) / (maxValue || minValue || value || 1)) * 100)}
+        {@const color = `rgb(var(--theme-color) / ${percentage.toFixed(2)}%)`}
+
+        <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
+        <div>
+          <div class="flex items-end justify-between gap-3">
+            <div class="flex flex-col">
+              <strong>{team}</strong>
+              {#if teamName}
+                <small class="font-light">{teamName}</small>
+              {/if}
+            </div>
             {value.toFixed(2)}
           </div>
-          <div style="background-color:{color};height:6px"></div>
+          <div class="bg-neutral-800">
+            <div style="background-color:{color};width:{percentage.toFixed(2)}%;height:6px"></div>
+          </div>
         </div>
       {/each}
-    {:else if $tab == "table"}
-      <table class="w-full text-right">
-        <thead>
-          <tr>
-            <th class="p-2">Rank</th>
-            <th class="p-2">Team</th>
-            <th class="p-2">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each sortedTeamData as teamValue, i}
-            <tr>
-              <td class="p-2">{i + 1}</td>
-              <td class="p-2">{teamValue.team}</td>
-              <td class="p-2">{teamValue.value.toFixed(2)}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    {/if}
+    </div>
   </div>
 
   <div class="flex gap-3">

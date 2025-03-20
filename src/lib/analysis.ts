@@ -209,7 +209,3 @@ export const colors = [
   "#9a60b4",
   "#ea7ccc",
 ] as const;
-
-export function getTeamColor(team: string) {
-  return colors[parseInt(team) % colors.length];
-}
