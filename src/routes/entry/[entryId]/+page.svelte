@@ -69,7 +69,7 @@
       {#if data.surveyRecord.scouts.length}
         <label class="flex flex-col">
           <small>Scout</small>
-          <select bind:value={entry.scout} class="text-theme bg-neutral-800 p-2">
+          <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
             {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
               <option>{scout}</option>
             {/each}
@@ -90,6 +90,7 @@
               } as PageData;
               objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
               entry.scout = newScout;
+              onchange();
             },
           });
         }}
