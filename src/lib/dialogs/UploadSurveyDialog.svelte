@@ -29,10 +29,7 @@
         return open();
       }
 
-      if (
-        schemaResult.data.tbaEventKey?.length &&
-        !(await tbaEventExists(schemaResult.data.tbaEventKey))
-      ) {
+      if (schemaResult.data.tbaEventKey?.length && !(await tbaEventExists(schemaResult.data.tbaEventKey))) {
         error = "Could not upload survey: TBA event key is invalid";
         return open();
       }

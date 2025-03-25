@@ -113,6 +113,20 @@
           <td class="p-2 font-bold">{entryRecord.absent}</td>
         </tr>
       {/if}
+      {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
+        <tr><td class="p-2"></td></tr>
+        <tr><th colspan="2" class="p-2">TBA</th></tr>
+        {#if entryRecord.tbaMetrics?.length}
+          {#each entryRecord.tbaMetrics as tbaMetric}
+            <tr>
+              <td class="p-2 text-sm">{tbaMetric.name}</td>
+              <td class="p-2 font-bold">{tbaMetric.value}</td>
+            </tr>
+          {/each}
+        {:else}
+          <tr><td class="p-2">No data pulled</td></tr>
+        {/if}
+      {/if}
       <tr><td class="p-2"></td></tr>
       {#if entryRecord.type != "match" || !entryRecord.absent}
         {#each surveyRecord.fieldIds as fieldId}

@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
-import type { Match, Team } from "./";
+import { parseValueFromString, type Match, type Team, type Value } from "./";
 import { tbaAuthKeyStore } from "./settings";
+import type { TbaMetrics } from "./entry";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "bLFDfOniJOVOziESwbhPHncaUu30iIj64I2IMIOg4FLeNE0D3LGgkWslxugJKFlL";
@@ -87,5 +88,44 @@ export async function tbaGetEventTeams(eventKey: string) {
     return response.data.map((team): Team => {
       return { number: team.key.replace("frc", ""), name: team.nickname };
     });
+  }
+}
+
+function teamBreakdownMetrics(metrics: TbaMetrics, robot: number) {
+  return metrics
+    .filter(({ name }) => name.toLowerCase().includes(`robot${robot}`))
+    .map(({ name, value }) => ({ name: name.replaceAll(/robot[123]/gi, ""), value }));
+}
+
+export async function tbaGetMatchScoreBreakdowns(eventKey: string) {
+  const response = await tbaFetch(`/event/${eventKey}/matches`);
+
+  if (response.status == "success" && Array.isArray(response.data)) {
+    return response.data
+      .filter((match) => match.comp_level == "qm")
+      .map((match) => {
+        const redMetrics = Object.entries(match.score_breakdown.red)
+          .filter(([key]) => /robot[123]/gi.test(key))
+          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+        const blueMetrics = Object.entries(match.score_breakdown.blue)
+          .filter(([key]) => /robot[123]/gi.test(key))
+          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+        const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
+          team: key.replace("frc", ""),
+          tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
+        }));
+
+        const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
+          team: key.replace("frc", ""),
+          tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
+        }));
+
+        return {
+          match: Number(match.match_number),
+          teams: [...redTeams, ...blueTeams],
+        };
+      });
   }
 }

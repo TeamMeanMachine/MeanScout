@@ -7,6 +7,9 @@ import { compress, decompress } from "./compress";
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];
 
+const tbaMetricsSchema = z.array(z.object({ name: z.string(), value: valueSchema }));
+export type TbaMetrics = z.infer<typeof tbaMetricsSchema>;
+
 const baseEntrySchema = z.object({
   surveyId: z.number(),
   status: z.enum(entryStatuses),
@@ -22,10 +25,12 @@ const matchEntrySchema = baseEntrySchema.merge(
     type: z.literal("match"),
     match: matchValueSchema,
     absent: z.boolean(),
+    tbaMetrics: z.optional(tbaMetricsSchema),
     prediction: z.optional(z.literal("red").or(z.literal("blue"))),
     predictionReason: z.optional(z.string()),
   }),
 );
+
 export type MatchEntry = z.infer<typeof matchEntrySchema>;
 
 const pitEntrySchema = baseEntrySchema.merge(
@@ -82,6 +87,7 @@ export function importEntries(
         team: entry.team || "",
         match: entry.match || 0,
         absent: entry.absent || false,
+        tbaMetrics: entry.tbaMetrics || undefined,
         values: entry.values || [],
         scout: entry.scout || undefined,
         prediction: entry.prediction || undefined,

@@ -15,7 +15,10 @@ const ASSETS = [...build, ...files, ...prerendered];
 
 sw.oninstall = (e) => e.waitUntil(oninstall());
 sw.onactivate = (e) => e.waitUntil(onactivate());
-sw.onfetch = (e) => e.respondWith(onfetch(e));
+sw.onfetch = (e) => {
+  if (e.request.url.includes("thebluealliance.com")) return;
+  e.respondWith(onfetch(e));
+};
 
 async function oninstall() {
   await sw.skipWaiting();

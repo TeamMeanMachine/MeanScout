@@ -23,6 +23,7 @@ const baseSurveySchema = z.object({
 const matchSurveySchema = baseSurveySchema.merge(
   z.object({
     type: z.literal("match"),
+    tbaMetrics: z.optional(z.array(z.string())),
     pickLists: z.array(pickListSchema),
     expressions: z.array(expressionSchema),
   }),

@@ -67,6 +67,15 @@
               <th class="p-2 text-center">Absent</th>
             {/if}
 
+            {#if data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length}
+              {#each data.surveyRecord.tbaMetrics as tbaMetric}
+                <th class="p-2 text-center">
+                  <span class="font-light">TBA</span>
+                  <div>{tbaMetric}</div>
+                </th>
+              {/each}
+            {/if}
+
             {#each data.surveyRecord.fieldIds as fieldId}
               {@const fieldDetails = detailedFields.get(fieldId)}
 
@@ -97,6 +106,15 @@
 
               {#if entry.type == "match" && someAbsent}
                 <td class="p-2 text-center">{entry.absent}</td>
+              {/if}
+
+              {#if entry.type == "match" && data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length}
+                {#each data.surveyRecord.tbaMetrics as tbaMetricName}
+                  {@const metric = entry.tbaMetrics?.find((m) => m.name == tbaMetricName)?.value}
+                  {#if metric}
+                    <td class="p-2 text-center">{metric}</td>
+                  {/if}
+                {/each}
               {/if}
 
               {#if entry.type != "match" || !entry.absent}
