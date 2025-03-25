@@ -27,13 +27,15 @@
 
   let expressions = $derived({
     entryDerived: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
     entryPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
     surveyDerived: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
     surveyPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
   });
 
   function expressionReferencesOther(e: Expression, other: Expression) {
-    if (e.input.from == "fields") return false;
+    if (e.input.from != "expressions") return false;
 
     for (const expressionName of e.input.expressionNames) {
       if (expressionName == other.name) {
@@ -109,6 +111,49 @@
           {#if expressions.entryDerived.length}
             <div class="flex flex-col gap-2">
               {#each expressions.entryDerived as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if data.surveyRecord.tbaMetrics?.length}
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
+            <h2 class="font-bold">Entry Expressions <small>(from TBA)</small></h2>
+            <Button
+              onclick={() => {
+                openDialog(NewExpressionDialog, {
+                  surveyRecord: data.surveyRecord,
+                  fields: data.fields,
+                  expressions,
+                  constrain: {
+                    scope: "entry",
+                    input: "tba",
+                  },
+                  oncreate(expression) {
+                    data = {
+                      ...data,
+                      surveyRecord: {
+                        ...data.surveyRecord,
+                        expressions: [...data.surveyRecord.expressions, expression],
+                        modified: new Date(),
+                      },
+                    };
+                    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  },
+                });
+              }}
+            >
+              <PlusIcon class="text-theme" />
+              From TBA
+            </Button>
+          </div>
+
+          {#if expressions.entryTba.length}
+            <div class="flex flex-col gap-2">
+              {#each expressions.entryTba as expression}
                 {@render expressionButton(expression)}
               {/each}
             </div>
@@ -321,10 +366,16 @@
           entryDerived: expressions.entryDerived.filter(
             (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
           ),
+          entryTba: expressions.entryTba.filter(
+            (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+          ),
           entryPrimitive: expressions.entryPrimitive.filter(
             (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
           ),
           surveyDerived: expressions.surveyDerived.filter(
+            (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+          ),
+          surveyTba: expressions.surveyTba.filter(
             (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
           ),
           surveyPrimitive: expressions.surveyPrimitive.filter(

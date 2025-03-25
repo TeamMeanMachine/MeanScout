@@ -22,8 +22,10 @@
     fields: DetailedSingleField[];
     expressions: {
       entryDerived: Expression[];
+      entryTba: Expression[];
       entryPrimitive: Expression[];
       surveyDerived: Expression[];
+      surveyTba: Expression[];
       surveyPrimitive: Expression[];
     };
     expression: Expression;
@@ -207,6 +209,14 @@
           {/each}
         </div>
       {/if}
+      {#if expressions.surveyTba.length}
+        <div class="flex flex-col gap-2">
+          <span class="text-sm">Survey Expressions (from TBA)</span>
+          {#each expressions.surveyTba as exp}
+            {@render expressionButton(exp)}
+          {/each}
+        </div>
+      {/if}
       {#if expressions.surveyPrimitive.length}
         <div class="flex flex-col gap-2">
           <span class="text-sm">Survey Expressions (from fields)</span>
@@ -220,6 +230,14 @@
       <div class="flex flex-col gap-2">
         <span class="text-sm">Entry Expressions (from expressions)</span>
         {#each expressions.entryDerived as exp}
+          {@render expressionButton(exp)}
+        {/each}
+      </div>
+    {/if}
+    {#if expressions.entryTba.length}
+      <div class="flex flex-col gap-2">
+        <span class="text-sm">Entry Expressions (from TBA)</span>
+        {#each expressions.entryTba as exp}
           {@render expressionButton(exp)}
         {/each}
       </div>
@@ -254,6 +272,29 @@
         {:else}
           <SquareIcon class="text-theme" />
           {field.detailedName}
+        {/if}
+      </Button>
+    {/each}
+  </div>
+{:else if input.from == "tba" && surveyRecord.tbaMetrics?.length}
+  <span>TBA metrics</span>
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+    {#each surveyRecord.tbaMetrics as tbaMetric}
+      <Button
+        onclick={() => {
+          if (input.metrics.includes(tbaMetric)) {
+            input.metrics = input.metrics.filter((m) => m != tbaMetric);
+          } else {
+            input.metrics = [...input.metrics, tbaMetric];
+          }
+        }}
+      >
+        {#if input.metrics.includes(tbaMetric)}
+          <SquareCheckBigIcon class="text-theme" />
+          <strong>{tbaMetric}</strong>
+        {:else}
+          <SquareIcon class="text-theme" />
+          {tbaMetric}
         {/if}
       </Button>
     {/each}

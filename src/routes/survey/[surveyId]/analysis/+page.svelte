@@ -36,8 +36,10 @@
 
   let expressions = $derived({
     entryDerived: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
     entryPrimitive: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
     surveyDerived: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
     surveyPrimitive: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
   });
 
@@ -146,6 +148,17 @@
       </div>
     {/if}
 
+    {#if expressions.surveyTba.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Survey Expressions <small>(from TBA)</small></h2>
+        <div class="flex flex-col gap-4">
+          {#each expressions.surveyTba as expression}
+            {@render expressionButton(expression)}
+          {/each}
+        </div>
+      </div>
+    {/if}
+
     {#if expressions.surveyPrimitive.length}
       <div class="flex flex-col gap-2">
         <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
@@ -174,6 +187,17 @@
             </div>
           </div>
         {/each}
+      </div>
+    {/if}
+
+    {#if expressions.entryTba.length}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">Entry Expressions <small>(from TBA)</small></h2>
+        <div class="flex flex-col gap-4">
+          {#each expressions.entryTba as expression}
+            {@render expressionButton(expression)}
+          {/each}
+        </div>
       </div>
     {/if}
 

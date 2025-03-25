@@ -84,6 +84,19 @@ function runEntryExpression(
     return valueOrValues;
   }
 
+  if (input.from == "tba") {
+    const values = input.metrics.map((metric) => {
+      if (entry.type != "match" || !entry.tbaMetrics?.length) return 0;
+      return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
+    });
+
+    const valueOrValues = runExpressionMethod(expression.method, values);
+    if (Array.isArray(valueOrValues)) {
+      return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+    }
+    return valueOrValues;
+  }
+
   if (input.from == "expressions") {
     const values = input.expressionNames.map((expressionName) => {
       const expression = expressions.find((e) => e.name == expressionName);
@@ -118,6 +131,27 @@ function runSurveyExpression(
         if (fieldIndex == -1) throw new Error(`Could not find field with id ${fieldId}`);
 
         return entries.map((entry) => entry.values[fieldIndex]);
+      })
+      .map((valueOrValues: number | any[]) => {
+        if (Array.isArray(valueOrValues)) {
+          valueOrValues = runExpressionMethod(expression.method, valueOrValues);
+        }
+        if (Array.isArray(valueOrValues)) {
+          return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+        }
+        return valueOrValues;
+      });
+
+    return values.reduce((prev, curr) => prev + curr, 0) / values.length;
+  }
+
+  if (input.from == "tba") {
+    const values = input.metrics
+      .map((metric) => {
+        return entries.map((entry) => {
+          if (entry.type != "match" || !entry.tbaMetrics?.length) return 0;
+          return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
+        });
       })
       .map((valueOrValues: number | any[]) => {
         if (Array.isArray(valueOrValues)) {

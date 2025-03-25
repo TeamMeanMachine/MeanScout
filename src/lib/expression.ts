@@ -5,8 +5,9 @@ export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] a
 export const mapExpressionTypes = ["convert", "multiply", "divide", "abs"] as const;
 
 const fieldInputSchema = z.object({ from: z.literal("fields"), fieldIds: z.array(z.number()) });
+const tbaMetricInputSchema = z.object({ from: z.literal("tba"), metrics: z.array(z.string()) });
 const expressionInputSchema = z.object({ from: z.literal("expressions"), expressionNames: z.array(z.string()) });
-const inputSchema = z.discriminatedUnion("from", [fieldInputSchema, expressionInputSchema]);
+const inputSchema = z.discriminatedUnion("from", [fieldInputSchema, tbaMetricInputSchema, expressionInputSchema]);
 
 const reduceMethodsSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("average") }),
@@ -44,6 +45,7 @@ export const expressionSchema = z.discriminatedUnion("scope", [entryExpressionSc
 
 export type ExpressionInput = z.infer<typeof inputSchema>;
 export type ExpressionInputFields = Extract<ExpressionInput, { from: "fields" }>;
+export type ExpressionInputTba = Extract<ExpressionInput, { from: "tba" }>;
 export type ExpressionInputExpressions = Extract<ExpressionInput, { from: "expressions" }>;
 
 export type ExpressionMethod = z.infer<typeof methodSchema>;
