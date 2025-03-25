@@ -4,7 +4,6 @@
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
   import { objectStore } from "$lib/idb";
-  import { tbaAuthKeyStore } from "$lib/settings";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CalendarDaysIcon, CloudDownloadIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
@@ -93,7 +92,6 @@
     </Button>
   </div>
 
-  {#if $tbaAuthKeyStore}
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">The Blue Alliance</h2>
       <Button
@@ -129,5 +127,4 @@
         </Button>
       {/if}
     </div>
-  {/if}
 </div>

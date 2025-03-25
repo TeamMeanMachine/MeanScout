@@ -109,7 +109,7 @@
         If you use The Blue Alliance in MeanScout, here's all the data that can be automatically sent from your device:
       </span>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Your API key</li>
+        <li>Your API key - MeanScout supplies its own auth key, but you may want to use your own</li>
         <li>Your team number - To get events your team participates in</li>
         <li>FRC event keys - To get match schedules and participating teams for those events</li>
       </ul>
@@ -198,6 +198,7 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">The Blue Alliance</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
+        <li>MeanScout supplies its own Read API key, but you may want to use your own</li>
         <li>
           <a href="https://www.thebluealliance.com/account/login" target="_blank">
             <span class="underline">Create an account and Read API Key</span>

@@ -178,8 +178,8 @@
     <label class="flex flex-wrap items-center gap-2">
       <KeyIcon class="text-theme" />
       <div class="flex grow flex-col">
-        Auth key
-        <small>From TBA</small>
+        Custom TBA auth key
+        <small>You may want to use your own</small>
       </div>
       <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
     </label>

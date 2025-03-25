@@ -2,7 +2,6 @@
   import type { DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
   import { transaction } from "$lib/idb";
-  import { tbaAuthKeyStore } from "$lib/settings";
   import { importSurvey, surveySchema, type Survey } from "$lib/survey";
   import { tbaEventExists } from "$lib/tba";
 
@@ -32,7 +31,6 @@
 
       if (
         schemaResult.data.tbaEventKey?.length &&
-        $tbaAuthKeyStore &&
         !(await tbaEventExists(schemaResult.data.tbaEventKey))
       ) {
         error = "Could not upload survey: TBA event key is invalid";

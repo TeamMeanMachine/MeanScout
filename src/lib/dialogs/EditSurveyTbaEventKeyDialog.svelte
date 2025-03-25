@@ -1,6 +1,6 @@
 <script lang="ts">
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { tbaAuthKeyStore, teamStore } from "$lib/settings";
+  import { teamStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
 
@@ -18,7 +18,7 @@
 
   export const { onopen, onconfirm }: DialogExports = {
     async onopen(open) {
-      if (!$teamStore || !$tbaAuthKeyStore) {
+      if (!$teamStore) {
         return open();
       }
 

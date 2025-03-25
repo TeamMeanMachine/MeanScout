@@ -3,8 +3,9 @@ import type { Match, Team } from "./";
 import { tbaAuthKeyStore } from "./settings";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
+const TBA_AUTH_KEY = "bLFDfOniJOVOziESwbhPHncaUu30iIj64I2IMIOg4FLeNE0D3LGgkWslxugJKFlL";
 
-export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore)) {
+export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore) || TBA_AUTH_KEY) {
   const response = await fetch(`${API_URL}${endpoint}`, {
     headers: [["X-TBA-Auth-Key", authKey]],
   });
