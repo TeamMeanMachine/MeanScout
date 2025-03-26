@@ -14,8 +14,10 @@
   }: {
     expressions: {
       entryDerived: Expression[];
+      entryTba: Expression[];
       entryPrimitive: Expression[];
       surveyDerived: Expression[];
+      surveyTba: Expression[];
       surveyPrimitive: Expression[];
     };
     pickList: PickList;
@@ -89,6 +91,14 @@
       {/each}
     </div>
   {/if}
+  {#if expressions.surveyTba.length}
+    <div class="flex flex-col gap-2">
+      <span>Survey Expressions <small>(from TBA)</small></span>
+      {#each expressions.surveyTba as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
   {#if expressions.surveyPrimitive.length}
     <div class="flex flex-col gap-2">
       <span>Survey Expressions <small>(from fields)</small></span>
@@ -101,6 +111,14 @@
     <div class="flex flex-col gap-2">
       <span>Entry Expressions <small>(from expressions)</small></span>
       {#each expressions.entryDerived as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
+  {#if expressions.entryTba.length}
+    <div class="flex flex-col gap-2">
+      <span>Entry Expressions <small>(from TBA)</small></span>
+      {#each expressions.entryTba as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>

@@ -65,17 +65,11 @@
     <div class="flex flex-wrap gap-2 text-sm">
       <Button onclick={() => ($tab = "entry")} class={tabClass("entry")}>Entry</Button>
       <Button onclick={() => ($tab = "survey")} class={tabClass("survey")}>Survey</Button>
-      <Button
-        disabled={!expressions.surveyDerived.length && !expressions.surveyPrimitive.length}
-        onclick={() => ($tab = "picklists")}
-        class={tabClass("picklists")}
-      >
-        Pick Lists
-      </Button>
+      <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
     </div>
 
     {#if $tab == "entry"}
-      {#if expressions.entryPrimitive.length > 0}
+      {#if expressions.entryPrimitive.length || expressions.entryTba.length}
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-2">
             <h2 class="font-bold">Entry Expressions <small>(from expressions)</small></h2>
@@ -202,7 +196,7 @@
         {/if}
       </div>
     {:else if $tab == "survey"}
-      {#if expressions.surveyPrimitive.length || expressions.entryDerived.length || expressions.entryPrimitive.length}
+      {#if expressions.surveyPrimitive.length || expressions.entryDerived.length || expressions.entryTba.length || expressions.entryPrimitive.length}
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-2">
             <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
@@ -238,6 +232,49 @@
           {#if expressions.surveyDerived.length}
             <div class="flex flex-col gap-2">
               {#each expressions.surveyDerived as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if data.surveyRecord.tbaMetrics?.length}
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
+            <h2 class="font-bold">Survey Expressions <small>(from TBA)</small></h2>
+            <Button
+              onclick={() => {
+                openDialog(NewExpressionDialog, {
+                  surveyRecord: data.surveyRecord,
+                  fields: data.fields,
+                  expressions,
+                  constrain: {
+                    scope: "survey",
+                    input: "tba",
+                  },
+                  oncreate(expression) {
+                    data = {
+                      ...data,
+                      surveyRecord: {
+                        ...data.surveyRecord,
+                        expressions: [...data.surveyRecord.expressions, expression],
+                        modified: new Date(),
+                      },
+                    };
+                    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  },
+                });
+              }}
+            >
+              <PlusIcon class="text-theme" />
+              From TBA
+            </Button>
+          </div>
+
+          {#if expressions.surveyTba.length}
+            <div class="flex flex-col gap-2">
+              {#each expressions.surveyTba as expression}
                 {@render expressionButton(expression)}
               {/each}
             </div>
