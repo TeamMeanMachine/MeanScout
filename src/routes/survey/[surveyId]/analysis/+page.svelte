@@ -103,7 +103,7 @@
             </Button>
 
             <div class="mb-3 ml-3 flex flex-col gap-2">
-              {#each pickList.weights as { expressionName, percentage }}
+              {#each pickList.weights.toSorted((a, b) => b.percentage - a.percentage) as { expressionName, percentage }}
                 {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
                 {#if expression}
                   <Button

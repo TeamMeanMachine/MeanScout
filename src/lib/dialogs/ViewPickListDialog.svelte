@@ -20,7 +20,10 @@
     pickList: PickList;
   } = $props();
 
+  const sortedWeights = pickList.weights.toSorted((a, b) => b.percentage - a.percentage);
+
   const tab = sessionStorageStore<"bar" | "race" | "stacked">("view-pick-list-tab", "bar");
+  const showWeights = sessionStorageStore<"" | "true">("stacked-chart-show-weights", "");
 
   const sortedTeamData = getSortedTeamData();
 
@@ -84,6 +87,22 @@
     <Button onclick={() => ($tab = "stacked")} class={$tab == "stacked" ? "font-bold" : "font-light"}>Stacked</Button>
   </div>
 
+  {#if $tab == "stacked"}
+    <Button onclick={() => ($showWeights = $showWeights ? "" : "true")} class="gap-x-4 text-sm">
+      {#if $showWeights}
+        {#each sortedWeights as weight, i}
+          {@const color = colors[i % colors.length]}
+          <div>
+            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+            {weight.expressionName} ({weight.percentage}%)
+          </div>
+        {/each}
+      {:else}
+        Show weights
+      {/if}
+    </Button>
+  {/if}
+
   <div bind:this={overflowDiv} class="-mx-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto px-1">
     {#if $tab == "bar"}
       <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
@@ -110,16 +129,6 @@
     {:else if $tab == "race"}
       <RaceChart {surveyRecord} {fields} {entriesByTeam} {pickList} />
     {:else if $tab == "stacked"}
-      <div class="flex flex-col gap-2 text-sm">
-        {#each pickList.weights as weight, i}
-          {@const color = colors[i % colors.length]}
-          <div>
-            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
-            {weight.expressionName} ({weight.percentage}%)
-          </div>
-        {/each}
-      </div>
-
       <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
         {#each sortedTeamData as { team, teamName, percentage, weights }, i}
           <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
@@ -136,7 +145,7 @@
             </div>
             <div class="bg-neutral-800">
               <div class="flex gap-1" style="width:{percentage.toFixed(2)}%">
-                {#each pickList.weights as weight, i}
+                {#each sortedWeights as weight, i}
                   {@const color = colors[i % colors.length]}
                   {@const opacity = ((weights[weight.expressionName] / weight.percentage) * 100).toFixed(2)}
                   {@const divWidth = weights[weight.expressionName] * percentage}
@@ -149,7 +158,7 @@
               </div>
             </div>
             <div class="flex gap-1" style="width:{percentage.toFixed(2)}%">
-              {#each pickList.weights as weight}
+              {#each sortedWeights as weight}
                 {@const divWidth = weights[weight.expressionName] * percentage}
                 {#if divWidth}
                   <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
