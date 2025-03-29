@@ -14,7 +14,7 @@
   const routeBase = `survey/${surveyRecord.id}/admin`;
 
   function getAnchorClass(matching: string) {
-    return page == matching ? "font-bold underline" : "font-light";
+    return "active:left-0! active:top-0.5 " + (page == matching ? "font-bold underline" : "font-light");
   }
 </script>
 

@@ -30,7 +30,7 @@
   {/if}
   <div class="flex flex-wrap">
     {#each Array(5) as _, i}
-      <Button onclick={() => rate(i)} class="px-1.5">
+      <Button onclick={() => rate(i)} class="active:top-0! {value > i ? 'active:-left-0.5' : 'active:left-0.5'}">
         <StarIcon class="text-theme" fill={value > i ? "currentColor" : "transparent"} />
       </Button>
     {/each}

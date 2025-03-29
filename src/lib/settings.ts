@@ -71,4 +71,4 @@ export const tbaAuthKeyStore = localStorageStore<string>("tbaAuthKey", "");
 
 // Animation setting
 
-export const animationStore = localStorageStore<"none" | "full">("animation", "none");
+export const animationStore = localStorageStore<"minimal" | "full">("animation", "minimal");

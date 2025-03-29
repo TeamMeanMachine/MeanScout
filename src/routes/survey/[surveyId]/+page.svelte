@@ -494,7 +494,7 @@
 
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
     <h2 class="font-bold">MeanScout</h2>
-    <Anchor route="">
+    <Anchor route="" class="active:-left-0.5!">
       <ArrowLeftIcon class="text-theme" />
       <div class="flex grow flex-col">
         Main page

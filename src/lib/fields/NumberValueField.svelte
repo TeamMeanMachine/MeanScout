@@ -36,7 +36,7 @@
     <span class="w-12 bg-neutral-800 p-2 text-center {value > 0 ? 'font-bold' : 'font-light'}">
       {value}
     </span>
-    <Button onclick={increment}>
+    <Button onclick={increment} class="active:-top-0.5!">
       <PlusIcon class="text-theme" />
     </Button>
   </div>

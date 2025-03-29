@@ -192,7 +192,7 @@
           <small>They're fancy!</small>
         </div>
         <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
-          <option value="none">None</option>
+          <option value="minimal">Minimal</option>
           <option value="full">Full</option>
         </select>
       </label>

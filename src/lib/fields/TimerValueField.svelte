@@ -57,7 +57,7 @@
     <small class="font-light">{field.tip}</small>
   {/if}
   <div class="flex flex-wrap">
-    <Button onclick={running ? pause : start}>
+    <Button onclick={running ? pause : start} class="active:top-0! active:left-0.5">
       {#if running}
         <PauseIcon class="text-theme" />
       {:else}

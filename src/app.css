@@ -34,7 +34,7 @@
   }
 
   :disabled {
-    @apply cursor-default! opacity-50 outline-none!;
+    @apply static! cursor-default! opacity-50 outline-none!;
   }
 
   select {
@@ -45,6 +45,14 @@
   :is(input, select, textarea, a, button, .button, summary):focus,
   :is(input, select, textarea, a, button, .button, summary):hover {
     @apply z-10 outline-2 outline-neutral-300;
+  }
+
+  :is(button, .button, summary):active {
+    @apply relative top-0.5;
+  }
+
+  a:active {
+    @apply relative left-0.5;
   }
 
   ::marker {

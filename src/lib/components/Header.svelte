@@ -23,7 +23,7 @@
   {#if backLink === undefined}
     <img src="./logo.svg" alt="" width="25" height="25" />
   {:else}
-    <Anchor route={backLink}>
+    <Anchor route={backLink} class="active:-left-0.5!">
       <XIcon class="text-theme" />
     </Anchor>
   {/if}
