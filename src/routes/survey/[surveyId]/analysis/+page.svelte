@@ -91,8 +91,7 @@
             <Button
               onclick={() => {
                 openDialog(ViewPickListDialog, {
-                  surveyRecord: data.surveyRecord,
-                  fields: data.fields,
+                  data,
                   entriesByTeam: data.entriesByTeam,
                   pickList,
                 });
@@ -109,8 +108,7 @@
                   <Button
                     onclick={() => {
                       openDialog(ViewExpressionDialog, {
-                        surveyRecord: data.surveyRecord,
-                        fields: data.fields,
+                        data,
                         entriesByTeam: data.entriesByTeam,
                         expression,
                       });
@@ -218,8 +216,7 @@
   <Button
     onclick={() => {
       openDialog(ViewExpressionDialog, {
-        surveyRecord: data.surveyRecord,
-        fields: data.fields,
+        data,
         entriesByTeam: data.entriesByTeam,
         expression,
       });

@@ -11,7 +11,7 @@
   import { getMatchEntriesByTeam } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import { cameraStore, modeStore, targetStore, teamStore } from "$lib/settings";
-  import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
+  import { getLastCompletedMatch } from "$lib/survey";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -275,8 +275,7 @@
         <Button
           onclick={() =>
             openDialog(ViewPickListDialog, {
-              surveyRecord: data.surveyRecord as IDBRecord<MatchSurvey>,
-              fields: data.fields,
+              data: data as Extract<PageData, { surveyType: "match" }>,
               entriesByTeam,
               pickList,
             })}

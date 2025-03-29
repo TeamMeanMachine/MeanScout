@@ -3,19 +3,18 @@
   import { calculateTeamData, colors, normalizeTeamData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import RaceChart from "$lib/components/RaceChart.svelte";
+  import { openDialog } from "$lib/dialog";
   import type { MatchEntry } from "$lib/entry";
-  import type { DetailedSingleField } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
   import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
+  import ViewTeamDialog from "./ViewTeamDialog.svelte";
+  import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
-    surveyRecord,
-    fields,
+    data,
     entriesByTeam,
     pickList,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
-    fields: DetailedSingleField[];
+    data: Extract<PageData, { surveyType: "match" }>;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
   } = $props();
@@ -48,7 +47,7 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam, fields);
+      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, data.fields);
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -62,7 +61,7 @@
     return Object.keys(normalizedPickListData)
       .map((team) => ({
         team,
-        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
         percentage: normalizedPickListData[team],
         weights: weightsDataObject(weightsData[team]),
       }))
@@ -103,31 +102,38 @@
     </Button>
   {/if}
 
-  <div bind:this={overflowDiv} class="-mx-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto px-1">
+  <div bind:this={overflowDiv} class="-m-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto p-1">
     {#if $tab == "bar"}
-      <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+      <div class="grid gap-y-2" style="grid-template-columns:min-content auto">
         {#each sortedTeamData as { team, teamName, percentage }, i}
           {@const color = `rgb(var(--theme-color) / ${percentage.toFixed(2)}%)`}
 
-          <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
-          <div class="pr-1">
-            <div class="flex items-end justify-between gap-3">
-              <div class="flex flex-col">
-                <strong>{team}</strong>
-                {#if teamName}
-                  <small class="font-light">{teamName}</small>
-                {/if}
+          <Button
+            onclick={() => {
+              openDialog(ViewTeamDialog, { data, team: { number: team, name: teamName } });
+            }}
+            class="col-span-2 grid grid-cols-subgrid gap-x-3"
+          >
+            <div class="flex flex-col justify-center text-center text-sm font-bold">{i + 1}</div>
+            <div>
+              <div class="flex items-end justify-between gap-3">
+                <div class="flex flex-col">
+                  <strong>{team}</strong>
+                  {#if teamName}
+                    <small class="font-light">{teamName}</small>
+                  {/if}
+                </div>
+                {percentage.toFixed(1)}%
               </div>
-              {percentage.toFixed(1)}%
+              <div class="bg-neutral-700">
+                <div style="background-color:{color};width:{percentage.toFixed(2)}%;height:6px"></div>
+              </div>
             </div>
-            <div class="bg-neutral-800">
-              <div style="background-color:{color};width:{percentage.toFixed(2)}%;height:6px"></div>
-            </div>
-          </div>
+          </Button>
         {/each}
       </div>
     {:else if $tab == "race"}
-      <RaceChart {surveyRecord} {fields} {entriesByTeam} {pickList} />
+      <RaceChart surveyRecord={data.surveyRecord} fields={data.fields} {entriesByTeam} {pickList} />
     {:else if $tab == "stacked"}
       <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
         {#each sortedTeamData as { team, teamName, percentage, weights }, i}
