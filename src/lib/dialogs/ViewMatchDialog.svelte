@@ -36,16 +36,20 @@
           entryDerived: data.surveyRecord.expressions.filter(
             (e) => e.scope == "entry" && e.input.from == "expressions",
           ),
+          entryTba: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
           entryPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
           surveyDerived: data.surveyRecord.expressions.filter(
             (e) => e.scope == "survey" && e.input.from == "expressions",
           ),
+          surveyTba: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
           surveyPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
         }
       : {
           entryDerived: [],
+          entryTba: [],
           entryPrimitive: [],
           surveyDerived: [],
+          surveyTba: [],
           surveyPrimitive: [],
         };
 
@@ -198,6 +202,13 @@
         {/each}
       </optgroup>
     {/if}
+    {#if expressions.surveyTba.length}
+      <optgroup label="Survey Expressions from TBA">
+        {#each expressions.surveyTba as expression}
+          <option>{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
     {#if expressions.surveyPrimitive.length}
       <optgroup label="Survey Expressions from fields">
         {#each expressions.surveyPrimitive as expression}
@@ -208,6 +219,13 @@
     {#if expressions.entryDerived.length}
       <optgroup label="Entry Expressions from expressions">
         {#each expressions.entryDerived as expression}
+          <option>{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.entryTba.length}
+      <optgroup label="Entry Expressions from TBA">
+        {#each expressions.entryTba as expression}
           <option>{expression.name}</option>
         {/each}
       </optgroup>
