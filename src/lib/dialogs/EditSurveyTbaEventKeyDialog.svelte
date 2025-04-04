@@ -3,6 +3,8 @@
   import { teamStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
+  import { LoaderIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   let {
     surveyRecord,
@@ -16,31 +18,32 @@
   let error = $state("");
   let events = $state<{ name: string; key: string }[]>([]);
 
-  export const { onopen, onconfirm }: DialogExports = {
-    async onopen(open) {
-      if (!$teamStore) {
-        return open();
-      }
+  let isLoadingEvents = $state(!!$teamStore);
 
-      const response = await tbaGetTeamEvents($teamStore);
+  onMount(() => {
+    if (!$teamStore) return;
+    tbaGetTeamEvents($teamStore)
+      .then((response) => {
+        if (response.events) {
+          events = response.events;
+        } else if (response.error) {
+          error = response.error;
+        }
+      })
+      .finally(() => (isLoadingEvents = false));
+  });
 
-      if (response.events) {
-        events = response.events;
-      } else if (response.error) {
-        error = response.error;
-      }
-
-      open();
-    },
+  export const { onconfirm }: DialogExports = {
     async onconfirm() {
       event = event.trim();
 
       if (!event) {
         onedit(event);
-        return closeDialog();
+        closeDialog();
+        return;
       }
 
-      const eventNotFound = !events.map((e) => e.key).includes(event);
+      const eventNotFound = events.every((e) => e.key != event);
 
       if (eventNotFound || !(await tbaEventExists(event))) {
         error = "could not find event";
@@ -53,7 +56,12 @@
   };
 </script>
 
-<span>Edit TBA event:</span>
+<div class="flex flex-wrap justify-between gap-2">
+  <span>Edit TBA event:</span>
+  {#if isLoadingEvents}
+    <LoaderIcon class="text-theme animate-spin" />
+  {/if}
+</div>
 
 <datalist id="events-list">
   {#each events as { name, key }}

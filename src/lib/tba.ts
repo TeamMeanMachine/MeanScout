@@ -52,12 +52,12 @@ export async function tbaGetTeamEvents(team: string) {
 }
 
 export async function tbaGetEventMatches(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/matches/simple`);
+  const response = await tbaFetch(`/event/${eventKey}/matches`);
 
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data
-      .filter((match) => match.comp_level == "qm")
-      .map((match): Match => {
+      .filter((match) => match.comp_level == "qm" && match.score_breakdown)
+      .map((match) => {
         const newMatch: Match = {
           number: match.match_number,
           red1: match.alliances.red.team_keys[0].replace("frc", ""),
@@ -76,7 +76,32 @@ export async function tbaGetEventMatches(eventKey: string) {
           newMatch.blueScore = blueScore;
         }
 
-        return newMatch;
+        if (match.score_breakdown) {
+          const redMetrics = Object.entries(match.score_breakdown.red)
+            .filter(([key]) => /robot[123]/gi.test(key))
+            .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+          const blueMetrics = Object.entries(match.score_breakdown.blue)
+            .filter(([key]) => /robot[123]/gi.test(key))
+            .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+          const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
+            team: key.replace("frc", ""),
+            tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
+          }));
+
+          const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
+            team: key.replace("frc", ""),
+            tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
+          }));
+
+          return {
+            match: newMatch,
+            breakdowns: [...redTeams, ...blueTeams],
+          };
+        }
+
+        return { match: newMatch, breakdowns: undefined };
       });
   }
 }
@@ -95,37 +120,4 @@ function teamBreakdownMetrics(metrics: TbaMetrics, robot: number) {
   return metrics
     .filter(({ name }) => name.toLowerCase().includes(`robot${robot}`))
     .map(({ name, value }) => ({ name: name.replaceAll(/robot[123]/gi, ""), value }));
-}
-
-export async function tbaGetMatchScoreBreakdowns(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/matches`);
-
-  if (response.status == "success" && Array.isArray(response.data)) {
-    return response.data
-      .filter((match) => match.comp_level == "qm" && match.score_breakdown)
-      .map((match) => {
-        const redMetrics = Object.entries(match.score_breakdown.red)
-          .filter(([key]) => /robot[123]/gi.test(key))
-          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
-
-        const blueMetrics = Object.entries(match.score_breakdown.blue)
-          .filter(([key]) => /robot[123]/gi.test(key))
-          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
-
-        const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
-          team: key.replace("frc", ""),
-          tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
-        }));
-
-        const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
-          team: key.replace("frc", ""),
-          tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
-        }));
-
-        return {
-          match: Number(match.match_number),
-          teams: [...redTeams, ...blueTeams],
-        };
-      });
-  }
 }

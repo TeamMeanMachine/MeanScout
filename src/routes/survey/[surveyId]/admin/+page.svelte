@@ -4,8 +4,8 @@
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
   import { objectStore, transaction } from "$lib/idb";
-  import { tbaGetEventMatches, tbaGetEventTeams, tbaGetMatchScoreBreakdowns } from "$lib/tba";
-  import { CalendarDaysIcon, CloudDownloadIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
+  import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { CalendarDaysIcon, CloudDownloadIcon, LoaderIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import AdminHeader from "./AdminHeader.svelte";
 
@@ -15,19 +15,46 @@
     data: PageData;
   } = $props();
 
+  let getTbaDataError = $state("");
+  let isLoadingTbaData = $state(false);
+
   async function getDataFromTbaEvent() {
-    await getMatchesFromTbaEvent();
-    await getTeamsFromTbaEvent();
+    getTbaDataError = "";
+    isLoadingTbaData = true;
+
+    try {
+      await getMatchesFromTbaEvent();
+    } catch (e) {
+      getTbaDataError = "Error while trying to get matches";
+      console.error(e);
+    }
+
+    try {
+      await getTeamsFromTbaEvent();
+    } catch (e) {
+      getTbaDataError = "Error while trying to get teams";
+      console.error(e);
+    }
+
+    isLoadingTbaData = false;
   }
 
   async function getMatchesFromTbaEvent() {
     if (!data.surveyRecord.tbaEventKey) return;
 
     const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey);
+
     if (response) {
+      const matchesTx = transaction(["surveys", "entries"], "readwrite");
+      matchesTx.onabort = () => {
+        getTbaDataError = "Error while trying to get matches";
+      };
+
       const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
-      for (const match of response) {
+
+      for (const { match } of response) {
         const matchIndex = matches.findIndex((m) => m.number == match.number);
+
         if (matchIndex == -1) {
           matches.push(match);
         } else {
@@ -35,11 +62,26 @@
         }
       }
 
+      if (data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length) {
+        const entryStore = matchesTx.objectStore("entries");
+
+        for (const { match, breakdowns } of response) {
+          if (!breakdowns) continue;
+
+          for (const { team, tbaMetrics } of breakdowns) {
+            const entry = data.entryRecords.find((e) => e.team == team && e.type == "match" && e.match == match.number);
+            if (!entry) continue;
+
+            entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
+          }
+        }
+      }
+
       data = {
         ...data,
         surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
       } as PageData;
-      objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+      matchesTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
     }
   }
 
@@ -108,30 +150,6 @@
     };
     objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
-
-  async function getDataFromTbaMetrics() {
-    if (data.surveyType != "match" || !data.surveyRecord.tbaEventKey || !data.surveyRecord.tbaMetrics?.length) {
-      return;
-    }
-
-    const response = await tbaGetMatchScoreBreakdowns(data.surveyRecord.tbaEventKey);
-    if (!response?.length) return;
-
-    const metricsTx = transaction(["surveys", "entries"], "readwrite");
-
-    const entryStore = metricsTx.objectStore("entries");
-
-    for (const { match, teams } of response) {
-      for (const { team, tbaMetrics } of teams) {
-        const entry = data.entryRecords.find((e) => e.team == team && e.type == "match" && e.match == match);
-        if (!entry) continue;
-
-        entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
-      }
-    }
-
-    metricsTx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-  }
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
@@ -187,12 +205,23 @@
 
     {#if data.surveyRecord.tbaEventKey}
       <Button onclick={getDataFromTbaEvent}>
-        <CloudDownloadIcon class="text-theme" />
+        {#if isLoadingTbaData}
+          <LoaderIcon class="text-theme animate-spin" />
+        {:else}
+          <CloudDownloadIcon class="text-theme" />
+        {/if}
         <div class="flex flex-col">
           Get data from TBA
-          <small>Matches, teams</small>
+          <small>
+            Matches,
+            {data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length ? "metrics," : ""}
+            teams
+          </small>
         </div>
       </Button>
+      {#if getTbaDataError}
+        <span>{getTbaDataError}</span>
+      {/if}
     {/if}
   </div>
 
@@ -215,14 +244,6 @@
       {:else}
         <Button onclick={useTbaMetrics}>Use TBA metrics</Button>
       {/if}
-
-      <Button onclick={getDataFromTbaMetrics}>
-        <CloudDownloadIcon class="text-theme" />
-        <div class="flex flex-col">
-          Get data for these TBA metrics
-          <small>Per-team score breakdowns</small>
-        </div>
-      </Button>
     </div>
   {/if}
 </div>
