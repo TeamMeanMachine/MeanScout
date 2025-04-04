@@ -102,7 +102,7 @@ export async function tbaGetMatchScoreBreakdowns(eventKey: string) {
 
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data
-      .filter((match) => match.comp_level == "qm")
+      .filter((match) => match.comp_level == "qm" && match.score_breakdown)
       .map((match) => {
         const redMetrics = Object.entries(match.score_breakdown.red)
           .filter(([key]) => /robot[123]/gi.test(key))
