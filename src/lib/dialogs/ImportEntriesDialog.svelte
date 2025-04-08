@@ -3,28 +3,58 @@
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { csvToEntries, importEntries, type Entry } from "$lib/entry";
+  import { csvToEntries, importEntries, type Entry, type MatchEntry } from "$lib/entry";
   import type { DetailedSingleField } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
-  import { Undo2Icon } from "@lucide/svelte";
+  import { CircleCheckBigIcon, CircleIcon, Undo2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
     fields,
+    existingEntries,
     onimport,
   }: {
     surveyRecord: IDBRecord<Survey>;
     fields: DetailedSingleField[];
+    existingEntries: IDBRecord<Entry>[];
     onimport: () => void;
   } = $props();
 
   const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
+  const duplicateFixMethod = sessionStorageStore<"overwrite" | "ignore">("import-duplicate-fix-method", "overwrite");
 
   let files = $state<FileList | undefined>();
   let importedEntries = $state<Entry[]>([]);
   let error = $state("");
+
+  function getEntryUniqueString(entry: MatchEntry) {
+    return `${entry.match}_${entry.team}`;
+  }
+
+  let duplicateEntryStringsAndIds = $derived.by(() => {
+    const output = new Map<string, number>();
+
+    if (surveyRecord.type != "match") {
+      return output;
+    }
+
+    for (const entry of importedEntries) {
+      if (entry.type != "match") {
+        continue;
+      }
+
+      const uniqueString = getEntryUniqueString(entry);
+
+      const existingEntry = existingEntries.find((e) => e.type == "match" && uniqueString == getEntryUniqueString(e));
+      if (existingEntry) {
+        output.set(uniqueString, $state.snapshot(existingEntry).id);
+      }
+    }
+
+    return output;
+  });
 
   export const { onconfirm }: DialogExports = {
     async onconfirm() {
@@ -38,15 +68,50 @@
         error = "Could not add entries!";
       };
 
-      const entryStore = addTransaction.objectStore("entries");
-      for (const entry of importedEntries) {
-        entryStore.add($state.snapshot(entry));
-      }
-
       addTransaction.oncomplete = () => {
         onimport();
         closeDialog();
       };
+
+      const entryStore = addTransaction.objectStore("entries");
+
+      if (!duplicateEntryStringsAndIds.size) {
+        for (const entry of importedEntries) {
+          entryStore.add($state.snapshot(entry));
+        }
+        return;
+      }
+
+      for (const entry of importedEntries) {
+        if (entry.type != "match") {
+          entryStore.add($state.snapshot(entry));
+          continue;
+        }
+
+        const uniqueString = getEntryUniqueString(entry);
+
+        const matchingEntryId = duplicateEntryStringsAndIds.get(uniqueString);
+
+        if (!matchingEntryId) {
+          entryStore.add($state.snapshot(entry));
+          continue;
+        }
+
+        const matchingEntry = existingEntries.find((e) => e.id == matchingEntryId);
+        const tbaMetrics =
+          matchingEntry?.type == "match" && matchingEntry.tbaMetrics?.length
+            ? $state.snapshot(matchingEntry).tbaMetrics
+            : $state.snapshot(entry).tbaMetrics;
+
+        if ($duplicateFixMethod == "overwrite") {
+          entryStore.put({ ...$state.snapshot(entry), id: matchingEntryId, tbaMetrics });
+          continue;
+        }
+
+        if ($duplicateFixMethod == "ignore" && tbaMetrics) {
+          entryStore.put({ ...$state.snapshot(matchingEntry), tbaMetrics });
+        }
+      }
     },
   };
 
@@ -135,7 +200,10 @@
     <table class="w-full text-left">
       <thead>
         <tr>
-          <th class="w-0 p-2">Team</th>
+          <td colspan="2" class="w-0 p-2 text-nowrap">Entries: {importedEntries.length}</td>
+        </tr>
+        <tr>
+          <th class="w-0 p-2 text-center">Team</th>
           {#if surveyRecord.type == "match"}
             <th class="w-0 p-2">Match</th>
             <th class="w-0 p-2">Absent</th>
@@ -146,10 +214,10 @@
       <tbody>
         {#each importedEntries as entry}
           <tr>
-            <td class="p-2">{entry.team}</td>
+            <td class="p-2 text-center">{entry.team}</td>
             {#if entry.type == "match"}
-              <td class="p-2">{entry.match}</td>
-              <td class="p-2">{entry.absent}</td>
+              <td class="p-2 text-center">{entry.match}</td>
+              <td class="p-2 text-center">{entry.absent || ""}</td>
             {/if}
             <td></td>
           </tr>
@@ -157,7 +225,39 @@
       </tbody>
     </table>
   </div>
-  <span>Entries: {importedEntries.length}</span>
+  {#if duplicateEntryStringsAndIds.size}
+    <div class="flex flex-col">
+      <span>Duplicates</span>
+      <div class="flex flex-wrap gap-2">
+        <Button
+          onclick={() => {
+            $duplicateFixMethod = "overwrite";
+          }}
+          class="grow basis-52 {$duplicateFixMethod == 'overwrite' ? 'font-bold' : 'font-light'}"
+        >
+          {#if $duplicateFixMethod == "overwrite"}
+            <CircleCheckBigIcon class="text-theme" />
+          {:else}
+            <CircleIcon class="text-theme" />
+          {/if}
+          Overwrite {duplicateEntryStringsAndIds.size}
+        </Button>
+        <Button
+          onclick={() => {
+            $duplicateFixMethod = "ignore";
+          }}
+          class="grow basis-52 {$duplicateFixMethod == 'ignore' ? 'font-bold' : 'font-light'}"
+        >
+          {#if $duplicateFixMethod == "ignore"}
+            <CircleCheckBigIcon class="text-theme" />
+          {:else}
+            <CircleIcon class="text-theme" />
+          {/if}
+          Ignore {duplicateEntryStringsAndIds.size}
+        </Button>
+      </div>
+    </div>
+  {/if}
 {/snippet}
 
 {#if error}

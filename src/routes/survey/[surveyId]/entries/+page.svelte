@@ -456,6 +456,7 @@
           openDialog(ImportEntriesDialog, {
             surveyRecord: data.surveyRecord,
             fields: data.fields,
+            existingEntries: data.entryRecords,
             onimport: refresh,
           });
         }}
