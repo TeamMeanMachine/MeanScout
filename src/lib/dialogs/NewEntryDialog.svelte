@@ -6,7 +6,7 @@
   import { getDefaultFieldValue } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
-  import { PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
@@ -35,8 +35,58 @@
 
   let error = $state("");
 
-  let suggestedTeams = $derived(getSuggestedTeams(match));
-  let teamName = $derived(data.surveyRecord.teams.find((t) => t.number == team)?.name || "");
+  let matchData = $derived(data.surveyRecord.matches.find((m) => m.number == match));
+
+  let teamNumberNameMap = new Map<string, string>();
+  for (const team of data.surveyRecord.teams) {
+    teamNumberNameMap.set(team.number, team.name);
+  }
+
+  let suggestedTeams = $derived.by(() => {
+    match;
+    const teamSet = new Set<string>();
+
+    if (matchData && data.surveyType == "match") {
+      switch ($targetStore) {
+        case "red 1":
+          teamSet.add(matchData.red1);
+          break;
+        case "red 2":
+          teamSet.add(matchData.red2);
+          break;
+        case "red 3":
+          teamSet.add(matchData.red3);
+          break;
+        case "blue 1":
+          teamSet.add(matchData.blue1);
+          break;
+        case "blue 2":
+          teamSet.add(matchData.blue2);
+          break;
+        case "blue 3":
+          teamSet.add(matchData.blue3);
+          break;
+      }
+
+      for (const team of data.surveyRecord.teams) {
+        if (
+          !data.surveyRecord.matches
+            .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
+            .includes(team.number)
+        ) {
+          teamSet.add(team.number);
+        }
+      }
+    } else {
+      for (const team of data.surveyRecord.teams) {
+        teamSet.add(team.number);
+      }
+    }
+
+    return [...teamSet]
+      .map((team): Team => data.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
+      .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
+  });
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -44,15 +94,12 @@
       scout = scout?.trim();
       predictionReason = predictionReason?.trim();
 
-      const teamHasInvalidFormat = !/^\d{1,5}[A-Z]?$/.test(team);
-      const teamIsNotListed = suggestedTeams.length && !suggestedTeams.some((t) => t.number == team);
-
-      if (teamHasInvalidFormat) {
+      if (!/^\d{1,5}[A-Z]?$/.test(team)) {
         error = "invalid value for team";
         return;
       }
 
-      if (teamIsNotListed) {
+      if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == team)) {
         error = "team is not listed";
         return;
       }
@@ -62,16 +109,9 @@
         return;
       }
 
-      if (data.surveyType == "match") {
-        if (!/\d{1,3}/.test(`${match}`)) {
-          error = "invalid value for match";
-          return;
-        }
-
-        if (data.surveyRecord.matches.length && !data.surveyRecord.matches.some((m) => m.number == match)) {
-          error = "match is not listed";
-          return;
-        }
+      if (data.surveyType == "match" && !/\d{1,3}/.test(`${match}`)) {
+        error = "invalid value for match";
+        return;
       }
 
       const defaultValues = data.fields.map((field) => getDefaultFieldValue(field.field));
@@ -122,65 +162,12 @@
     },
   };
 
-  function getSuggestedTeams(matchValue: number) {
-    const teamSet = new Set<string>();
-
-    if (data.surveyType == "match") {
-      const matchData = data.surveyRecord.matches.find((match) => match.number == matchValue);
-
-      if (matchData) {
-        switch ($targetStore) {
-          case "red 1":
-            teamSet.add(matchData.red1);
-            break;
-          case "red 2":
-            teamSet.add(matchData.red2);
-            break;
-          case "red 3":
-            teamSet.add(matchData.red3);
-            break;
-          case "blue 1":
-            teamSet.add(matchData.blue1);
-            break;
-          case "blue 2":
-            teamSet.add(matchData.blue2);
-            break;
-          case "blue 3":
-            teamSet.add(matchData.blue3);
-            break;
-          default:
-            teamSet.add(matchData.red1);
-            teamSet.add(matchData.red2);
-            teamSet.add(matchData.red3);
-            teamSet.add(matchData.blue1);
-            teamSet.add(matchData.blue2);
-            teamSet.add(matchData.blue3);
-        }
-      }
-
-      data.surveyRecord.teams.forEach((team) => {
-        if (
-          data.surveyType == "match" &&
-          !data.surveyRecord.matches
-            .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
-            .includes(team.number)
-        ) {
-          teamSet.add(team.number);
-        }
-      });
-    } else {
-      data.surveyRecord.teams.forEach((team) => {
-        teamSet.add(team.number);
-      });
-    }
-
-    return [...teamSet]
-      .map((team): Team => data.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
-      .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
+  function teamUnderline(teamNumber?: string) {
+    return teamNumber == team ? "underline" : "";
   }
 
-  function matchTeamWeight(teamNumber?: string) {
-    return teamNumber == team ? "font-bold underline" : "font-light";
+  function teamBold(teamNumber?: string) {
+    return teamNumber == team ? "font-bold" : "font-light";
   }
 </script>
 
@@ -226,36 +213,130 @@
 {/if}
 
 {#if data.surveyType == "match"}
+  <div class="flex items-end gap-2">
+    <label class="flex grow flex-col">
+      Match
+      <input
+        type="number"
+        bind:value={match}
+        oninput={() => (team = suggestedTeams[0].number)}
+        min="1"
+        class="text-theme w-full bg-neutral-800 p-2"
+      />
+    </label>
+    <Button disabled={match <= 1} onclick={() => match--}>
+      <MinusIcon class="text-theme" />
+    </Button>
+    <Button onclick={() => match++}>
+      <PlusIcon class="text-theme" />
+    </Button>
+  </div>
+{/if}
+
+{#if matchData}
+  {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
+
+  <div class="flex flex-col">
+    <div class="flex items-end justify-between">
+      <span>Team</span>
+      {#if $targetStore != "pit"}
+        <small class="text-theme capitalize">{$targetStore}</small>
+      {/if}
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <Button
+        onclick={() => {
+          team = red1;
+          $targetStore = "red 1";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(red1)}">
+          <span class="text-red {teamUnderline(red1)}">{red1}</span>
+          <small class="truncate">{teamNumberNameMap.get(red1)}</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          team = red2;
+          $targetStore = "red 2";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(red2)}">
+          <span class="text-red {teamUnderline(red2)}">{red2}</span>
+          <small class="truncate">{teamNumberNameMap.get(red2)}</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          team = red3;
+          $targetStore = "red 3";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(red3)}">
+          <span class="text-red {teamUnderline(red3)}">{red3}</span>
+          <small class="truncate">{teamNumberNameMap.get(red3)}</small>
+        </div>
+      </Button>
+
+      <Button
+        onclick={() => {
+          team = blue1;
+          $targetStore = "blue 1";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(blue1)}">
+          <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
+          <small class="truncate">{teamNumberNameMap.get(blue1)}</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          team = blue2;
+          $targetStore = "blue 2";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(blue2)}">
+          <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
+          <small class="truncate">{teamNumberNameMap.get(blue2)}</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          team = blue3;
+          $targetStore = "blue 3";
+        }}
+        class="w-full"
+      >
+        <div class="flex flex-col truncate {teamBold(blue3)}">
+          <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
+          <small class="truncate">{teamNumberNameMap.get(blue3)}</small>
+        </div>
+      </Button>
+    </div>
+  </div>
+{:else if suggestedTeams.length}
   <label class="flex flex-col">
-    Match
-    <input
-      type="number"
-      bind:value={match}
-      oninput={() => (team = suggestedTeams[0].number)}
-      min="1"
-      class="text-theme bg-neutral-800 p-2"
-    />
+    Team
+    <select bind:value={team} class="text-theme bg-neutral-800 p-2">
+      {#each suggestedTeams as team}
+        <option value={team.number}>{team.number} {team.name}</option>
+      {/each}
+    </select>
+  </label>
+{:else}
+  <label class="flex flex-col">
+    Team
+    <input bind:value={team} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 
-<datalist id="teams-list">
-  {#each suggestedTeams as team}
-    <option value={team.number}>{team.name}</option>
-  {/each}
-</datalist>
-<label class="flex flex-col">
-  <div class="flex flex-wrap items-end justify-between">
-    Team
-    {#if teamName}
-      <span class="text-sm font-light">{teamName}</span>
-    {/if}
-  </div>
-  <input list="teams-list" bind:value={team} class="text-theme bg-neutral-800 p-2" />
-</label>
-
 {#if data.surveyType == "match" && data.surveyRecord.scouts}
-  {@const matchData = data.surveyRecord.matches.find((m) => m.number == match)}
-
   <h2 class="mt-4 font-bold">Prediction</h2>
 
   <Button
@@ -267,16 +348,11 @@
       });
     }}
     disabled={!matchData}
-    class="grid grid-cols-[repeat(4,min-content)_auto] gap-2 gap-x-3 text-center!"
   >
-    <div>{match}</div>
-    <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-      <div class="text-red {matchTeamWeight(matchData?.red1)}">{matchData?.red1 || "-"}</div>
-      <div class="text-red {matchTeamWeight(matchData?.red2)}">{matchData?.red2 || "-"}</div>
-      <div class="text-red {matchTeamWeight(matchData?.red3)}">{matchData?.red3 || "-"}</div>
-      <div class="text-blue {matchTeamWeight(matchData?.blue1)}">{matchData?.blue1 || "-"}</div>
-      <div class="text-blue {matchTeamWeight(matchData?.blue2)}">{matchData?.blue2 || "-"}</div>
-      <div class="text-blue {matchTeamWeight(matchData?.blue3)}">{matchData?.blue3 || "-"}</div>
+    <EyeIcon class="text-theme" />
+    <div class="flex flex-col">
+      View data
+      <small>Info, analysis</small>
     </div>
   </Button>
 
