@@ -1,16 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import {
-    animationStore,
-    cameraStore,
-    modes,
-    modeStore,
-    targets,
-    targetStore,
-    tbaAuthKeyStore,
-    teamStore,
-  } from "$lib/settings";
+  import { animationStore, cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
   import {
     BringToFrontIcon,
@@ -18,10 +9,8 @@
     CrosshairIcon,
     KeyIcon,
     LoaderIcon,
-    LockIcon,
     SaveIcon,
     Undo2Icon,
-    UnlockIcon,
     UsersIcon,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
@@ -30,7 +19,6 @@
   const lastSurvey = localStorage.getItem("survey");
   const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
 
-  let modeInput = $state($modeStore);
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);
   let teamInput = $state($teamStore);
@@ -44,7 +32,6 @@
 
   let unsavedChanges = $derived.by(() => {
     return (
-      modeInput != $modeStore ||
       targetInput != $targetStore ||
       cameraInput != $cameraStore ||
       teamInput.trim() != $teamStore ||
@@ -90,7 +77,6 @@
       }
     }
 
-    $modeStore = modeInput;
     $targetStore = targetInput;
     $cameraStore = cameraInput;
     $teamStore = teamInput;
@@ -101,7 +87,6 @@
   function revert() {
     error = "";
 
-    modeInput = $modeStore;
     targetInput = $targetStore;
     cameraInput = $cameraStore;
     teamInput = $teamStore;
@@ -113,93 +98,74 @@
 <Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
 <div class="flex flex-col gap-6" style="view-transition-name:settings">
+  <hr class="border-neutral-500" />
+
   <label class="flex flex-wrap items-center gap-2">
-    {#if $modeStore == "admin"}
-      <UnlockIcon class="text-theme" />
-    {:else}
-      <LockIcon class="text-theme" />
-    {/if}
+    <CrosshairIcon class="text-theme" />
     <div class="flex grow flex-col">
-      Mode
-      <small>Scout mode limits menus/controls</small>
+      Target
+      <small>Which robot you're scouting</small>
     </div>
-    <select bind:value={modeInput} class="text-theme bg-neutral-800 p-2 capitalize">
-      {#each modes as mode}
-        <option>{mode}</option>
+    <select bind:value={targetInput} class="text-theme bg-neutral-800 p-2 capitalize">
+      {#each targets as target}
+        <option>{target}</option>
       {/each}
     </select>
   </label>
 
-  <hr class="border-neutral-500" />
-
-  {#if modeInput == "admin"}
-    <label class="flex flex-wrap items-center gap-2">
-      <CrosshairIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Target
-        <small>Which robot you're scouting</small>
-      </div>
-      <select bind:value={targetInput} class="text-theme bg-neutral-800 p-2 capitalize">
-        {#each targets as target}
-          <option>{target}</option>
+  <label class="flex flex-wrap items-center gap-2">
+    <CameraIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Camera
+      <small>Used to scan QRF codes</small>
+    </div>
+    {#if cameras.length}
+      <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
+        <option value="">Select</option>
+        {#each cameras as { id, name }}
+          <option value={id}>{name}</option>
         {/each}
       </select>
-    </label>
-
-    <label class="flex flex-wrap items-center gap-2">
-      <CameraIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Camera
-        <small>Used to scan QRF codes</small>
-      </div>
-      {#if cameras.length}
-        <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
-          <option value="">Select</option>
-          {#each cameras as { id, name }}
-            <option value={id}>{name}</option>
-          {/each}
-        </select>
-      {:else if noCamera}
-        <span>No camera</span>
-      {:else}
-        <LoaderIcon class="text-theme animate-spin" />
-      {/if}
-    </label>
-
-    <label class="flex flex-wrap items-center gap-2">
-      <UsersIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Your team
-        <small>Used w/ TBA data, upcoming match views</small>
-      </div>
-      <input bind:value={teamInput} class="text-theme w-32 bg-neutral-800 p-2" />
-    </label>
-
-    <label class="flex flex-wrap items-center gap-2">
-      <KeyIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Custom TBA auth key
-        <small>You may want to use your own</small>
-      </div>
-      <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
-    </label>
-
-    {#if "startViewTransition" in document && !prefersReducedMotion.current}
-      <label class="flex flex-wrap items-center gap-2">
-        <BringToFrontIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Animations
-          <small>They're fancy!</small>
-        </div>
-        <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
-          <option value="minimal">Minimal</option>
-          <option value="full">Full</option>
-        </select>
-      </label>
+    {:else if noCamera}
+      <span>No camera</span>
+    {:else}
+      <LoaderIcon class="text-theme animate-spin" />
     {/if}
+  </label>
 
-    <hr class="border-neutral-500" />
+  <label class="flex flex-wrap items-center gap-2">
+    <UsersIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Your team
+      <small>Used w/ TBA data, upcoming match views</small>
+    </div>
+    <input bind:value={teamInput} class="text-theme w-32 bg-neutral-800 p-2" />
+  </label>
+
+  <label class="flex flex-wrap items-center gap-2">
+    <KeyIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Custom TBA auth key
+      <small>You may want to use your own</small>
+    </div>
+    <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
+  </label>
+
+  {#if "startViewTransition" in document && !prefersReducedMotion.current}
+    <label class="flex flex-wrap items-center gap-2">
+      <BringToFrontIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        Animations
+        <small>They're fancy!</small>
+      </div>
+      <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
+        <option value="minimal">Minimal</option>
+        <option value="full">Full</option>
+      </select>
+    </label>
   {/if}
+
+  <hr class="border-neutral-500" />
 
   <div class="flex flex-wrap gap-3">
     <Button onclick={save} disabled={!unsavedChanges}>

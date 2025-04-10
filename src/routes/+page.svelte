@@ -5,7 +5,7 @@
   import { openDialog } from "$lib/dialog";
   import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
-  import { cameraStore, modeStore } from "$lib/settings";
+  import { cameraStore } from "$lib/settings";
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
 
@@ -30,30 +30,28 @@
     {/each}
   {/if}
 
-  {#if $modeStore == "admin"}
-    <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ImportSurveyDialog, {})} class="grow basis-0">
-        <ImportIcon class="text-theme" />
-        <div class="flex flex-col">
-          Import
-          <small>
-            {#if $cameraStore}
-              QRF code, File
-            {:else}
-              File
-            {/if}
-          </small>
-        </div>
-      </Button>
-      <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
-        <PlusIcon class="text-theme" />
-        <div class="flex flex-col">
-          Create
-          <small>New</small>
-        </div>
-      </Button>
-    </div>
-  {/if}
+  <div class="flex flex-wrap gap-2">
+    <Button onclick={() => openDialog(ImportSurveyDialog, {})} class="grow basis-0">
+      <ImportIcon class="text-theme" />
+      <div class="flex flex-col">
+        Import
+        <small>
+          {#if $cameraStore}
+            QRF code, File
+          {:else}
+            File
+          {/if}
+        </small>
+      </div>
+    </Button>
+    <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
+      <PlusIcon class="text-theme" />
+      <div class="flex flex-col">
+        Create
+        <small>New</small>
+      </div>
+    </Button>
+  </div>
 </div>
 
 <div class="flex flex-col gap-2" style="view-transition-name:meanscout">

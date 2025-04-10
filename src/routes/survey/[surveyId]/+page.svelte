@@ -10,7 +10,7 @@
   import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import { getMatchEntriesByTeam } from "$lib/entry";
   import { objectStore } from "$lib/idb";
-  import { cameraStore, modeStore, targetStore, teamStore } from "$lib/settings";
+  import { cameraStore, targetStore, teamStore } from "$lib/settings";
   import { getLastCompletedMatch } from "$lib/survey";
   import {
     ArrowLeftIcon,
@@ -420,77 +420,75 @@
     </div>
   {/if}
 
-  {#if $modeStore == "admin"}
-    {#if data.surveyType == "match" && data.surveyRecord.scouts}
-      {@const { overallAccuracy } = getPredictionsPerScout(data.surveyRecord, data.entryRecords)}
+  {#if data.surveyType == "match" && data.surveyRecord.scouts}
+    {@const { overallAccuracy } = getPredictionsPerScout(data.surveyRecord, data.entryRecords)}
 
-      <div class="flex flex-col gap-2" style="view-transition-name:predictions">
-        <h2 class="font-bold">Predictions</h2>
+    <div class="flex flex-col gap-2" style="view-transition-name:predictions">
+      <h2 class="font-bold">Predictions</h2>
 
-        <Anchor route="survey/{data.surveyRecord.id}/predictions">
-          <DicesIcon class="text-theme" />
-          <div class="flex grow flex-col">
-            Predictions
-            {#if overallAccuracy}
-              <small>{(overallAccuracy * 100).toFixed(1)}% accuracy</small>
-            {/if}
-          </div>
-          <ArrowRightIcon class="text-theme" />
-        </Anchor>
-      </div>
-    {/if}
-
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Survey</h2>
-      <div class="flex flex-wrap gap-2">
-        <Button
-          onclick={() => {
-            openDialog(ExportSurveyDialog, {
-              surveyRecord: data.surveyRecord,
-              fieldRecords: data.fieldRecords,
-            });
-          }}
-          class="grow basis-0"
-        >
-          <ShareIcon class="text-theme" />
-          <div class="flex flex-col">
-            Export
-            <small>QRF code, File</small>
-          </div>
-        </Button>
-        <Button
-          onclick={() => {
-            openDialog(OverwriteSurveyDialog, {
-              surveyRecord: data.surveyRecord,
-              fieldRecords: data.fieldRecords,
-              entryCount: data.entryRecords.length,
-            });
-          }}
-          class="grow basis-0"
-        >
-          <ReplaceIcon class="text-theme" />
-          <div class="flex flex-col">
-            Overwrite
-            <small>
-              {#if $cameraStore}
-                QRF code, File
-              {:else}
-                File
-              {/if}
-            </small>
-          </div>
-        </Button>
-      </div>
-      <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
-        <Settings2Icon class="text-theme" />
+      <Anchor route="survey/{data.surveyRecord.id}/predictions">
+        <DicesIcon class="text-theme" />
         <div class="flex grow flex-col">
-          Admin
-          <small>Setup, Configure</small>
+          Predictions
+          {#if overallAccuracy}
+            <small>{(overallAccuracy * 100).toFixed(1)}% accuracy</small>
+          {/if}
         </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
   {/if}
+
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Survey</h2>
+    <div class="flex flex-wrap gap-2">
+      <Button
+        onclick={() => {
+          openDialog(ExportSurveyDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+          });
+        }}
+        class="grow basis-0"
+      >
+        <ShareIcon class="text-theme" />
+        <div class="flex flex-col">
+          Export
+          <small>QRF code, File</small>
+        </div>
+      </Button>
+      <Button
+        onclick={() => {
+          openDialog(OverwriteSurveyDialog, {
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+            entryCount: data.entryRecords.length,
+          });
+        }}
+        class="grow basis-0"
+      >
+        <ReplaceIcon class="text-theme" />
+        <div class="flex flex-col">
+          Overwrite
+          <small>
+            {#if $cameraStore}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </small>
+        </div>
+      </Button>
+    </div>
+    <Anchor route="survey/{data.surveyRecord.id}/admin" style="view-transition-name:admin">
+      <Settings2Icon class="text-theme" />
+      <div class="flex grow flex-col">
+        Admin
+        <small>Setup, Configure</small>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Anchor>
+  </div>
 
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
     <h2 class="font-bold">MeanScout</h2>

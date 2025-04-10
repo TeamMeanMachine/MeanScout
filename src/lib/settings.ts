@@ -13,13 +13,6 @@ function localStorageStore<T extends string>(
   return store;
 }
 
-// Mode setting
-
-export const modes = ["admin", "scout"] as const;
-export type Mode = (typeof modes)[number];
-
-export const modeStore = localStorageStore<Mode>("mode", "admin");
-
 // Target setting
 
 export const matchTargets = ["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3"] as const;

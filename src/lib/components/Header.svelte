@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Heading } from "$lib";
-  import { modeStore, targetStore } from "$lib/settings";
+  import { targetStore } from "$lib/settings";
   import { XIcon } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
 
@@ -42,10 +42,5 @@
     {/if}
   </div>
 
-  <div class="flex flex-col text-right">
-    {#if $modeStore == "admin"}
-      <small>Admin</small>
-    {/if}
-    <small class="text-theme font-bold capitalize">{$targetStore}</small>
-  </div>
+  <small class="text-theme font-bold capitalize">{$targetStore}</small>
 </header>

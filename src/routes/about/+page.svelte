@@ -156,14 +156,6 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Mode setting</h2>
-      <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Simplify MeanScout's UI for scouts</li>
-        <li>Hide survey editing/config pages from scouts</li>
-      </ul>
-    </div>
-
-    <div class="flex flex-col gap-2">
       <h2 class="font-bold">Preparing for an event</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>Create a new survey and give it a good name (e.g. PNW Champs 2024)</li>
@@ -234,7 +226,6 @@
         <li>Fill in the team setting on each device (highlights your team in match lists)</li>
         <li>Set a unique target on each device (definitely do this one!)</li>
         <li>If you can use QRF codes, make sure to pick a rear-facing camera</li>
-        <li>To limit menus/controls for scouts, set those devices to scout mode</li>
       </ol>
     </div>
   {:else if $tab == "prediction"}
@@ -255,7 +246,6 @@
         <li>1 point for only 1 correct scout, 6 points each for all 6 correct scouts</li>
         <li>Scouts that don't guess or guess incorrectly won't lose points, but won't gain any either</li>
         <li>Tied matches don't count towards points</li>
-        <li>Admin mode has access to prediction results</li>
       </ul>
     </div>
 
