@@ -16,14 +16,14 @@ const config = {
     adapter: adapter({
       fallback: "index.html",
     }),
-    csrf: {
-      checkOrigin: false,
-    },
     output: {
       bundleStrategy: "single",
     },
     router: {
       type: "hash",
+    },
+    serviceWorker: {
+      register: process.env.NODE_ENV !== "development",
     },
   },
 };

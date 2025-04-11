@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import DialogBox from "$lib/components/DialogBox.svelte";
-  import LaunchUploadHandler from "$lib/components/LaunchUploadHandler.svelte";
   import { closeAllDialogs, type DialogState, subscribeDialog } from "$lib/dialog";
   import { animationStore } from "$lib/settings";
   import "../app.css";
@@ -40,7 +39,5 @@
 {#each dialogStack as { component, props }}
   <DialogBox {component} {props} />
 {/each}
-
-<LaunchUploadHandler />
 
 {@render children()}

@@ -51,7 +51,7 @@
   bind:this={box}
   onclose={closeDialog}
   onmouseup={onboxmouseup}
-  class="m-auto max-h-dvh w-[540px] [max-width:100vw] bg-neutral-900 shadow-2xl backdrop:backdrop-blur-sm"
+  class="m-auto max-h-dvh w-[540px] [max-width:100vw] overflow-y-hidden bg-neutral-900 shadow-2xl backdrop:backdrop-blur-sm"
 >
   <form
     method="dialog"
@@ -61,11 +61,11 @@
     }}
     onmouseup={onforminteract}
     onmousedown={onforminteract}
-    class="flex max-h-dvh flex-col gap-3 p-3"
+    class="flex max-h-dvh flex-col gap-3 overflow-y-auto p-3 pb-0"
   >
     <div bind:this={target} class="contents"></div>
 
-    <div class="flex flex-wrap justify-between gap-3">
+    <div class="flex flex-wrap justify-between gap-3 pb-3">
       <Button onclick={() => box.close()}>
         <XIcon class="text-theme" />
         {#if dialog?.onconfirm}

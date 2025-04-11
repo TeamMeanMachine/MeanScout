@@ -10,14 +10,21 @@ import { build, files, prerendered, version } from "$service-worker";
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 const CACHE_NAME = `MeanScout-${version}`;
-const UPLOAD_CACHE_NAME = `MS-Uploads-${version}`;
 const ASSETS = [...build, ...files, ...prerendered];
+const ORIGIN = new URL(sw.location.href).origin;
 
 sw.oninstall = (e) => e.waitUntil(oninstall());
 sw.onactivate = (e) => e.waitUntil(onactivate());
 sw.onfetch = (e) => {
-  if (e.request.url.includes("thebluealliance.com")) return;
-  e.respondWith(onfetch(e));
+  if (new URL(e.request.url).origin !== ORIGIN) {
+    return;
+  }
+
+  if (e.request.method !== "GET") {
+    return;
+  }
+
+  e.respondWith(onfetch(e.request));
 };
 
 async function oninstall() {
@@ -31,56 +38,25 @@ async function onactivate() {
   const keys = await caches.keys();
 
   for (const key of keys) {
-    if (key == CACHE_NAME || key == UPLOAD_CACHE_NAME) {
-      continue;
+    if (key != CACHE_NAME) {
+      await caches.delete(key);
     }
-
-    await caches.delete(key);
   }
 }
 
-async function onfetch(event: FetchEvent) {
-  if (event.request.method == "POST") {
-    return await onpost(event);
-  }
-
-  return await onget(event);
-}
-
-async function onget(event: FetchEvent) {
+async function onfetch(request: Request) {
   const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
 
-  try {
-    const networkResponse = await fetch(event.request);
+  const networkResponse = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
 
-    if (!(networkResponse instanceof Response)) {
-      throw new Error("Invalid response from fetch");
-    }
+      return response;
+    })
+    .catch(() => Response.error());
 
-    if (networkResponse.status == 200) {
-      cache.put(event.request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse = await cache.match(event.request);
-
-    if (!cachedResponse) {
-      throw error;
-    }
-
-    return cachedResponse;
-  }
-}
-
-async function onpost(event: FetchEvent) {
-  const formData = await event.request.formData();
-  const file = formData.get("file");
-
-  if (typeof file != "string") {
-    const cache = await caches.open(UPLOAD_CACHE_NAME);
-    await cache.put("upload", new Response(file));
-  }
-
-  return Response.redirect("/", 303);
+  return cachedResponse || networkResponse;
 }
