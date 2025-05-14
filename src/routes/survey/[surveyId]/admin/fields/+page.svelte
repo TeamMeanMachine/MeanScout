@@ -4,11 +4,10 @@
   import { openDialog } from "$lib/dialog";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
-  import { fieldIcons, getDetailedNestedFields } from "$lib/field";
+  import { fieldIcons, getDetailedNestedFields, type Field } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
-  import { onMount } from "svelte";
   import { GroupIcon, PlusIcon } from "@lucide/svelte";
 
   let {
@@ -17,133 +16,109 @@
     data: PageData;
   } = $props();
 
+  let surveyRecord = $state($state.snapshot(data.surveyRecord));
+
   let { detailedFields, detailedInnerFields } = $state(
-    getDetailedNestedFields(data.surveyRecord.fieldIds, data.fieldRecords),
+    getDetailedNestedFields(surveyRecord.fieldIds, data.fieldRecords),
   );
 
-  let mainList: HTMLDivElement;
+  let mainList = $state<HTMLElement>();
 
-  onMount(() => createSortable(mainList));
-
-  function createSortable(list: HTMLElement) {
+  function createSortable(list: HTMLElement, groupId?: number) {
     if (data.disabled) return;
+
+    if (!groupId) mainList = list;
 
     const sortable = new Sortable(list, {
       group: "fields",
       handle: ".handle",
       delay: 250,
       delayOnTouchOnly: true,
-      onStart,
-      onEnd,
+      onStart(event) {
+        if (event.item.classList.contains("group")) {
+          mainList?.querySelectorAll(".group-fields").forEach((group) => {
+            (group as HTMLElement).classList.add("hidden");
+          });
+        }
+      },
+      onEnd() {
+        mainList?.querySelectorAll(".group-fields").forEach((group) => {
+          (group as HTMLElement).classList.remove("hidden");
+        });
+      },
       animation: 150,
       fallbackOnBody: true,
       swapThreshold: 0.65,
+      store: {
+        get: () => [],
+        set(sortable) {
+          const order = sortable.toArray().map((id) => Number(id));
+          if (groupId) {
+            const group = detailedFields.get(groupId);
+            if (!group || group.type != "group") {
+              console.error(`group ${groupId} not found`);
+              return;
+            }
+            group.field.fieldIds = order;
+            objectStore("fields", "readwrite").put($state.snapshot(group.field));
+            updateAndRefresh();
+          } else {
+            surveyRecord.fieldIds = order;
+            updateAndRefresh();
+          }
+        },
+      },
     });
 
     $effect(() => {
       return () => {
         sortable.destroy();
+        if (!groupId) mainList = undefined;
       };
     });
   }
 
-  function onStart(event: Sortable.SortableEvent) {
-    if (event.item.classList.contains("group")) {
-      mainList.querySelectorAll(".group-fields").forEach((group) => {
-        (group as HTMLElement).classList.add("hidden");
-      });
-    }
-  }
-
-  function onEnd(event: Sortable.SortableEvent) {
-    mainList.querySelectorAll(".group-fields").forEach((group) => {
-      (group as HTMLElement).classList.remove("hidden");
-    });
-
-    const oldIndex = event.oldIndex;
-    const newIndex = event.newIndex;
-    if (oldIndex == undefined || newIndex == undefined) {
-      return;
-    }
-
-    const oldParent = detailedFields.get(Number(event.from.dataset.id));
-    const newParent = detailedFields.get(Number(event.to.dataset.id));
-    if (oldParent?.field.id == newParent?.field.id && oldIndex == newIndex) {
-      return;
-    }
-
-    if (oldParent?.type == "single" || newParent?.type == "single") {
-      return;
-    }
-
-    if (!oldParent && !newParent) {
-      const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-      fieldIds.splice(newIndex, 0, ...fieldIds.splice(oldIndex, 1));
-      data = { ...data, surveyRecord: { ...data.surveyRecord, fieldIds } } as PageData;
-      refresh();
-    } else if (oldParent && newParent) {
-      if (oldParent.field.id == newParent.field.id) {
-        const fieldIds = structuredClone($state.snapshot(oldParent.field.fieldIds));
-        fieldIds.splice(newIndex, 0, ...fieldIds.splice(oldIndex, 1));
-        objectStore("fields", "readwrite").put({ ...$state.snapshot(oldParent.field), fieldIds }).onsuccess = refresh;
-      } else {
-        const oldFieldIds = structuredClone($state.snapshot(oldParent.field.fieldIds));
-        const ids = oldFieldIds.splice(oldIndex, 1);
-        const newFieldIds = structuredClone($state.snapshot(newParent.field.fieldIds));
-        newFieldIds.splice(newIndex, 0, ...ids);
-        const moveTransaction = transaction("fields", "readwrite");
-        moveTransaction.oncomplete = refresh;
-        const fieldStore = moveTransaction.objectStore("fields");
-        fieldStore.put({ ...$state.snapshot(oldParent.field), fieldIds: oldFieldIds });
-        fieldStore.put({ ...$state.snapshot(newParent.field), fieldIds: newFieldIds });
-      }
-    } else if (!oldParent && newParent) {
-      const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-      const ids = fieldIds.splice(oldIndex, 1);
-      const newFieldIds = structuredClone($state.snapshot(newParent.field.fieldIds));
-      newFieldIds.splice(newIndex, 0, ...ids);
-      const moveTransaction = transaction(["surveys", "fields"], "readwrite");
-      moveTransaction.oncomplete = refresh;
-      data = { ...data, surveyRecord: { ...data.surveyRecord, fieldIds } } as PageData;
-      moveTransaction.objectStore("surveys").put($state.snapshot(data.surveyRecord));
-      moveTransaction.objectStore("fields").put({ ...$state.snapshot(newParent.field), fieldIds: newFieldIds });
-    } else if (oldParent && !newParent) {
-      const oldFieldIds = structuredClone($state.snapshot(oldParent.field.fieldIds));
-      const ids = oldFieldIds.splice(oldIndex, 1);
-      const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-      fieldIds.splice(newIndex, 0, ...ids);
-      const moveTransaction = transaction(["surveys", "fields"], "readwrite");
-      moveTransaction.oncomplete = refresh;
-      data = { ...data, surveyRecord: { ...data.surveyRecord, fieldIds } } as PageData;
-      moveTransaction.objectStore("surveys").put($state.snapshot(data.surveyRecord));
-      moveTransaction.objectStore("fields").put({ ...$state.snapshot(oldParent.field), fieldIds: oldFieldIds });
-    }
-  }
-
-  function refresh() {
-    data = {
-      ...data,
-      surveyRecord: { ...data.surveyRecord, modified: new Date() },
-    } as PageData;
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+  function updateAndRefresh() {
+    surveyRecord.modified = new Date();
+    objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
 
     const refreshTransaction = transaction("fields");
     refreshTransaction.onabort = () => {
       location.reload();
     };
 
-    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(data.surveyRecord.id);
+    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
     fieldsRequest.onsuccess = () => {
-      ({ detailedFields, detailedInnerFields } = getDetailedNestedFields(
-        data.surveyRecord.fieldIds,
-        fieldsRequest.result,
-      ));
+      ({ detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldsRequest.result));
     };
+  }
+
+  function onclickField(field: IDBRecord<Field>) {
+    openDialog(ViewFieldDialog, {
+      surveyRecord,
+      detailedInnerFields,
+      field: structuredClone($state.snapshot(field)),
+      onedit: updateAndRefresh,
+      onmove(index, by) {
+        const fieldIds = structuredClone($state.snapshot(surveyRecord.fieldIds));
+        fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
+        surveyRecord.fieldIds = fieldIds;
+        updateAndRefresh();
+      },
+      onduplicate(index, id) {
+        surveyRecord.fieldIds = surveyRecord.fieldIds.toSpliced(index + 1, 0, id);
+        updateAndRefresh();
+      },
+      ondelete() {
+        surveyRecord.fieldIds = surveyRecord.fieldIds.filter((id) => field.id != id);
+        updateAndRefresh();
+      },
+    });
   }
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="fields" />
+  <AdminHeader {surveyRecord} page="fields" />
 
   {#if data.disabled}
     <span>
@@ -152,193 +127,106 @@
     </span>
   {/if}
 
-  <div bind:this={mainList} class="flex flex-col gap-4">
-    {#if data.surveyRecord.fieldIds.length}
-      {#key data.surveyRecord.fieldIds}
-        {#each data.surveyRecord.fieldIds as fieldId (fieldId)}
-          {@const detailedField = detailedFields.get(fieldId)}
+  {#if surveyRecord.fieldIds.length}
+    {#key surveyRecord.fieldIds}
+      {@const fields = surveyRecord.fieldIds.map((id) => detailedFields.get(id)).filter((f) => f !== undefined)}
 
-          {#if detailedField?.type == "group"}
-            <div data-id={fieldId} class="group flex flex-col gap-2">
-              <h2 class="font-bold">{detailedField.field.name}</h2>
+      <div use:createSortable class="flex flex-col gap-4">
+        {#each fields as { field } (field.id)}
+          <div data-id={field.id} class="{field.type} flex flex-col gap-2">
+            {#if field.type == "group"}
+              <h2 class="font-bold">{field.name}</h2>
 
               {#if !data.disabled}
-                <Button
-                  disabled={data.disabled}
-                  onclick={() => {
-                    openDialog(ViewFieldDialog, {
-                      surveyRecord: data.surveyRecord,
-                      detailedInnerFields,
-                      field: structuredClone($state.snapshot(detailedField.field)),
-                      onedit: refresh,
-                      onmove(index, by) {
-                        const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-                        fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
-                        data = {
-                          ...data,
-                          surveyRecord: { ...data.surveyRecord, fieldIds },
-                        } as PageData;
-                        refresh();
-                      },
-                      onduplicate(index, id) {
-                        data = {
-                          ...data,
-                          surveyRecord: {
-                            ...data.surveyRecord,
-                            fieldIds: data.surveyRecord.fieldIds.toSpliced(index + 1, 0, id),
-                          },
-                        } as PageData;
-                        refresh();
-                      },
-                      ondelete() {
-                        data = {
-                          ...data,
-                          surveyRecord: {
-                            ...data.surveyRecord,
-                            fieldIds: data.surveyRecord.fieldIds.filter((id) => detailedField.field.id != id),
-                          },
-                        } as PageData;
-                        refresh();
-                      },
-                    });
-                  }}
-                  class="handle"
-                >
+                <Button disabled={data.disabled} onclick={() => onclickField(field)} class="handle">
                   <GroupIcon class="text-theme" />
                   Group
                 </Button>
               {/if}
 
-              <div use:createSortable data-id={fieldId} class="group-fields flex flex-col gap-2">
-                {#key detailedField.field.fieldIds}
-                  {#each detailedField.field.fieldIds as innerFieldId (innerFieldId)}
-                    {@const detailedInnerField = detailedInnerFields.get(innerFieldId)}
+              {#key field.fieldIds}
+                {@const innerFields = field.fieldIds
+                  .map((id) => detailedInnerFields.get(id))
+                  .filter((f) => f !== undefined)}
 
-                    {#if detailedInnerField}
-                      {@const Icon = fieldIcons[detailedInnerField.field.type]}
-                      <div data-parent-id={fieldId} data-id={innerFieldId} class="single flex flex-col">
-                        <Button
-                          disabled={data.disabled}
-                          onclick={() => {
-                            openDialog(ViewFieldDialog, {
-                              surveyRecord: data.surveyRecord,
-                              detailedInnerFields,
-                              field: structuredClone($state.snapshot(detailedInnerField.field)),
-                              parentField: structuredClone($state.snapshot(detailedField.field)),
-                              onedit: refresh,
-                              onmove: refresh,
-                              onduplicate: refresh,
-                              ondelete: refresh,
-                            });
-                          }}
-                          class="handle"
-                        >
-                          <Icon class="text-theme" />
-                          <div class="flex flex-col">
-                            {detailedInnerField.field.name}
-                            <small class="capitalize">{detailedInnerField.field.type}</small>
-                          </div>
-                        </Button>
-                      </div>
-                    {/if}
+                <div use:createSortable={field.id} data-id={field.id} class="group-fields flex flex-col gap-2">
+                  {#each innerFields as innerField (innerField.field.id)}
+                    {@const Icon = fieldIcons[innerField.field.type]}
+
+                    <div data-id={innerField.field.id} class="single flex flex-col">
+                      <Button
+                        disabled={data.disabled}
+                        onclick={() => {
+                          openDialog(ViewFieldDialog, {
+                            surveyRecord: surveyRecord,
+                            detailedInnerFields,
+                            field: structuredClone($state.snapshot(innerField.field)),
+                            parentField: structuredClone($state.snapshot(field)),
+                            onedit: updateAndRefresh,
+                            onmove: updateAndRefresh,
+                            onduplicate: updateAndRefresh,
+                            ondelete: updateAndRefresh,
+                          });
+                        }}
+                        class="handle"
+                      >
+                        <Icon class="text-theme" />
+                        <div class="flex flex-col">
+                          {innerField.field.name}
+                          <small class="capitalize">{innerField.field.type}</small>
+                        </div>
+                      </Button>
+                    </div>
                   {/each}
-                {/key}
-              </div>
+                </div>
+              {/key}
 
               {#if !data.disabled}
                 <Button
                   disabled={data.disabled}
                   onclick={() => {
                     openDialog(NewFieldDialog, {
-                      surveyRecord: data.surveyRecord,
-                      parentField: structuredClone($state.snapshot(detailedField.field)),
+                      surveyRecord: surveyRecord,
+                      parentField: structuredClone($state.snapshot(field)),
                       type: "field",
-                      oncreate: refresh,
+                      oncreate: updateAndRefresh,
                     });
                   }}
                   class="group-fields"
                 >
                   <PlusIcon class="text-theme" />
-                  New {detailedField.field.name} field
+                  New {field.name} field
                 </Button>
               {/if}
-            </div>
-          {:else if detailedField}
-            {@const Icon = fieldIcons[detailedField.field.type]}
+            {:else}
+              {@const Icon = fieldIcons[field.type]}
 
-            <div data-id={fieldId} class="single flex flex-col">
-              <Button
-                disabled={data.disabled}
-                onclick={() => {
-                  openDialog(ViewFieldDialog, {
-                    surveyRecord: data.surveyRecord,
-                    detailedInnerFields,
-                    field: structuredClone($state.snapshot(detailedField.field)),
-                    onedit: refresh,
-                    onmove(index, by) {
-                      const fieldIds = structuredClone($state.snapshot(data.surveyRecord.fieldIds));
-                      fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
-                      data = {
-                        ...data,
-                        surveyRecord: { ...data.surveyRecord, fieldIds },
-                      } as PageData;
-                      refresh();
-                    },
-                    onduplicate(index, id) {
-                      data = {
-                        ...data,
-                        surveyRecord: {
-                          ...data.surveyRecord,
-                          fieldIds: data.surveyRecord.fieldIds.toSpliced(index + 1, 0, id),
-                        },
-                      } as PageData;
-                      refresh();
-                    },
-                    ondelete() {
-                      data = {
-                        ...data,
-                        surveyRecord: {
-                          ...data.surveyRecord,
-                          fieldIds: data.surveyRecord.fieldIds.filter((id) => detailedField.field.id != id),
-                        },
-                      } as PageData;
-                      refresh();
-                    },
-                  });
-                }}
-                class="handle"
-              >
+              <Button disabled={data.disabled} onclick={() => onclickField(field)} class="handle">
                 <Icon class="text-theme" />
                 <div class="flex flex-col">
-                  {detailedField.field.name}
-                  <small class="capitalize">{detailedField.field.type}</small>
+                  {field.name}
+                  <small class="capitalize">{field.type}</small>
                 </div>
               </Button>
-            </div>
-          {/if}
+            {/if}
+          </div>
         {/each}
-      {/key}
-    {:else}
-      No fields.
-    {/if}
-  </div>
+      </div>
+    {/key}
+  {:else}
+    No fields.
+  {/if}
 
   {#if !data.disabled}
     <div class="flex flex-wrap gap-2">
       <Button
         onclick={() => {
           openDialog(NewFieldDialog, {
-            surveyRecord: data.surveyRecord,
+            surveyRecord: surveyRecord,
             type: "group",
             oncreate(id) {
-              data = {
-                ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  fieldIds: [...data.surveyRecord.fieldIds, id],
-                },
-              } as PageData;
-              refresh();
+              surveyRecord.fieldIds = [...surveyRecord.fieldIds, id];
+              updateAndRefresh();
             },
           });
         }}
@@ -349,17 +237,11 @@
       <Button
         onclick={() => {
           openDialog(NewFieldDialog, {
-            surveyRecord: data.surveyRecord,
+            surveyRecord: surveyRecord,
             type: "field",
             oncreate(id) {
-              data = {
-                ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  fieldIds: [...data.surveyRecord.fieldIds, id],
-                },
-              } as PageData;
-              refresh();
+              surveyRecord.fieldIds = [...surveyRecord.fieldIds, id];
+              updateAndRefresh();
             },
           });
         }}
