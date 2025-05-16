@@ -1,11 +1,10 @@
 import { z } from "zod";
 import type { Survey } from "./survey";
 import {
-  CheckIcon,
   GroupIcon,
   HashIcon,
   SquareCheckBigIcon,
-  SquareChevronDownIcon,
+  CircleChevronDownIcon,
   StarIcon,
   TextCursorInputIcon,
   TimerIcon,
@@ -91,13 +90,14 @@ export type GroupField = z.infer<typeof groupFieldSchema>;
 export const fieldSchema = z.discriminatedUnion("type", [...singleFieldSchema.options, groupFieldSchema]);
 export type Field = z.infer<typeof fieldSchema>;
 
-export const fieldIcons: Record<SingleFieldType, typeof Icon> = {
+export const fieldIcons: Record<FieldType, typeof Icon> = {
   toggle: SquareCheckBigIcon,
   number: HashIcon,
-  select: SquareChevronDownIcon,
+  select: CircleChevronDownIcon,
   text: TextCursorInputIcon,
   rating: StarIcon,
   timer: TimerIcon,
+  group: GroupIcon,
 };
 
 export function getDefaultFieldValue(field: SingleField) {

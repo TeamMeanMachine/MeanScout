@@ -1,29 +1,42 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField } from "$lib/field";
+  import { type Field, type FieldType, type GroupField } from "$lib/field";
   import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
-    type = "field",
-    parentField,
+    type = "toggle",
+    groups,
+    groupSelect,
     oncreate,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    type?: "field" | "group";
-    parentField?: IDBRecord<GroupField> | undefined;
-    oncreate: (id: number) => void;
+    type?: FieldType;
+    groups?: IDBRecord<GroupField>[];
+    groupSelect: string;
+    oncreate: (id: number, group: boolean) => void;
   } = $props();
 
-  let field = $state<Field>(
-    type == "group"
-      ? { surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] }
-      : { surveyId: surveyRecord.id, name: "", type: "number" },
-  );
+  let field = $state<Field>(initField());
   let error = $state("");
+
+  function initField(): Field {
+    switch (type) {
+      case "toggle":
+      case "number":
+      case "text":
+      case "rating":
+      case "timer":
+        return { surveyId: surveyRecord.id, name: "", type };
+      case "select":
+        return { surveyId: surveyRecord.id, name: "", type: "select", values: [] };
+      case "group":
+        return { surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] };
+    }
+  }
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -57,9 +70,10 @@
 
       addRequest.onsuccess = () => {
         const id = addRequest.result as number;
+        const parentField = groups?.find((g) => g.id == Number(groupSelect));
 
-        if (parentField == undefined) {
-          oncreate(id);
+        if (type == "group" || parentField == undefined) {
+          oncreate(id, false);
           closeDialog();
         } else {
           const updatedParentField = {
@@ -68,37 +82,13 @@
           };
 
           fieldStore.put(updatedParentField).onsuccess = () => {
-            oncreate(id);
+            oncreate(id, true);
             closeDialog();
           };
         }
       };
     },
   };
-
-  function changeType(to: string) {
-    switch (to) {
-      case "select":
-        field = {
-          surveyId: surveyRecord.id,
-          name: field.name,
-          type: to,
-          values: [],
-        };
-        break;
-      case "toggle":
-      case "number":
-      case "text":
-      case "rating":
-      case "timer":
-        field = {
-          surveyId: surveyRecord.id,
-          name: field.name,
-          type: to,
-        };
-        break;
-    }
-  }
 
   function toggleAllowNegative() {
     if (field.type == "number") {
@@ -131,7 +121,28 @@
   }
 </script>
 
-<span>New {parentField?.name} {type}</span>
+<span>New {groups?.find((g) => g.id.toString() == groupSelect)?.name} {type}</span>
+{#if field.type != "group" && groups?.length}
+  <div class="flex flex-col">
+    Group
+    <div class="flex gap-3 text-sm">
+      <Button onclick={() => (groupSelect = "")} class={groupSelect ? "font-light" : "text-theme font-bold"}>
+        None
+      </Button>
+
+      <div class="flex flex-wrap gap-2">
+        {#each groups as group}
+          <Button
+            onclick={() => (groupSelect = group.id.toString())}
+            class={groupSelect == group.id.toString() ? "text-theme font-bold" : "font-light"}
+          >
+            {group.name}
+          </Button>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
 
 <label class="flex flex-col">
   Name
@@ -139,19 +150,6 @@
 </label>
 
 {#if field.type != "group"}
-  <label class="flex flex-col">
-    Type
-    <select
-      value={field.type}
-      onchange={(e) => changeType(e.currentTarget.value)}
-      class="text-theme bg-neutral-800 p-2 capitalize"
-    >
-      {#each singleFieldTypes as fieldType}
-        <option>{fieldType}</option>
-      {/each}
-    </select>
-  </label>
-
   {#if field.type == "number"}
     <Button onclick={toggleAllowNegative}>
       {#if field.allowNegative}

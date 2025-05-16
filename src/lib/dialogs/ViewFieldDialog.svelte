@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
-  import { type DetailedSingleField, type Field, type GroupField, type SingleField } from "$lib/field";
+  import { type Field, type GroupField, type SingleField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { ArrowDownIcon, ArrowUpIcon, CopyIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
@@ -9,7 +9,7 @@
 
   let {
     surveyRecord,
-    detailedInnerFields,
+    fieldRecords,
     field,
     parentField,
     onedit,
@@ -18,7 +18,7 @@
     ondelete,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    detailedInnerFields: Map<number, DetailedSingleField>;
+    fieldRecords: IDBRecord<Field>[];
     field: IDBRecord<Field>;
     parentField?: IDBRecord<GroupField> | undefined;
     onedit?: () => void;
@@ -33,7 +33,7 @@
       if (e.input.from != "fields") return false;
       return e.input.fieldIds.some((id) => {
         if (field.type == "group") {
-          return field.fieldIds.some((innerId) => innerId == field.id);
+          return field.fieldIds.includes(id);
         } else {
           return id == field.id;
         }
@@ -113,10 +113,10 @@
         if (field.type == "group") {
           const newIds: number[] = [];
           for (const innerFieldId of field.fieldIds) {
-            const innerField = detailedInnerFields.get(innerFieldId);
-            if (!innerField) continue;
+            const innerField = fieldRecords.find((f) => f.id == innerFieldId);
+            if (!innerField || innerField.type == "group") continue;
 
-            const fieldWithoutId = structuredClone($state.snapshot(innerField.field)) as SingleField & { id?: number };
+            const fieldWithoutId = structuredClone($state.snapshot(innerField)) as SingleField & { id?: number };
             delete fieldWithoutId.id;
 
             const newId = await new Promise<number>((resolve, reject) => {
