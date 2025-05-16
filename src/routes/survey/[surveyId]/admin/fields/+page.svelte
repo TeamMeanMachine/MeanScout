@@ -44,6 +44,9 @@
           return true;
         },
         put(to, _, dragEl) {
+          if (groups.length && !dragEl.classList.contains("group") && to.el.classList.contains("top-level")) {
+            return false;
+          }
           if (dragEl.classList.contains("group")) {
             return to.el.classList.contains("top-level");
           }
@@ -174,7 +177,7 @@
   <AdminHeader {surveyRecord} page="fields" />
 
   {#if data.disabled}
-    <span>
+    <span class="text-sm">
       Can't edit fields: {data.entryRecords.length}
       {data.entryRecords.length == 1 ? "entry" : "entries"} exist.
     </span>
@@ -194,7 +197,7 @@
           {#each fields as field (field.id)}
             {@const Icon = fieldIcons[field.type]}
 
-            <div data-id={field.id} class="flex flex-col gap-3" class:group={field.type == "group"}>
+            <div data-id={field.id} class={["flex flex-col gap-3", field.type == "group" && "group"]}>
               {#if field.type == "group"}
                 {@const innerFields = field.fieldIds
                   .map((id) => fieldRecords.find((f) => f.id == id))
@@ -250,12 +253,7 @@
       {/key}
     {/if}
 
-    <div
-      class={[
-        "sticky bottom-3 z-20 flex flex-col border-neutral-500 bg-neutral-900 shadow-2xl",
-        surveyRecord.fieldIds.length && "self-start border p-2",
-      ]}
-    >
+    <div class="sticky bottom-3 z-20 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl">
       <span class="w-full text-sm">New</span>
 
       <div class="flex flex-wrap gap-2">
@@ -270,11 +268,17 @@
                       .map((id) => fieldRecords.find((f) => f.id == id))
                       .filter((f) => f !== undefined && f.type == "group");
 
+              const fixedGroupSelect = groups?.length
+                ? groups.some((g) => g.id.toString() == groupSelect)
+                  ? groupSelect
+                  : groups[0].id.toString()
+                : "";
+
               openDialog(NewFieldDialog, {
                 surveyRecord,
                 type: fieldType,
                 groups,
-                groupSelect,
+                groupSelect: fixedGroupSelect,
                 oncreate(id, parentId) {
                   if (!parentId) {
                     surveyRecord.fieldIds = [...surveyRecord.fieldIds, id];

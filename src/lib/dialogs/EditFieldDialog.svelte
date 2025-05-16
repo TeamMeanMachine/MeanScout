@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField, type SingleField, type SingleFieldType } from "$lib/field";
+  import { type Field, type GroupField, type SingleField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import {
@@ -198,35 +198,6 @@
     };
   }
 
-  function changeType(to: SingleFieldType) {
-    switch (to) {
-      case "select":
-        changes = {
-          id: changes.id,
-          surveyId: surveyRecord.id,
-          name: changes.name,
-          type: to,
-          values: [],
-        };
-        break;
-      case "toggle":
-      case "number":
-      case "text":
-      case "rating":
-      case "timer":
-        changes = {
-          id: changes.id,
-          surveyId: surveyRecord.id,
-          name: changes.name,
-          type: to,
-        };
-        break;
-      default:
-        const unhandledField: never = to;
-        throw new Error(`Unhandled type for field: ${(unhandledField as Field).type}`);
-    }
-  }
-
   function toggleAllowNegative() {
     if (changes.type == "number") {
       changes.allowNegative = !changes.allowNegative;
@@ -283,7 +254,7 @@
     {#if parentField}
       {parentField.name}
     {/if}
-    {changes.type == "group" ? "group" : "field"}
+    {changes.type}
   </span>
   <div class="flex gap-2">
     <Button onclick={duplicateField}>
@@ -301,19 +272,6 @@
 </label>
 
 {#if changes.type != "group"}
-  <label class="flex flex-col">
-    Type
-    <select
-      value={changes.type}
-      onchange={(e) => changeType(e.currentTarget.value as SingleFieldType)}
-      class="text-theme bg-neutral-800 p-2 capitalize"
-    >
-      {#each singleFieldTypes as fieldType}
-        <option>{fieldType}</option>
-      {/each}
-    </select>
-  </label>
-
   {#if changes.type == "number"}
     <Button onclick={toggleAllowNegative}>
       {#if changes.allowNegative}
