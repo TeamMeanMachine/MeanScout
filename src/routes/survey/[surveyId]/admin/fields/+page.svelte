@@ -2,9 +2,9 @@
   import Sortable from "sortablejs";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
+  import EditFieldDialog from "$lib/dialogs/EditFieldDialog.svelte";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
-  import ViewFieldDialog from "$lib/dialogs/ViewFieldDialog.svelte";
-  import { fieldIcons, fieldTypes, type Field, type GroupField, type SingleField } from "$lib/field";
+  import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
   import { objectStore, transaction } from "$lib/idb";
   import AdminHeader from "../AdminHeader.svelte";
   import type { PageData } from "./$types";
@@ -130,7 +130,7 @@
       groupSelect = "";
     }
 
-    openDialog(ViewFieldDialog, {
+    openDialog(EditFieldDialog, {
       surveyRecord,
       fieldRecords,
       field: structuredClone($state.snapshot(field)),
@@ -157,7 +157,7 @@
   function onclickInnerField(innerField: IDBRecord<Field>, field: IDBRecord<GroupField>) {
     groupSelect = field.id.toString();
 
-    openDialog(ViewFieldDialog, {
+    openDialog(EditFieldDialog, {
       surveyRecord,
       fieldRecords,
       field: structuredClone($state.snapshot(innerField)),
@@ -263,21 +263,30 @@
           {@const Icon = fieldIcons[fieldType]}
           <Button
             onclick={() => {
+              const groups =
+                fieldType == "group"
+                  ? undefined
+                  : surveyRecord.fieldIds
+                      .map((id) => fieldRecords.find((f) => f.id == id))
+                      .filter((f) => f !== undefined && f.type == "group");
+
               openDialog(NewFieldDialog, {
                 surveyRecord,
                 type: fieldType,
-                groups:
-                  fieldType == "group"
-                    ? undefined
-                    : surveyRecord.fieldIds
-                        .map((id) => fieldRecords.find((f) => f.id == id))
-                        .filter((f) => f !== undefined && f.type == "group"),
+                groups,
                 groupSelect,
-                oncreate(id, usingGroup) {
-                  if (!usingGroup) {
+                oncreate(id, parentId) {
+                  if (!parentId) {
                     surveyRecord.fieldIds = [...surveyRecord.fieldIds, id];
                   }
                   updateAndRefresh();
+                  if (fieldType == "group") {
+                    groupSelect = id.toString();
+                  } else if (parentId) {
+                    groupSelect = parentId.toString();
+                  } else {
+                    groupSelect = "";
+                  }
                 },
               });
             }}

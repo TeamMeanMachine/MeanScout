@@ -17,7 +17,7 @@
     type?: FieldType;
     groups?: IDBRecord<GroupField>[];
     groupSelect: string;
-    oncreate: (id: number, group: boolean) => void;
+    oncreate: (id: number, parentId?: number) => void;
   } = $props();
 
   let field = $state<Field>(initField());
@@ -73,7 +73,7 @@
         const parentField = groups?.find((g) => g.id == Number(groupSelect));
 
         if (type == "group" || parentField == undefined) {
-          oncreate(id, false);
+          oncreate(id);
           closeDialog();
         } else {
           const updatedParentField = {
@@ -82,7 +82,7 @@
           };
 
           fieldStore.put(updatedParentField).onsuccess = () => {
-            oncreate(id, true);
+            oncreate(id, parentField.id);
             closeDialog();
           };
         }
@@ -121,7 +121,8 @@
   }
 </script>
 
-<span>New {groups?.find((g) => g.id.toString() == groupSelect)?.name} {type}</span>
+<span class="text-sm">New {groups?.find((g) => g.id.toString() == groupSelect)?.name} {type}</span>
+
 {#if field.type != "group" && groups?.length}
   <div class="flex flex-col">
     Group

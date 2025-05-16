@@ -1,24 +1,63 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { singleFieldTypes, type Field, type GroupField, type SingleFieldType } from "$lib/field";
-  import { objectStore } from "$lib/idb";
+  import { singleFieldTypes, type Field, type GroupField, type SingleField, type SingleFieldType } from "$lib/field";
+  import { objectStore, transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
-  import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import {
+    ArrowDownIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ArrowUpIcon,
+    CopyIcon,
+    PlusIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
   let {
     surveyRecord,
+    fieldRecords,
     field,
     parentField,
-    onupdate,
+    onedit,
+    onmove,
+    onduplicate,
+    ondelete,
   }: {
     surveyRecord: IDBRecord<Survey>;
+    fieldRecords: IDBRecord<Field>[];
     field: IDBRecord<Field>;
     parentField?: IDBRecord<GroupField> | undefined;
-    onupdate: () => void;
+    onedit: () => void;
+    onmove?: (index: number, by: number) => void;
+    onduplicate?: (index: number, id: number) => void;
+    ondelete?: () => void;
   } = $props();
 
+  const isExpressionInput =
+    surveyRecord.type == "match" &&
+    surveyRecord.expressions.some((e) => {
+      if (e.input.from != "fields") return false;
+      return e.input.fieldIds.some((id) => {
+        if (field.type == "group") {
+          return field.fieldIds.includes(id);
+        } else {
+          return id == field.id;
+        }
+      });
+    });
+
   let changes = $state(structuredClone($state.snapshot(field)));
+
+  let index = $derived.by(() => {
+    if (parentField) {
+      return parentField.fieldIds.findIndex((id) => field.id == id);
+    } else {
+      return surveyRecord.fieldIds.findIndex((id) => field.id == id);
+    }
+  });
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -44,7 +83,7 @@
 
       const putRequest = objectStore("fields", "readwrite").put($state.snapshot(changes));
       putRequest.onsuccess = () => {
-        onupdate();
+        onedit();
         closeDialog();
       };
 
@@ -53,6 +92,111 @@
       };
     },
   };
+
+  function moveField(by: number) {
+    if (parentField) {
+      const updatedFieldIds = structuredClone($state.snapshot(parentField.fieldIds));
+      updatedFieldIds.splice(index + by, 0, ...updatedFieldIds.splice(index, 1));
+
+      const request = objectStore("fields", "readwrite").put({
+        ...$state.snapshot(parentField),
+        fieldIds: updatedFieldIds,
+      });
+
+      request.onsuccess = () => {
+        onmove?.(index, by);
+        closeDialog();
+      };
+
+      request.onerror = () => {
+        error = "Could not move field";
+      };
+    } else {
+      onmove?.(index, by);
+      closeDialog();
+    }
+  }
+
+  function duplicateField() {
+    const newTransaction = transaction("fields", "readwrite");
+    const fieldStore = newTransaction.objectStore("fields");
+
+    newTransaction.onabort = () => {
+      error = "Could not duplicate field";
+    };
+
+    const fieldWithoutId = structuredClone($state.snapshot(field)) as Field & { id?: number };
+    delete fieldWithoutId.id;
+
+    const duplicateRequest = fieldStore.add(fieldWithoutId);
+
+    duplicateRequest.onsuccess = async () => {
+      const id = duplicateRequest.result as number;
+
+      if (parentField) {
+        const updatedParentField = structuredClone($state.snapshot(parentField));
+        updatedParentField.fieldIds.splice(index + 1, 0, id);
+        fieldStore.put(updatedParentField).onsuccess = () => {
+          onduplicate?.(index, id);
+          closeDialog();
+        };
+      } else {
+        if (field.type == "group") {
+          const newIds: number[] = [];
+          for (const innerFieldId of field.fieldIds) {
+            const innerField = fieldRecords.find((f) => f.id == innerFieldId);
+            if (!innerField || innerField.type == "group") continue;
+
+            const fieldWithoutId = structuredClone($state.snapshot(innerField)) as SingleField & { id?: number };
+            delete fieldWithoutId.id;
+
+            const newId = await new Promise<number>((resolve, reject) => {
+              const request = fieldStore.add(fieldWithoutId);
+              request.onsuccess = () => {
+                if (request.result) {
+                  resolve(request.result as number);
+                } else {
+                  reject();
+                }
+              };
+            });
+
+            newIds.push(newId);
+          }
+
+          fieldStore.put({ ...fieldWithoutId, id, fieldIds: newIds });
+        }
+
+        onduplicate?.(index, id);
+        closeDialog();
+      }
+    };
+  }
+
+  function deleteField() {
+    const deleteTransaction = transaction("fields", "readwrite");
+    const fieldStore = deleteTransaction.objectStore("fields");
+
+    fieldStore.delete(field.id);
+    if (parentField) {
+      const updatedParentField = structuredClone($state.snapshot(parentField));
+      updatedParentField.fieldIds = updatedParentField.fieldIds.filter((id) => field.id != id);
+      fieldStore.put(updatedParentField);
+    } else if (field.type == "group") {
+      for (const innerFieldId of field.fieldIds) {
+        fieldStore.delete(innerFieldId);
+      }
+    }
+
+    deleteTransaction.oncomplete = () => {
+      ondelete?.();
+      closeDialog();
+    };
+
+    deleteTransaction.onabort = () => {
+      error = "Could not delete field";
+    };
+  }
 
   function changeType(to: SingleFieldType) {
     switch (to) {
@@ -114,13 +258,42 @@
   }
 </script>
 
-<span>
-  Edit
-  {#if parentField}
-    {parentField.name}
-  {/if}
-  {changes.type == "group" ? "group" : "field"}
-</span>
+<div class="flex items-center justify-between gap-2">
+  <div class="flex gap-2">
+    <Button disabled={index <= 0} onclick={() => moveField(-1)}>
+      {#if parentField}
+        <ArrowLeftIcon class="text-theme" />
+      {:else}
+        <ArrowUpIcon class="text-theme" />
+      {/if}
+    </Button>
+    <Button
+      disabled={index >= (parentField ? parentField.fieldIds.length : surveyRecord.fieldIds.length) - 1}
+      onclick={() => moveField(1)}
+    >
+      {#if parentField}
+        <ArrowRightIcon class="text-theme" />
+      {:else}
+        <ArrowDownIcon class="text-theme" />
+      {/if}
+    </Button>
+  </div>
+  <span class="grow text-center text-sm">
+    Edit
+    {#if parentField}
+      {parentField.name}
+    {/if}
+    {changes.type == "group" ? "group" : "field"}
+  </span>
+  <div class="flex gap-2">
+    <Button onclick={duplicateField}>
+      <CopyIcon class="text-theme" />
+    </Button>
+    <Button onclick={deleteField} disabled={isExpressionInput}>
+      <Trash2Icon class="text-theme" />
+    </Button>
+  </div>
+</div>
 
 <label class="flex flex-col">
   Name
