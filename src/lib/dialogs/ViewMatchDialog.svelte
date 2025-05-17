@@ -70,7 +70,12 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, data.fields);
+      const teamData = calculateTeamData(
+        expressionName,
+        data.surveyRecord.expressions,
+        entriesByTeam,
+        data.fieldsWithDetails.orderedSingle,
+      );
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -85,7 +90,12 @@
     if (data.surveyType != "match") return;
 
     const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
-    const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, data.fields);
+    const teamData = calculateTeamData(
+      expressionName,
+      data.surveyRecord.expressions,
+      entriesByTeam,
+      data.fieldsWithDetails.orderedSingle,
+    );
     const values = Object.keys(teamData).map((team) => teamData[team]);
 
     const maxValue = Math.max(...values);

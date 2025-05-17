@@ -47,7 +47,12 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, data.fields);
+      const teamData = calculateTeamData(
+        expressionName,
+        data.surveyRecord.expressions,
+        entriesByTeam,
+        data.fieldsWithDetails.orderedSingle,
+      );
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -133,7 +138,12 @@
         {/each}
       </div>
     {:else if $tab == "race"}
-      <RaceChart surveyRecord={data.surveyRecord} fields={data.fields} {entriesByTeam} {pickList} />
+      <RaceChart
+        surveyRecord={data.surveyRecord}
+        orderedSingleFields={data.fieldsWithDetails.orderedSingle}
+        {entriesByTeam}
+        {pickList}
+      />
     {:else if $tab == "stacked"}
       <div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
         {#each sortedTeamData as { team, teamName, percentage, weights }, i}

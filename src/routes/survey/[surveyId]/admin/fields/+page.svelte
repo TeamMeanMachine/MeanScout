@@ -18,6 +18,10 @@
   let surveyRecord = $state($state.snapshot(data.surveyRecord));
   let fieldRecords = $state($state.snapshot(data.fieldRecords));
 
+  let topLevelFields = $derived(
+    surveyRecord.fieldIds.map((id) => fieldRecords.find((f) => f.id == id)).filter((f) => f !== undefined),
+  );
+
   let groups = $derived(
     surveyRecord.fieldIds
       .map((id) => fieldRecords.find((f) => f.id == id))
@@ -157,13 +161,13 @@
     });
   }
 
-  function onclickInnerField(innerField: IDBRecord<Field>, field: IDBRecord<GroupField>) {
+  function onclickNestedField(nestedField: IDBRecord<Field>, field: IDBRecord<GroupField>) {
     groupSelect = field.id.toString();
 
     openDialog(EditFieldDialog, {
       surveyRecord,
       fieldRecords,
-      field: structuredClone($state.snapshot(innerField)),
+      field: structuredClone($state.snapshot(nestedField)),
       parentField: structuredClone($state.snapshot(field)),
       onedit: updateAndRefresh,
       onmove: updateAndRefresh,
@@ -188,21 +192,13 @@
         This will destroy and recreate instances of sortable objects when anything changes.
         It will also destroy any leftovers that Svelte doesn't act upon (e.g. clones, ghost elements).
       -->
-      {#key [surveyRecord.fieldIds, fieldRecords]}
-        {@const fields = surveyRecord.fieldIds
-          .map((id) => fieldRecords.find((f) => f.id == id))
-          .filter((f) => f !== undefined)}
-
+      {#key [surveyRecord.fieldIds, fieldRecords, topLevelFields]}
         <div use:createSortable class="top-level flex flex-col gap-6 pb-3">
-          {#each fields as field (field.id)}
+          {#each topLevelFields as field (field.id)}
             {@const Icon = fieldIcons[field.type]}
 
             <div data-id={field.id} class={["flex flex-col gap-3", field.type == "group" && "group"]}>
               {#if field.type == "group"}
-                {@const innerFields = field.fieldIds
-                  .map((id) => fieldRecords.find((f) => f.id == id))
-                  .filter((f) => f !== undefined)}
-
                 <div class="flex flex-col">
                   <h2 class={groupSelect == field.id.toString() ? "font-bold" : "font-light"}>{field.name}</h2>
 
@@ -215,25 +211,29 @@
 
                     <!--
                       Prevents "illegal invocation" errors and flashes of partial sort updates.
-                      I thought using the top level key block would do the job for the inner fields,
+                      I thought using the top level key block would do the job for the nested fields,
                       but that's not the case.
                     -->
                     {#key field.fieldIds}
+                      {@const nestedFields = field.fieldIds
+                        .map((id) => fieldRecords.find((f) => f.id == id))
+                        .filter((f) => f !== undefined)}
+
                       <div
                         use:createSortable={field.id}
                         data-id={field.id}
                         class="group-list flex grow flex-wrap gap-2"
                       >
-                        {#each innerFields as innerField (innerField.id)}
-                          {@const InnerIcon = fieldIcons[innerField.type]}
+                        {#each nestedFields as nestedField (nestedField.id)}
+                          {@const NestedIcon = fieldIcons[nestedField.type]}
 
-                          <div data-id={innerField.id} class="flex flex-col">
+                          <div data-id={nestedField.id} class="flex flex-col">
                             <Button
-                              onclick={() => onclickInnerField(innerField, field)}
+                              onclick={() => onclickNestedField(nestedField, field)}
                               class="handle self-start text-sm"
                             >
-                              <InnerIcon class="text-theme" />
-                              {innerField.name}
+                              <NestedIcon class="text-theme" />
+                              {nestedField.name}
                             </Button>
                           </div>
                         {/each}

@@ -19,7 +19,12 @@
   } = $props();
 
   function getSortedTeamData() {
-    const teamData = calculateTeamData(expression.name, data.surveyRecord.expressions, entriesByTeam, data.fields);
+    const teamData = calculateTeamData(
+      expression.name,
+      data.surveyRecord.expressions,
+      entriesByTeam,
+      data.fieldsWithDetails.orderedSingle,
+    );
 
     return Object.keys(teamData)
       .map((team) => ({

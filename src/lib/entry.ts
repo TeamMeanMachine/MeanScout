@@ -1,7 +1,7 @@
 import { matchValueSchema, valueSchema, type Value } from "$lib";
 import { z } from "zod";
 import type { Survey } from "./survey";
-import { getDefaultFieldValue, type DetailedSingleField, type SingleField } from "./field";
+import { getDefaultFieldValue, type SingleFieldWithDetails, type SingleField } from "./field";
 import { compress, decompress } from "./compress";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
@@ -170,7 +170,7 @@ function csvToValue(csv: string, field: SingleField) {
 export function csvToEntries(
   csv: string,
   surveyRecord: IDBRecord<Survey>,
-  singleFields: DetailedSingleField[],
+  singleFields: SingleFieldWithDetails[],
 ): Entry[] {
   const entries = csv.split("\n").map((line) => {
     return line.split(",").map((value) => value.trim());

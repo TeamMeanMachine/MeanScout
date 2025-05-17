@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Entry } from "./entry";
-import type { DetailedSingleField } from "./field";
+import type { SingleFieldWithDetails } from "./field";
 import type { Expression, ExpressionMethod } from "./expression";
 
 export const pickListSchema = z.object({
@@ -14,7 +14,7 @@ export function calculateTeamData(
   expressionName: string,
   expressions: Expression[],
   entriesByTeam: Record<string, IDBRecord<Entry>[]>,
-  fields: DetailedSingleField[],
+  orderedSingleFields: SingleFieldWithDetails[],
 ) {
   const expression = expressions.find((e) => e.name == expressionName);
   if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
@@ -31,7 +31,7 @@ export function calculateTeamData(
       }
 
       const values = entriesByTeam[team].map((entry) => {
-        return runEntryExpression(entry, expression, expressions, fields);
+        return runEntryExpression(entry, expression, expressions, orderedSingleFields);
       });
 
       teamData[team] = values.reduce((prev, curr) => prev + curr, 0) / values.length;
@@ -45,7 +45,7 @@ export function calculateTeamData(
         continue;
       }
 
-      teamData[team] = runSurveyExpression(entriesByTeam[team], expression, expressions, fields);
+      teamData[team] = runSurveyExpression(entriesByTeam[team], expression, expressions, orderedSingleFields);
     }
   }
 
@@ -65,16 +65,16 @@ function runEntryExpression(
   entry: IDBRecord<Entry>,
   expression: Extract<Expression, { scope: "entry" }>,
   expressions: Expression[],
-  fields: DetailedSingleField[],
+  orderedSingleFields: SingleFieldWithDetails[],
 ): number {
   const { input } = expression;
 
   if (input.from == "fields") {
-    const values = input.fieldIds.map((fieldId) => {
-      const fieldIndex = fields.findIndex((field) => field.field.id == fieldId);
-      if (fieldIndex == -1) throw new Error(`Could not find field with id ${fieldId}`);
+    const values = input.fieldIds.map((id) => {
+      const field = orderedSingleFields.find((f) => f.field.id == id);
+      if (!field) throw new Error(`Could not find field with id ${id}`);
 
-      return entry.values[fieldIndex];
+      return entry.values[field.valueIndex];
     });
 
     const valueOrValues = runExpressionMethod(expression.method, values);
@@ -103,7 +103,7 @@ function runEntryExpression(
       if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
       if (expression.scope != "entry") throw new Error("Invalid expression scope");
 
-      return runEntryExpression(entry, expression, expressions, fields);
+      return runEntryExpression(entry, expression, expressions, orderedSingleFields);
     });
 
     const valueOrValues = runExpressionMethod(expression.method, values);
@@ -120,17 +120,17 @@ function runSurveyExpression(
   entries: IDBRecord<Entry>[],
   expression: Extract<Expression, { scope: "survey" }>,
   expressions: Expression[],
-  fields: DetailedSingleField[],
+  orderedSingleFields: SingleFieldWithDetails[],
 ): number {
   const { input } = expression;
 
   if (input.from == "fields") {
     const values = input.fieldIds
-      .map((fieldId) => {
-        const fieldIndex = fields.findIndex((field) => field.field.id == fieldId);
-        if (fieldIndex == -1) throw new Error(`Could not find field with id ${fieldId}`);
+      .map((id) => {
+        const field = orderedSingleFields.find((f) => f.field.id == id);
+        if (!field) throw new Error(`Could not find field with id ${id}`);
 
-        return entries.map((entry) => entry.values[fieldIndex]);
+        return entries.map((entry) => entry.values[field.valueIndex]);
       })
       .map((valueOrValues: number | any[]) => {
         if (Array.isArray(valueOrValues)) {
@@ -173,14 +173,14 @@ function runSurveyExpression(
 
       if (expression.scope == "entry") {
         const values = entries.map((entry) => {
-          return runEntryExpression(entry, expression, expressions, fields);
+          return runEntryExpression(entry, expression, expressions, orderedSingleFields);
         });
 
         return values.reduce((prev, curr) => prev + curr, 0) / values.length;
       }
 
       if (expression.scope == "survey") {
-        return runSurveyExpression(entries, expression, expressions, fields);
+        return runSurveyExpression(entries, expression, expressions, orderedSingleFields);
       }
 
       throw new Error("Invalid expression scope");

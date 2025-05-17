@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { getDetailedNestedFields, type Field, type SingleField } from "$lib/field";
+  import { getFieldsWithDetails, type Field, type SingleField } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
@@ -22,7 +22,7 @@
     onchange?: () => void;
   } = $props();
 
-  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
+  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
@@ -73,12 +73,14 @@
   <table class="w-full text-left">
     <tbody>
       <tr><th colspan="2" class="p-2">Entry</th></tr>
+
       {#if entryRecord.type == "match"}
         <tr>
           <td class="p-2 text-sm">Match</td>
           <td class="p-2 font-bold">{entryRecord.match}</td>
         </tr>
       {/if}
+
       <tr>
         <td class="w-0 p-2 text-sm">Team</td>
         <td class="p-2 font-bold">
@@ -88,6 +90,7 @@
           {/if}
         </td>
       </tr>
+
       {#if entryRecord.scout}
         <tr>
           <td class="w-0 p-2 text-sm">Scout</td>
@@ -107,12 +110,14 @@
           </tr>
         {/if}
       {/if}
+
       {#if entryRecord.type == "match" && entryRecord.absent}
         <tr>
           <td class="p-2 text-sm">Absent</td>
           <td class="p-2 font-bold">{entryRecord.absent}</td>
         </tr>
       {/if}
+
       {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
         <tr><td class="p-2"></td></tr>
         <tr><th colspan="2" class="p-2">TBA</th></tr>
@@ -127,20 +132,22 @@
           <tr><td class="p-2">No data pulled</td></tr>
         {/if}
       {/if}
+
       <tr><td class="p-2"></td></tr>
+
       {#if entryRecord.type != "match" || !entryRecord.absent}
-        {#each surveyRecord.fieldIds as fieldId}
-          {@const fieldDetails = detailedFields.get(fieldId)}
-          {#if fieldDetails?.type == "group"}
+        {#each fieldsWithDetails.topLevel as fieldDetails}
+          {#if fieldDetails.type == "group"}
+            {@const nestedFields = fieldDetails.field.fieldIds
+              .map((id) => fieldsWithDetails.nested.find((f) => f.field.id == id))
+              .filter((f) => f !== undefined)}
+
             <tr><th colspan="2" class="p-2">{fieldDetails.field.name}</th></tr>
-            {#each fieldDetails.field.fieldIds as innerFieldId}
-              {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
-              {#if innerFieldDetails}
-                {@render fieldRow(innerFieldDetails.field, entryRecord.values[innerFieldDetails.valueIndex])}
-              {/if}
+            {#each nestedFields as nestedField}
+              {@render fieldRow(nestedField.field, entryRecord.values[nestedField.valueIndex])}
             {/each}
             <tr><td class="p-2"></td></tr>
-          {:else if fieldDetails}
+          {:else}
             {@render fieldRow(fieldDetails.field, entryRecord.values[fieldDetails.valueIndex])}
           {/if}
         {/each}

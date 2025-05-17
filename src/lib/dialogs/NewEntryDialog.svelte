@@ -114,7 +114,7 @@
         return;
       }
 
-      const defaultValues = data.fields.map((field) => getDefaultFieldValue(field.field));
+      const defaultValues = data.fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
       let entry: Entry;
       if (data.surveyType == "match") {

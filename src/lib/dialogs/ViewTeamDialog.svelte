@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { sessionStorageStore, type Team } from "$lib";
+  import { sessionStorageStore, type Team, type Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import type { Entry } from "$lib/entry";
-  import { getDetailedNestedFields, type GroupField, type SingleField } from "$lib/field";
+  import { type GroupField, type SingleField } from "$lib/field";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
@@ -15,14 +15,29 @@
 
   const tab = sessionStorageStore<"data" | "text">("view-team-tab", "data");
 
-  const { detailedFields, detailedInnerFields } = getDetailedNestedFields(
-    data.surveyRecord.fieldIds,
-    data.fieldRecords,
-  );
-
-  let entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
+  const entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
+
+  function getValues(entry: Entry): (Value | Value[])[] {
+    return data.fieldsWithDetails.topLevel
+      .filter((f) => {
+        return (
+          (f.type == "single" && isFilteredField(f.field)) ||
+          (f.type == "group" && groupContainsFilteredFields(f.field))
+        );
+      })
+      .map((topLevelField) => {
+        if (topLevelField.type == "group") {
+          return topLevelField.field.fieldIds
+            .map((id) => data.fieldsWithDetails.nested.find((f) => f.field.id == id && isFilteredField(f.field)))
+            .filter((f) => f !== undefined)
+            .map((f) => entry.values[f.valueIndex]);
+        } else {
+          return entry.values[topLevelField.valueIndex];
+        }
+      });
+  }
 
   function filterEntries(entry: IDBRecord<Entry>) {
     return entry.status != "draft" && entry.team == team.number;
@@ -37,9 +52,9 @@
   }
 
   function groupContainsFilteredFields(group: GroupField) {
-    return detailedInnerFields
-      .values()
-      .some((f) => group.fieldIds.includes(f.field.id) && (f.field.type == "text") == ($tab == "text"));
+    return data.fieldsWithDetails.nested.some(
+      (f) => group.fieldIds.includes(f.field.id) && (f.field.type == "text") == ($tab == "text"),
+    );
   }
 
   function isFilteredField(field: SingleField) {
@@ -63,7 +78,7 @@
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
     <table class="border-separate border-spacing-0 text-sm {$tab == 'text' ? 'text-left text-balance' : 'text-center'}">
       <thead class="sticky top-0 z-10 w-full bg-neutral-800">
-        {#if detailedInnerFields.size}
+        {#if data.fieldsWithDetails.nested.length}
           <tr>
             {#if data.surveyType == "match"}
               <th
@@ -83,15 +98,13 @@
               <td class="border-r border-neutral-700"></td>
             {/if}
 
-            {#each data.surveyRecord.fieldIds as fieldId}
-              {@const fieldDetails = detailedFields.get(fieldId)!}
-
-              {#if fieldDetails.type == "group" && groupContainsFilteredFields(fieldDetails.field)}
-                <th colspan={fieldDetails.field.fieldIds.length} class="px-2 pt-1 pb-0 font-light">
-                  {fieldDetails.field.name}
+            {#each data.fieldsWithDetails.topLevel as topLevelField}
+              {#if topLevelField.type == "group" && groupContainsFilteredFields(topLevelField.field)}
+                <th colspan={topLevelField.field.fieldIds.length} class="px-2 pt-1 pb-0 font-light">
+                  {topLevelField.field.name}
                 </th>
                 <td class="border-r border-neutral-700"></td>
-              {:else if fieldDetails.type != "group" && isFilteredField(fieldDetails.field)}
+              {:else if topLevelField.type != "group" && isFilteredField(topLevelField.field)}
                 <td class="border-r border-neutral-700"></td>
               {/if}
             {/each}
@@ -99,7 +112,7 @@
         {/if}
 
         <tr>
-          {#if data.surveyType == "match" && !detailedInnerFields.size}
+          {#if data.surveyType == "match" && !data.fieldsWithDetails.nested.length}
             <th class="sticky left-0 z-10 border-b border-neutral-700 bg-neutral-800 p-2 text-center">Match</th>
           {/if}
 
@@ -114,20 +127,18 @@
             <td class="border-r border-b border-neutral-700"></td>
           {/if}
 
-          {#each data.surveyRecord.fieldIds as fieldId}
-            {@const fieldDetails = detailedFields.get(fieldId)!}
+          {#each data.fieldsWithDetails.topLevel as topLevelField}
+            {#if topLevelField.field.type == "group" && groupContainsFilteredFields(topLevelField.field)}
+              {@const nestedFields = topLevelField.field.fieldIds
+                .map((id) => data.fieldRecords.find((f) => f.id == id && f.type != "group" && isFilteredField(f)))
+                .filter((f) => f !== undefined)}
 
-            {#if fieldDetails.type == "group" && groupContainsFilteredFields(fieldDetails.field)}
-              {#each fieldDetails.field.fieldIds as innerFieldId}
-                {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)}
-
-                {#if innerFieldDetails && isFilteredField(innerFieldDetails.field)}
-                  <th class="border-b border-neutral-700 p-2">{innerFieldDetails.field.name}</th>
-                {/if}
+              {#each nestedFields as { name }}
+                <th class="border-b border-neutral-700 p-2">{name}</th>
               {/each}
               <td class="border-r border-b border-neutral-700"></td>
-            {:else if fieldDetails.type != "group" && isFilteredField(fieldDetails.field)}
-              <th class="border-r border-b border-neutral-700 p-2">{fieldDetails.field.name}</th>
+            {:else if topLevelField.field.type != "group" && isFilteredField(topLevelField.field)}
+              <th class="border-r border-b border-neutral-700 p-2">{topLevelField.field.name}</th>
             {/if}
           {/each}
         </tr>
@@ -146,33 +157,26 @@
               {/if}
 
               {#if $tab == "data" && data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length && !entry.absent}
-                {#each data.surveyRecord.tbaMetrics as tbaMetricName}
-                  {@const metric = entry.tbaMetrics?.find((m) => m.name == tbaMetricName)?.value}
-                  {#if metric}
-                    <td class="border-b border-neutral-800 p-2">{metric}</td>
-                  {/if}
+                {@const tbaMetrics = data.surveyRecord.tbaMetrics
+                  .map((metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value)
+                  .filter((m) => m !== undefined)}
+
+                {#each tbaMetrics as value}
+                  <td class="border-b border-neutral-800 p-2">{value}</td>
                 {/each}
                 <td class="border-r border-b border-neutral-800"></td>
               {/if}
             {/if}
 
             {#if entry.type != "match" || !entry.absent}
-              {#each data.surveyRecord.fieldIds as fieldId}
-                {@const fieldDetails = detailedFields.get(fieldId)!}
-
-                {#if fieldDetails.type == "group" && groupContainsFilteredFields(fieldDetails.field)}
-                  {#each fieldDetails.field.fieldIds as innerFieldId}
-                    {@const innerFieldDetails = detailedInnerFields.get(innerFieldId)!}
-
-                    {#if isFilteredField(innerFieldDetails.field)}
-                      {@const value = entry.values[innerFieldDetails.valueIndex]}
-                      <td class="border-b border-neutral-800 p-2">{value ? value : ""}</td>
-                    {/if}
+              {#each getValues(entry) as valueOrValues}
+                {#if Array.isArray(valueOrValues)}
+                  {#each valueOrValues as value}
+                    <td class="border-b border-neutral-800 p-2">{value ? value : ""}</td>
                   {/each}
                   <td class="border-r border-neutral-800"></td>
-                {:else if fieldDetails.type != "group" && isFilteredField(fieldDetails.field)}
-                  {@const value = entry.values[fieldDetails.valueIndex]}
-                  <td class="border-r border-b border-neutral-800 p-2">{value ? value : ""}</td>
+                {:else}
+                  <td class="border-r border-b border-neutral-800 p-2">{valueOrValues ? valueOrValues : ""}</td>
                 {/if}
               {/each}
             {/if}

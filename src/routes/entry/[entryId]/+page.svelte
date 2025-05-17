@@ -127,28 +127,26 @@
 
   {#if entry.type == "match" && entry.absent}{:else}
     <div class="flex flex-col flex-wrap gap-3">
-      {#each data.surveyRecord.fieldIds as fieldId}
-        {@const fieldDetails = data.detailedFields.get(fieldId)}
+      {#each data.fieldsWithDetails.topLevel as fieldDetails (fieldDetails.field.id)}
+        {#if fieldDetails.type == "group"}
+          {@const nestedFields = fieldDetails.field.fieldIds
+            .map((id) => data.fieldsWithDetails.nested.find((f) => f.field.id == id))
+            .filter((f) => f !== undefined)}
 
-        {#if fieldDetails?.type == "group"}
           <div class="flex w-full flex-col gap-2">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
             <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
-              {#each fieldDetails.field.fieldIds as innerFieldId}
-                {@const innerFieldDetails = data.detailedInnerFields.get(innerFieldId)}
-
-                {#if innerFieldDetails}
-                  <FieldValueEditor
-                    field={innerFieldDetails.field}
-                    bind:value={entry.values[innerFieldDetails.valueIndex]}
-                    {onchange}
-                  />
-                {/if}
+              {#each nestedFields as nestedFieldDetails (nestedFieldDetails.field.id)}
+                <FieldValueEditor
+                  field={nestedFieldDetails.field}
+                  bind:value={entry.values[nestedFieldDetails.valueIndex]}
+                  {onchange}
+                />
               {/each}
             </div>
           </div>
-        {:else if fieldDetails}
+        {:else}
           <FieldValueEditor field={fieldDetails.field} bind:value={entry.values[fieldDetails.valueIndex]} {onchange} />
         {/if}
       {/each}
@@ -160,14 +158,14 @@
       onclick={() => {
         for (let i = 0; i < entry.values.length; i++) {
           const value = entry.values[i];
-          if (typeof value !== typeof getDefaultFieldValue(data.fields[i].field)) {
-            error = `Invalid value for ${data.fields[i].field.name}`;
+          if (typeof value !== typeof getDefaultFieldValue(data.fieldsWithDetails.orderedSingle[i].field)) {
+            error = `Invalid value for ${data.fieldsWithDetails.orderedSingle[i].field.name}`;
             return;
           }
         }
 
         openDialog(SubmitEntryDialog, {
-          fields: data.fields,
+          orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: data.entryRecord,
           onexport: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });

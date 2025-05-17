@@ -1,20 +1,20 @@
 import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
 import type { Entry } from "$lib/entry";
 import type { Expression } from "$lib/expression";
-import { getDetailedSingleFields } from "$lib/field";
+import { getFieldsWithDetails } from "$lib/field";
 import { loadSurveyPageData } from "../loadSurveyPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
   const surveyId = Number(event.params.surveyId);
   const data = await loadSurveyPageData(surveyId);
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
+  const fieldsWithDetails = getFieldsWithDetails(data.surveyRecord, data.fieldRecords);
   const columns = data.surveyType == "match" ? data.surveyRecord.pickLists.length : 0;
 
   if (data.surveyType != "match") {
     return {
       ...data,
-      fields,
+      fieldsWithDetails,
       columns,
       teamsFromMatches: [] as string[],
       matchCountPerTeam: {} as Record<string, number>,
@@ -53,7 +53,7 @@ export const load: PageLoad = async (event) => {
 
   return {
     ...data,
-    fields,
+    fieldsWithDetails,
     columns,
     teamsFromMatches,
     matchCountPerTeam,
@@ -71,7 +71,12 @@ export const load: PageLoad = async (event) => {
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, data.surveyRecord.expressions, entriesByTeam, fields);
+      const teamData = calculateTeamData(
+        expressionName,
+        data.surveyRecord.expressions,
+        entriesByTeam,
+        fieldsWithDetails.orderedSingle,
+      );
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
@@ -101,7 +106,12 @@ export const load: PageLoad = async (event) => {
       expressionData[team] = 0;
     }
 
-    const teamData = calculateTeamData(expression.name, data.surveyRecord.expressions, entriesByTeam, fields);
+    const teamData = calculateTeamData(
+      expression.name,
+      data.surveyRecord.expressions,
+      entriesByTeam,
+      fieldsWithDetails.orderedSingle,
+    );
     const normalizedTeamData = normalizeTeamData(teamData);
 
     for (const team in normalizedTeamData) {

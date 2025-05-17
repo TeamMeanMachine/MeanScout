@@ -20,27 +20,6 @@
   <AdminHeader surveyRecord={data.surveyRecord} page="matches" />
 
   <div class="flex flex-col gap-3">
-    <Button
-      onclick={() =>
-        openDialog(NewMatchDialog, {
-          surveyRecord: data.surveyRecord,
-          oncreate(match) {
-            data = {
-              ...data,
-              surveyRecord: {
-                ...data.surveyRecord,
-                matches: [...data.surveyRecord.matches, match],
-                modified: new Date(),
-              },
-            } as PageData;
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-          },
-        })}
-    >
-      <PlusIcon class="text-theme" />
-      New match
-    </Button>
-
     {#if data.surveyRecord.matches.length}
       <div class="cool-grid grid gap-2">
         {#each data.surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match (match)}
@@ -87,8 +66,32 @@
         {/each}
       </div>
     {:else}
-      No matches.
+      <span class="text-sm">No matches.</span>
     {/if}
+
+    <div class="sticky bottom-3 z-20 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl">
+      <Button
+        onclick={() =>
+          openDialog(NewMatchDialog, {
+            surveyRecord: data.surveyRecord,
+            oncreate(match) {
+              data = {
+                ...data,
+                surveyRecord: {
+                  ...data.surveyRecord,
+                  matches: [...data.surveyRecord.matches, match],
+                  modified: new Date(),
+                },
+              } as PageData;
+              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            },
+          })}
+        class="text-sm"
+      >
+        <PlusIcon class="text-theme" />
+        New match
+      </Button>
+    </div>
   </div>
 </div>
 

@@ -1,12 +1,6 @@
 import type { Value } from "$lib";
 import type { MatchEntry, PitEntry } from "$lib/entry";
-import {
-  getDefaultFieldValue,
-  getDetailedNestedFields,
-  getDetailedSingleFields,
-  type DetailedGroupField,
-  type DetailedSingleField,
-} from "$lib/field";
+import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
 import { transaction } from "$lib/idb";
 import type { MatchSurvey, PitSurvey, Survey } from "$lib/survey";
 
@@ -16,9 +10,7 @@ export function loadEntryPageData(entryId: number) {
       | { surveyType: "match"; entryRecord: IDBRecord<MatchEntry>; surveyRecord: IDBRecord<MatchSurvey> }
       | { surveyType: "pit"; entryRecord: IDBRecord<PitEntry>; surveyRecord: IDBRecord<PitSurvey> }
     ) & {
-      fields: DetailedSingleField[];
-      detailedFields: Map<number, DetailedSingleField | DetailedGroupField>;
-      detailedInnerFields: Map<number, DetailedSingleField>;
+      fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
       defaultValues: Value[];
       teamName: string | undefined;
     }
@@ -53,34 +45,14 @@ export function loadEntryPageData(entryId: number) {
             return entryTransaction.abort();
           }
 
-          const fields = getDetailedSingleFields(surveyRecord, fieldRecords);
-          const { detailedFields, detailedInnerFields } = getDetailedNestedFields(surveyRecord.fieldIds, fieldRecords);
-          const defaultValues = fields.map((field) => getDefaultFieldValue(field.field));
-
+          const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
+          const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
           const teamName = surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name;
 
           if (surveyRecord.type == "match") {
-            resolve({
-              surveyType: "match",
-              entryRecord,
-              surveyRecord,
-              fields,
-              detailedFields,
-              detailedInnerFields,
-              defaultValues,
-              teamName,
-            });
+            resolve({ surveyType: "match", entryRecord, surveyRecord, fieldsWithDetails, defaultValues, teamName });
           } else {
-            resolve({
-              surveyType: "pit",
-              entryRecord,
-              surveyRecord,
-              fields,
-              detailedFields,
-              detailedInnerFields,
-              defaultValues,
-              teamName,
-            });
+            resolve({ surveyType: "pit", entryRecord, surveyRecord, fieldsWithDetails, defaultValues, teamName });
           }
         };
       };

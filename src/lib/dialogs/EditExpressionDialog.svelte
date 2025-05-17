@@ -3,14 +3,14 @@
   import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import type { DetailedSingleField } from "$lib/field";
+  import type { SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
   import { PenSquareIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
-    fields,
+    orderedSingleFields,
     expressions,
     expression,
     index,
@@ -19,7 +19,7 @@
     ondelete,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    fields: DetailedSingleField[];
+    orderedSingleFields: SingleFieldWithDetails[];
     expressions: {
       entryDerived: Expression[];
       entryTba: Expression[];
@@ -254,7 +254,7 @@
 {:else if input.from == "fields"}
   <span>Fields</span>
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
-    {#each fields as field (field.field.id)}
+    {#each orderedSingleFields as field (field.field.id)}
       {@const inputIndex = input.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
       <Button

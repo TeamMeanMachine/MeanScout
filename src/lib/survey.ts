@@ -115,19 +115,26 @@ export function importSurvey(
 
   const fields = new Map<number, Field>();
 
-  for (const fieldId of json.survey.fieldIds) {
-    const field = json.fields.find((field) => field.id == fieldId);
-    if (!field) continue;
+  const topLevelFields = json.survey.fieldIds
+    .map((id) => json.fields.find((f) => f.id == id))
+    .filter((f) => f != undefined);
+
+  for (const field of topLevelFields) {
     if (field.type == "group") {
-      for (const innerFieldId of field.fieldIds) {
-        const innerField = json.fields.find((field) => field.id == innerFieldId);
-        if (!innerField) continue;
-        delete (innerField as any).id;
-        fields.set(innerFieldId, { ...innerField, surveyId: 0 });
+      const nestedFields = field.fieldIds
+        .map((id) => json.fields.find((f) => f.id == id))
+        .filter((f) => f !== undefined && f.type != "group");
+
+      for (const nestedField of nestedFields) {
+        const nestedFieldWithoutId = structuredClone(nestedField);
+        delete (nestedFieldWithoutId as any).id;
+        fields.set(nestedField.id, { ...nestedFieldWithoutId, surveyId: 0 });
       }
     }
-    delete (field as any).id;
-    fields.set(fieldId, { ...field, surveyId: 0 });
+
+    const fieldWithoutId = structuredClone(field);
+    delete (fieldWithoutId as any).id;
+    fields.set(field.id, { ...fieldWithoutId, surveyId: 0 });
   }
 
   return { success: true, survey, fields };

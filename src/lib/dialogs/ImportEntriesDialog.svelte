@@ -4,7 +4,7 @@
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { csvToEntries, importEntries, type Entry, type MatchEntry } from "$lib/entry";
-  import type { DetailedSingleField } from "$lib/field";
+  import type { SingleFieldWithDetails } from "$lib/field";
   import { transaction } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -12,12 +12,12 @@
 
   let {
     surveyRecord,
-    fields,
+    orderedSingleFields,
     existingEntries,
     onimport,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    fields: DetailedSingleField[];
+    orderedSingleFields: SingleFieldWithDetails[];
     existingEntries: IDBRecord<Entry>[];
     onimport: () => void;
   } = $props();
@@ -128,7 +128,7 @@
 
     for (const { type, data } of allFiles) {
       if (type == "text/csv") {
-        importedEntries.push(...csvToEntries(data, surveyRecord, fields));
+        importedEntries.push(...csvToEntries(data, surveyRecord, orderedSingleFields));
       } else {
         const result = importEntries(surveyRecord, data);
         if (!result.success) {

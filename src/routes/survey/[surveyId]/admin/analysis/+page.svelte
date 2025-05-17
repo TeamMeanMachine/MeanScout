@@ -59,8 +59,8 @@
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
   <AdminHeader surveyRecord={data.surveyRecord} page="analysis" />
 
-  {#if data.fields.length == 0}
-    <span>To setup analysis, go create some fields.</span>
+  {#if data.fieldRecords.length == 0}
+    <span class="text-sm">To setup analysis, go create some fields.</span>
   {:else}
     <div class="flex flex-wrap gap-2 text-sm">
       <Button onclick={() => ($tab = "entry")} class={tabClass("entry")}>Entry</Button>
@@ -77,7 +77,7 @@
               onclick={() => {
                 openDialog(NewExpressionDialog, {
                   surveyRecord: data.surveyRecord,
-                  fields: data.fields,
+                  orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
                   constrain: {
                     scope: "entry",
@@ -120,7 +120,7 @@
               onclick={() => {
                 openDialog(NewExpressionDialog, {
                   surveyRecord: data.surveyRecord,
-                  fields: data.fields,
+                  orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
                   constrain: {
                     scope: "entry",
@@ -162,7 +162,7 @@
             onclick={() => {
               openDialog(NewExpressionDialog, {
                 surveyRecord: data.surveyRecord,
-                fields: data.fields,
+                orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                 expressions,
                 constrain: {
                   scope: "entry",
@@ -204,7 +204,7 @@
               onclick={() => {
                 openDialog(NewExpressionDialog, {
                   surveyRecord: data.surveyRecord,
-                  fields: data.fields,
+                  orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
                   constrain: {
                     scope: "survey",
@@ -247,7 +247,7 @@
               onclick={() => {
                 openDialog(NewExpressionDialog, {
                   surveyRecord: data.surveyRecord,
-                  fields: data.fields,
+                  orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
                   constrain: {
                     scope: "survey",
@@ -289,7 +289,7 @@
             onclick={() => {
               openDialog(NewExpressionDialog, {
                 surveyRecord: data.surveyRecord,
-                fields: data.fields,
+                orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                 expressions,
                 constrain: {
                   scope: "survey",
@@ -398,7 +398,7 @@
     onclick={() => {
       openDialog(EditExpressionDialog, {
         surveyRecord: data.surveyRecord,
-        fields: data.fields,
+        orderedSingleFields: data.fieldsWithDetails.orderedSingle,
         expressions: {
           entryDerived: expressions.entryDerived.filter(
             (e) => expression.name != e.name && !expressionReferencesOther(e, expression),

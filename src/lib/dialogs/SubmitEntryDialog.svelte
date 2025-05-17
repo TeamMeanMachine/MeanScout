@@ -4,23 +4,23 @@
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { exportEntries, type Entry } from "$lib/entry";
-  import { getDefaultFieldValue, type DetailedSingleField } from "$lib/field";
+  import { getDefaultFieldValue, type SingleFieldWithDetails } from "$lib/field";
   import { objectStore } from "$lib/idb";
   import { SquareCheckBigIcon, ChevronUpIcon, SquareIcon, ChevronDownIcon } from "@lucide/svelte";
 
   let {
-    fields,
+    orderedSingleFields,
     entryRecord,
     onexport,
   }: {
-    fields: DetailedSingleField[];
+    orderedSingleFields: SingleFieldWithDetails[];
     entryRecord: IDBRecord<Entry>;
     onexport: () => void;
   } = $props();
 
   const entryExport = sessionStorageStore<"true" | "">("entry-export", "");
 
-  const defaultValues = fields.map((field) => getDefaultFieldValue(field.field));
+  const defaultValues = orderedSingleFields.map((field) => getDefaultFieldValue(field.field));
 
   const entryJson = exportEntries([
     entryRecord.type == "match" && entryRecord.absent ? { ...entryRecord, values: defaultValues } : entryRecord,

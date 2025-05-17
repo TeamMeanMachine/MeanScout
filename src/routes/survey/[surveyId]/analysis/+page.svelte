@@ -73,7 +73,7 @@
 />
 
 <div class="flex flex-col gap-6" style="view-transition-name:analysis">
-  {#if data.fields.length == 0}
+  {#if data.fieldRecords.length == 0}
     <span>No fields.</span>
   {:else}
     <div class="flex flex-wrap gap-2">

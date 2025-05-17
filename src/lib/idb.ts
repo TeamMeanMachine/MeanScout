@@ -253,13 +253,13 @@ function migrateField(
       }
 
       if (Array.isArray(field.fields)) {
-        for (const innerField of field.fields) {
+        for (const nestedField of field.fields) {
           try {
             let migratedFieldId;
 
             ({ migratedFieldId, flattenedIndex } = await migrateField(
               fieldStore,
-              innerField,
+              nestedField,
               surveyId,
               expressions,
               flattenedIndex,

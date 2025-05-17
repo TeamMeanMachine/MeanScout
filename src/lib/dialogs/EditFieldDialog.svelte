@@ -143,11 +143,12 @@
       } else {
         if (field.type == "group") {
           const newIds: number[] = [];
-          for (const innerFieldId of field.fieldIds) {
-            const innerField = fieldRecords.find((f) => f.id == innerFieldId);
-            if (!innerField || innerField.type == "group") continue;
+          const nestedFields = field.fieldIds
+            .map((id) => fieldRecords.find((f) => f.id == id))
+            .filter((f) => f !== undefined && f.type != "group");
 
-            const fieldWithoutId = structuredClone($state.snapshot(innerField)) as SingleField & { id?: number };
+          for (const nestedField of nestedFields) {
+            const fieldWithoutId = structuredClone($state.snapshot(nestedField)) as SingleField & { id?: number };
             delete fieldWithoutId.id;
 
             const newId = await new Promise<number>((resolve, reject) => {
@@ -183,8 +184,8 @@
       updatedParentField.fieldIds = updatedParentField.fieldIds.filter((id) => field.id != id);
       fieldStore.put(updatedParentField);
     } else if (field.type == "group") {
-      for (const innerFieldId of field.fieldIds) {
-        fieldStore.delete(innerFieldId);
+      for (const nestedFieldId of field.fieldIds) {
+        fieldStore.delete(nestedFieldId);
       }
     }
 

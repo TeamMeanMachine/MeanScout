@@ -1,7 +1,7 @@
 <script lang="ts">
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import type { MatchEntry } from "$lib/entry";
-  import type { DetailedSingleField } from "$lib/field";
+  import type { SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -10,12 +10,12 @@
 
   let {
     surveyRecord,
-    fields,
+    orderedSingleFields,
     entriesByTeam,
     pickList,
   }: {
     surveyRecord: IDBRecord<MatchSurvey>;
-    fields: DetailedSingleField[];
+    orderedSingleFields: SingleFieldWithDetails[];
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
   } = $props();
@@ -57,7 +57,12 @@
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(expressionName, surveyRecord.expressions, subsetEntriesByTeam, fields);
+      const teamData = calculateTeamData(
+        expressionName,
+        surveyRecord.expressions,
+        subsetEntriesByTeam,
+        orderedSingleFields,
+      );
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {

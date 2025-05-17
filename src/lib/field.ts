@@ -134,11 +134,11 @@ export function addField(
     if (field.type == "group") {
       const newIds: number[] = [];
 
-      for (const innerFieldId of field.fieldIds) {
+      for (const nestedFieldId of field.fieldIds) {
         try {
-          const addedInnerFieldId = await addField(fieldStore, fields, oldNewMap, innerFieldId, surveyId);
-          newIds.push(addedInnerFieldId);
-          oldNewMap.set(innerFieldId, addedInnerFieldId);
+          const addedNestedFieldId = await addField(fieldStore, fields, oldNewMap, nestedFieldId, surveyId);
+          newIds.push(addedNestedFieldId);
+          oldNewMap.set(nestedFieldId, addedNestedFieldId);
         } catch (error) {
           return reject(error);
         }
@@ -153,92 +153,62 @@ export function addField(
   });
 }
 
-export type DetailedSingleField = {
+export type SingleFieldWithDetails = {
   type: "single";
   field: IDBRecord<SingleField>;
   detailedName: string;
   valueIndex: number;
 };
 
-export type DetailedGroupField = {
+export type GroupFieldWithDetails = {
   type: "group";
   field: IDBRecord<GroupField>;
 };
 
-export function getDetailedSingleFields(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
-  const singleFields: DetailedSingleField[] = [];
+export function getFieldsWithDetails(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
+  const topLevel: (SingleFieldWithDetails | GroupFieldWithDetails)[] = [];
+  const nested: SingleFieldWithDetails[] = [];
+  const orderedSingle: SingleFieldWithDetails[] = [];
 
-  for (const fieldId of surveyRecord.fieldIds) {
-    const fieldRecord = fieldRecords.find((field) => field.id == fieldId);
-    if (!fieldRecord) {
-      continue;
-    }
-
-    if (fieldRecord.type == "group") {
-      for (const innerFieldId of fieldRecord.fieldIds) {
-        const innerFieldRecord = fieldRecords.find((field) => field.id == innerFieldId);
-        if (!innerFieldRecord || innerFieldRecord.type == "group") {
-          continue;
-        }
-
-        singleFields.push({
-          type: "single",
-          field: innerFieldRecord,
-          detailedName: `${fieldRecord.name} ${innerFieldRecord.name}`,
-          valueIndex: -1,
-        });
-      }
-    } else {
-      singleFields.push({
-        type: "single",
-        field: fieldRecord,
-        detailedName: `${fieldRecord.name}`,
-        valueIndex: -1,
-      });
-    }
-  }
-
-  return singleFields;
-}
-
-export function getDetailedNestedFields(fieldIds: number[], fieldRecords: IDBRecord<Field>[]) {
-  const detailedFields = new Map<number, DetailedSingleField | DetailedGroupField>();
-  const detailedInnerFields = new Map<number, DetailedSingleField>();
+  const topLevelFields = surveyRecord.fieldIds
+    .map((id) => fieldRecords.find((f) => f.id == id))
+    .filter((f) => f !== undefined);
 
   let valueIndex = 0;
 
-  for (const fieldId of fieldIds) {
-    const field = fieldRecords.find((f) => f.id == fieldId);
-    if (!field) {
-      valueIndex++;
-      continue;
-    }
-
+  for (const field of topLevelFields) {
     if (field.type == "group") {
-      detailedFields.set(fieldId, { type: "group", field });
+      const nestedFields = field.fieldIds
+        .map((id) => fieldRecords.find((f) => f.id == id))
+        .filter((f) => f !== undefined && f.type != "group");
 
-      for (const innerFieldId of field.fieldIds) {
-        const innerField = fieldRecords.find((f) => f.id == innerFieldId);
-        if (!innerField || innerField.type == "group") {
-          valueIndex++;
-          continue;
-        }
+      topLevel.push({ type: "group", field });
 
-        detailedInnerFields.set(innerFieldId, {
+      for (const nestedField of nestedFields) {
+        const fieldWithDetails: SingleFieldWithDetails = {
           type: "single",
-          field: innerField,
-          detailedName: `${field.name} ${innerField.name}`,
+          field: nestedField,
+          detailedName: `${field.name} ${nestedField.name}`,
           valueIndex,
-        });
+        };
 
+        nested.push(fieldWithDetails);
+        orderedSingle.push(fieldWithDetails);
         valueIndex++;
       }
     } else {
-      detailedFields.set(fieldId, { type: "single", field, detailedName: field.name, valueIndex });
+      const fieldWithDetails: SingleFieldWithDetails = {
+        type: "single",
+        field,
+        detailedName: field.name,
+        valueIndex,
+      };
 
+      topLevel.push(fieldWithDetails);
+      orderedSingle.push(fieldWithDetails);
       valueIndex++;
     }
   }
 
-  return { detailedFields, detailedInnerFields };
+  return { topLevel, nested, orderedSingle };
 }

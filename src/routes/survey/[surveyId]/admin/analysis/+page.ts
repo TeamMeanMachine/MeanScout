@@ -1,6 +1,6 @@
 import { loadSurveyPageData } from "../../loadSurveyPageData";
 import type { PageLoad } from "./$types";
-import { getDetailedSingleFields } from "$lib/field";
+import { getFieldsWithDetails } from "$lib/field";
 import { getMatchEntriesByTeam } from "$lib/entry";
 
 export const load: PageLoad = async (event) => {
@@ -9,7 +9,7 @@ export const load: PageLoad = async (event) => {
   if (data.surveyType != "match") {
     throw new Error("Survey type is not a match!");
   }
-  const fields = getDetailedSingleFields(data.surveyRecord, data.fieldRecords);
+  const fieldsWithDetails = getFieldsWithDetails(data.surveyRecord, data.fieldRecords);
   const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
-  return { ...data, fields, entriesByTeam };
+  return { ...data, fieldsWithDetails, entriesByTeam };
 };
