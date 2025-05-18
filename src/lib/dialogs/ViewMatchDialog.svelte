@@ -1,48 +1,61 @@
 <script lang="ts">
   import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
-  import { calculateTeamData, normalizeTeamData } from "$lib/analysis";
+  import { getExpressionData, getPickListData, type AnalysisData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
-  import { getMatchEntriesByTeam } from "$lib/entry";
+  import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
+  import { sortExpressions } from "$lib/expression";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
-    data,
+    pageData,
     match,
   }: {
-    data: PageData;
+    pageData: PageData;
     match: Match;
   } = $props();
 
-  const tab = sessionStorageStore<"info" | "picklists" | "expressions">(
-    "view-match-tab",
-    data.surveyType == "match" ? "picklists" : "info",
+  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as IDBRecord<MatchEntry>[]);
+
+  const tab = sessionStorageStore<"info" | "picklists" | "expressions">("view-match-tab", "info");
+
+  const sortedExpressions =
+    pageData.surveyType == "match" ? pageData.surveyRecord.expressions.toSorted(sortExpressions) : [];
+
+  const pickListName = sessionStorageStore(
+    "analysis-picklist",
+    pageData.surveyType == "match" ? pageData.surveyRecord.pickLists[0]?.name || "" : "",
   );
 
-  const pickList = sessionStorageStore(
-    "view-match-picklist",
-    data.surveyType == "match" ? data.surveyRecord.pickLists[0]?.name || "" : "",
+  const expressionName = sessionStorageStore(
+    "analysis-expression",
+    pageData.surveyType == "match" ? sortedExpressions[0]?.name || "" : "",
   );
 
-  const expression = sessionStorageStore(
-    "view-match-expression",
-    data.surveyType == "match" ? data.surveyRecord.expressions[0]?.name || "" : "",
-  );
+  if (pageData.surveyType == "match") {
+    pickListName.subscribe((val) => {
+      if (pageData.surveyRecord.pickLists.every((pl) => pl.name != val)) {
+        pickListName.set(pageData.surveyRecord.pickLists[0]?.name || "");
+      }
+    });
+
+    expressionName.subscribe((val) => {
+      if (pageData.surveyRecord.expressions.every((e) => e.name != val)) {
+        expressionName.set(sortedExpressions[0]?.name || "");
+      }
+    });
+  }
 
   const expressions =
-    data.surveyType == "match"
+    pageData.surveyType == "match"
       ? {
-          entryDerived: data.surveyRecord.expressions.filter(
-            (e) => e.scope == "entry" && e.input.from == "expressions",
-          ),
-          entryTba: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-          entryPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-          surveyDerived: data.surveyRecord.expressions.filter(
-            (e) => e.scope == "survey" && e.input.from == "expressions",
-          ),
-          surveyTba: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-          surveyPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+          entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+          entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
+          entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+          surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+          surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
+          surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
         }
       : {
           entryDerived: [],
@@ -53,56 +66,24 @@
           surveyPrimitive: [],
         };
 
-  let pickListData = $derived(getPickListData($pickList));
-  let expressionData = $derived(getExpressionData($expression));
-
-  function getPickListData(pickListName: string) {
-    if (data.surveyType != "match") return;
-
-    const pickList = data.surveyRecord.pickLists.find((pl) => pl.name == pickListName);
-    if (!pickList) return;
-
-    const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
-    const pickListData: Record<string, number> = {};
-
-    for (const team in entriesByTeam) {
-      pickListData[team] = 0;
-    }
-
-    for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(
-        expressionName,
-        data.surveyRecord.expressions,
+  let analysisData = $derived.by<AnalysisData | undefined>(() => {
+    if (pageData.surveyType != "match") return;
+    if ($tab == "picklists") {
+      return getPickListData(
+        $pickListName,
+        pageData.surveyRecord,
         entriesByTeam,
-        data.fieldsWithDetails.orderedSingle,
+        pageData.fieldsWithDetails.orderedSingle,
       );
-      const normalizedTeamData = normalizeTeamData(teamData, percentage);
-
-      for (const team in normalizedTeamData) {
-        pickListData[team] += normalizedTeamData[team];
-      }
+    } else {
+      return getExpressionData(
+        $expressionName,
+        pageData.surveyRecord,
+        entriesByTeam,
+        pageData.fieldsWithDetails.orderedSingle,
+      );
     }
-
-    return normalizeTeamData(pickListData);
-  }
-
-  function getExpressionData(expressionName: string) {
-    if (data.surveyType != "match") return;
-
-    const entriesByTeam = getMatchEntriesByTeam(data.entryRecords);
-    const teamData = calculateTeamData(
-      expressionName,
-      data.surveyRecord.expressions,
-      entriesByTeam,
-      data.fieldsWithDetails.orderedSingle,
-    );
-    const values = Object.keys(teamData).map((team) => teamData[team]);
-
-    const maxValue = Math.max(...values);
-    const minValue = Math.min(...values);
-
-    return { teamData, maxValue, minValue };
-  }
+  });
 
   function tabClass(matching: string) {
     return $tab == matching ? "font-bold" : "font-light";
@@ -111,21 +92,25 @@
 
 <span>Match {match.number}</span>
 
-{#if data.surveyType == "match"}
+{#if pageData.surveyType == "match"}
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "info")} class={tabClass("info")}>Info</Button>
-    <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
-    <Button onclick={() => ($tab = "expressions")} class={tabClass("expressions")}>Expressions</Button>
+    {#if pageData.surveyRecord.pickLists.length}
+      <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
+    {/if}
+    {#if pageData.surveyRecord.expressions.length}
+      <Button onclick={() => ($tab = "expressions")} class={tabClass("expressions")}>Expressions</Button>
+    {/if}
   </div>
 {/if}
 
-{#if $tab == "info" || data.surveyType == "pit"}
+{#if $tab == "info" || pageData.surveyType == "pit"}
   <div class="flex flex-col gap-2">
     {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
       <Button
         onclick={() => {
-          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, data });
+          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData: pageData });
         }}
       >
         <div class="flex flex-col">
@@ -137,10 +122,10 @@
       </Button>
     {/each}
     {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
       <Button
         onclick={() => {
-          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, data });
+          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData: pageData });
         }}
       >
         <div class="flex flex-col">
@@ -152,17 +137,17 @@
       </Button>
     {/each}
   </div>
-{:else if $tab == "picklists"}
-  <select bind:value={$pickList} class="text-theme bg-neutral-800 p-2 text-sm">
-    {#each data.surveyRecord.pickLists as pickList}
+{:else if $tab == "picklists" && analysisData?.type == "picklist"}
+  <select bind:value={$pickListName} class="text-theme bg-neutral-800 p-2 text-sm">
+    {#each pageData.surveyRecord.pickLists as pickList}
       <option>{pickList.name}</option>
     {/each}
   </select>
 
   <div class="flex flex-col gap-4">
     {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const percentage = pickListData?.[team] ?? 0}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const percentage = analysisData.data.find((teamData) => teamData.team == team)?.percentage || 0}
 
       <div>
         <div class="flex items-end justify-between gap-3">
@@ -181,8 +166,8 @@
     {/each}
 
     {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const percentage = pickListData?.[team] ?? 0}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const percentage = analysisData.data.find((teamData) => teamData.team == team)?.percentage || 0}
 
       <div>
         <div class="flex items-end justify-between gap-3">
@@ -200,11 +185,8 @@
       </div>
     {/each}
   </div>
-{:else if $tab == "expressions"}
-  {@const maxValue = expressionData?.maxValue || 0}
-  {@const minValue = expressionData?.minValue || 0}
-
-  <select bind:value={$expression} class="text-theme bg-neutral-800 p-2 text-sm">
+{:else if $tab == "expressions" && analysisData?.type == "expression"}
+  <select bind:value={$expressionName} class="text-theme bg-neutral-800 p-2 text-sm">
     {#if expressions.surveyDerived.length}
       <optgroup label="Survey Expressions from expressions">
         {#each expressions.surveyDerived as expression}
@@ -251,9 +233,13 @@
 
   <div class="flex flex-col gap-4 pr-1">
     {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const value = expressionData?.teamData[team] ?? 0}
-      {@const divWidth = Math.abs(((value - Math.min(minValue, 0)) / (maxValue || minValue || value || 1)) * 100)}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const value = analysisData.data.find((teamData) => teamData.team == team)?.value || 0}
+      {@const divWidth = Math.abs(
+        ((value - Math.min(analysisData.minValue, 0)) /
+          (analysisData.maxValue || analysisData.minValue || value || 1)) *
+          100,
+      )}
 
       <div>
         <div class="flex items-end justify-between gap-3">
@@ -272,9 +258,13 @@
     {/each}
 
     {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const value = expressionData?.teamData[team] ?? 0}
-      {@const divWidth = Math.abs(((value - Math.min(minValue, 0)) / (maxValue || minValue || value || 1)) * 100)}
+      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+      {@const value = analysisData.data.find((teamData) => teamData.team == team)?.value || 0}
+      {@const divWidth = Math.abs(
+        ((value - Math.min(analysisData.minValue, 0)) /
+          (analysisData.maxValue || analysisData.minValue || value || 1)) *
+          100,
+      )}
 
       <div>
         <div class="flex items-end justify-between gap-3">

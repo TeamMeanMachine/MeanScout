@@ -197,7 +197,7 @@
     <Button
       onclick={() => {
         openDialog(NewEntryDialog, {
-          data,
+          pageData: data,
           prefilledMatch,
           prefilledTeam,
           prefilledScout,
@@ -275,7 +275,7 @@
         <Button
           onclick={() =>
             openDialog(ViewPickListDialog, {
-              data: data as Extract<PageData, { surveyType: "match" }>,
+              pageData: data as Extract<PageData, { surveyType: "match" }>,
               entriesByTeam,
               pickList,
             })}
@@ -337,12 +337,7 @@
         <div class="flex flex-wrap gap-2">
           {#snippet teamRow(match: Match)}
             <Button
-              onclick={() => {
-                openDialog(ViewMatchDialog, {
-                  data,
-                  match,
-                });
-              }}
+              onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })}
               class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
             >
               <div>{match.number}</div>

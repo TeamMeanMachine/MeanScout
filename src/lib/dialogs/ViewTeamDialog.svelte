@@ -6,21 +6,21 @@
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
-    data,
+    pageData,
     team,
   }: {
-    data: PageData;
+    pageData: PageData;
     team: Team;
   } = $props();
 
   const tab = sessionStorageStore<"data" | "text">("view-team-tab", "data");
 
-  const entries = data.entryRecords.filter(filterEntries).toSorted(sortEntries);
+  const entries = pageData.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
 
   function getValues(entry: Entry): (Value | Value[])[] {
-    return data.fieldsWithDetails.topLevel
+    return pageData.fieldsWithDetails.topLevel
       .filter((f) => {
         return (
           (f.type == "single" && isFilteredField(f.field)) ||
@@ -30,7 +30,7 @@
       .map((topLevelField) => {
         if (topLevelField.type == "group") {
           return topLevelField.field.fieldIds
-            .map((id) => data.fieldsWithDetails.nested.find((f) => f.field.id == id && isFilteredField(f.field)))
+            .map((id) => pageData.fieldsWithDetails.nested.find((f) => f.field.id == id && isFilteredField(f.field)))
             .filter((f) => f !== undefined)
             .map((f) => entry.values[f.valueIndex]);
         } else {
@@ -52,7 +52,7 @@
   }
 
   function groupContainsFilteredFields(group: GroupField) {
-    return data.fieldsWithDetails.nested.some(
+    return pageData.fieldsWithDetails.nested.some(
       (f) => group.fieldIds.includes(f.field.id) && (f.field.type == "text") == ($tab == "text"),
     );
   }
@@ -78,9 +78,9 @@
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
     <table class="border-separate border-spacing-0 text-sm {$tab == 'text' ? 'text-left text-balance' : 'text-center'}">
       <thead class="sticky top-0 z-10 w-full bg-neutral-800">
-        {#if data.fieldsWithDetails.nested.length}
+        {#if pageData.fieldsWithDetails.nested.length}
           <tr>
-            {#if data.surveyType == "match"}
+            {#if pageData.surveyType == "match"}
               <th
                 rowspan="2"
                 class="sticky left-0 z-10 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center align-bottom"
@@ -93,12 +93,14 @@
               <td class="border-r border-neutral-700"></td>
             {/if}
 
-            {#if $tab == "data" && data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length}
-              <td colspan={data.surveyRecord.tbaMetrics.length} class="px-1 pt-1 pb-0 text-center font-light">TBA</td>
+            {#if $tab == "data" && pageData.surveyType == "match" && pageData.surveyRecord.tbaMetrics?.length}
+              <td colspan={pageData.surveyRecord.tbaMetrics.length} class="px-1 pt-1 pb-0 text-center font-light"
+                >TBA</td
+              >
               <td class="border-r border-neutral-700"></td>
             {/if}
 
-            {#each data.fieldsWithDetails.topLevel as topLevelField}
+            {#each pageData.fieldsWithDetails.topLevel as topLevelField}
               {#if topLevelField.type == "group" && groupContainsFilteredFields(topLevelField.field)}
                 <th colspan={topLevelField.field.fieldIds.length} class="px-2 pt-1 pb-0 font-light">
                   {topLevelField.field.name}
@@ -112,7 +114,7 @@
         {/if}
 
         <tr>
-          {#if data.surveyType == "match" && !data.fieldsWithDetails.nested.length}
+          {#if pageData.surveyType == "match" && !pageData.fieldsWithDetails.nested.length}
             <th class="sticky left-0 z-10 border-b border-neutral-700 bg-neutral-800 p-2 text-center">Match</th>
           {/if}
 
@@ -120,17 +122,17 @@
             <th class="border-r border-b border-neutral-700 p-2">Absent</th>
           {/if}
 
-          {#if $tab == "data" && data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length}
-            {#each data.surveyRecord.tbaMetrics as tbaMetric}
+          {#if $tab == "data" && pageData.surveyType == "match" && pageData.surveyRecord.tbaMetrics?.length}
+            {#each pageData.surveyRecord.tbaMetrics as tbaMetric}
               <th class="border-b border-neutral-700 p-2">{tbaMetric}</th>
             {/each}
             <td class="border-r border-b border-neutral-700"></td>
           {/if}
 
-          {#each data.fieldsWithDetails.topLevel as topLevelField}
+          {#each pageData.fieldsWithDetails.topLevel as topLevelField}
             {#if topLevelField.field.type == "group" && groupContainsFilteredFields(topLevelField.field)}
               {@const nestedFields = topLevelField.field.fieldIds
-                .map((id) => data.fieldRecords.find((f) => f.id == id && f.type != "group" && isFilteredField(f)))
+                .map((id) => pageData.fieldRecords.find((f) => f.id == id && f.type != "group" && isFilteredField(f)))
                 .filter((f) => f !== undefined)}
 
               {#each nestedFields as { name }}
@@ -156,8 +158,8 @@
                 <td class="border-r border-b border-neutral-800 p-2">{entry.absent || ""}</td>
               {/if}
 
-              {#if $tab == "data" && data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length && !entry.absent}
-                {@const tbaMetrics = data.surveyRecord.tbaMetrics
+              {#if $tab == "data" && pageData.surveyType == "match" && pageData.surveyRecord.tbaMetrics?.length && !entry.absent}
+                {@const tbaMetrics = pageData.surveyRecord.tbaMetrics
                   .map((metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value)
                   .filter((m) => m !== undefined)}
 

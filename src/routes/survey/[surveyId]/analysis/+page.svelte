@@ -1,12 +1,14 @@
 <script lang="ts">
-  import type { Expression } from "$lib/expression";
+  import { sortExpressions } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { openDialog } from "$lib/dialog";
-  import ViewExpressionDialog from "$lib/dialogs/ViewExpressionDialog.svelte";
-  import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
   import type { PageData } from "./$types";
   import { sessionStorageStore } from "$lib";
+  import { type AnalysisData, getExpressionData, getPickListData } from "$lib/analysis";
+  import RaceChart from "$lib/components/RaceChart.svelte";
+  import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
+  import StackedChart from "$lib/components/StackedChart.svelte";
+  import BarChart from "$lib/components/BarChart.svelte";
 
   let {
     data,
@@ -14,52 +16,54 @@
     data: PageData;
   } = $props();
 
-  let search = sessionStorageStore("analysis-search", "");
-  let formattedSearch = $derived(formatName($search));
+  const tab = sessionStorageStore<"picklists" | "expressions">("analysis-tab", "picklists");
+  const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
-  let filteredExpressions = $derived.by(() => {
-    return data.surveyRecord.expressions.filter((e) => {
-      if (!formattedSearch || formatName(e.name).includes(formattedSearch)) {
-        return true;
-      }
+  const sortedExpressions = data.surveyRecord.expressions.toSorted(sortExpressions);
 
-      if (
-        e.input.from == "expressions" &&
-        e.input.expressionNames.some((en) => formatName(en).includes(formattedSearch))
-      ) {
-        return true;
-      }
+  const pickListName = sessionStorageStore("analysis-picklist", data.surveyRecord.pickLists[0]?.name || "");
+  const expressionName = sessionStorageStore("analysis-expression", sortedExpressions[0]?.name || "");
 
-      return false;
-    });
+  pickListName.subscribe((val) => {
+    if (data.surveyRecord.pickLists.every((pl) => pl.name != val)) {
+      pickListName.set(data.surveyRecord.pickLists[0]?.name || "");
+    }
+  });
+  expressionName.subscribe((val) => {
+    if (data.surveyRecord.expressions.every((e) => e.name != val)) {
+      expressionName.set(sortedExpressions[0]?.name || "");
+    }
   });
 
-  let expressions = $derived({
-    entryDerived: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-    entryTba: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-    entryPrimitive: filteredExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-    surveyDerived: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-    surveyTba: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-    surveyPrimitive: filteredExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+  const expressions = {
+    entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
+    entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+    surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
+    surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+  };
+
+  let analysisData = $derived.by<AnalysisData | undefined>(() => {
+    if ($tab == "picklists") {
+      return getPickListData(
+        $pickListName,
+        data.surveyRecord,
+        data.entriesByTeam,
+        data.fieldsWithDetails.orderedSingle,
+      );
+    } else {
+      return getExpressionData(
+        $expressionName,
+        data.surveyRecord,
+        data.entriesByTeam,
+        data.fieldsWithDetails.orderedSingle,
+      );
+    }
   });
 
-  let pickLists = $derived.by(() => {
-    return data.surveyRecord.pickLists.filter((pl) => {
-      if (!formattedSearch || formatName(pl.name).includes(formattedSearch)) {
-        return true;
-      }
-
-      return pl.weights.some((w) => formatName(w.expressionName).includes(formattedSearch));
-    });
-  });
-
-  function formatName(name: string) {
-    return name.trim().replaceAll(" ", "").toLowerCase();
-  }
-
-  function nameWeight(name: string) {
-    if (!formattedSearch) return "";
-    return formatName(name).includes(formattedSearch) ? "font-bold" : "font-light";
+  function tabClass(matching: string) {
+    return $tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
@@ -72,157 +76,118 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-col gap-6" style="view-transition-name:analysis">
-  {#if data.fieldRecords.length == 0}
-    <span>No fields.</span>
+<div class="flex flex-col gap-3" style="view-transition-name:analysis">
+  {#if !data.fieldRecords.length || !data.entryRecords.length || (!data.surveyRecord.pickLists.length && !data.surveyRecord.expressions.length)}
+    <span class="text-sm">No analysis available.</span>
   {:else}
-    <div class="flex flex-wrap gap-2">
-      <label class="flex flex-col">
-        Search
-        <input bind:value={$search} class="text-theme bg-neutral-800 p-2" />
-      </label>
+    <div class="flex flex-wrap justify-between gap-3">
+      <div class="flex flex-wrap gap-2 text-sm">
+        {#if data.surveyRecord.pickLists.length}
+          <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
+        {/if}
+        {#if data.surveyRecord.expressions.length}
+          <Button onclick={() => ($tab = "expressions")} class={tabClass("expressions")}>Expressions</Button>
+        {/if}
+      </div>
+
+      {#if $tab == "picklists"}
+        <div class="flex flex-wrap gap-2 self-end text-sm">
+          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
+            Bar
+          </Button>
+          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
+            Race
+          </Button>
+          <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
+            Stacked
+          </Button>
+        </div>
+      {/if}
     </div>
 
-    {#if data.surveyRecord.pickLists.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Pick Lists</h2>
-        {#each pickLists as pickList}
-          <div class="flex flex-col gap-2">
-            <Button
-              onclick={() => {
-                openDialog(ViewPickListDialog, {
-                  data,
-                  entriesByTeam: data.entriesByTeam,
-                  pickList,
-                });
-              }}
-              class={nameWeight(pickList.name)}
-            >
-              {pickList.name}
+    <div class="flex flex-wrap justify-between gap-2">
+      {#if $tab == "picklists"}
+        <select bind:value={$pickListName} class="text-theme bg-neutral-800 p-2">
+          {#each data.surveyRecord.pickLists as pickList}
+            <option>{pickList.name}</option>
+          {/each}
+        </select>
+      {:else}
+        <select bind:value={$expressionName} class="text-theme bg-neutral-800 p-2">
+          {#if expressions.surveyDerived.length}
+            <optgroup label="Survey Expressions from expressions">
+              {#each expressions.surveyDerived as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions.surveyTba.length}
+            <optgroup label="Survey Expressions from TBA">
+              {#each expressions.surveyTba as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions.surveyPrimitive.length}
+            <optgroup label="Survey Expressions from fields">
+              {#each expressions.surveyPrimitive as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions.entryDerived.length}
+            <optgroup label="Entry Expressions from expressions">
+              {#each expressions.entryDerived as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions.entryTba.length}
+            <optgroup label="Entry Expressions from TBA">
+              {#each expressions.entryTba as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions.entryPrimitive.length}
+            <optgroup label="Entry Expressions from fields">
+              {#each expressions.entryPrimitive as expression}
+                <option>{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+        </select>
+      {/if}
+
+      {#if analysisData}
+        <div class="flex flex-wrap gap-2">
+          {#if "canShare" in navigator}
+            <Button onclick={() => navigator.share({ text: analysisData.text })}>
+              <Share2Icon class="text-theme" />
+              <span class="text-sm">Share</span>
             </Button>
+          {/if}
 
-            <div class="mb-3 ml-3 flex flex-col gap-2">
-              {#each pickList.weights.toSorted((a, b) => b.percentage - a.percentage) as { expressionName, percentage }}
-                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
-                {#if expression}
-                  <Button
-                    onclick={() => {
-                      openDialog(ViewExpressionDialog, {
-                        data,
-                        entriesByTeam: data.entriesByTeam,
-                        expression,
-                      });
-                    }}
-                    class="flex-col items-start gap-0! {nameWeight(expression.name)}"
-                  >
-                    {expression.name}
-                    <small class="font-light">{percentage}%</small>
-                  </Button>
-                {/if}
-              {/each}
-            </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
-
-    {#if expressions.surveyDerived.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Survey Expressions <small>(from expressions)</small></h2>
-        {#each expressions.surveyDerived as expression}
-          {@const expressionNames = expression.input.from == "expressions" ? expression.input.expressionNames : []}
-          <div class="flex flex-col gap-3">
-            {@render expressionButton(expression)}
-            <div class="mb-3 ml-3 flex flex-col gap-2">
-              {#each expressionNames as expressionName}
-                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
-                {#if expression}
-                  {@render expressionButton(expression)}
-                {/if}
-              {/each}
-            </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
-
-    {#if expressions.surveyTba.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Survey Expressions <small>(from TBA)</small></h2>
-        <div class="flex flex-col gap-4">
-          {#each expressions.surveyTba as expression}
-            {@render expressionButton(expression)}
-          {/each}
+          {#if "clipboard" in navigator}
+            <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
+              <ClipboardCopy class="text-theme" />
+              <span class="text-sm">Copy</span>
+            </Button>
+          {/if}
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
 
-    {#if expressions.surveyPrimitive.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Survey Expressions <small>(from fields)</small></h2>
-        <div class="flex flex-col gap-4">
-          {#each expressions.surveyPrimitive as expression}
-            {@render expressionButton(expression)}
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    {#if expressions.entryDerived.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Entry Expressions <small>(from expressions)</small></h2>
-        {#each expressions.entryDerived as expression}
-          {@const expressionNames = expression.input.from == "expressions" ? expression.input.expressionNames : []}
-          <div class="flex flex-col gap-3">
-            {@render expressionButton(expression)}
-            <div class="mb-3 ml-3 flex flex-col gap-2">
-              {#each expressionNames as expressionName}
-                {@const expression = data.surveyRecord.expressions.find((e) => e.name == expressionName)}
-                {#if expression}
-                  {@render expressionButton(expression)}
-                {/if}
-              {/each}
-            </div>
-          </div>
-        {/each}
-      </div>
-    {/if}
-
-    {#if expressions.entryTba.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Entry Expressions <small>(from TBA)</small></h2>
-        <div class="flex flex-col gap-4">
-          {#each expressions.entryTba as expression}
-            {@render expressionButton(expression)}
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    {#if expressions.entryPrimitive.length}
-      <div class="flex flex-col gap-2">
-        <h2 class="font-bold">Entry Expressions <small>(from fields)</small></h2>
-        <div class="flex flex-col gap-4">
-          {#each expressions.entryPrimitive as expression}
-            {@render expressionButton(expression)}
-          {/each}
-        </div>
-      </div>
+    {#if $tab == "picklists" && analysisData?.type == "picklist"}
+      {#if $chartType == "bar"}
+        <BarChart pageData={data} {analysisData} />
+      {:else if $chartType == "race"}
+        <RaceChart pageData={data} entriesByTeam={data.entriesByTeam} pickList={analysisData.pickList} />
+      {:else if $chartType == "stacked"}
+        <StackedChart {analysisData} />
+      {/if}
+    {:else if analysisData?.type == "expression"}
+      <BarChart pageData={data} {analysisData} />
     {/if}
   {/if}
 </div>
-
-{#snippet expressionButton(expression: Expression)}
-  <Button
-    onclick={() => {
-      openDialog(ViewExpressionDialog, {
-        data,
-        entriesByTeam: data.entriesByTeam,
-        expression,
-      });
-    }}
-    class={nameWeight(expression.name)}
-  >
-    {expression.name}
-  </Button>
-{/snippet}

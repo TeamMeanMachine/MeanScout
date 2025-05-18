@@ -67,12 +67,7 @@
   {#if upcomingMatches.length || previousMatches.length}
     {#snippet teamRow(match: Match)}
       <Button
-        onclick={() => {
-          openDialog(ViewMatchDialog, {
-            data,
-            match,
-          });
-        }}
+        onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })}
         class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
       >
         <div>{match.number}</div>

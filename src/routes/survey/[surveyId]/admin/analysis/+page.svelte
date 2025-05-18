@@ -6,7 +6,7 @@
   import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
-  import type { Expression } from "$lib/expression";
+  import { sortExpressions, type Expression } from "$lib/expression";
   import { objectStore } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import AdminHeader from "../AdminHeader.svelte";
@@ -18,7 +18,9 @@
     data: PageData;
   } = $props();
 
-  const tab = sessionStorageStore<"entry" | "survey" | "picklists">("analysis-tab", "entry");
+  const tab = sessionStorageStore<"entry" | "survey" | "picklists">("admin-analysis-tab", "entry");
+
+  const sortedExpressions = $derived(data.surveyRecord.expressions.toSorted(sortExpressions));
 
   let usedExpressionNames = $derived([
     ...data.surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
@@ -26,12 +28,12 @@
   ]);
 
   let expressions = $derived({
-    entryDerived: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-    entryTba: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-    entryPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-    surveyDerived: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-    surveyTba: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-    surveyPrimitive: data.surveyRecord.expressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+    entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
+    entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+    surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
+    surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
   });
 
   function expressionReferencesOther(e: Expression, other: Expression) {

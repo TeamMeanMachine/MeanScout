@@ -69,7 +69,9 @@
       </span>
     {/if}
 
-    <div class="sticky bottom-3 z-20 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl">
+    <div
+      class="sticky bottom-3 z-20 ml-2 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
+    >
       <Button
         onclick={() => {
           openDialog(NewTeamsDialog, {
@@ -89,7 +91,7 @@
         }}
         class="text-sm"
       >
-        <PlusIcon class="text-theme" />
+        <PlusIcon class="text-theme size-5" />
         New team(s)
       </Button>
     </div>

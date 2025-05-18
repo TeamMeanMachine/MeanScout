@@ -12,13 +12,13 @@
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
 
   let {
-    data,
+    pageData,
     prefilledMatch,
     prefilledTeam,
     prefilledScout,
     onnewscout,
   }: {
-    data: PageData;
+    pageData: PageData;
     prefilledMatch: number;
     prefilledTeam: string;
     prefilledScout: string | undefined;
@@ -35,10 +35,10 @@
 
   let error = $state("");
 
-  let matchData = $derived(data.surveyRecord.matches.find((m) => m.number == match));
+  let matchData = $derived(pageData.surveyRecord.matches.find((m) => m.number == match));
 
   let teamNumberNameMap = new Map<string, string>();
-  for (const team of data.surveyRecord.teams) {
+  for (const team of pageData.surveyRecord.teams) {
     teamNumberNameMap.set(team.number, team.name);
   }
 
@@ -46,7 +46,7 @@
     match;
     const teamSet = new Set<string>();
 
-    if (matchData && data.surveyType == "match") {
+    if (matchData && pageData.surveyType == "match") {
       switch ($targetStore) {
         case "red 1":
           teamSet.add(matchData.red1);
@@ -68,9 +68,9 @@
           break;
       }
 
-      for (const team of data.surveyRecord.teams) {
+      for (const team of pageData.surveyRecord.teams) {
         if (
-          !data.surveyRecord.matches
+          !pageData.surveyRecord.matches
             .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
             .includes(team.number)
         ) {
@@ -78,13 +78,13 @@
         }
       }
     } else {
-      for (const team of data.surveyRecord.teams) {
+      for (const team of pageData.surveyRecord.teams) {
         teamSet.add(team.number);
       }
     }
 
     return [...teamSet]
-      .map((team): Team => data.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
+      .map((team): Team => pageData.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
       .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
   });
 
@@ -104,23 +104,23 @@
         return;
       }
 
-      if (data.surveyRecord.scouts && !scout) {
+      if (pageData.surveyRecord.scouts && !scout) {
         error = "scout name missing";
         return;
       }
 
-      if (data.surveyType == "match" && !/\d{1,3}/.test(`${match}`)) {
+      if (pageData.surveyType == "match" && !/\d{1,3}/.test(`${match}`)) {
         error = "invalid value for match";
         return;
       }
 
-      const defaultValues = data.fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
+      const defaultValues = pageData.fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
       let entry: Entry;
-      if (data.surveyType == "match") {
+      if (pageData.surveyType == "match") {
         entry = {
-          surveyId: data.surveyRecord.id,
-          type: data.surveyRecord.type,
+          surveyId: pageData.surveyRecord.id,
+          type: pageData.surveyRecord.type,
           status: "draft",
           team,
           match,
@@ -134,8 +134,8 @@
         };
       } else {
         entry = {
-          surveyId: data.surveyRecord.id,
-          type: data.surveyRecord.type,
+          surveyId: pageData.surveyRecord.id,
+          type: pageData.surveyRecord.type,
           status: "draft",
           team,
           values: defaultValues,
@@ -173,14 +173,14 @@
 
 <h2 class="font-bold">New entry</h2>
 
-{#if data.surveyRecord.scouts}
+{#if pageData.surveyRecord.scouts}
   <div class="flex flex-col">
     Your name
     <div class="flex flex-wrap gap-2">
-      {#if data.surveyRecord.scouts}
-        {#if data.surveyRecord.scouts.length}
+      {#if pageData.surveyRecord.scouts}
+        {#if pageData.surveyRecord.scouts.length}
           <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
-            {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+            {#each pageData.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
               <option>{scout}</option>
             {/each}
           </select>
@@ -188,22 +188,25 @@
         <Button
           onclick={() => {
             openDialog(NewScoutDialog, {
-              scouts: data.surveyRecord.scouts ?? [],
+              scouts: pageData.surveyRecord.scouts ?? [],
               onadd(newScout) {
-                data = {
-                  ...data,
-                  surveyRecord: { ...data.surveyRecord, scouts: [...(data.surveyRecord.scouts || []), newScout] },
+                pageData = {
+                  ...pageData,
+                  surveyRecord: {
+                    ...pageData.surveyRecord,
+                    scouts: [...(pageData.surveyRecord.scouts || []), newScout],
+                  },
                 } as PageData;
-                objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                objectStore("surveys", "readwrite").put($state.snapshot(pageData.surveyRecord));
                 scout = newScout;
                 onnewscout(newScout);
               },
             });
           }}
-          class={data.surveyRecord.scouts.length ? "" : "w-full"}
+          class={pageData.surveyRecord.scouts.length ? "" : "w-full"}
         >
           <PlusIcon class="text-theme" />
-          {#if !data.surveyRecord.scouts.length}
+          {#if !pageData.surveyRecord.scouts.length}
             New scout
           {/if}
         </Button>
@@ -212,7 +215,7 @@
   </div>
 {/if}
 
-{#if data.surveyType == "match"}
+{#if pageData.surveyType == "match"}
   <div class="flex items-end gap-2">
     <label class="flex grow flex-col">
       Match
@@ -336,16 +339,13 @@
   </label>
 {/if}
 
-{#if data.surveyType == "match" && data.surveyRecord.scouts}
+{#if pageData.surveyType == "match" && pageData.surveyRecord.scouts}
   <h2 class="mt-4 font-bold">Prediction</h2>
 
   <Button
     onclick={() => {
       if (!matchData) return;
-      openDialog(ViewMatchDialog, {
-        data,
-        match: matchData,
-      });
+      openDialog(ViewMatchDialog, { pageData, match: matchData });
     }}
     disabled={!matchData}
   >

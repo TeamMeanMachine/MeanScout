@@ -234,9 +234,9 @@
   <div class="flex gap-2">
     <Button disabled={index <= 0} onclick={() => moveField(-1)}>
       {#if parentField}
-        <ArrowLeftIcon class="text-theme" />
+        <ArrowLeftIcon class="text-theme size-5" />
       {:else}
-        <ArrowUpIcon class="text-theme" />
+        <ArrowUpIcon class="text-theme size-5" />
       {/if}
     </Button>
     <Button
@@ -244,9 +244,9 @@
       onclick={() => moveField(1)}
     >
       {#if parentField}
-        <ArrowRightIcon class="text-theme" />
+        <ArrowRightIcon class="text-theme size-5" />
       {:else}
-        <ArrowDownIcon class="text-theme" />
+        <ArrowDownIcon class="text-theme size-5" />
       {/if}
     </Button>
   </div>
@@ -259,10 +259,10 @@
   </span>
   <div class="flex gap-2">
     <Button onclick={duplicateField}>
-      <CopyIcon class="text-theme" />
+      <CopyIcon class="text-theme size-5" />
     </Button>
     <Button onclick={deleteField} disabled={isExpressionInput}>
-      <Trash2Icon class="text-theme" />
+      <Trash2Icon class="text-theme size-5" />
     </Button>
   </div>
 </div>

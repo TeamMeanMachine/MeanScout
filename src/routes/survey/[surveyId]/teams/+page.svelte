@@ -28,11 +28,6 @@
       pickListRanks = data.ranksPerPickList.map((pickList) => pickList[team]);
     }
 
-    let expressionRanks: number[] | undefined = undefined;
-    if (data.surveyType == "match" && data.ranksPerExpression.length) {
-      expressionRanks = data.ranksPerExpression.map((expression) => expression[team]);
-    }
-
     return {
       number: team,
       name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
@@ -40,7 +35,6 @@
       matchCount: data.matchCountPerTeam[team] ?? 0,
       isCustom: data.surveyRecord.teams.some((t) => t.number == team),
       pickListRanks,
-      expressionRanks,
     };
   }
 
@@ -115,7 +109,7 @@
           <Button
             onclick={() =>
               openDialog(ViewTeamDialog, {
-                data,
+                pageData: data,
                 team: { number: teamInfo.number, name: teamInfo.name },
               })}
             class="col-span-full grid grid-cols-subgrid text-center!"

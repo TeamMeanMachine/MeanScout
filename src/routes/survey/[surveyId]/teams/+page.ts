@@ -1,6 +1,5 @@
 import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
 import type { Entry } from "$lib/entry";
-import type { Expression } from "$lib/expression";
 import { getFieldsWithDetails } from "$lib/field";
 import { loadSurveyPageData } from "../loadSurveyPageData";
 import type { PageLoad } from "./$types";
@@ -49,7 +48,6 @@ export const load: PageLoad = async (event) => {
   }
 
   const ranksPerPickList = data.surveyRecord.pickLists.map(createTeamPickListRanking);
-  const ranksPerExpression = data.surveyRecord.expressions.map(createTeamExpressionRanking);
 
   return {
     ...data,
@@ -59,7 +57,6 @@ export const load: PageLoad = async (event) => {
     matchCountPerTeam,
     entriesByTeam,
     ranksPerPickList,
-    ranksPerExpression,
   };
 
   function createTeamPickListRanking(pickList: PickList) {
@@ -88,38 +85,6 @@ export const load: PageLoad = async (event) => {
 
     const sortedTeamRankings = Object.keys(pickListData)
       .map((team) => ({ team, percentage: normalizedPickListData[team] }))
-      .toSorted((a, b) => b.percentage - a.percentage)
-      .map((data, index) => ({ team: data.team, rank: index + 1 }));
-
-    const rankPerTeam: Record<string, number> = {};
-    for (const ranking of sortedTeamRankings) {
-      rankPerTeam[ranking.team] = ranking.rank;
-    }
-    return rankPerTeam;
-  }
-
-  function createTeamExpressionRanking(expression: Expression) {
-    if (data.surveyType != "match") return {};
-
-    const expressionData: Record<string, number> = {};
-    for (const team in entriesByTeam) {
-      expressionData[team] = 0;
-    }
-
-    const teamData = calculateTeamData(
-      expression.name,
-      data.surveyRecord.expressions,
-      entriesByTeam,
-      fieldsWithDetails.orderedSingle,
-    );
-    const normalizedTeamData = normalizeTeamData(teamData);
-
-    for (const team in normalizedTeamData) {
-      expressionData[team] += normalizedTeamData[team];
-    }
-
-    const sortedTeamRankings = Object.keys(expressionData)
-      .map((team) => ({ team, percentage: normalizedTeamData[team] }))
       .toSorted((a, b) => b.percentage - a.percentage)
       .map((data, index) => ({ team: data.team, rank: index + 1 }));
 

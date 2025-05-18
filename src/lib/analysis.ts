@@ -1,14 +1,146 @@
 import { z } from "zod";
 import type { Entry } from "./entry";
 import type { SingleFieldWithDetails } from "./field";
-import type { Expression, ExpressionMethod } from "./expression";
+import { expressionSchema, type Expression, type ExpressionMethod } from "./expression";
+import type { MatchSurvey } from "./survey";
+
+const weightSchema = z.object({ expressionName: z.string(), percentage: z.number() });
 
 export const pickListSchema = z.object({
   name: z.string(),
-  weights: z.array(z.object({ expressionName: z.string(), percentage: z.number() })),
+  weights: z.array(weightSchema),
+});
+export type PickList = z.infer<typeof pickListSchema>;
+
+const pickListTeamData = z.object({
+  team: z.string(),
+  teamName: z.string(),
+  percentage: z.number(),
+  weights: z.record(z.number()),
 });
 
-export type PickList = z.infer<typeof pickListSchema>;
+const expressionTeamData = z.object({
+  team: z.string(),
+  teamName: z.string(),
+  value: z.number(),
+});
+
+const pickListAnalysisData = z.object({
+  type: z.literal("picklist"),
+  pickList: pickListSchema,
+  data: z.array(pickListTeamData),
+  sortedWeights: z.array(weightSchema),
+  text: z.string(),
+});
+export type PickListAnalysisData = z.infer<typeof pickListAnalysisData>;
+
+const expressionAnalysisData = z.object({
+  type: z.literal("expression"),
+  expression: expressionSchema,
+  data: z.array(expressionTeamData),
+  maxValue: z.number(),
+  minValue: z.number(),
+  text: z.string(),
+});
+export type ExpressionAnalysisData = z.infer<typeof expressionAnalysisData>;
+
+const analysisData = z.discriminatedUnion("type", [pickListAnalysisData, expressionAnalysisData]);
+export type AnalysisData = z.infer<typeof analysisData>;
+
+export function getPickListData(
+  pickListName: string,
+  surveyRecord: MatchSurvey,
+  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  orderedSingleFields: SingleFieldWithDetails[],
+): PickListAnalysisData | undefined {
+  const pickList = surveyRecord.pickLists.find((pl) => pl.name == pickListName);
+  if (!pickList) return;
+
+  const pickListData: Record<string, number> = {};
+  const weightsData: Record<string, number[]> = {};
+
+  for (const team in entriesByTeam) {
+    pickListData[team] = 0;
+    weightsData[team] = [];
+  }
+
+  for (const { percentage, expressionName } of pickList.weights) {
+    const teamData = calculateTeamData(expressionName, surveyRecord.expressions, entriesByTeam, orderedSingleFields);
+    const normalizedTeamData = normalizeTeamData(teamData, percentage);
+
+    for (const team in normalizedTeamData) {
+      pickListData[team] += normalizedTeamData[team];
+      weightsData[team].push(normalizedTeamData[team]);
+    }
+  }
+
+  const normalizedPickListData = normalizeTeamData(pickListData);
+
+  const sortedPickListData = Object.keys(normalizedPickListData)
+    .map((team) => ({
+      team,
+      teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+      percentage: normalizedPickListData[team],
+      weights: weightsDataObject(pickList, weightsData[team]),
+    }))
+    .toSorted((a, b) => b.percentage - a.percentage);
+
+  return {
+    type: "picklist",
+    pickList,
+    data: sortedPickListData,
+    sortedWeights: pickList.weights.toSorted((a, b) => b.percentage - a.percentage),
+    text: sortedPickListData
+      .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.percentage.toFixed(2)}%`)
+      .join("\n"),
+  };
+}
+
+export function getExpressionData(
+  expressionName: string,
+  surveyRecord: MatchSurvey,
+  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  orderedSingleFields: SingleFieldWithDetails[],
+): ExpressionAnalysisData | undefined {
+  const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
+  if (!expression) return;
+
+  const expressionData = calculateTeamData(
+    expressionName,
+    surveyRecord.expressions,
+    entriesByTeam,
+    orderedSingleFields,
+  );
+  const maxValue = Math.max(...Object.values(expressionData));
+  const minValue = Math.min(...Object.values(expressionData));
+
+  const sortedExpressionData = Object.keys(expressionData)
+    .map((team) => ({
+      team,
+      teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+      value: expressionData[team],
+    }))
+    .toSorted((a, b) => b.value - a.value);
+
+  return {
+    type: "expression",
+    expression,
+    data: sortedExpressionData,
+    maxValue,
+    minValue,
+    text: sortedExpressionData
+      .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}`)
+      .join("\n"),
+  };
+}
+
+function weightsDataObject(pickList: PickList, weights: number[]) {
+  let obj: Record<string, number> = {};
+  for (let i = 0; i < weights.length; i++) {
+    obj[pickList.weights[i].expressionName] = weights[i];
+  }
+  return obj;
+}
 
 export function calculateTeamData(
   expressionName: string,

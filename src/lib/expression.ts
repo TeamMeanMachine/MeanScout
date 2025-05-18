@@ -54,3 +54,25 @@ export type ConvertExpressionMethod = Extract<ExpressionMethod, { type: "convert
 export type Expression = z.infer<typeof expressionSchema>;
 export type EntryExpression = Extract<Expression, { scope: "entry" }>;
 export type SurveyExpression = Extract<Expression, { scope: "survey" }>;
+
+export function sortExpressions(a: Expression, b: Expression) {
+  if (a.input.from == "expressions" && b.input.from != "expressions") {
+    return -1;
+  }
+
+  if (a.input.from != "expressions" && b.input.from == "expressions") {
+    return 1;
+  }
+
+  if (a.input.from == "expressions" && b.input.from == "expressions") {
+    if (a.input.expressionNames.includes(b.name)) {
+      return -1;
+    }
+
+    if (b.input.expressionNames.includes(a.name)) {
+      return 1;
+    }
+  }
+
+  return 0;
+}

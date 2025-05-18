@@ -1,21 +1,18 @@
 <script lang="ts">
   import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
   import type { MatchEntry } from "$lib/entry";
-  import type { SingleFieldWithDetails } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
+  import type { PageData } from "../../routes/survey/[surveyId]/$types";
 
   let {
-    surveyRecord,
-    orderedSingleFields,
+    pageData,
     entriesByTeam,
     pickList,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
-    orderedSingleFields: SingleFieldWithDetails[];
+    pageData: Extract<PageData, { surveyType: "match" }>;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     pickList: PickList;
   } = $props();
@@ -32,7 +29,7 @@
 
   let match = $state(1);
   let matchData = $derived.by(() => {
-    const possibleMatch = surveyRecord.matches.find((m) => m.number == match);
+    const possibleMatch = pageData.surveyRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
       return [
         possibleMatch.red1,
@@ -59,9 +56,9 @@
     for (const { percentage, expressionName } of pickList.weights) {
       const teamData = calculateTeamData(
         expressionName,
-        surveyRecord.expressions,
+        pageData.surveyRecord.expressions,
         subsetEntriesByTeam,
-        orderedSingleFields,
+        pageData.fieldsWithDetails.orderedSingle,
       );
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
@@ -75,7 +72,7 @@
     return Object.keys(normalizedPickListData)
       .map((team) => ({
         team,
-        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: pageData.surveyRecord.teams.find((t) => t.number == team)?.name || "",
         percentage: normalizedPickListData[team],
       }))
       .toSorted((a, b) => b.percentage - a.percentage);
@@ -83,7 +80,7 @@
 
   onMount(() => {
     interval = setInterval(() => {
-      if (match >= Math.max(...surveyRecord.matches.map((m) => m.number))) {
+      if (match >= Math.max(...pageData.surveyRecord.matches.map((m) => m.number))) {
         clearTimeout(interval);
       } else {
         match++;
@@ -116,7 +113,7 @@
   <input
     type="range"
     min="1"
-    max={Math.max(...surveyRecord.matches.map((m) => m.number))}
+    max={Math.max(...pageData.surveyRecord.matches.map((m) => m.number))}
     bind:value={match}
     oninput={() => clearInterval(interval)}
     onchange={update}
@@ -124,13 +121,13 @@
   />
 </div>
 
-<div class="grid gap-x-1 gap-y-4 pr-1" style="grid-template-columns:min-content auto">
+<div class="grid gap-x-1 gap-y-4" style="grid-template-columns:min-content auto">
   {#each data as { team, teamName, percentage }, i (team)}
     {@const color = `rgb(var(--theme-color) / ${percentage.current.toFixed(2)}%)`}
 
     <div
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
-      class="col-span-full grid grid-cols-subgrid pr-1"
+      class="col-span-full grid grid-cols-subgrid"
     >
       <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
       <div>

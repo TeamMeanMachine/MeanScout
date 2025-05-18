@@ -60,7 +60,7 @@
 
     {#if data.surveyRecord.scouts}
       <div
-        class="sticky bottom-3 z-20 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
+        class="sticky bottom-3 z-20 ml-2 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
       >
         <Button
           onclick={() => {
@@ -82,7 +82,7 @@
           }}
           class="text-sm"
         >
-          <PlusIcon class="text-theme" />
+          <PlusIcon class="text-theme size-5" />
           New scout(s)
         </Button>
       </div>
