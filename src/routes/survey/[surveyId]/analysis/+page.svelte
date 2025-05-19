@@ -16,45 +16,47 @@
     data: PageData;
   } = $props();
 
-  const tab = sessionStorageStore<"picklists" | "expressions">("analysis-tab", "picklists");
   const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
-
   const sortedExpressions = data.surveyRecord.expressions.toSorted(sortExpressions);
 
-  const pickListName = sessionStorageStore("analysis-picklist", data.surveyRecord.pickLists[0]?.name || "");
-  const expressionName = sessionStorageStore("analysis-expression", sortedExpressions[0]?.name || "");
-
-  pickListName.subscribe((val) => {
-    if (data.surveyRecord.pickLists.every((pl) => pl.name != val)) {
-      pickListName.set(data.surveyRecord.pickLists[0]?.name || "");
-    }
-  });
-  expressionName.subscribe((val) => {
-    if (data.surveyRecord.expressions.every((e) => e.name != val)) {
-      expressionName.set(sortedExpressions[0]?.name || "");
-    }
+  const expressions = Object.groupBy(sortedExpressions, (e) => {
+    if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
+    if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
+    if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
+    if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
+    if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
+    if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
+    return "";
   });
 
-  const expressions = {
-    entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-    entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-    entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-    surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-    surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-    surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
-  };
+  let selectedString = $state(defaultSelectionString());
+
+  let selected = $derived.by(() => {
+    if (!selectedString) return defaultSelection();
+    const [type, name] = selectedString.split("-", 2);
+
+    if (type == "picklist") {
+      const pickList = data.surveyRecord.pickLists.find((pl) => pl.name == name);
+      if (pickList) return { type: "picklist" as const, pickList };
+    } else if (type == "expression") {
+      const expression = data.surveyRecord.expressions.find((e) => e.name == name);
+      if (expression) return { type: "expression" as const, expression };
+    }
+
+    return defaultSelection();
+  });
 
   let analysisData = $derived.by<AnalysisData | undefined>(() => {
-    if ($tab == "picklists") {
+    if (selected?.type == "picklist") {
       return getPickListData(
-        $pickListName,
+        selected.pickList.name,
         data.surveyRecord,
         data.entriesByTeam,
         data.fieldsWithDetails.orderedSingle,
       );
-    } else {
+    } else if (selected?.type == "expression") {
       return getExpressionData(
-        $expressionName,
+        selected.expression.name,
         data.surveyRecord,
         data.entriesByTeam,
         data.fieldsWithDetails.orderedSingle,
@@ -62,8 +64,42 @@
     }
   });
 
-  function tabClass(matching: string) {
-    return $tab == matching ? "font-bold" : "font-light";
+  $effect(() => {
+    if (!selectedString) return;
+    sessionStorage.setItem("analysis-view", selectedString);
+  });
+
+  function defaultSelection() {
+    if (data.surveyRecord.pickLists.length) {
+      return { type: "picklist" as const, pickList: data.surveyRecord.pickLists[0] };
+    }
+
+    if (sortedExpressions.length) {
+      return { type: "expression" as const, expression: sortedExpressions[0] };
+    }
+  }
+
+  function defaultSelectionString() {
+    const value = sessionStorage.getItem("analysis-view");
+
+    if (value) {
+      const [type, name] = value.split("-", 2);
+
+      if (
+        (type == "picklist" && data.surveyRecord.pickLists.some((pl) => pl.name == name)) ||
+        (type == "expression" && sortedExpressions.some((e) => e.name == name))
+      ) {
+        return value;
+      }
+    }
+
+    if (data.surveyRecord.pickLists.length) {
+      return "picklist-" + data.surveyRecord.pickLists[0].name;
+    }
+
+    if (sortedExpressions.length) {
+      return "expression-" + sortedExpressions[0].name;
+    }
   }
 </script>
 
@@ -76,119 +112,105 @@
   backLink="survey/{data.surveyRecord.id}"
 />
 
-<div class="flex flex-col gap-3" style="view-transition-name:analysis">
+<div class="flex flex-col gap-6" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || (!data.surveyRecord.pickLists.length && !data.surveyRecord.expressions.length)}
     <span class="text-sm">No analysis available.</span>
   {:else}
-    <div class="flex flex-wrap justify-between gap-3">
-      <div class="flex flex-wrap gap-2 text-sm">
+    <div class="flex flex-wrap gap-4">
+      <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
         {#if data.surveyRecord.pickLists.length}
-          <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
+          <optgroup label="Pick Lists">
+            {#each data.surveyRecord.pickLists as pickList}
+              <option value="picklist-{pickList.name}">{pickList.name}</option>
+            {/each}
+          </optgroup>
         {/if}
-        {#if data.surveyRecord.expressions.length}
-          <Button onclick={() => ($tab = "expressions")} class={tabClass("expressions")}>Expressions</Button>
+        {#if expressions.surveyDerived?.length}
+          <optgroup label="Survey Expressions from expressions">
+            {#each expressions.surveyDerived as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
         {/if}
-      </div>
+        {#if expressions.surveyTba?.length}
+          <optgroup label="Survey Expressions from TBA">
+            {#each expressions.surveyTba as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
+        {/if}
+        {#if expressions.surveyPrimitive?.length}
+          <optgroup label="Survey Expressions from fields">
+            {#each expressions.surveyPrimitive as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
+        {/if}
+        {#if expressions.entryDerived?.length}
+          <optgroup label="Entry Expressions from expressions">
+            {#each expressions.entryDerived as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
+        {/if}
+        {#if expressions.entryTba?.length}
+          <optgroup label="Entry Expressions from TBA">
+            {#each expressions.entryTba as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
+        {/if}
+        {#if expressions.entryPrimitive?.length}
+          <optgroup label="Entry Expressions from fields">
+            {#each expressions.entryPrimitive as expression}
+              <option value="expression-{expression.name}">{expression.name}</option>
+            {/each}
+          </optgroup>
+        {/if}
+      </select>
 
-      <div class="flex flex-wrap gap-2 self-end text-sm">
-        <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
-          Bar
-        </Button>
-        <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
-          Race
-        </Button>
-        <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
-          Stacked
-        </Button>
-      </div>
-    </div>
-
-    <div class="flex flex-wrap justify-between gap-2">
-      {#if $tab == "picklists"}
-        <select bind:value={$pickListName} class="text-theme bg-neutral-800 p-2">
-          {#each data.surveyRecord.pickLists as pickList}
-            <option>{pickList.name}</option>
-          {/each}
-        </select>
-      {:else}
-        <select bind:value={$expressionName} class="text-theme bg-neutral-800 p-2">
-          {#if expressions.surveyDerived.length}
-            <optgroup label="Survey Expressions from expressions">
-              {#each expressions.surveyDerived as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-          {#if expressions.surveyTba.length}
-            <optgroup label="Survey Expressions from TBA">
-              {#each expressions.surveyTba as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-          {#if expressions.surveyPrimitive.length}
-            <optgroup label="Survey Expressions from fields">
-              {#each expressions.surveyPrimitive as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-          {#if expressions.entryDerived.length}
-            <optgroup label="Entry Expressions from expressions">
-              {#each expressions.entryDerived as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-          {#if expressions.entryTba.length}
-            <optgroup label="Entry Expressions from TBA">
-              {#each expressions.entryTba as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-          {#if expressions.entryPrimitive.length}
-            <optgroup label="Entry Expressions from fields">
-              {#each expressions.entryPrimitive as expression}
-                <option>{expression.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-        </select>
-      {/if}
-
-      {#if analysisData}
-        <div class="flex flex-wrap gap-2">
-          {#if "canShare" in navigator}
-            <Button onclick={() => navigator.share({ text: analysisData.text })}>
-              <Share2Icon class="text-theme" />
-              <span class="text-sm">Share</span>
-            </Button>
-          {/if}
-
-          {#if "clipboard" in navigator}
-            <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
-              <ClipboardCopy class="text-theme" />
-              <span class="text-sm">Copy</span>
-            </Button>
-          {/if}
+      <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-2 text-sm">
+          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
+            Bar
+          </Button>
+          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
+            Race
+          </Button>
+          <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
+            Stacked
+          </Button>
         </div>
-      {/if}
+
+        {#if analysisData}
+          <div class="flex flex-wrap gap-2">
+            {#if "canShare" in navigator}
+              <Button onclick={() => navigator.share({ text: analysisData.text })}>
+                <Share2Icon class="text-theme size-5" />
+                <span class="text-sm">Share</span>
+              </Button>
+            {/if}
+
+            {#if "clipboard" in navigator}
+              <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
+                <ClipboardCopy class="text-theme size-5" />
+                <span class="text-sm">Copy</span>
+              </Button>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
 
-    {#if $tab == "picklists" && analysisData?.type == "picklist"}
+    {#if analysisData}
       {#if $chartType == "bar"}
         <BarChart pageData={data} {analysisData} />
       {:else if $chartType == "race"}
-        <RaceChart pageData={data} entriesByTeam={data.entriesByTeam} pickList={analysisData.pickList} />
+        {#key analysisData}
+          <RaceChart pageData={data} entriesByTeam={data.entriesByTeam} {analysisData} />
+        {/key}
       {:else if $chartType == "stacked"}
-        <StackedChart {analysisData} />
-      {/if}
-    {:else if analysisData?.type == "expression"}
-      {#if $chartType != "stacked"}
-        <BarChart pageData={data} {analysisData} />
-      {:else if $chartType == "stacked"}
-        <StackedChart {analysisData} />
+        <StackedChart pageData={data} {analysisData} />
       {/if}
     {/if}
   {/if}

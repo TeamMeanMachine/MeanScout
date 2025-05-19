@@ -3,6 +3,7 @@ import { valueSchema } from "./";
 
 export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] as const;
 export const mapExpressionTypes = ["convert", "multiply", "divide", "abs"] as const;
+const expressionTypes = [...reduceExpressionTypes, ...mapExpressionTypes] as const;
 
 const fieldInputSchema = z.object({ from: z.literal("fields"), fieldIds: z.array(z.number()) });
 const tbaMetricInputSchema = z.object({ from: z.literal("tba"), metrics: z.array(z.string()) });
@@ -56,6 +57,14 @@ export type EntryExpression = Extract<Expression, { scope: "entry" }>;
 export type SurveyExpression = Extract<Expression, { scope: "survey" }>;
 
 export function sortExpressions(a: Expression, b: Expression) {
+  if (a.scope == "survey" && b.scope == "entry") {
+    return -1;
+  }
+
+  if (a.scope == "entry" && b.scope == "survey") {
+    return 1;
+  }
+
   if (a.input.from == "expressions" && b.input.from != "expressions") {
     return -1;
   }
@@ -74,5 +83,16 @@ export function sortExpressions(a: Expression, b: Expression) {
     }
   }
 
-  return 0;
+  if (a.input.from == "tba" && b.input.from == "fields") {
+    return -1;
+  }
+
+  if (a.input.from == "fields" && b.input.from == "tba") {
+    return 1;
+  }
+
+  return (
+    expressionTypes.findIndex((type) => type == a.method.type) -
+    expressionTypes.findIndex((type) => type == b.method.type)
+  );
 }

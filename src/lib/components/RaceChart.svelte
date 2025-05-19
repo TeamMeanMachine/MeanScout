@@ -1,30 +1,42 @@
 <script lang="ts">
-  import { calculateTeamData, normalizeTeamData, type PickList } from "$lib/analysis";
+  import { getExpressionData, getPickListData, type AnalysisData } from "$lib/analysis";
   import type { MatchEntry } from "$lib/entry";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import Button from "./Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
+  import { getOrdinal } from "$lib";
 
   let {
     pageData,
     entriesByTeam,
-    pickList,
+    analysisData,
   }: {
     pageData: Extract<PageData, { surveyType: "match" }>;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
-    pickList: PickList;
+    analysisData: AnalysisData;
   } = $props();
 
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
 
-  const initData = generateRaceData(1).map((data) => {
-    return {
-      ...data,
-      percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
-    };
+  const initData = generateRaceData(1).data.map((data) => {
+    if ("value" in data) {
+      return {
+        ...data,
+        percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
+        value: new Tween(data.value, { delay: 0, easing: linear, duration: changeDuration }),
+      };
+    } else {
+      return {
+        ...data,
+        percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
+      };
+    }
   });
 
   let match = $state(1);
@@ -46,36 +58,31 @@
 
   function generateRaceData(toMatch: number) {
     const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
-    const pickListData: Record<string, { value: number }> = {};
 
     for (const team in entriesByTeam) {
       subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);
-      pickListData[team] = { value: 0 };
     }
 
-    for (const { percentage, expressionName } of pickList.weights) {
-      const teamData = calculateTeamData(
-        expressionName,
-        pageData.surveyRecord.expressions,
-        subsetEntriesByTeam,
-        pageData.fieldsWithDetails.orderedSingle,
-      );
-      const normalizedTeamData = normalizeTeamData(teamData, percentage);
+    let data =
+      analysisData.type == "picklist"
+        ? getPickListData(
+            analysisData.pickList.name,
+            pageData.surveyRecord,
+            subsetEntriesByTeam,
+            pageData.fieldsWithDetails.orderedSingle,
+          )
+        : getExpressionData(
+            analysisData.expression.name,
+            pageData.surveyRecord,
+            subsetEntriesByTeam,
+            pageData.fieldsWithDetails.orderedSingle,
+          );
 
-      for (const team in normalizedTeamData) {
-        pickListData[team].value += normalizedTeamData[team];
-      }
+    if (!data) {
+      throw new Error("AAAAA");
     }
 
-    const normalizedPickListData = normalizeTeamData(pickListData);
-
-    return Object.keys(normalizedPickListData)
-      .map((team) => ({
-        team,
-        teamName: pageData.surveyRecord.teams.find((t) => t.number == team)?.name || "",
-        percentage: normalizedPickListData[team],
-      }))
-      .toSorted((a, b) => b.percentage - a.percentage);
+    return data;
   }
 
   onMount(() => {
@@ -91,15 +98,37 @@
 
   function update() {
     const newData = generateRaceData(match);
-    data = data
-      .map((team) => {
-        const newPercentage = newData.find((d) => d.team == team.team)?.percentage;
-        if (newPercentage !== undefined) {
-          team.percentage.target = newPercentage;
-        }
-        return team;
-      })
-      .toSorted((a, b) => b.percentage.target - a.percentage.target);
+    if (newData.type == "expression") {
+      data = data
+        .map((team) => {
+          const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+          if (newPercentage !== undefined) {
+            team.percentage.target = newPercentage;
+          }
+
+          if (!("value" in team)) {
+            return team;
+          }
+
+          const newValue = newData.data.find((d) => d.team == team.team)?.value;
+          if (newValue !== undefined) {
+            team.value.target = newValue;
+          }
+
+          return team;
+        })
+        .toSorted((a, b) => b.percentage.target - a.percentage.target);
+    } else {
+      data = data
+        .map((team) => {
+          const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+          if (newPercentage !== undefined) {
+            team.percentage.target = newPercentage;
+          }
+          return team;
+        })
+        .toSorted((a, b) => b.percentage.target - a.percentage.target);
+    }
   }
 
   onDestroy(() => {
@@ -121,27 +150,41 @@
   />
 </div>
 
-<div class="grid gap-x-1 gap-y-4" style="grid-template-columns:min-content auto">
-  {#each data as { team, teamName, percentage }, i (team)}
-    {@const color = `rgb(var(--theme-color) / ${percentage.current.toFixed(2)}%)`}
+<div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
+  {#each data as teamData, rank (teamData.team)}
+    {@const color = `rgb(var(--theme-color) / ${teamData.percentage.current.toFixed(2)}%)`}
 
     <div
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <div class="flex flex-col justify-center pr-2 text-center text-sm font-bold">{i + 1}</div>
+      <Button
+        onclick={() => {
+          openDialog(ViewTeamDialog, { pageData, team: { number: teamData.team, name: teamData.teamName } });
+        }}
+        class="justify-center text-sm"
+      >
+        <div>
+          <span class="font-bold">{rank + 1}</span><span class="hidden text-xs sm:inline">{getOrdinal(rank + 1)}</span>
+        </div>
+      </Button>
+
       <div>
         <div class="flex items-end justify-between gap-3">
           <div class="flex flex-col">
-            <strong class:underline={matchData?.includes(team)}>{team}</strong>
-            {#if teamName}
-              <small class={matchData?.includes(team) ? "font-bold" : "font-light"}>{teamName}</small>
+            <strong class:underline={matchData?.includes(teamData.team)}>{teamData.team}</strong>
+            {#if teamData.teamName}
+              <small class={matchData?.includes(teamData.team) ? "font-bold" : "font-light"}>{teamData.teamName}</small>
             {/if}
           </div>
-          {percentage.current.toFixed(1)}%
+          {#if "value" in teamData}
+            {teamData.value.current.toFixed(2)}
+          {:else}
+            <span>{teamData.percentage.current.toFixed(1)}<span class="text-sm">%</span></span>
+          {/if}
         </div>
         <div class="bg-neutral-800">
-          <div style="background-color:{color};width:{percentage.current.toFixed(2)}%;height:6px"></div>
+          <div style="background-color:{color};width:{teamData.percentage.current.toFixed(2)}%;height:6px"></div>
         </div>
       </div>
     </div>

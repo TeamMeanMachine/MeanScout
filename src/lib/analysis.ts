@@ -151,7 +151,7 @@ export function getExpressionData(
     .toSorted((a, b) => b.value - a.value);
 
   const inputs = inputNames.map((name, i) => {
-    const inputs = data.map((teamData) => teamData.inputs[i].value);
+    const inputs = data.map((teamData) => teamData.inputs[i]?.value ?? 0);
     const maxValue = Math.max(...inputs);
     const minValue = Math.min(...inputs);
     return { name, maxValue, minValue };

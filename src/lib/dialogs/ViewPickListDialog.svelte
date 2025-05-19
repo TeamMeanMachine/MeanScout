@@ -21,7 +21,7 @@
 
   const tab = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
-  const pickListData = getPickListData(
+  const analysisData = getPickListData(
     pickList.name,
     pageData.surveyRecord,
     entriesByTeam,
@@ -38,7 +38,7 @@
 
 <strong>{pickList.name}</strong>
 
-{#if pickListData?.data.length}
+{#if analysisData?.data.length}
   <div class="flex flex-wrap items-end justify-between gap-3 text-sm">
     <div class="flex flex-wrap gap-2">
       <Button onclick={() => ($tab = "bar")} class={$tab == "bar" ? "font-bold" : "font-light"}>Bar</Button>
@@ -47,14 +47,14 @@
     </div>
     <div class="flex gap-2">
       {#if "canShare" in navigator}
-        <Button onclick={() => navigator.share({ text: pickListData.text })}>
+        <Button onclick={() => navigator.share({ text: analysisData.text })}>
           <Share2Icon class="text-theme size-5" />
           Share
         </Button>
       {/if}
 
       {#if "clipboard" in navigator}
-        <Button onclick={() => navigator.clipboard.writeText(pickListData.text)}>
+        <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
           <ClipboardCopy class="text-theme size-5" />
           Copy
         </Button>
@@ -64,11 +64,11 @@
 
   <div bind:this={overflowDiv} class="-m-1 flex max-h-[500px] flex-col gap-4 overflow-y-auto p-1">
     {#if $tab == "bar"}
-      <BarChart {pageData} analysisData={pickListData} />
+      <BarChart {pageData} {analysisData} />
     {:else if $tab == "race"}
-      <RaceChart {pageData} {entriesByTeam} {pickList} />
+      <RaceChart {pageData} {entriesByTeam} {analysisData} />
     {:else if $tab == "stacked"}
-      <StackedChart analysisData={pickListData} />
+      <StackedChart {pageData} {analysisData} />
     {/if}
   </div>
 {:else}
