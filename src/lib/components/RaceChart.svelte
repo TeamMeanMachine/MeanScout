@@ -9,7 +9,8 @@
   import Button from "./Button.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
-  import { getOrdinal } from "$lib";
+  import { getOrdinal, sessionStorageStore } from "$lib";
+  import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
 
   let {
     pageData,
@@ -21,8 +22,11 @@
     analysisData: AnalysisData;
   } = $props();
 
+  const playing = sessionStorageStore<"true" | "">("race-chart-playing", "true");
+
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
+  const maxMatch = Math.max(...pageData.surveyRecord.matches.map((m) => m.number));
 
   const initData = generateRaceData(1).data.map((data) => {
     if ("value" in data) {
@@ -39,7 +43,7 @@
     }
   });
 
-  let match = $state(1);
+  let match = $state(initMatch());
   let matchData = $derived.by(() => {
     const possibleMatch = pageData.surveyRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
@@ -55,6 +59,18 @@
   });
   let data = $state(initData);
   let interval = $state<NodeJS.Timeout>();
+
+  $effect(() => {
+    sessionStorage.setItem("race-chart-match", match.toString());
+  });
+
+  function initMatch() {
+    const value = Number(sessionStorage.getItem("race-chart-match"));
+    if (!Number.isNaN(value)) {
+      return Math.max(Math.min(value, maxMatch), 1);
+    }
+    return 1;
+  }
 
   function generateRaceData(toMatch: number) {
     const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
@@ -86,15 +102,20 @@
   }
 
   onMount(() => {
+    if ($playing) start();
+  });
+
+  function start() {
     interval = setInterval(() => {
-      if (match >= Math.max(...pageData.surveyRecord.matches.map((m) => m.number))) {
+      if (match >= maxMatch) {
+        $playing = "";
         clearTimeout(interval);
       } else {
         match++;
         update();
       }
     }, updateDuration);
-  });
+  }
 
   function update() {
     const newData = generateRaceData(match);
@@ -136,18 +157,62 @@
   });
 </script>
 
-<div class="flex flex-col">
-  <span>Match {match}</span>
+<div class="flex flex-wrap gap-2">
+  <div class="flex flex-wrap gap-2">
+    <Button
+      onclick={() => {
+        if ($playing) {
+          $playing = "";
+          clearInterval(interval);
+        } else {
+          $playing = "true";
+          start();
+        }
+      }}
+    >
+      {#if $playing}
+        <PauseIcon class="text-theme" />
+      {:else}
+        <PlayIcon class="text-theme" />
+      {/if}
+    </Button>
+    <Button
+      onclick={() => {
+        $playing = "";
+        clearInterval(interval);
+        match--;
+        update();
+      }}
+      disabled={match <= 1}
+    >
+      <ArrowLeftIcon class="text-theme" />
+    </Button>
+    <Button
+      onclick={() => {
+        $playing = "";
+        clearInterval(interval);
+        match++;
+        update();
+      }}
+      disabled={match >= maxMatch}
+    >
+      <ArrowRightIcon class="text-theme" />
+    </Button>
+  </div>
 
-  <input
-    type="range"
-    min="1"
-    max={Math.max(...pageData.surveyRecord.matches.map((m) => m.number))}
-    bind:value={match}
-    oninput={() => clearInterval(interval)}
-    onchange={update}
-    class="accent-theme"
-  />
+  <div class="flex grow basis-80 flex-col">
+    <span>Match {match}</span>
+
+    <input
+      type="range"
+      min="1"
+      max={maxMatch}
+      bind:value={match}
+      oninput={() => clearInterval(interval)}
+      onchange={update}
+      class="accent-theme"
+    />
+  </div>
 </div>
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
