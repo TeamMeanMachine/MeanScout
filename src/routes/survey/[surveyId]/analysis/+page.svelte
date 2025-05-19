@@ -90,19 +90,17 @@
         {/if}
       </div>
 
-      {#if $tab == "picklists"}
-        <div class="flex flex-wrap gap-2 self-end text-sm">
-          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
-            Bar
-          </Button>
-          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
-            Race
-          </Button>
-          <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
-            Stacked
-          </Button>
-        </div>
-      {/if}
+      <div class="flex flex-wrap gap-2 self-end text-sm">
+        <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
+          Bar
+        </Button>
+        <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
+          Race
+        </Button>
+        <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
+          Stacked
+        </Button>
+      </div>
     </div>
 
     <div class="flex flex-wrap justify-between gap-2">
@@ -187,7 +185,11 @@
         <StackedChart {analysisData} />
       {/if}
     {:else if analysisData?.type == "expression"}
-      <BarChart pageData={data} {analysisData} />
+      {#if $chartType != "stacked"}
+        <BarChart pageData={data} {analysisData} />
+      {:else if $chartType == "stacked"}
+        <StackedChart {analysisData} />
+      {/if}
     {/if}
   {/if}
 </div>

@@ -18,8 +18,8 @@ const reduceMethodsSchema = z.discriminatedUnion("type", [
 ]);
 const convertMethodSchema = z.object({
   type: z.literal("convert"),
-  converters: z.array(z.object({ from: valueSchema, to: valueSchema })),
-  defaultTo: valueSchema,
+  converters: z.array(z.object({ from: valueSchema, to: z.number() })),
+  defaultTo: z.optional(z.number()),
 });
 const mapMethodsSchema = z.discriminatedUnion("type", [
   convertMethodSchema,

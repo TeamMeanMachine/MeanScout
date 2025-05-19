@@ -45,7 +45,7 @@
   </div>
 {/each}
 
-<Button onclick={() => changes.converters.push({ from: "", to: "" })}>
+<Button onclick={() => changes.converters.push({ from: "", to: 0 })}>
   <PlusIcon class="text-theme" />
   New converter
 </Button>

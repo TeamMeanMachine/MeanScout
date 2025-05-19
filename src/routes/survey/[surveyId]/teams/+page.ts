@@ -62,9 +62,9 @@ export const load: PageLoad = async (event) => {
   function createTeamPickListRanking(pickList: PickList) {
     if (data.surveyType != "match") return {};
 
-    const pickListData: Record<string, number> = {};
+    const pickListData: Record<string, { value: number }> = {};
     for (const team in entriesByTeam) {
-      pickListData[team] = 0;
+      pickListData[team] = { value: 0 };
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
@@ -77,7 +77,7 @@ export const load: PageLoad = async (event) => {
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
-        pickListData[team] += normalizedTeamData[team];
+        pickListData[team].value += normalizedTeamData[team];
       }
     }
 

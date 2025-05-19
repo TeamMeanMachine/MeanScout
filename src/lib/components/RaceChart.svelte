@@ -46,11 +46,11 @@
 
   function generateRaceData(toMatch: number) {
     const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
-    const pickListData: Record<string, number> = {};
+    const pickListData: Record<string, { value: number }> = {};
 
     for (const team in entriesByTeam) {
       subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);
-      pickListData[team] = 0;
+      pickListData[team] = { value: 0 };
     }
 
     for (const { percentage, expressionName } of pickList.weights) {
@@ -63,7 +63,7 @@
       const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
       for (const team in normalizedTeamData) {
-        pickListData[team] += normalizedTeamData[team];
+        pickListData[team].value += normalizedTeamData[team];
       }
     }
 

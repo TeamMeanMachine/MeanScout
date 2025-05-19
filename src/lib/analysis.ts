@@ -3,6 +3,7 @@ import type { Entry } from "./entry";
 import type { SingleFieldWithDetails } from "./field";
 import { expressionSchema, type Expression, type ExpressionMethod } from "./expression";
 import type { MatchSurvey } from "./survey";
+import { type Value } from "$lib";
 
 const weightSchema = z.object({ expressionName: z.string(), percentage: z.number() });
 
@@ -16,20 +17,23 @@ const pickListTeamData = z.object({
   team: z.string(),
   teamName: z.string(),
   percentage: z.number(),
-  weights: z.record(z.number()),
+  inputs: z.array(z.number()),
 });
+type PickListTeamData = z.infer<typeof pickListTeamData>;
 
 const expressionTeamData = z.object({
   team: z.string(),
   teamName: z.string(),
   value: z.number(),
+  percentage: z.number(),
+  inputs: z.array(z.object({ value: z.number(), percentage: z.number() })),
 });
+type ExpressionTeamData = z.infer<typeof expressionTeamData>;
 
 const pickListAnalysisData = z.object({
   type: z.literal("picklist"),
   pickList: pickListSchema,
   data: z.array(pickListTeamData),
-  sortedWeights: z.array(weightSchema),
   text: z.string(),
 });
 export type PickListAnalysisData = z.infer<typeof pickListAnalysisData>;
@@ -38,9 +42,10 @@ const expressionAnalysisData = z.object({
   type: z.literal("expression"),
   expression: expressionSchema,
   data: z.array(expressionTeamData),
+  text: z.string(),
   maxValue: z.number(),
   minValue: z.number(),
-  text: z.string(),
+  inputs: z.array(z.object({ name: z.string(), maxValue: z.number(), minValue: z.number() })),
 });
 export type ExpressionAnalysisData = z.infer<typeof expressionAnalysisData>;
 
@@ -56,11 +61,11 @@ export function getPickListData(
   const pickList = surveyRecord.pickLists.find((pl) => pl.name == pickListName);
   if (!pickList) return;
 
-  const pickListData: Record<string, number> = {};
+  const pickListData: Record<string, { value: number }> = {};
   const weightsData: Record<string, number[]> = {};
 
   for (const team in entriesByTeam) {
-    pickListData[team] = 0;
+    pickListData[team] = { value: 0 };
     weightsData[team] = [];
   }
 
@@ -69,7 +74,7 @@ export function getPickListData(
     const normalizedTeamData = normalizeTeamData(teamData, percentage);
 
     for (const team in normalizedTeamData) {
-      pickListData[team] += normalizedTeamData[team];
+      pickListData[team].value += normalizedTeamData[team];
       weightsData[team].push(normalizedTeamData[team]);
     }
   }
@@ -77,19 +82,20 @@ export function getPickListData(
   const normalizedPickListData = normalizeTeamData(pickListData);
 
   const sortedPickListData = Object.keys(normalizedPickListData)
-    .map((team) => ({
-      team,
-      teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
-      percentage: normalizedPickListData[team],
-      weights: weightsDataObject(pickList, weightsData[team]),
-    }))
+    .map(
+      (team): PickListTeamData => ({
+        team,
+        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        percentage: normalizedPickListData[team],
+        inputs: weightsData[team],
+      }),
+    )
     .toSorted((a, b) => b.percentage - a.percentage);
 
   return {
     type: "picklist",
     pickList,
     data: sortedPickListData,
-    sortedWeights: pickList.weights.toSorted((a, b) => b.percentage - a.percentage),
     text: sortedPickListData
       .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.percentage.toFixed(2)}%`)
       .join("\n"),
@@ -105,41 +111,73 @@ export function getExpressionData(
   const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
   if (!expression) return;
 
+  let inputNames: string[];
+  if (expression.input.from == "expressions") {
+    inputNames = expression.input.expressionNames;
+  } else if (expression.input.from == "tba") {
+    inputNames = expression.input.metrics;
+  } else {
+    inputNames = expression.input.fieldIds
+      .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+      .filter((f) => f !== undefined);
+  }
+
   const expressionData = calculateTeamData(
     expressionName,
     surveyRecord.expressions,
     entriesByTeam,
     orderedSingleFields,
   );
-  const maxValue = Math.max(...Object.values(expressionData));
-  const minValue = Math.min(...Object.values(expressionData));
+  const values = Object.values(expressionData).map((v) => v.value);
+  const maxValue = Math.max(...values);
+  const minValue = Math.min(...values);
 
-  const sortedExpressionData = Object.keys(expressionData)
-    .map((team) => ({
-      team,
-      teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
-      value: expressionData[team],
-    }))
+  let data = Object.keys(expressionData)
+    .map(
+      (team): ExpressionTeamData => ({
+        team,
+        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        value: expressionData[team].value,
+        percentage: Math.abs(
+          ((expressionData[team].value - Math.min(minValue, 0)) /
+            (maxValue || minValue || expressionData[team].value || 1)) *
+            100,
+        ),
+        inputs: expressionData[team].inputs.map((input) => {
+          return { value: Number(input), percentage: 0 };
+        }),
+      }),
+    )
     .toSorted((a, b) => b.value - a.value);
+
+  const inputs = inputNames.map((name, i) => {
+    const inputs = data.map((teamData) => teamData.inputs[i].value);
+    const maxValue = Math.max(...inputs);
+    const minValue = Math.min(...inputs);
+    return { name, maxValue, minValue };
+  });
+
+  data = data.map((teamData) => {
+    teamData.inputs = teamData.inputs.map((input, i) => {
+      input.percentage = Math.abs(
+        ((input.value - Math.min(inputs[i].minValue, 0)) /
+          (inputs[i].maxValue || inputs[i].minValue || input.value || 1)) *
+          100,
+      );
+      return input;
+    });
+    return teamData;
+  });
 
   return {
     type: "expression",
     expression,
-    data: sortedExpressionData,
+    data,
+    text: data.map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}`).join("\n"),
     maxValue,
     minValue,
-    text: sortedExpressionData
-      .map((teamValue, index) => `${index + 1}\t${teamValue.team}\t${teamValue.value.toFixed(2)}`)
-      .join("\n"),
+    inputs,
   };
-}
-
-function weightsDataObject(pickList: PickList, weights: number[]) {
-  let obj: Record<string, number> = {};
-  for (let i = 0; i < weights.length; i++) {
-    obj[pickList.weights[i].expressionName] = weights[i];
-  }
-  return obj;
 }
 
 export function calculateTeamData(
@@ -151,14 +189,23 @@ export function calculateTeamData(
   const expression = expressions.find((e) => e.name == expressionName);
   if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
 
+  const inputs =
+    expression.input.from == "fields"
+      ? expression.input.fieldIds
+      : expression.input.from == "tba"
+        ? expression.input.metrics
+        : expression.input.from == "expressions"
+          ? expression.input.expressionNames
+          : [];
+
   const { scope } = expression;
 
-  const teamData: Record<string, number> = {};
+  const teamData: Record<string, { value: number; inputs: Value[] }> = {};
 
   if (scope == "entry") {
     for (const team in entriesByTeam) {
       if (!entriesByTeam[team].length) {
-        teamData[team] = 0;
+        teamData[team] = { value: 0, inputs: [] };
         continue;
       }
 
@@ -166,14 +213,20 @@ export function calculateTeamData(
         return runEntryExpression(entry, expression, expressions, orderedSingleFields);
       });
 
-      teamData[team] = values.reduce((prev, curr) => prev + curr, 0) / values.length;
+      teamData[team] = {
+        value: values.reduce((prev, curr) => prev + curr.value, 0) / values.length,
+        inputs: inputs.map((_, i) => {
+          const inputValues = values.map((v) => Number(v.inputs[i]));
+          return inputValues.reduce((prev, curr) => prev + curr, 0) / inputValues.length;
+        }),
+      };
     }
   }
 
   if (scope == "survey") {
     for (const team in entriesByTeam) {
       if (!entriesByTeam[team].length) {
-        teamData[team] = 0;
+        teamData[team] = { value: 0, inputs: [] };
         continue;
       }
 
@@ -184,11 +237,11 @@ export function calculateTeamData(
   return teamData;
 }
 
-export function normalizeTeamData(teamData: Record<string, number>, percentage = 100) {
-  const bestValue = Math.max(...Object.values(teamData));
+export function normalizeTeamData(teamData: Record<string, { value: number }>, percentage = 100) {
+  const bestValue = Math.max(...Object.values(teamData).map((v) => v.value));
   const normalizedTeamData: Record<string, number> = {};
   for (const team in teamData) {
-    normalizedTeamData[team] = Math.max(0, (teamData[team] / (bestValue || 1)) * percentage);
+    normalizedTeamData[team] = Math.max(0, (teamData[team].value / (bestValue || 1)) * percentage);
   }
   return normalizedTeamData;
 }
@@ -198,7 +251,7 @@ function runEntryExpression(
   expression: Extract<Expression, { scope: "entry" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],
-): number {
+): { value: number; inputs: Value[] } {
   const { input } = expression;
 
   if (input.from == "fields") {
@@ -211,9 +264,15 @@ function runEntryExpression(
 
     const valueOrValues = runExpressionMethod(expression.method, values);
     if (Array.isArray(valueOrValues)) {
-      return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+      return {
+        value: valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length,
+        inputs: values,
+      };
     }
-    return valueOrValues;
+    return {
+      value: valueOrValues,
+      inputs: values,
+    };
   }
 
   if (input.from == "tba") {
@@ -224,9 +283,15 @@ function runEntryExpression(
 
     const valueOrValues = runExpressionMethod(expression.method, values);
     if (Array.isArray(valueOrValues)) {
-      return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+      return {
+        value: valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length,
+        inputs: values,
+      };
     }
-    return valueOrValues;
+    return {
+      value: valueOrValues,
+      inputs: values,
+    };
   }
 
   if (input.from == "expressions") {
@@ -238,11 +303,20 @@ function runEntryExpression(
       return runEntryExpression(entry, expression, expressions, orderedSingleFields);
     });
 
-    const valueOrValues = runExpressionMethod(expression.method, values);
+    const valueOrValues = runExpressionMethod(
+      expression.method,
+      values.map((v) => v.value),
+    );
     if (Array.isArray(valueOrValues)) {
-      return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+      return {
+        value: valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length,
+        inputs: values.map((v) => v.value),
+      };
     }
-    return valueOrValues;
+    return {
+      value: valueOrValues,
+      inputs: values.map((v) => v.value),
+    };
   }
 
   throw new Error("Invalid expression input");
@@ -253,7 +327,7 @@ function runSurveyExpression(
   expression: Extract<Expression, { scope: "survey" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],
-): number {
+): { value: number; inputs: Value[] } {
   const { input } = expression;
 
   if (input.from == "fields") {
@@ -274,7 +348,10 @@ function runSurveyExpression(
         return valueOrValues;
       });
 
-    return values.reduce((prev, curr) => prev + curr, 0) / values.length;
+    return {
+      value: values.reduce((prev, curr) => prev + curr, 0) / values.length,
+      inputs: values,
+    };
   }
 
   if (input.from == "tba") {
@@ -295,7 +372,10 @@ function runSurveyExpression(
         return valueOrValues;
       });
 
-    return values.reduce((prev, curr) => prev + curr, 0) / values.length;
+    return {
+      value: values.reduce((prev, curr) => prev + curr, 0) / values.length,
+      inputs: values,
+    };
   }
 
   if (input.from == "expressions") {
@@ -304,9 +384,9 @@ function runSurveyExpression(
       if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
 
       if (expression.scope == "entry") {
-        const values = entries.map((entry) => {
-          return runEntryExpression(entry, expression, expressions, orderedSingleFields);
-        });
+        const values = entries
+          .map((entry) => runEntryExpression(entry, expression, expressions, orderedSingleFields))
+          .map((v) => (typeof v == "number" ? v : v.value));
 
         return values.reduce((prev, curr) => prev + curr, 0) / values.length;
       }
@@ -318,11 +398,19 @@ function runSurveyExpression(
       throw new Error("Invalid expression scope");
     });
 
-    const valueOrValues = runExpressionMethod(expression.method, values);
+    const eachValue = values.map((v) => (typeof v == "number" ? v : v.value));
+
+    const valueOrValues = runExpressionMethod(expression.method, eachValue);
     if (Array.isArray(valueOrValues)) {
-      return valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+      return {
+        value: valueOrValues.reduce((prev, curr) => prev + curr, 0) / valueOrValues.length,
+        inputs: eachValue,
+      };
     }
-    return valueOrValues;
+    return {
+      value: valueOrValues,
+      inputs: eachValue,
+    };
   }
 
   throw new Error("Invalid expression input");
@@ -350,7 +438,7 @@ function runExpressionMethod(method: ExpressionMethod, values: any[]) {
             return converter.to;
           }
         }
-        return method.defaultTo === "" ? value : method.defaultTo;
+        return method.defaultTo ?? value;
       });
     case "multiply":
       return values.map((value) => value * method.multiplier);

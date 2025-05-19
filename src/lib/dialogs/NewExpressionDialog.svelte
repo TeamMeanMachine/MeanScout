@@ -1,6 +1,6 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
-  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
+  import { mapExpressionTypes, reduceExpressionTypes, type Expression, type ExpressionInput } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { type SingleFieldWithDetails } from "$lib/field";
@@ -35,15 +35,21 @@
   let { name, scope, input, method } = $state<Expression>({
     name: "",
     scope: constrain.scope,
-    input:
-      constrain.input == "fields"
-        ? { from: "fields", fieldIds: [] }
-        : constrain.input == "tba"
-          ? { from: "tba", metrics: [] }
-          : { from: "expressions", expressionNames: [] },
+    input: initInput(),
     method: { type: "average" },
   });
   let error = $state("");
+
+  function initInput(): ExpressionInput {
+    switch (constrain.input) {
+      case "fields":
+        return { from: "fields", fieldIds: [] };
+      case "tba":
+        return { from: "tba", metrics: [] };
+      case "expressions":
+        return { from: "expressions", expressionNames: [] };
+    }
+  }
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -77,9 +83,8 @@
       if (method.type == "convert") {
         method.converters = method.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
-          to: parseValueFromString(to),
+          to,
         }));
-        method.defaultTo = parseValueFromString(method.defaultTo);
       }
 
       oncreate({ name, scope, input, method });
@@ -119,7 +124,6 @@
           method = {
             type: e.currentTarget.value,
             converters: [],
-            defaultTo: "",
           };
           break;
         case "multiply":

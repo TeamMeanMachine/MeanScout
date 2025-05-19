@@ -70,9 +70,8 @@
       if (method.type == "convert") {
         method.converters = method.converters.map(({ from, to }) => ({
           from: parseValueFromString(from),
-          to: parseValueFromString(to),
+          to,
         }));
-        method.defaultTo = parseValueFromString(method.defaultTo);
       }
 
       onupdate({ name, scope, input, method });
@@ -112,7 +111,6 @@
           method = {
             type: e.currentTarget.value,
             converters: [],
-            defaultTo: "",
           };
           break;
         case "multiply":
