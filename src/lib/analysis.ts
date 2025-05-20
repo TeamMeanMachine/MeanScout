@@ -30,6 +30,9 @@ const expressionTeamData = z.object({
 });
 type ExpressionTeamData = z.infer<typeof expressionTeamData>;
 
+const analysisTeamData = pickListTeamData.or(expressionTeamData);
+export type AnalysisTeamData = z.infer<typeof analysisTeamData>;
+
 const pickListAnalysisData = z.object({
   type: z.literal("picklist"),
   pickList: pickListSchema,

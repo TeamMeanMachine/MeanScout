@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
-  import { getExpressionData, getPickListData, type AnalysisData } from "$lib/analysis";
+  import { getMatchTeamFontWeight, getOrdinal, type Match } from "$lib";
+  import { getExpressionData, getPickListData, type AnalysisData, type AnalysisTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
@@ -16,68 +16,59 @@
     match: Match;
   } = $props();
 
-  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as IDBRecord<MatchEntry>[]);
+  const hideAnalysis =
+    pageData.surveyType == "pit" ||
+    !pageData.fieldRecords.length ||
+    !pageData.entryRecords.length ||
+    (!pageData.surveyRecord.pickLists.length && !pageData.surveyRecord.expressions.length);
 
-  const tab = sessionStorageStore<"info" | "picklists" | "expressions">("view-match-tab", "info");
+  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as IDBRecord<MatchEntry>[]);
 
   const sortedExpressions =
     pageData.surveyType == "match" ? pageData.surveyRecord.expressions.toSorted(sortExpressions) : [];
 
-  const pickListName = sessionStorageStore(
-    "analysis-picklist",
-    pageData.surveyType == "match" ? pageData.surveyRecord.pickLists[0]?.name || "" : "",
-  );
+  const expressions = Object.groupBy(sortedExpressions, (e) => {
+    if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
+    if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
+    if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
+    if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
+    if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
+    if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
+    return "";
+  });
 
-  const expressionName = sessionStorageStore(
-    "analysis-expression",
-    pageData.surveyType == "match" ? sortedExpressions[0]?.name || "" : "",
-  );
+  let selectedString = $state(defaultSelectionString());
 
-  if (pageData.surveyType == "match") {
-    pickListName.subscribe((val) => {
-      if (pageData.surveyRecord.pickLists.every((pl) => pl.name != val)) {
-        pickListName.set(pageData.surveyRecord.pickLists[0]?.name || "");
-      }
-    });
+  let selected = $derived.by(() => {
+    if (!selectedString || pageData.surveyType != "match") return defaultSelection();
+    const [type, name] = selectedString.split("-", 2);
 
-    expressionName.subscribe((val) => {
-      if (pageData.surveyRecord.expressions.every((e) => e.name != val)) {
-        expressionName.set(sortedExpressions[0]?.name || "");
-      }
-    });
-  }
+    if (type == "picklist") {
+      const pickList = pageData.surveyRecord.pickLists.find((pl) => pl.name == name);
+      if (pickList) return { type: "picklist" as const, pickList };
+    } else if (type == "expression") {
+      const expression = pageData.surveyRecord.expressions.find((e) => e.name == name);
+      if (expression) return { type: "expression" as const, expression };
+    }
 
-  const expressions =
-    pageData.surveyType == "match"
-      ? {
-          entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-          entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-          entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
-          surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-          surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-          surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
-        }
-      : {
-          entryDerived: [],
-          entryTba: [],
-          entryPrimitive: [],
-          surveyDerived: [],
-          surveyTba: [],
-          surveyPrimitive: [],
-        };
+    return defaultSelection();
+  });
 
   let analysisData = $derived.by<AnalysisData | undefined>(() => {
-    if (pageData.surveyType != "match") return;
-    if ($tab == "picklists") {
+    if (hideAnalysis) {
+      return;
+    }
+
+    if (selected?.type == "picklist") {
       return getPickListData(
-        $pickListName,
+        selected.pickList.name,
         pageData.surveyRecord,
         entriesByTeam,
         pageData.fieldsWithDetails.orderedSingle,
       );
-    } else {
+    } else if (selected?.type == "expression") {
       return getExpressionData(
-        $expressionName,
+        selected.expression.name,
         pageData.surveyRecord,
         entriesByTeam,
         pageData.fieldsWithDetails.orderedSingle,
@@ -85,201 +76,171 @@
     }
   });
 
-  function tabClass(matching: string) {
-    return $tab == matching ? "font-bold" : "font-light";
+  $effect(() => {
+    if (!selectedString) return;
+    sessionStorage.setItem("analysis-view", selectedString);
+  });
+
+  function defaultSelection() {
+    if (pageData.surveyType != "match") return;
+
+    if (pageData.surveyRecord.pickLists.length) {
+      return { type: "picklist" as const, pickList: pageData.surveyRecord.pickLists[0] };
+    }
+
+    if (sortedExpressions.length) {
+      return { type: "expression" as const, expression: sortedExpressions[0] };
+    }
+  }
+
+  function defaultSelectionString() {
+    if (pageData.surveyType != "match") return;
+
+    const value = sessionStorage.getItem("analysis-view");
+
+    if (value) {
+      const [type, name] = value.split("-", 2);
+
+      if (
+        (type == "picklist" && pageData.surveyRecord.pickLists.some((pl) => pl.name == name)) ||
+        (type == "expression" && sortedExpressions.some((e) => e.name == name))
+      ) {
+        return value;
+      }
+    }
+
+    if (pageData.surveyRecord.pickLists.length) {
+      return "picklist-" + pageData.surveyRecord.pickLists[0].name;
+    }
+
+    if (sortedExpressions.length) {
+      return "expression-" + sortedExpressions[0].name;
+    }
   }
 </script>
 
 <span>Match {match.number}</span>
 
-{#if pageData.surveyType == "match"}
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "info")} class={tabClass("info")}>Info</Button>
-    {#if pageData.surveyRecord.pickLists.length}
-      <Button onclick={() => ($tab = "picklists")} class={tabClass("picklists")}>Pick Lists</Button>
-    {/if}
-    {#if pageData.surveyRecord.expressions.length}
-      <Button onclick={() => ($tab = "expressions")} class={tabClass("expressions")}>Expressions</Button>
-    {/if}
+{#if !hideAnalysis}
+  <div class="flex flex-wrap gap-4">
+    <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+      {#if pageData.surveyRecord.pickLists.length}
+        <optgroup label="Pick Lists">
+          {#each pageData.surveyRecord.pickLists as pickList}
+            <option value="picklist-{pickList.name}">{pickList.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.surveyDerived?.length}
+        <optgroup label="Survey Expressions from expressions">
+          {#each expressions.surveyDerived as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.surveyTba?.length}
+        <optgroup label="Survey Expressions from TBA">
+          {#each expressions.surveyTba as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.surveyPrimitive?.length}
+        <optgroup label="Survey Expressions from fields">
+          {#each expressions.surveyPrimitive as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.entryDerived?.length}
+        <optgroup label="Entry Expressions from expressions">
+          {#each expressions.entryDerived as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.entryTba?.length}
+        <optgroup label="Entry Expressions from TBA">
+          {#each expressions.entryTba as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions.entryPrimitive?.length}
+        <optgroup label="Entry Expressions from fields">
+          {#each expressions.entryPrimitive as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+    </select>
   </div>
 {/if}
 
-{#if $tab == "info" || pageData.surveyType == "pit"}
-  <div class="flex flex-col gap-2">
-    {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      <Button
-        onclick={() => {
-          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData: pageData });
-        }}
-      >
+<div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
+  {#each [match.red1, match.red2, match.red3] as team}
+    {@const teamData = analysisData?.data.find((teamData) => teamData.team == team) ?? team}
+    {@render teamRow("red", teamData)}
+  {/each}
+
+  {#each [match.blue1, match.blue2, match.blue3] as team}
+    {@const teamData = analysisData?.data.find((teamData) => teamData.team == team) ?? team}
+    {@render teamRow("blue", teamData)}
+  {/each}
+</div>
+
+{#snippet teamRow(alliance: "red" | "blue", team: string | AnalysisTeamData)}
+  {#if typeof team == "string"}
+    {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+
+    <Button
+      onclick={() => {
+        openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData });
+      }}
+      class="col-span-full"
+    >
+      <div class="flex flex-col">
+        {#if teamName}
+          <small class="no-underline! {getMatchTeamFontWeight(team)}">{teamName}</small>
+        {/if}
+        <span class="text-{alliance} {getMatchTeamFontWeight(team)}">{team}</span>
+      </div>
+    </Button>
+  {:else}
+    {@const rank = analysisData?.data.findIndex((td) => td.team == team.team)}
+
+    <Button
+      onclick={() => {
+        openDialog(ViewTeamDialog, { pageData, team: { number: team.team, name: team.teamName } });
+      }}
+      class="justify-center text-sm"
+    >
+      <div>
+        {#if rank !== undefined}
+          <span class="font-bold">{rank + 1}</span><span class="hidden text-xs sm:inline">{getOrdinal(rank + 1)}</span>
+        {:else}
+          -
+        {/if}
+      </div>
+    </Button>
+
+    <div>
+      <div class="flex items-end justify-between gap-3">
         <div class="flex flex-col">
-          {#if teamName}
-            <small class="no-underline! {getMatchTeamFontWeight(team)}">{teamName}</small>
+          <strong>{team.team}</strong>
+          {#if team?.teamName}
+            <small class="font-light">{team?.teamName}</small>
           {/if}
-          <span class="text-red {getMatchTeamFontWeight(team)}">{team}</span>
         </div>
-      </Button>
-    {/each}
-    {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      <Button
-        onclick={() => {
-          openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData: pageData });
-        }}
-      >
-        <div class="flex flex-col">
-          {#if teamName}
-            <small class="no-underline! {getMatchTeamFontWeight(team)}">{teamName}</small>
-          {/if}
-          <span class="text-blue {getMatchTeamFontWeight(team)}">{team}</span>
-        </div>
-      </Button>
-    {/each}
-  </div>
-{:else if $tab == "picklists" && analysisData?.type == "picklist"}
-  <select bind:value={$pickListName} class="text-theme bg-neutral-800 p-2 text-sm">
-    {#each pageData.surveyRecord.pickLists as pickList}
-      <option>{pickList.name}</option>
-    {/each}
-  </select>
-
-  <div class="flex flex-col gap-4">
-    {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const percentage = analysisData.data.find((teamData) => teamData.team == team)?.percentage || 0}
-
-      <div>
-        <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col">
-            <strong>{team}</strong>
-            {#if teamName}
-              <small class="font-light">{teamName}</small>
-            {/if}
-          </div>
-          {percentage.toFixed(1)}%
-        </div>
-        <div class="bg-neutral-800">
-          <div class="bg-red" style="width:{percentage.toFixed(2)}%;height:6px"></div>
-        </div>
+        {#if team && "value" in team}
+          {team.value.toFixed(2) || 0}
+        {:else}
+          <span>{team?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+        {/if}
       </div>
-    {/each}
-
-    {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const percentage = analysisData.data.find((teamData) => teamData.team == team)?.percentage || 0}
-
-      <div>
-        <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col">
-            <strong>{team}</strong>
-            {#if teamName}
-              <small class="font-light">{teamName}</small>
-            {/if}
-          </div>
-          {percentage.toFixed(1)}%
-        </div>
-        <div class="bg-neutral-800">
-          <div class="bg-blue" style="width:{percentage.toFixed(2)}%;height:6px"></div>
-        </div>
+      <div class="bg-neutral-800">
+        <div class="bg-{alliance}" style="width:{team?.percentage.toFixed(2) || 0}%;height:6px"></div>
       </div>
-    {/each}
-  </div>
-{:else if $tab == "expressions" && analysisData?.type == "expression"}
-  <select bind:value={$expressionName} class="text-theme bg-neutral-800 p-2 text-sm">
-    {#if expressions.surveyDerived.length}
-      <optgroup label="Survey Expressions from expressions">
-        {#each expressions.surveyDerived as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.surveyTba.length}
-      <optgroup label="Survey Expressions from TBA">
-        {#each expressions.surveyTba as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.surveyPrimitive.length}
-      <optgroup label="Survey Expressions from fields">
-        {#each expressions.surveyPrimitive as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryDerived.length}
-      <optgroup label="Entry Expressions from expressions">
-        {#each expressions.entryDerived as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryTba.length}
-      <optgroup label="Entry Expressions from TBA">
-        {#each expressions.entryTba as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryPrimitive.length}
-      <optgroup label="Entry Expressions from fields">
-        {#each expressions.entryPrimitive as expression}
-          <option>{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-  </select>
-
-  <div class="flex flex-col gap-4 pr-1">
-    {#each [match.red1, match.red2, match.red3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const value = analysisData.data.find((teamData) => teamData.team == team)?.value || 0}
-      {@const divWidth = Math.abs(
-        ((value - Math.min(analysisData.minValue, 0)) /
-          (analysisData.maxValue || analysisData.minValue || value || 1)) *
-          100,
-      )}
-
-      <div>
-        <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col">
-            <strong>{team}</strong>
-            {#if teamName}
-              <small class="font-light">{teamName}</small>
-            {/if}
-          </div>
-          {value.toFixed(2)}
-        </div>
-        <div class="bg-neutral-800">
-          <div class="bg-red" style="width:{divWidth.toFixed(2)}%;height:6px"></div>
-        </div>
-      </div>
-    {/each}
-
-    {#each [match.blue1, match.blue2, match.blue3] as team}
-      {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
-      {@const value = analysisData.data.find((teamData) => teamData.team == team)?.value || 0}
-      {@const divWidth = Math.abs(
-        ((value - Math.min(analysisData.minValue, 0)) /
-          (analysisData.maxValue || analysisData.minValue || value || 1)) *
-          100,
-      )}
-
-      <div>
-        <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col">
-            <strong>{team}</strong>
-            {#if teamName}
-              <small class="font-light">{teamName}</small>
-            {/if}
-          </div>
-          {value.toFixed(2)}
-        </div>
-        <div class="bg-neutral-800">
-          <div class="bg-blue" style="width:{divWidth.toFixed(2)}%;height:6px"></div>
-        </div>
-      </div>
-    {/each}
-  </div>
-{/if}
+    </div>
+  {/if}
+{/snippet}
