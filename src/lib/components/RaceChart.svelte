@@ -22,28 +22,34 @@
     analysisData: AnalysisData;
   } = $props();
 
-  const playing = sessionStorageStore<"true" | "">("race-chart-playing", "true");
+  const playing = sessionStorageStore<"" | "true">("race-chart-playing", "");
 
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
-  const maxMatch = Math.max(...pageData.surveyRecord.matches.map((m) => m.number));
+  const tweenOptions = { delay: 0, easing: linear, duration: changeDuration };
+  const maxMatch = Math.max(...pageData.entryRecords.map((e) => e.match));
 
-  const initData = generateRaceData(1).data.map((data) => {
+  const initMatch = getInitMatch();
+
+  const initData = generateRaceData(initMatch).data.map((data) => {
     if ("value" in data) {
       return {
         ...data,
-        percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
-        value: new Tween(data.value, { delay: 0, easing: linear, duration: changeDuration }),
+        percentage: new Tween(data.percentage, tweenOptions),
+        value: new Tween(data.value, tweenOptions),
       };
     } else {
       return {
         ...data,
-        percentage: new Tween(data.percentage, { delay: 0, easing: linear, duration: changeDuration }),
+        percentage: new Tween(data.percentage, tweenOptions),
       };
     }
   });
 
-  let match = $state(initMatch());
+  let match = $state(initMatch);
+  let data = $state(initData);
+  let interval = $state<NodeJS.Timeout>();
+
   let matchData = $derived.by(() => {
     const possibleMatch = pageData.surveyRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
@@ -57,14 +63,12 @@
       ];
     }
   });
-  let data = $state(initData);
-  let interval = $state<NodeJS.Timeout>();
 
   $effect(() => {
     sessionStorage.setItem("race-chart-match", match.toString());
   });
 
-  function initMatch() {
+  function getInitMatch() {
     const value = Number(sessionStorage.getItem("race-chart-match"));
     if (!Number.isNaN(value)) {
       return Math.max(Math.min(value, maxMatch), 1);
@@ -119,37 +123,36 @@
 
   function update() {
     const newData = generateRaceData(match);
+
     if (newData.type == "expression") {
-      data = data
-        .map((team) => {
-          const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
-          if (newPercentage !== undefined) {
-            team.percentage.target = newPercentage;
-          }
+      data = data.map((team) => {
+        const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+        if (newPercentage !== undefined) {
+          team.percentage.target = newPercentage;
+        }
 
-          if (!("value" in team)) {
-            return team;
-          }
-
-          const newValue = newData.data.find((d) => d.team == team.team)?.value;
-          if (newValue !== undefined) {
-            team.value.target = newValue;
-          }
-
+        if (!("value" in team)) {
           return team;
-        })
-        .toSorted((a, b) => b.percentage.target - a.percentage.target);
+        }
+
+        const newValue = newData.data.find((d) => d.team == team.team)?.value;
+        if (newValue !== undefined) {
+          team.value.target = newValue;
+        }
+
+        return team;
+      });
     } else {
-      data = data
-        .map((team) => {
-          const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
-          if (newPercentage !== undefined) {
-            team.percentage.target = newPercentage;
-          }
-          return team;
-        })
-        .toSorted((a, b) => b.percentage.target - a.percentage.target);
+      data = data.map((team) => {
+        const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+        if (newPercentage !== undefined) {
+          team.percentage.target = newPercentage;
+        }
+        return team;
+      });
     }
+
+    data.sort((a, b) => b.percentage.target - a.percentage.target);
   }
 
   onDestroy(() => {
@@ -165,6 +168,10 @@
           $playing = "";
           clearInterval(interval);
         } else {
+          if (match >= maxMatch) {
+            match = 1;
+            update();
+          }
           $playing = "true";
           start();
         }
@@ -208,7 +215,10 @@
       min="1"
       max={maxMatch}
       bind:value={match}
-      oninput={() => clearInterval(interval)}
+      oninput={() => {
+        $playing = "";
+        clearInterval(interval);
+      }}
       onchange={update}
       class="accent-theme"
     />

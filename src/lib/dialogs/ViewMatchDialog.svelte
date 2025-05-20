@@ -203,7 +203,7 @@
         {#if teamName}
           <small class="no-underline! {getMatchTeamFontWeight(team)}">{teamName}</small>
         {/if}
-        <span class="text-{alliance} {getMatchTeamFontWeight(team)}">{team}</span>
+        <span class="{alliance == 'red' ? 'text-red' : 'text-blue'} {getMatchTeamFontWeight(team)}">{team}</span>
       </div>
     </Button>
   {:else}
@@ -239,7 +239,10 @@
         {/if}
       </div>
       <div class="bg-neutral-800">
-        <div class="bg-{alliance}" style="width:{team?.percentage.toFixed(2) || 0}%;height:6px"></div>
+        <div
+          class={alliance == "red" ? "bg-red" : "bg-blue"}
+          style="width:{team?.percentage.toFixed(2) || 0}%;height:6px"
+        ></div>
       </div>
     </div>
   {/if}
