@@ -80,11 +80,24 @@
   };
 </script>
 
-<span>Edit expression</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span class="text-sm">Edit expression</span>
+
+  <Button
+    disabled={usedExpressionNames?.includes(expression.name)}
+    onclick={() => {
+      ondelete();
+      closeDialog();
+    }}
+  >
+    <Trash2Icon class="text-theme size-5" />
+  </Button>
+</div>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
+  <!-- svelte-ignore a11y_autofocus -->
+  <input bind:value={name} autofocus class="text-theme bg-neutral-800 p-2" />
 </label>
 
 <label class="flex flex-col">
@@ -189,7 +202,7 @@
     >
       {#if inputIndex != -1}
         <SquareCheckBigIcon class="text-theme" />
-        <strong>{exp.name}</strong>
+        <span class="text-base font-bold">{exp.name}</span>
       {:else}
         <SquareIcon class="text-theme" />
         {exp.name}
@@ -197,11 +210,11 @@
     </Button>
   {/snippet}
 
-  <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
+  <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
     {#if scope == "survey"}
       {#if input.from == "expressions" && expressions.surveyDerived.length}
         <div class="flex flex-col gap-2">
-          <span class="text-sm">Survey Expressions (from expressions)</span>
+          <span>Survey Expressions <span class="text-xs">(from expressions)</span></span>
           {#each expressions.surveyDerived as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -209,7 +222,7 @@
       {/if}
       {#if expressions.surveyTba.length}
         <div class="flex flex-col gap-2">
-          <span class="text-sm">Survey Expressions (from TBA)</span>
+          <span>Survey Expressions <span class="text-xs">(from TBA)</span></span>
           {#each expressions.surveyTba as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -217,7 +230,7 @@
       {/if}
       {#if expressions.surveyPrimitive.length}
         <div class="flex flex-col gap-2">
-          <span class="text-sm">Survey Expressions (from fields)</span>
+          <span>Survey Expressions <span class="text-xs">(from fields)</span></span>
           {#each expressions.surveyPrimitive as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -226,7 +239,7 @@
     {/if}
     {#if (scope == "survey" || input.from == "expressions") && expressions.entryDerived.length}
       <div class="flex flex-col gap-2">
-        <span class="text-sm">Entry Expressions (from expressions)</span>
+        <span>Entry Expressions <span class="text-xs">(from expressions)</span></span>
         {#each expressions.entryDerived as exp}
           {@render expressionButton(exp)}
         {/each}
@@ -234,7 +247,7 @@
     {/if}
     {#if expressions.entryTba.length}
       <div class="flex flex-col gap-2">
-        <span class="text-sm">Entry Expressions (from TBA)</span>
+        <span>Entry Expressions <span class="text-xs">(from TBA)</span></span>
         {#each expressions.entryTba as exp}
           {@render expressionButton(exp)}
         {/each}
@@ -242,7 +255,7 @@
     {/if}
     {#if expressions.entryPrimitive.length}
       <div class="flex flex-col gap-2">
-        <span class="text-sm">Entry Expressions (from fields)</span>
+        <span>Entry Expressions <span class="text-xs">(from fields)</span></span>
         {#each expressions.entryPrimitive as exp}
           {@render expressionButton(exp)}
         {/each}
@@ -250,8 +263,8 @@
     {/if}
   </div>
 {:else if input.from == "fields"}
-  <span>Fields</span>
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1 text-sm">
+    <span>Fields</span>
     {#each orderedSingleFields as field (field.field.id)}
       {@const inputIndex = input.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
 
@@ -266,7 +279,7 @@
       >
         {#if inputIndex != -1}
           <SquareCheckBigIcon class="text-theme" />
-          <strong>{field.detailedName}</strong>
+          <span class="text-base font-bold">{field.detailedName}</span>
         {:else}
           <SquareIcon class="text-theme" />
           {field.detailedName}
@@ -275,8 +288,8 @@
     {/each}
   </div>
 {:else if input.from == "tba" && surveyRecord.tbaMetrics?.length}
-  <span>TBA metrics</span>
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1 text-sm">
+    <span>TBA metrics</span>
     {#each surveyRecord.tbaMetrics as tbaMetric}
       <Button
         onclick={() => {
@@ -289,7 +302,7 @@
       >
         {#if input.metrics.includes(tbaMetric)}
           <SquareCheckBigIcon class="text-theme" />
-          <strong>{tbaMetric}</strong>
+          <span class="text-base font-bold">{tbaMetric}</span>
         {:else}
           <SquareIcon class="text-theme" />
           {tbaMetric}
@@ -298,22 +311,6 @@
     {/each}
   </div>
 {/if}
-
-<Button
-  disabled={usedExpressionNames?.includes(expression.name)}
-  onclick={() => {
-    ondelete();
-    closeDialog();
-  }}
->
-  <Trash2Icon class="text-theme" />
-  <div class="flex flex-col">
-    Delete
-    {#if usedExpressionNames?.includes(expression.name)}
-      <small>Used elsewhere</small>
-    {/if}
-  </div>
-</Button>
 
 {#if error}
   <span>Error: {error}</span>

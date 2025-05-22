@@ -27,7 +27,7 @@
   backLink="survey/{surveyRecord.id}"
 />
 
-<div class="flex flex-wrap gap-2" style="view-transition-name:admin-header">
+<div class="flex flex-wrap gap-2 text-sm" style="view-transition-name:admin-header">
   <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
   <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
   <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>

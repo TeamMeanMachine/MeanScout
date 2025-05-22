@@ -20,7 +20,7 @@
     oncreate: (pickList: PickList) => void;
   } = $props();
 
-  let pickList = $state<PickList>({ name: "New pick list", weights: [] });
+  let pickList = $state<PickList>({ name: "", weights: [] });
   let totalWeights = $derived(pickList.weights.reduce((total, weight) => total + Math.abs(weight.percentage), 0));
 
   export const { onconfirm }: DialogExports = {
@@ -55,7 +55,7 @@
     >
       {#if isWeight}
         <SquareCheckBigIcon class="text-theme" />
-        <strong>{expression.name}</strong>
+        <span class="text-base font-bold">{expression.name}</span>
       {:else}
         <SquareIcon class="text-theme" />
         {expression.name}
@@ -77,10 +77,10 @@
   </div>
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1">
+<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
   {#if expressions.surveyDerived.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <small>(from expressions)</small></span>
+      <span>Survey Expressions <span class="text-x">(from expressions)</span></span>
       {#each expressions.surveyDerived as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -88,7 +88,7 @@
   {/if}
   {#if expressions.surveyTba.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <small>(from TBA)</small></span>
+      <span>Survey Expressions <span class="text-xs">(from TBA)</span></span>
       {#each expressions.surveyTba as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -96,7 +96,7 @@
   {/if}
   {#if expressions.surveyPrimitive.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <small>(from fields)</small></span>
+      <span>Survey Expressions <span class="text-xs">(from fields)</span></span>
       {#each expressions.surveyPrimitive as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -104,7 +104,7 @@
   {/if}
   {#if expressions.entryDerived.length}
     <div class="flex flex-col gap-2">
-      <span>Entry Expressions <small>(from expressions)</small></span>
+      <span>Entry Expressions <span class="text-xs">(from expressions)</span></span>
       {#each expressions.entryDerived as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -112,7 +112,7 @@
   {/if}
   {#if expressions.entryTba.length}
     <div class="flex flex-col gap-2">
-      <span>Entry Expressions <small>(from TBA)</small></span>
+      <span>Entry Expressions <span class="text-xs">(from TBA)</span></span>
       {#each expressions.entryTba as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -120,7 +120,7 @@
   {/if}
   {#if expressions.entryPrimitive.length}
     <div class="flex flex-col gap-2">
-      <span>Entry Expressions <small>(from fields)</small></span>
+      <span>Entry Expressions <span class="text-xs">(from fields)</span></span>
       {#each expressions.entryPrimitive as exp}
         {@render expressionButton(exp)}
       {/each}
