@@ -2,24 +2,20 @@
   import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
-  import ViewPickListDialog from "$lib/dialogs/ViewPickListDialog.svelte";
-  import { getMatchEntriesByTeam } from "$lib/entry";
+  import ViewAnalysisDialog from "$lib/dialogs/ViewAnalysisDialog.svelte";
+  import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
   import { objectStore } from "$lib/idb";
   import { cameraStore, targetStore, teamStore } from "$lib/settings";
-  import { getLastCompletedMatch } from "$lib/survey";
+  import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
-    ChartBarBigIcon,
     DicesIcon,
     InfoIcon,
-    ListOrderedIcon,
-    NotepadTextIcon,
     PlusIcon,
     ReplaceIcon,
     Settings2Icon,
@@ -31,6 +27,9 @@
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
   import OverwriteSurveyDialog from "$lib/dialogs/OverwriteSurveyDialog.svelte";
+  import SurveyPageHeader from "./SurveyPageHeader.svelte";
+  import { type PickList } from "$lib/analysis";
+  import { sortExpressions, type Expression } from "$lib/expression";
 
   let {
     data,
@@ -173,27 +172,48 @@
   }
 </script>
 
-<Header title="{data.surveyRecord.name} - MeanScout" heading={data.surveyRecord.name} />
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="overview" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  {#snippet entryOverview(match: number | undefined, team: string | undefined, teamName: string | undefined)}
-    <div class="flex items-center gap-x-4 gap-y-2">
-      {#if match !== undefined}
-        <div class="flex flex-col">
-          <small class="font-light">Match</small>
-          <span>{match}</span>
-        </div>
-      {/if}
-      {#if team}
-        <div class="flex flex-col">
-          <small class="font-light text-wrap">{teamName || "Team"}</small>
-          <span>{team}</span>
-        </div>
-      {/if}
-    </div>
-  {/snippet}
+  {@render entriesWidget()}
 
-  <div class="flex flex-col gap-2">
+  {#if data.surveyType == "match" && (data.surveyRecord.pickLists.length || data.surveyRecord.expressions.length)}
+    {@render analysisWidget(data.surveyRecord.pickLists, data.surveyRecord.expressions, data.entryRecords)}
+  {/if}
+
+  {#if data.surveyRecord.matches.length}
+    {@render matchesWidget()}
+  {/if}
+
+  {#if teamCount}
+    {@render teamsWidget()}
+  {/if}
+
+  {#if data.surveyType == "match" && data.surveyRecord.scouts}
+    {@render predictionsWidget(data.surveyRecord, data.entryRecords)}
+  {/if}
+
+  {@render surveyWidget()}
+  {@render appWidget()}
+</div>
+
+{#snippet entriesWidget()}
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-wrap justify-between gap-2">
+      <div class="flex flex-col">
+        <h2 class="font-bold">Entries</h2>
+        <span class="text-xs font-light">
+          {data.entryRecords.length - drafts.length} completed
+          {#if data.surveyRecord.matches.length}
+            of {data.surveyRecord.matches.length * 6}
+          {/if}
+        </span>
+      </div>
+      <Anchor route="survey/{data.surveyRecord.id}/entries">
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    </div>
+
     <Button
       onclick={() => {
         openDialog(NewEntryDialog, {
@@ -219,221 +239,223 @@
       {@render entryOverview(data.surveyType == "match" ? prefilledMatch : undefined, prefilledTeam, prefilledTeamName)}
     </Button>
 
-    {#each drafts as draft (draft.id)}
-      <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
-        <div class="grow">
-          {@render entryOverview(
-            draft.type == "match" ? draft.match : undefined,
-            draft.team,
-            data.surveyRecord.teams.find((t) => t.number == draft.team)?.name,
-          )}
+    {#if drafts.length}
+      <div class="flex flex-col">
+        <span class="text-xs">{drafts.length} {drafts.length == 1 ? "draft" : "drafts"}</span>
+
+        <div class="flex flex-col gap-2">
+          {#each drafts as draft (draft.id)}
+            <Anchor route="entry/{draft.id}" style="view-transition-name:draft-{draft.id}">
+              <div class="grow">
+                {@render entryOverview(
+                  draft.type == "match" ? draft.match : undefined,
+                  draft.team,
+                  data.surveyRecord.teams.find((t) => t.number == draft.team)?.name,
+                )}
+              </div>
+              <ArrowRightIcon class="text-theme" />
+            </Anchor>
+          {/each}
         </div>
+      </div>
+    {/if}
+
+    {#if entries.length}
+      <div class="flex flex-col" style="view-transition-name:entries">
+        <span class="text-xs">Recent for <span class="text-theme font-bold capitalize">{$targetStore}</span></span>
+
+        <div class="flex flex-col gap-2">
+          {#each entries as entry (entry.id)}
+            <Button
+              onclick={() => {
+                openDialog(ViewEntryDialog, {
+                  surveyRecord: data.surveyRecord,
+                  fieldRecords: data.fieldRecords,
+                  entryRecord: entry,
+                  onchange: refresh,
+                });
+              }}
+            >
+              {@render entryOverview(
+                entry.type == "match" ? entry.match : undefined,
+                entry.team,
+                data.surveyRecord.teams.find((t) => t.number == entry.team)?.name,
+              )}
+            </Button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet analysisWidget(pickLists: PickList[], expressions: Expression[], entryRecords: IDBRecord<MatchEntry>[])}
+  {@const entriesByTeam = getMatchEntriesByTeam(entryRecords)}
+  {@const displayedExpressions = expressions.toSorted(sortExpressions).slice(0, 3 - pickLists.length)}
+
+  <div class="flex flex-col gap-3" style="view-transition-name:analysis">
+    <div class="flex flex-wrap justify-between gap-2">
+      <div class="flex flex-col">
+        <h2 class="font-bold">Analysis</h2>
+        <span class="text-xs font-light">
+          {#if pickLists.length}
+            {pickLists.length} {pickLists.length == 1 ? "pick list" : "pick lists"}
+          {/if}
+          {#if expressions.length}
+            {expressions.length} {expressions.length == 1 ? "expression" : "expressions"}
+          {/if}
+        </span>
+      </div>
+      <Anchor route="survey/{data.surveyRecord.id}/analysis">
         <ArrowRightIcon class="text-theme" />
       </Anchor>
-    {/each}
-  </div>
+    </div>
 
-  <div class="flex flex-col gap-2" style="view-transition-name:entries">
-    <h2 class="font-bold">Entries</h2>
-
-    {#each entries as entry (entry.id)}
-      <Button
-        onclick={() => {
-          openDialog(ViewEntryDialog, {
-            surveyRecord: data.surveyRecord,
-            fieldRecords: data.fieldRecords,
-            entryRecord: entry,
-            onchange: refresh,
-          });
-        }}
-      >
-        {@render entryOverview(
-          entry.type == "match" ? entry.match : undefined,
-          entry.team,
-          data.surveyRecord.teams.find((t) => t.number == entry.team)?.name,
-        )}
-      </Button>
-    {/each}
-
-    <Anchor route="survey/{data.surveyRecord.id}/entries">
-      <NotepadTextIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Entries
-        <small>{data.entryRecords.length - drafts.length} completed</small>
-      </div>
-      <ArrowRightIcon class="text-theme" />
-    </Anchor>
-  </div>
-
-  {#if data.surveyType == "match" && (data.surveyRecord.pickLists.length || data.surveyRecord.expressions.length)}
-    {@const entriesByTeam = getMatchEntriesByTeam(data.entryRecords)}
-
-    <div class="flex flex-col gap-2" style="view-transition-name:analysis">
-      <h2 class="font-bold">Analysis</h2>
-
-      {#each data.surveyRecord.pickLists as pickList}
+    <div class="flex flex-col gap-2">
+      {#each pickLists as pickList}
         <Button
-          onclick={() =>
-            openDialog(ViewPickListDialog, {
+          onclick={() => {
+            openDialog(ViewAnalysisDialog, {
               pageData: data as Extract<PageData, { surveyType: "match" }>,
               entriesByTeam,
-              pickList,
-            })}
+              analysis: { type: "picklist", pickList },
+            });
+          }}
         >
           {pickList.name}
         </Button>
       {/each}
 
-      <Anchor route="survey/{data.surveyRecord.id}/analysis">
-        <ChartBarBigIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Analysis
-          <small>Pick Lists, Expressions</small>
-        </div>
-        <ArrowRightIcon class="text-theme" />
-      </Anchor>
+      {#each displayedExpressions as expression}
+        <Button
+          onclick={() => {
+            openDialog(ViewAnalysisDialog, {
+              pageData: data as Extract<PageData, { surveyType: "match" }>,
+              entriesByTeam,
+              analysis: { type: "expression", expression },
+            });
+          }}
+        >
+          {expression.name}
+        </Button>
+      {/each}
     </div>
-  {/if}
+  </div>
+{/snippet}
 
-  {#if data.surveyRecord.matches.length}
-    {@const matches = $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
+{#snippet matchesWidget()}
+  {@const matches = $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches}
+  {@const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords)}
 
-    {@const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords)}
+  {@const upcomingMatches = matches
+    .filter((match) => match.number > lastCompletedMatch)
+    .toSorted((a, b) => a.number - b.number)
+    .slice(0, 3)}
 
-    {@const upcomingMatches = matches
-      .filter((match) => match.number > lastCompletedMatch)
-      .toSorted((a, b) => a.number - b.number)
-      .slice(0, 3)}
+  {@const previousMatches = matches
+    .filter((match) => match.number <= lastCompletedMatch)
+    .toSorted((a, b) => b.number - a.number)
+    .slice(0, 3)}
 
-    {@const previousMatches = matches
-      .filter((match) => match.number <= lastCompletedMatch)
-      .toSorted((a, b) => b.number - a.number)
-      .slice(0, 3)}
-
-    <div class="flex flex-col gap-2" style="view-transition-name:matches">
-      <div class="flex flex-wrap items-center justify-between gap-2">
+  <div class="flex flex-col gap-3" style="view-transition-name:matches">
+    <div class="flex flex-wrap items-end justify-between gap-2">
+      <div class="flex flex-col">
         <h2 class="font-bold">Matches</h2>
+        <span class="text-xs font-light">
+          {#if data.surveyType == "match"}
+            {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
+              const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
+              return data.entryRecords.find(
+                (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
+              );
+            }).length}
+
+            {matchesScouted} scouted of {data.surveyRecord.matches.length}
+          {:else}
+            {data.surveyRecord.matches.length} total
+          {/if}
+        </span>
+      </div>
+
+      <div class="flex gap-2 text-sm">
         {#if $teamStore}
-          <div class="flex gap-2 text-sm">
-            <Button
-              onclick={() => ($filterMatches = "")}
-              class={$filterMatches ? "font-light" : "font-bold"}
-              style="view-transition-name:match-filter-all"
-            >
-              All
-            </Button>
-            <Button
-              onclick={() => ($filterMatches = "true")}
-              class={$filterMatches ? "font-bold" : "font-light"}
-              style="view-transition-name:match-filter-team"
-            >
-              {$teamStore}
-            </Button>
+          <Button
+            onclick={() => ($filterMatches = "")}
+            class={$filterMatches ? "font-light" : "font-bold"}
+            style="view-transition-name:match-filter-all"
+          >
+            All
+          </Button>
+          <Button
+            onclick={() => ($filterMatches = "true")}
+            class={$filterMatches ? "font-bold" : "font-light"}
+            style="view-transition-name:match-filter-team"
+          >
+            {$teamStore}
+          </Button>
+        {/if}
+
+        <Anchor route="survey/{data.surveyRecord.id}/matches">
+          <ArrowRightIcon class="text-theme" />
+        </Anchor>
+      </div>
+    </div>
+
+    {#if matches.length}
+      <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-x-2 gap-y-3">
+        {#if upcomingMatches.length}
+          <div class="col-span-full grid grid-cols-subgrid">
+            <span class="col-span-full text-xs">Upcoming</span>
+            <div class="col-span-full grid grid-cols-subgrid gap-2">
+              {#each upcomingMatches as match}
+                {@render teamRow(match)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if previousMatches.length}
+          <div class="col-span-full grid grid-cols-subgrid">
+            <span class="col-span-full text-xs">Previous</span>
+            <div class="col-span-full grid grid-cols-subgrid gap-2">
+              {#each previousMatches as match}
+                {@render teamRow(match)}
+              {/each}
+            </div>
           </div>
         {/if}
       </div>
+    {/if}
+  </div>
+{/snippet}
 
-      {#if matches.length}
-        <div class="flex flex-wrap gap-2">
-          {#snippet teamRow(match: Match)}
-            <Button
-              onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })}
-              class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
-            >
-              <div>{match.number}</div>
-              <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-                <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
-                <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
-                <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
-                <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
-                <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
-                <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
-              </div>
-            </Button>
-          {/snippet}
+{#snippet teamsWidget()}
+  <Anchor route="survey/{data.surveyRecord.id}/teams" style="view-transition-name:teams">
+    <UsersIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Teams
+      <small>{teamCount} total</small>
+    </div>
+    <ArrowRightIcon class="text-theme" />
+  </Anchor>
+{/snippet}
 
-          {#if upcomingMatches.length}
-            <div class="flex grow flex-col">
-              <small>Upcoming</small>
-              <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
-                {#each upcomingMatches as match}
-                  {@render teamRow(match)}
-                {/each}
-              </div>
-            </div>
-          {/if}
+{#snippet predictionsWidget(surveyRecord: IDBRecord<MatchSurvey>, entryRecords: IDBRecord<MatchEntry>[])}
+  {@const { overallAccuracy } = getPredictionsPerScout(surveyRecord, entryRecords)}
 
-          {#if previousMatches.length}
-            <div class="flex grow flex-col">
-              <small>Previous</small>
-              <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
-                {#each previousMatches as match}
-                  {@render teamRow(match)}
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
+  <Anchor route="survey/{data.surveyRecord.id}/predictions" style="view-transition-name:predictions">
+    <DicesIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Predictions
+      {#if overallAccuracy}
+        <small>{(overallAccuracy * 100).toFixed(1)}% accuracy</small>
       {/if}
-
-      <Anchor route="survey/{data.surveyRecord.id}/matches">
-        <ListOrderedIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Matches
-          <small>
-            {#if data.surveyType == "match"}
-              {@const matchesScouted = data.surveyRecord.matches.filter((match) => {
-                const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-                return data.entryRecords.find(
-                  (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
-                );
-              }).length}
-
-              {matchesScouted} scouted,
-            {/if}
-
-            {data.surveyRecord.matches.length} total
-          </small>
-        </div>
-        <ArrowRightIcon class="text-theme" />
-      </Anchor>
     </div>
-  {/if}
+    <ArrowRightIcon class="text-theme" />
+  </Anchor>
+{/snippet}
 
-  {#if teamCount}
-    <div class="flex flex-col gap-2" style="view-transition-name:teams">
-      <h2 class="font-bold">Teams</h2>
-
-      <Anchor route="survey/{data.surveyRecord.id}/teams">
-        <UsersIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Teams
-          <small>{teamCount} total</small>
-        </div>
-        <ArrowRightIcon class="text-theme" />
-      </Anchor>
-    </div>
-  {/if}
-
-  {#if data.surveyType == "match" && data.surveyRecord.scouts}
-    {@const { overallAccuracy } = getPredictionsPerScout(data.surveyRecord, data.entryRecords)}
-
-    <div class="flex flex-col gap-2" style="view-transition-name:predictions">
-      <h2 class="font-bold">Predictions</h2>
-
-      <Anchor route="survey/{data.surveyRecord.id}/predictions">
-        <DicesIcon class="text-theme" />
-        <div class="flex grow flex-col">
-          Predictions
-          {#if overallAccuracy}
-            <small>{(overallAccuracy * 100).toFixed(1)}% accuracy</small>
-          {/if}
-        </div>
-        <ArrowRightIcon class="text-theme" />
-      </Anchor>
-    </div>
-  {/if}
-
+{#snippet surveyWidget()}
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Survey</h2>
     <div class="flex flex-wrap gap-2">
@@ -484,7 +506,9 @@
       <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
+{/snippet}
 
+{#snippet appWidget()}
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
     <h2 class="font-bold">MeanScout</h2>
     <Anchor route="" class="active:-left-0.5!">
@@ -511,4 +535,38 @@
       <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
-</div>
+{/snippet}
+
+{#snippet entryOverview(match: number | undefined, team: string | undefined, teamName: string | undefined)}
+  <div class="flex items-center gap-x-4 gap-y-2">
+    {#if match !== undefined}
+      <div class="flex flex-col">
+        <small class="font-light">Match</small>
+        <span>{match}</span>
+      </div>
+    {/if}
+    {#if team}
+      <div class="flex flex-col">
+        <small class="font-light text-wrap">{teamName || "Team"}</small>
+        <span>{team}</span>
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet teamRow(match: Match)}
+  <Button
+    onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })}
+    class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
+  >
+    <div>{match.number}</div>
+    <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
+      <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
+      <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
+      <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
+      <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
+      <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
+      <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
+    </div>
+  </Button>
+{/snippet}

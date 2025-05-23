@@ -18,24 +18,26 @@
   }
 </script>
 
-<Header
-  title="Admin - {surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: surveyRecord.name },
-    { type: "h1", text: "Admin" },
-  ]}
-  backLink="survey/{surveyRecord.id}"
-/>
+<div class="flex flex-col gap-4">
+  <Header
+    title="Admin - {surveyRecord.name} - MeanScout"
+    heading={[
+      { type: "sm", text: surveyRecord.name },
+      { type: "h1", text: "Admin" },
+    ]}
+    backLink="survey/{surveyRecord.id}"
+  />
 
-<div class="flex flex-wrap gap-2 text-sm" style="view-transition-name:admin-header">
-  <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
-  <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
-  <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
-  {#if surveyRecord.type == "match"}
-    <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
-    <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
-  {/if}
-  <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
-  <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
-  <Anchor route="{routeBase}/danger" class={getAnchorClass("danger")}>Danger Zone</Anchor>
+  <div class="flex flex-wrap gap-2 text-sm" style="view-transition-name:survey-header">
+    <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
+    <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
+    <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
+    {#if surveyRecord.type == "match"}
+      <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
+      <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
+    {/if}
+    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
+    <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
+    <Anchor route="{routeBase}/danger" class={getAnchorClass("danger")}>Danger Zone</Anchor>
+  </div>
 </div>

@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import { sessionStorageStore } from "$lib";
   import { openDialog } from "$lib/dialog";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
   let {
     data,
@@ -22,14 +22,7 @@
   }
 </script>
 
-<Header
-  title="Predictions - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Predictions" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="predictions" pageTitle="Predictions" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:predictions">
   <div class="flex flex-wrap gap-2 text-sm">

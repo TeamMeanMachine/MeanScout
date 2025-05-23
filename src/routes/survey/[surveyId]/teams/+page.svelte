@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import Header from "$lib/components/Header.svelte";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
+  import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
   let {
     data,
@@ -36,14 +36,7 @@
   }
 </script>
 
-<Header
-  title="Teams - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Teams" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="teams" pageTitle="Teams" />
 
 <div class="flex flex-col gap-4" style="view-transition-name:teams">
   <div class="flex flex-wrap gap-4">

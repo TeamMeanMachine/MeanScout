@@ -8,10 +8,10 @@
   import { openDialog } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
-  import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
+  import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
   let {
     data,
@@ -285,14 +285,7 @@
 
 <svelte:window {onscroll} />
 
-<Header
-  title="Entries - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Entries" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="entries" pageTitle="Entries" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:entries">
   {#if duplicateEntryIds.length}

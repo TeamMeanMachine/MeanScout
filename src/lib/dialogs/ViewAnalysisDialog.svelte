@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sessionStorageStore } from "$lib";
-  import { getPickListData, type PickList } from "$lib/analysis";
+  import { getExpressionData, getPickListData, type PickList } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import RaceChart from "$lib/components/RaceChart.svelte";
   import type { MatchEntry } from "$lib/entry";
@@ -8,25 +8,34 @@
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import BarChart from "$lib/components/BarChart.svelte";
   import StackedChart from "$lib/components/StackedChart.svelte";
+  import type { Expression } from "$lib/expression";
 
   let {
     pageData,
     entriesByTeam,
-    pickList,
+    analysis,
   }: {
     pageData: Extract<PageData, { surveyType: "match" }>;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
-    pickList: PickList;
+    analysis: { type: "picklist"; pickList: PickList } | { type: "expression"; expression: Expression };
   } = $props();
 
   const tab = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
-  const analysisData = getPickListData(
-    pickList.name,
-    pageData.surveyRecord,
-    entriesByTeam,
-    pageData.fieldsWithDetails.orderedSingle,
-  );
+  const analysisData =
+    analysis.type == "picklist"
+      ? getPickListData(
+          analysis.pickList.name,
+          pageData.surveyRecord,
+          entriesByTeam,
+          pageData.fieldsWithDetails.orderedSingle,
+        )
+      : getExpressionData(
+          analysis.expression.name,
+          pageData.surveyRecord,
+          entriesByTeam,
+          pageData.fieldsWithDetails.orderedSingle,
+        );
 
   let overflowDiv = $state<HTMLDivElement>();
 
@@ -36,7 +45,7 @@
   });
 </script>
 
-<strong>{pickList.name}</strong>
+<span class="font-bold">{analysis.type == "picklist" ? analysis.pickList.name : analysis.expression.name}</span>
 
 {#if analysisData?.data.length}
   <div class="flex flex-wrap items-end justify-between gap-3 text-sm">

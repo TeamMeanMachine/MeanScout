@@ -1,7 +1,6 @@
 <script lang="ts">
   import { sortExpressions } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import type { PageData } from "./$types";
   import { sessionStorageStore } from "$lib";
   import { type AnalysisData, getExpressionData, getPickListData } from "$lib/analysis";
@@ -9,6 +8,7 @@
   import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
   import StackedChart from "$lib/components/StackedChart.svelte";
   import BarChart from "$lib/components/BarChart.svelte";
+  import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
   let {
     data,
@@ -103,14 +103,7 @@
   }
 </script>
 
-<Header
-  title="Analysis - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Analysis" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="analysis" pageTitle="Analysis" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || (!data.surveyRecord.pickLists.length && !data.surveyRecord.expressions.length)}

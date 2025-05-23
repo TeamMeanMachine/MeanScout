@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { teamStore } from "$lib/settings";
   import { getLastCompletedMatch } from "$lib/survey";
+  import SurveyPageHeader from "../SurveyPageHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -35,14 +35,7 @@
   }
 </script>
 
-<Header
-  title="Matches - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Matches" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
-/>
+<SurveyPageHeader surveyRecord={data.surveyRecord} page="matches" pageTitle="Matches" />
 
 <div class="flex flex-col gap-3" style="view-transition-name:matches">
   {#if $teamStore}
