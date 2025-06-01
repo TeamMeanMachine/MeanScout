@@ -75,4 +75,8 @@
       @apply animate-none!;
     }
   }
+
+  * {
+    scrollbar-width: thin;
+  }
 }

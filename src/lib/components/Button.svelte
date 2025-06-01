@@ -19,7 +19,6 @@
   } = $props();
 </script>
 
-<!-- svelte-ignore a11y_autofocus -->
 <button
   {type}
   {disabled}

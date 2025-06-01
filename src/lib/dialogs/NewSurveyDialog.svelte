@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import type { DialogExports } from "$lib/dialog";
   import { objectStore } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
@@ -55,7 +56,7 @@
           return;
         }
 
-        location.hash = `/survey/${id}/admin`;
+        goto(`#/survey/${id}/admin`);
       };
     },
   };

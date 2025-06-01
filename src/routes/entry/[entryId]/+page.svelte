@@ -10,6 +10,7 @@
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { getDefaultFieldValue } from "$lib/field";
   import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
 
   let {
     data,
@@ -169,7 +170,7 @@
           entryRecord: data.entryRecord,
           onexport: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            location.hash = `/survey/${data.surveyRecord.id}`;
+            goto(`#/survey/${data.surveyRecord.id}`);
           },
         });
       }}
@@ -184,7 +185,7 @@
           entryRecord: data.entryRecord,
           ondelete: () => {
             objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            location.hash = `/survey/${data.surveyRecord.id}`;
+            goto(`#/survey/${data.surveyRecord.id}`);
           },
         })}
     >

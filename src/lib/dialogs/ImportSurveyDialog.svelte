@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
@@ -65,7 +66,7 @@
           surveyStore.put({ ...$state.snapshot(importedSurvey), id });
         }
 
-        location.hash = `/survey/${id}/admin`;
+        goto(`#/survey/${id}/admin`);
       };
     },
   };

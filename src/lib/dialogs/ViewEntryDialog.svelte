@@ -9,6 +9,7 @@
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
+  import { goto } from "$app/navigation";
 
   let {
     surveyRecord,
@@ -31,7 +32,7 @@
 
   function editEntry() {
     if (entry.status == "draft") {
-      location.hash = `/entry/${entry.id}`;
+      goto(`#/entry/${entry.id}`);
       return;
     }
 
@@ -46,7 +47,7 @@
 
     editRequest.onsuccess = () => {
       objectStore("surveys", "readwrite").put({ ...$state.snapshot(surveyRecord), modified: new Date() });
-      location.hash = `/entry/${entry.id}`;
+      goto(`#/entry/${entry.id}`);
     };
   }
 </script>

@@ -18,7 +18,7 @@
 
 <Header />
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-2" style="view-transition-name:surveys">
   <h2 class="font-bold">Surveys</h2>
 
   {#if data.surveys.length}
@@ -35,20 +35,20 @@
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import
-        <small>
+        <span class="text-xs font-light">
           {#if $cameraStore}
             QRF code, File
           {:else}
             File
           {/if}
-        </small>
+        </span>
       </div>
     </Button>
     <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create
-        <small>New</small>
+        <span class="text-xs font-light">New</span>
       </div>
     </Button>
   </div>
@@ -56,20 +56,26 @@
 
 <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
   <h2 class="font-bold">MeanScout</h2>
-  <Anchor route="settings" style="view-transition-name:settings">
-    <SettingsIcon class="text-theme" />
-    <div class="flex grow flex-col">
-      Settings
-      <small>App config</small>
-    </div>
-    <ArrowRightIcon class="text-theme" />
-  </Anchor>
-  <Anchor route="about" style="view-transition-name:about">
-    <InfoIcon class="text-theme" />
-    <div class="flex grow flex-col">
-      About
-      <small>Info, Guides</small>
-    </div>
-    <ArrowRightIcon class="text-theme" />
-  </Anchor>
+  <div class="flex flex-wrap gap-2">
+    <Anchor route="settings" class="grow basis-48" style="view-transition-name:settings">
+      <SettingsIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        Settings
+        <span class="text-xs font-light">App config</span>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Anchor>
+    <Anchor route="about" class="grow basis-48" style="view-transition-name:about">
+      <InfoIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        About
+        <span class="text-xs font-light">Info, Guides</span>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Anchor>
+  </div>
+  <span class="text-sm">
+    {import.meta.env.VITE_GIT_COMMIT_HASH}
+    <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
+  </span>
 </div>

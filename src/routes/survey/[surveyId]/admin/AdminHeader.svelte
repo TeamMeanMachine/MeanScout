@@ -16,6 +16,10 @@
   function getAnchorClass(matching: string) {
     return "active:left-0! active:top-0.5 " + (page == matching ? "font-bold underline" : "font-light");
   }
+
+  function navBar(div: HTMLElement) {
+    div.getElementsByClassName("font-bold")[0].scrollIntoView({ inline: "center" });
+  }
 </script>
 
 <div class="flex flex-col gap-4">
@@ -28,7 +32,11 @@
     backLink="survey/{surveyRecord.id}"
   />
 
-  <div class="flex flex-wrap gap-2 text-sm" style="view-transition-name:survey-header">
+  <div
+    use:navBar
+    class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap"
+    style="view-transition-name:survey-header"
+  >
     <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
     <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
     <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>

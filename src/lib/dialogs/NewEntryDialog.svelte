@@ -10,6 +10,7 @@
   import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
+  import { goto } from "$app/navigation";
 
   let {
     pageData,
@@ -157,7 +158,7 @@
           return;
         }
 
-        location.hash = `/entry/${id}`;
+        goto(`#/entry/${id}`);
       };
     },
   };

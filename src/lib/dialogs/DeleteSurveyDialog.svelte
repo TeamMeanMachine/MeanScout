@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import type { DialogExports } from "$lib/dialog";
   import { transaction } from "$lib/idb";
   import type { Survey } from "$lib/survey";
@@ -21,7 +22,7 @@
       };
 
       deleteTransaction.oncomplete = () => {
-        location.hash = "/";
+        goto("#/");
       };
 
       const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);
