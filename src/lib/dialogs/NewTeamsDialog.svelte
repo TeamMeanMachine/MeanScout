@@ -49,7 +49,7 @@
 <label class="flex flex-col">
   New team number(s)
   <input bind:value={teamInput} class="text-theme bg-neutral-800 p-2" />
-  <small class="pt-1">Separate multiple teams with commas</small>
+  <span class="pt-1 text-xs font-light">Separate multiple teams with commas</span>
 </label>
 
 {#if error}

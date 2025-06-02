@@ -7,10 +7,10 @@
   import { objectStore } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import { EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
   import { goto } from "$app/navigation";
+  import type { SurveyPageData } from "$lib/survey";
 
   let {
     pageData,
@@ -19,7 +19,7 @@
     prefilledScout,
     onnewscout,
   }: {
-    pageData: PageData;
+    pageData: SurveyPageData;
     prefilledMatch: number;
     prefilledTeam: string;
     prefilledScout: string | undefined;
@@ -197,7 +197,7 @@
                     ...pageData.surveyRecord,
                     scouts: [...(pageData.surveyRecord.scouts || []), newScout],
                   },
-                } as PageData;
+                } as SurveyPageData;
                 objectStore("surveys", "readwrite").put($state.snapshot(pageData.surveyRecord));
                 scout = newScout;
                 onnewscout(newScout);
@@ -244,7 +244,7 @@
     <div class="flex items-end justify-between">
       <span>Team</span>
       {#if $targetStore != "pit"}
-        <small class="text-theme capitalize">{$targetStore}</small>
+        <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
       {/if}
     </div>
 
@@ -258,7 +258,7 @@
       >
         <div class="flex flex-col truncate {teamBold(red1)}">
           <span class="text-red {teamUnderline(red1)}">{red1}</span>
-          <small class="truncate">{teamNumberNameMap.get(red1)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(red1)}</span>
         </div>
       </Button>
       <Button
@@ -270,7 +270,7 @@
       >
         <div class="flex flex-col truncate {teamBold(red2)}">
           <span class="text-red {teamUnderline(red2)}">{red2}</span>
-          <small class="truncate">{teamNumberNameMap.get(red2)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(red2)}</span>
         </div>
       </Button>
       <Button
@@ -282,7 +282,7 @@
       >
         <div class="flex flex-col truncate {teamBold(red3)}">
           <span class="text-red {teamUnderline(red3)}">{red3}</span>
-          <small class="truncate">{teamNumberNameMap.get(red3)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(red3)}</span>
         </div>
       </Button>
 
@@ -295,7 +295,7 @@
       >
         <div class="flex flex-col truncate {teamBold(blue1)}">
           <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-          <small class="truncate">{teamNumberNameMap.get(blue1)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(blue1)}</span>
         </div>
       </Button>
       <Button
@@ -307,7 +307,7 @@
       >
         <div class="flex flex-col truncate {teamBold(blue2)}">
           <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-          <small class="truncate">{teamNumberNameMap.get(blue2)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(blue2)}</span>
         </div>
       </Button>
       <Button
@@ -319,7 +319,7 @@
       >
         <div class="flex flex-col truncate {teamBold(blue3)}">
           <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-          <small class="truncate">{teamNumberNameMap.get(blue3)}</small>
+          <span class="truncate text-xs">{teamNumberNameMap.get(blue3)}</span>
         </div>
       </Button>
     </div>
@@ -353,7 +353,7 @@
     <EyeIcon class="text-theme" />
     <div class="flex flex-col">
       View data
-      <small>Info, analysis</small>
+      <span class="text-xs font-light">Info, analysis</span>
     </div>
   </Button>
 

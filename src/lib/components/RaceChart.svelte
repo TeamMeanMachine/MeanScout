@@ -5,19 +5,19 @@
   import { flip } from "svelte/animate";
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import Button from "./Button.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
+  import type { SurveyPageData } from "$lib/survey";
 
   let {
     pageData,
     entriesByTeam,
     analysisData,
   }: {
-    pageData: Extract<PageData, { surveyType: "match" }>;
+    pageData: Extract<SurveyPageData, { surveyType: "match" }>;
     entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
     analysisData: AnalysisData;
   } = $props();
@@ -247,15 +247,17 @@
       <div>
         <div class="flex items-end justify-between gap-3">
           <div class="flex flex-col">
-            <strong class:underline={matchData?.includes(teamData.team)}>{teamData.team}</strong>
+            <span class="font-bold" class:underline={matchData?.includes(teamData.team)}>{teamData.team}</span>
             {#if teamData.teamName}
-              <small class={matchData?.includes(teamData.team) ? "font-bold" : "font-light"}>{teamData.teamName}</small>
+              <span class={["text-xs", matchData?.includes(teamData.team) ? "font-bold" : "font-light"]}>
+                {teamData.teamName}
+              </span>
             {/if}
           </div>
           {#if "value" in teamData}
             {teamData.value.current.toFixed(2)}
           {:else}
-            <span>{teamData.percentage.current.toFixed(1)}<span class="text-sm">%</span></span>
+            <span>{teamData.percentage.current.toFixed(1)}<span class="text-xs font-light">%</span></span>
           {/if}
         </div>
         <div class="bg-neutral-800">

@@ -59,7 +59,7 @@
 
 <span>
   {#if $entryExport}
-    Submit this entry <strong>as exported?</strong>
+    Submit this entry <span class="font-bold">as exported?</span>
   {:else}
     Submit this entry?
   {/if}
@@ -69,15 +69,15 @@
   {#if $entryExport}
     <SquareCheckBigIcon class="text-theme" />
     <div class="flex grow flex-col">
-      <strong>Export</strong>
-      <small>QRF code</small>
+      <span class="font-bold">Export</span>
+      <span class="text-xs font-light">QRF code</span>
     </div>
     <ChevronUpIcon class="text-theme" />
   {:else}
     <SquareIcon class="text-theme" />
     <div class="flex grow flex-col">
       Export
-      <small>QRF code</small>
+      <span class="text-xs font-light">QRF code</span>
     </div>
     <ChevronDownIcon class="text-theme" />
   {/if}

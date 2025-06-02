@@ -203,11 +203,9 @@
                   <h2 class={groupSelect == field.id.toString() ? "font-bold" : "font-light"}>{field.name}</h2>
 
                   <div class="flex w-full gap-3">
-                    {#if !data.disabled}
-                      <Button onclick={() => onclickTopLevelField(field)} class="handle">
-                        <Icon class="text-theme" />
-                      </Button>
-                    {/if}
+                    <Button onclick={() => onclickTopLevelField(field)} class="handle">
+                      <Icon class="text-theme" />
+                    </Button>
 
                     <!--
                       Prevents "illegal invocation" errors and flashes of partial sort updates.

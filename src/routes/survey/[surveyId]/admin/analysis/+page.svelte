@@ -140,7 +140,7 @@
 
         {#if expressions.surveyDerived.length}
           <div class="flex flex-col">
-            <span class="text-sm">From expressions</span>
+            <span class="text-xs">From expressions</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.surveyDerived as expression}
                 {@render expressionButton(expression)}
@@ -151,7 +151,7 @@
 
         {#if expressions.surveyTba.length}
           <div class="flex flex-col">
-            <span class="text-sm">From TBA</span>
+            <span class="text-xs">From TBA</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.surveyTba as expression}
                 {@render expressionButton(expression)}
@@ -162,7 +162,7 @@
 
         {#if expressions.surveyPrimitive.length}
           <div class="flex flex-col">
-            <span class="text-sm">From fields</span>
+            <span class="text-xs">From fields</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.surveyPrimitive as expression}
                 {@render expressionButton(expression)}
@@ -179,7 +179,7 @@
 
         {#if expressions.entryDerived.length}
           <div class="flex flex-col">
-            <span class="text-sm">From expressions</span>
+            <span class="text-xs">From expressions</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.entryDerived as expression}
                 {@render expressionButton(expression)}
@@ -190,7 +190,7 @@
 
         {#if expressions.entryTba.length}
           <div class="flex flex-col">
-            <span class="text-sm">From TBA</span>
+            <span class="text-xs">From TBA</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.entryTba as expression}
                 {@render expressionButton(expression)}
@@ -201,7 +201,7 @@
 
         {#if expressions.entryPrimitive.length}
           <div class="flex flex-col">
-            <span class="text-sm">From fields</span>
+            <span class="text-xs">From fields</span>
             <div class="flex flex-wrap gap-2">
               {#each expressions.entryPrimitive as expression}
                 {@render expressionButton(expression)}
@@ -213,9 +213,9 @@
     {/if}
 
     <div
-      class="sticky bottom-3 z-20 flex w-80 max-w-full flex-col gap-2 self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
+      class="sticky bottom-3 z-20 flex w-80 max-w-full flex-col gap-2 self-start border border-neutral-500 bg-neutral-900 p-2 text-xs shadow-2xl"
     >
-      <div class="flex flex-wrap justify-stretch gap-2 text-xs">
+      <div class="flex flex-wrap justify-stretch gap-2">
         <Button onclick={() => ($newTab = "entry")} class={tabClass("entry")}>Entry</Button>
         <Button onclick={() => ($newTab = "survey")} class={tabClass("survey")}>Survey</Button>
         <Button onclick={() => ($newTab = "picklist")} class={tabClass("picklist")}>Pick List</Button>
@@ -223,9 +223,9 @@
 
       <div class="flex flex-col">
         {#if $newTab == "entry"}
-          <span class="text-sm">Entry Expression</span>
+          <span>Entry Expression</span>
 
-          <div class="flex flex-wrap gap-2 text-xs">
+          <div class="flex flex-wrap gap-2">
             <Button onclick={() => newExpression({ scope: "entry", input: "fields" })}>
               <PlusIcon class="text-theme size-5" />
               Fields
@@ -247,9 +247,9 @@
             </Button>
           </div>
         {:else if $newTab == "survey"}
-          <span class="text-sm">Survey Expression</span>
+          <span>Survey Expression</span>
 
-          <div class="flex flex-wrap gap-2 text-xs">
+          <div class="flex flex-wrap gap-2">
             <Button onclick={() => newExpression({ scope: "survey", input: "fields" })}>
               <PlusIcon class="text-theme size-5" />
               Fields
@@ -270,9 +270,9 @@
             </Button>
           </div>
         {:else if $newTab == "picklist"}
-          <span class="text-sm">New</span>
+          <span>New</span>
 
-          <div class="flex flex-wrap gap-2 text-xs">
+          <div class="flex flex-wrap gap-2">
             <Button
               onclick={() => {
                 openDialog(NewPickListDialog, {

@@ -35,7 +35,7 @@
       class="-mx-1 grid gap-x-4 gap-y-3 overflow-x-auto px-1"
       style="grid-template-columns: repeat(7, min-content) auto;"
     >
-      <div class="col-span-full grid grid-cols-subgrid items-end gap-x-4 px-2 text-center text-sm">
+      <div class="col-span-full grid grid-cols-subgrid items-end gap-x-4 px-2 text-center text-xs">
         <div class="text-left">Scout</div>
         <div>Adjusted Points</div>
         <div>Total Points</div>
@@ -59,8 +59,8 @@
           <div class="text-center">{adjustedPoints.toFixed(2)}</div>
           <div class="text-center">{points}</div>
           <div class="text-center">{coopPoints}</div>
-          <div class="text-center">{correctGuesses}<small class="font-light">/{entries.length}</small></div>
-          <div class="text-center">{(accuracy * 100).toFixed(1)}%</div>
+          <div class="text-center">{correctGuesses}<span class="text-xs font-light">/{entries.length}</span></div>
+          <div class="text-center">{(accuracy * 100).toFixed(1)}<span class="text-xs font-light">%</span></div>
         </Button>
 
         {#if selectedScout == scout && entries.length}
@@ -99,8 +99,8 @@
         <div>{data.totalAdjustedPoints.toFixed(2)}</div>
         <div>{data.totalPoints}</div>
         <div>{data.totalCoopPoints}</div>
-        <div>{data.totalCorrectGuesses}<small class="font-light">/{data.entryRecords.length}</small></div>
-        <div>{(data.overallAccuracy * 100).toFixed(1)}%</div>
+        <div>{data.totalCorrectGuesses}<span class="text-xs font-light">/{data.entryRecords.length}</span></div>
+        <div>{(data.overallAccuracy * 100).toFixed(1)}<span class="text-xs font-light">%</span></div>
       </div>
     </div>
   {:else if $tab == "matches" && data.predictionsPerMatch.length}

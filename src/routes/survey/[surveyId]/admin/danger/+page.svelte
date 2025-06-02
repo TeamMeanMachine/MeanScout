@@ -103,7 +103,7 @@
       <div class="flex flex-col">
         Delete ENTIRE survey&hellip;
         {#if data.entryRecords.length}
-          <small>Including entries</small>
+          <span class="text-xs font-light">Including entries</span>
         {/if}
       </div>
     </Button>

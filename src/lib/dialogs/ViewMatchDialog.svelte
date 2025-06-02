@@ -5,14 +5,14 @@
   import { openDialog } from "$lib/dialog";
   import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import type { SurveyPageData } from "$lib/survey";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
     pageData,
     match,
   }: {
-    pageData: PageData;
+    pageData: SurveyPageData;
     match: Match;
   } = $props();
 
@@ -122,59 +122,57 @@
 <span>Match {match.number}</span>
 
 {#if !hideAnalysis}
-  <div class="flex flex-wrap gap-4">
-    <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
-      {#if pageData.surveyRecord.pickLists.length}
-        <optgroup label="Pick Lists">
-          {#each pageData.surveyRecord.pickLists as pickList}
-            <option value="picklist-{pickList.name}">{pickList.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.surveyDerived?.length}
-        <optgroup label="Survey Expressions from expressions">
-          {#each expressions.surveyDerived as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.surveyTba?.length}
-        <optgroup label="Survey Expressions from TBA">
-          {#each expressions.surveyTba as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.surveyPrimitive?.length}
-        <optgroup label="Survey Expressions from fields">
-          {#each expressions.surveyPrimitive as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.entryDerived?.length}
-        <optgroup label="Entry Expressions from expressions">
-          {#each expressions.entryDerived as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.entryTba?.length}
-        <optgroup label="Entry Expressions from TBA">
-          {#each expressions.entryTba as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-      {#if expressions.entryPrimitive?.length}
-        <optgroup label="Entry Expressions from fields">
-          {#each expressions.entryPrimitive as expression}
-            <option value="expression-{expression.name}">{expression.name}</option>
-          {/each}
-        </optgroup>
-      {/if}
-    </select>
-  </div>
+  <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2 text-sm">
+    {#if pageData.surveyRecord.pickLists.length}
+      <optgroup label="Pick Lists">
+        {#each pageData.surveyRecord.pickLists as pickList}
+          <option value="picklist-{pickList.name}">{pickList.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.surveyDerived?.length}
+      <optgroup label="Survey Expressions from expressions">
+        {#each expressions.surveyDerived as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.surveyTba?.length}
+      <optgroup label="Survey Expressions from TBA">
+        {#each expressions.surveyTba as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.surveyPrimitive?.length}
+      <optgroup label="Survey Expressions from fields">
+        {#each expressions.surveyPrimitive as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.entryDerived?.length}
+      <optgroup label="Entry Expressions from expressions">
+        {#each expressions.entryDerived as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.entryTba?.length}
+      <optgroup label="Entry Expressions from TBA">
+        {#each expressions.entryTba as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+    {#if expressions.entryPrimitive?.length}
+      <optgroup label="Entry Expressions from fields">
+        {#each expressions.entryPrimitive as expression}
+          <option value="expression-{expression.name}">{expression.name}</option>
+        {/each}
+      </optgroup>
+    {/if}
+  </select>
 {/if}
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
@@ -201,7 +199,7 @@
     >
       <div class="flex flex-col">
         {#if teamName}
-          <small class="no-underline! {getMatchTeamFontWeight(team)}">{teamName}</small>
+          <span class="text-xs no-underline! {getMatchTeamFontWeight(team)}">{teamName}</span>
         {/if}
         <span class="{alliance == 'red' ? 'text-red' : 'text-blue'} {getMatchTeamFontWeight(team)}">{team}</span>
       </div>
@@ -215,9 +213,10 @@
       }}
       class="justify-center text-sm"
     >
-      <div>
+      <div class="flex items-baseline">
         {#if rank !== undefined}
-          <span class="font-bold">{rank + 1}</span><span class="hidden text-xs sm:inline">{getOrdinal(rank + 1)}</span>
+          <span class="font-bold">{rank + 1}</span>
+          <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
         {:else}
           -
         {/if}
@@ -227,9 +226,9 @@
     <div>
       <div class="flex items-end justify-between gap-3">
         <div class="flex flex-col">
-          <strong>{team.team}</strong>
+          <span class="font-bold">{team.team}</span>
           {#if team?.teamName}
-            <small class="font-light">{team?.teamName}</small>
+            <span class="text-xs font-light">{team?.teamName}</span>
           {/if}
         </div>
         {#if team && "value" in team}

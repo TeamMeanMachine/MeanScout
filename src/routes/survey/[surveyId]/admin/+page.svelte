@@ -172,7 +172,7 @@
       <SquarePenIcon class="text-theme" />
       <div class="flex flex-col">
         {data.surveyRecord.name}
-        <small>Edit name</small>
+        <span class="text-xs font-light">Edit name</span>
       </div>
     </Button>
   </div>
@@ -196,7 +196,7 @@
       {#if data.surveyRecord.tbaEventKey}
         <div class="flex flex-col">
           {data.surveyRecord.tbaEventKey}
-          <small>Edit event</small>
+          <span class="text-xs font-light">Edit event</span>
         </div>
       {:else}
         Add event
@@ -212,11 +212,11 @@
         {/if}
         <div class="flex flex-col">
           Get data from TBA
-          <small>
+          <span class="text-xs font-light">
             Matches,
             {data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length ? "metrics," : ""}
             teams
-          </small>
+          </span>
         </div>
       </Button>
       {#if getTbaDataError}

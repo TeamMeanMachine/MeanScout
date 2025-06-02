@@ -132,14 +132,14 @@
         <Share2Icon class="text-theme" />
         <div class="flex flex-col">
           Share
-          <small>As CSV</small>
+          <span class="text-xs font-light">As CSV</span>
         </div>
       </Button>
       <Button onclick={shareEntryAsJsonFile} class="grow">
         <Share2Icon class="text-theme" />
         <div class="flex flex-col">
           Share
-          <small>As JSON</small>
+          <span class="text-xs font-light">As JSON</span>
         </div>
       </Button>
     </div>
@@ -150,14 +150,14 @@
       <FileSpreadsheetIcon class="text-theme" />
       <div class="flex flex-col">
         Save
-        <small>As CSV</small>
+        <span class="text-xs font-light">As CSV</span>
       </div>
     </Button>
     <Button onclick={saveEntryAsJsonFile} class="grow">
       <FileJsonIcon class="text-theme" />
       <div class="flex flex-col">
         Save
-        <small>As JSON</small>
+        <span class="text-xs font-light">As JSON</span>
       </div>
     </Button>
   </div>

@@ -138,10 +138,19 @@
 {/if}
 
 {#snippet preview()}
-  <span><small>Name</small> <strong>{importedSurvey?.name}</strong></span>
-  <span><small>Type</small> <strong>{importedSurvey?.type}</strong></span>
+  <span>
+    <span class="text-xs font-light">Name</span>
+    <span class="font-bold">{importedSurvey?.name}</span>
+  </span>
+  <span>
+    <span class="text-xs font-light">Type</span>
+    <span class="font-bold">{importedSurvey?.type}</span>
+  </span>
   {#if importedSurvey?.tbaEventKey}
-    <span><small>TBA Event Key</small> <strong>{importedSurvey.tbaEventKey}</strong></span>
+    <span>
+      <span class="text-xs font-light">TBA Event Key</span>
+      <span class="font-bold">{importedSurvey.tbaEventKey}</span>
+    </span>
   {/if}
 {/snippet}
 

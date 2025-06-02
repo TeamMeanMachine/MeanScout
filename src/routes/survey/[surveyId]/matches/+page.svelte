@@ -78,7 +78,7 @@
     <div class="flex flex-wrap gap-2">
       {#if upcomingMatches.length}
         <div class="flex grow basis-0 flex-col">
-          <small>Upcoming</small>
+          <span class="text-xs">Upcoming</span>
           <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
             {#each upcomingMatches as match (match)}
               {@render teamRow(match)}
@@ -89,7 +89,7 @@
 
       {#if previousMatches.length}
         <div class="flex grow basis-0 flex-col">
-          <small>Previous</small>
+          <span class="text-xs">Previous</span>
           <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
             {#each previousMatches as match (match)}
               {@render teamRow(match)}

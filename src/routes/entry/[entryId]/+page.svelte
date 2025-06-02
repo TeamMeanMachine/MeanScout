@@ -46,21 +46,21 @@
   <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
     {#if data.surveyType == "match"}
       <div class="flex flex-col">
-        <small>Match</small>
-        <strong>{data.entryRecord.match}</strong>
+        <span class="text-xs">Match</span>
+        <span class="font-bold">{data.entryRecord.match}</span>
       </div>
     {/if}
     <div class="flex flex-col">
-      <small class="text-wrap">{data.teamName || "Team"}</small>
-      <strong>{data.entryRecord.team}</strong>
+      <span class="text-xs text-wrap">{data.teamName || "Team"}</span>
+      <span class="font-bold">{data.entryRecord.team}</span>
     </div>
 
     {#if data.surveyRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
       <div class="flex flex-col">
-        <small>Prediction</small>
-        <strong class="capitalize text-{data.entryRecord.prediction}">
+        <span class="text-xs">Prediction</span>
+        <span class="font-bold capitalize text-{data.entryRecord.prediction}">
           {data.entryRecord.prediction} wins
-        </strong>
+        </span>
       </div>
     {/if}
   </div>
@@ -69,7 +69,7 @@
     <div class="flex flex-wrap items-end gap-2">
       {#if data.surveyRecord.scouts.length}
         <label class="flex flex-col">
-          <small>Scout</small>
+          <span class="text-sm">Scout</span>
           <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
             {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
               <option>{scout}</option>
@@ -101,8 +101,8 @@
     </div>
   {:else if entry.scout}
     <div class="flex flex-col">
-      <small>Scout</small>
-      <strong>{entry.scout}</strong>
+      <span class="text-xs">Scout</span>
+      <span class="font-bold">{entry.scout}</span>
     </div>
   {/if}
 
@@ -121,7 +121,7 @@
       {/if}
       <div class="flex flex-col">
         <span class:font-bold={entry.absent}>Absent</span>
-        <small class="font-light">Robot no-showed</small>
+        <span class="text-xs font-light">Robot no-showed</span>
       </div>
     </Button>
   {/if}

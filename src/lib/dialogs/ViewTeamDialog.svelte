@@ -1,21 +1,21 @@
 <script lang="ts">
   import { type Team } from "$lib";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import type { SurveyPageData } from "$lib/survey";
 
   let {
     pageData,
     team,
   }: {
-    pageData: PageData;
+    pageData: SurveyPageData;
     team: Team;
   } = $props();
 </script>
 
 <div class="flex flex-col">
-  <strong>Team {team.number}</strong>
+  <span class="font-bold">Team {team.number}</span>
   {#if team.name}
-    <small class="font-light">{team.name}</small>
+    <span class="text-xs font-light">{team.name}</span>
   {/if}
 </div>
 

@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { Team } from "$lib";
   import type { Entry } from "$lib/entry";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
+  import type { SurveyPageData } from "$lib/survey";
 
   let {
     pageData,
     team,
   }: {
-    pageData: PageData;
+    pageData: SurveyPageData;
     team: Team;
   } = $props();
 

@@ -104,7 +104,7 @@
     <CrosshairIcon class="text-theme" />
     <div class="flex grow flex-col">
       Target
-      <small>Which robot you're scouting</small>
+      <span class="text-xs font-light">Which robot you're scouting</span>
     </div>
     <select bind:value={targetInput} class="text-theme bg-neutral-800 p-2 capitalize">
       {#each targets as target}
@@ -117,7 +117,7 @@
     <CameraIcon class="text-theme" />
     <div class="flex grow flex-col">
       Camera
-      <small>Used to scan QRF codes</small>
+      <span class="text-xs font-light">Used to scan QRF codes</span>
     </div>
     {#if cameras.length}
       <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
@@ -127,7 +127,7 @@
         {/each}
       </select>
     {:else if noCamera}
-      <span>No camera</span>
+      <span class="text-sm font-light">No camera</span>
     {:else}
       <LoaderIcon class="text-theme animate-spin" />
     {/if}
@@ -137,7 +137,7 @@
     <UsersIcon class="text-theme" />
     <div class="flex grow flex-col">
       Your team
-      <small>Used w/ TBA data, upcoming match views</small>
+      <span class="text-xs font-light">Used w/ TBA data, upcoming match views</span>
     </div>
     <input bind:value={teamInput} class="text-theme w-32 bg-neutral-800 p-2" />
   </label>
@@ -146,7 +146,7 @@
     <KeyIcon class="text-theme" />
     <div class="flex grow flex-col">
       Custom TBA auth key
-      <small>You may want to use your own</small>
+      <span class="text-xs font-light">You may want to use your own</span>
     </div>
     <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
   </label>
@@ -156,7 +156,7 @@
       <BringToFrontIcon class="text-theme" />
       <div class="flex grow flex-col">
         Animations
-        <small>They're fancy!</small>
+        <span class="text-xs font-light">They're fancy!</span>
       </div>
       <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
         <option value="minimal">Minimal</option>

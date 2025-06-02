@@ -1,23 +1,9 @@
-import type { MatchEntry, PitEntry } from "$lib/entry";
-import type { Field } from "$lib/field";
+import { getFieldsWithDetails } from "$lib/field";
 import { transaction } from "$lib/idb";
-import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import type { SurveyPageData } from "$lib/survey";
 
 export function loadSurveyPageData(surveyId: number) {
-  return new Promise<
-    | {
-        surveyType: "match";
-        surveyRecord: IDBRecord<MatchSurvey>;
-        fieldRecords: IDBRecord<Field>[];
-        entryRecords: IDBRecord<MatchEntry>[];
-      }
-    | {
-        surveyType: "pit";
-        surveyRecord: IDBRecord<PitSurvey>;
-        fieldRecords: IDBRecord<Field>[];
-        entryRecords: IDBRecord<PitEntry>[];
-      }
-  >((resolve) => {
+  return new Promise<SurveyPageData>((resolve) => {
     const surveyTransaction = transaction(["surveys", "fields", "entries"]);
 
     surveyTransaction.onabort = () => {
@@ -50,10 +36,12 @@ export function loadSurveyPageData(surveyId: number) {
 
           localStorage.setItem("survey", surveyRecord.id);
 
+          const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
+
           if (surveyRecord.type == "match") {
-            resolve({ surveyType: "match", surveyRecord, fieldRecords, entryRecords });
+            resolve({ surveyType: "match", surveyRecord, fieldRecords, entryRecords, fieldsWithDetails });
           } else {
-            resolve({ surveyType: "pit", surveyRecord, fieldRecords, entryRecords });
+            resolve({ surveyType: "pit", surveyRecord, fieldRecords, entryRecords, fieldsWithDetails });
           }
         };
       };

@@ -26,7 +26,7 @@
 <div class="flex flex-col">
   <span>{field.name}</span>
   {#if field.tip}
-    <small class="font-light">{field.tip}</small>
+    <span class="text-xs font-light">{field.tip}</span>
   {/if}
   <div class="flex flex-wrap">
     {#each Array(5) as _, i}

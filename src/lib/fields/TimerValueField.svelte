@@ -54,7 +54,7 @@
 <div class="flex flex-col">
   <span>{field.name}</span>
   {#if field.tip}
-    <small class="font-light">{field.tip}</small>
+    <span class="text-xs font-light">{field.tip}</span>
   {/if}
   <div class="flex flex-wrap">
     <Button onclick={running ? pause : start} class="active:top-0! active:left-0.5">

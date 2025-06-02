@@ -15,7 +15,7 @@
 <label class="flex w-full flex-col">
   <span>{field.name}</span>
   {#if field.tip}
-    <small class="font-light">{field.tip}</small>
+    <span class="text-xs font-light">{field.tip}</span>
   {/if}
   {#if field.long}
     <textarea bind:value {onchange} class="text-theme h-72 resize-none bg-neutral-800 p-2"> </textarea>

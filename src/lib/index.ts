@@ -35,14 +35,6 @@ export function getMatchTeamFontWeight(team: string) {
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
 
-export type TeamInfo = Team & {
-  entryCount: number;
-  matchCount: number;
-  isCustom: boolean;
-  pickListRanks?: number[] | undefined;
-  expressionRanks?: number[] | undefined;
-};
-
 export type EntryFilters = {
   team: string | undefined;
   match: number | undefined;

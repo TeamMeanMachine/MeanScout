@@ -3,19 +3,19 @@
   import { openDialog } from "$lib/dialog";
   import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import Button from "./Button.svelte";
-  import type { PageData } from "../../routes/survey/[surveyId]/$types";
   import { getOrdinal } from "$lib";
+  import type { SurveyPageData } from "$lib/survey";
 
   let {
     pageData,
     analysisData,
   }: {
-    pageData: PageData;
+    pageData: SurveyPageData;
     analysisData: AnalysisData;
   } = $props();
 </script>
 
-<div class="flex flex-wrap gap-x-4 text-sm">
+<div class="flex flex-wrap gap-x-4 text-xs">
   {#if analysisData.type == "picklist"}
     {#each analysisData.pickList.weights as weight, i}
       {@const color = colors[i % colors.length]}
@@ -43,23 +43,24 @@
       }}
       class="justify-center text-sm"
     >
-      <div>
-        <span class="font-bold">{rank + 1}</span><span class="hidden text-xs sm:inline">{getOrdinal(rank + 1)}</span>
+      <div class="flex items-baseline">
+        <span class="font-bold">{rank + 1}</span>
+        <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
       </div>
     </Button>
 
     <div>
       <div class="flex items-end justify-between gap-3">
         <div class="flex flex-col">
-          <strong>{teamData.team}</strong>
+          <span class="font-bold">{teamData.team}</span>
           {#if teamData.teamName}
-            <small class="font-light">{teamData.teamName}</small>
+            <span class="text-xs font-light">{teamData.teamName}</span>
           {/if}
         </div>
         {#if "value" in teamData}
           {teamData.value.toFixed(2)}
         {:else}
-          <span>{teamData.percentage.toFixed(1)}<span class="text-sm">%</span></span>
+          <span>{teamData.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
         {/if}
       </div>
 

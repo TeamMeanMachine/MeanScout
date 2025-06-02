@@ -29,7 +29,7 @@
     <div class="flex flex-col">
       <span class:font-bold={value}>{field.name}</span>
       {#if field.tip}
-        <small class="font-light">{field.tip}</small>
+        <span class="text-xs font-light">{field.tip}</span>
       {/if}
     </div>
   </Button>

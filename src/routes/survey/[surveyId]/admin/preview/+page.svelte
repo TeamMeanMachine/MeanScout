@@ -19,13 +19,13 @@
       <div class="flex flex-wrap gap-x-6 gap-y-3">
         {#if data.surveyRecord.type == "match"}
           <div class="flex flex-col">
-            <small>Match</small>
-            <strong>##</strong>
+            <span class="text-xs">Match</span>
+            <span class="font-bold">##</span>
           </div>
         {/if}
         <div class="flex flex-col">
-          <small>Team</small>
-          <strong>####</strong>
+          <span class="text-xs">Team</span>
+          <span class="font-bold">####</span>
         </div>
       </div>
 

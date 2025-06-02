@@ -1,10 +1,18 @@
 import { matchSchema, schemaVersion, teamSchema } from "./";
 import { z } from "zod";
 import { pickListSchema } from "./analysis";
-import type { Field } from "./field";
+import type { Field, getFieldsWithDetails } from "./field";
 import { compress, decompress } from "./compress";
 import { expressionSchema } from "./expression";
-import type { Entry } from "./entry";
+import type { Entry, MatchEntry, PitEntry } from "./entry";
+
+export type SurveyPageData = {
+  fieldRecords: IDBRecord<Field>[];
+  fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
+} & (
+  | { surveyType: "match"; surveyRecord: IDBRecord<MatchSurvey>; entryRecords: IDBRecord<MatchEntry>[] }
+  | { surveyType: "pit"; surveyRecord: IDBRecord<PitSurvey>; entryRecords: IDBRecord<PitEntry>[] }
+);
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];

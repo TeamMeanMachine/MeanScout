@@ -57,8 +57,8 @@
     <tr>
       <td colspan="2" class="p-2">
         <div class="flex flex-col">
-          <small>{field.name}</small>
-          <strong>"{value}"</strong>
+          <span class="text-sm">{field.name}</span>
+          <span class="font-bold">"{value}"</span>
         </div>
       </td>
     </tr>
@@ -87,7 +87,7 @@
         <td class="p-2 font-bold">
           {entryRecord.team}
           {#if teamName}
-            <div><small class="font-light">{teamName}</small></div>
+            <div class="text-xs font-light">{teamName}</div>
           {/if}
         </td>
       </tr>
@@ -105,7 +105,7 @@
             <td class="p-2">
               <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
               {#if entryRecord.predictionReason}
-                <div><small class="font-light">"{entryRecord.predictionReason}"</small></div>
+                <div class="text-xs font-light">"{entryRecord.predictionReason}"</div>
               {/if}
             </td>
           </tr>

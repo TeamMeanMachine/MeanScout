@@ -36,11 +36,11 @@
         {#if type == "h1"}
           <h1 class="font-bold">{text}</h1>
         {:else if type == "sm"}
-          <small>{text}</small>
+          <span class="text-xs font-light">{text}</span>
         {/if}
       {/each}
     {/if}
   </div>
 
-  <small class="text-theme font-bold capitalize">{$targetStore}</small>
+  <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
 </header>

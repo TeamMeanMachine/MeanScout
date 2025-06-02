@@ -46,7 +46,7 @@
       <Share2Icon class="text-theme" />
       <div class="flex flex-col">
         Share
-        <small>As JSON</small>
+        <span class="text-xs font-light">As JSON</span>
       </div>
     </Button>
   {/if}
@@ -54,7 +54,7 @@
     <FileJsonIcon class="text-theme" />
     <div class="flex flex-col">
       Save
-      <small>As JSON</small>
+      <span class="text-xs font-light">As JSON</span>
     </div>
   </Button>
 {/if}

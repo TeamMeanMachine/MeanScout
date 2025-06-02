@@ -53,5 +53,5 @@
 <label class="flex flex-col">
   Default to
   <input bind:value={changes.defaultTo} class="text-theme bg-neutral-800 p-2" />
-  <small>Leave blank to keep input</small>
+  <span class="text-xs font-light">Leave blank to keep input</span>
 </label>

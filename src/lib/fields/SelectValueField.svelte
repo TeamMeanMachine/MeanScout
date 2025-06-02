@@ -18,7 +18,7 @@
   <div class="flex flex-col self-start">
     <span>{field.name}</span>
     {#if field.tip}
-      <small class="font-light">{field.tip}</small>
+      <span class="text-xs font-light">{field.tip}</span>
     {/if}
     <div class="flex flex-wrap gap-2">
       {#each field.values as val}
@@ -37,7 +37,7 @@
   <label class="flex flex-col self-start">
     <span>{field.name}</span>
     {#if field.tip}
-      <small class="font-light">{field.tip}</small>
+      <span class="text-xs font-light">{field.tip}</span>
     {/if}
     <select bind:value {onchange} class="text-theme bg-neutral-800 p-2 capitalize">
       {#each field.values as val}

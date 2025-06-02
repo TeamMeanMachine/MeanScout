@@ -293,7 +293,7 @@
       <WrenchIcon class="text-theme" />
       <div class="flex flex-col">
         Fix entries
-        <small>{duplicateEntryIds.length} duplicate entries were found</small>
+        <span class="text-xs font-light">{duplicateEntryIds.length} duplicate entries were found</span>
       </div>
     </Button>
   {/if}
@@ -416,61 +416,63 @@
       </div>
     </div>
 
-    <div>
-      {#if filtersApplied}
-        {filteredEntries.length}<small class="font-light">/{data.entryRecords.length}</small>
-        - {filtersApplied}
-        {filtersApplied == 1 ? "filter" : "filters"}
-      {:else}
-        {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
-      {/if}
-    </div>
+    <div class="flex flex-col">
+      <div>
+        {#if filtersApplied}
+          {filteredEntries.length}<span class="text-xs font-light">/{data.entryRecords.length}</span>
+          - {filtersApplied}
+          {filtersApplied == 1 ? "filter" : "filters"}
+        {:else}
+          {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
+        {/if}
+      </div>
 
-    <div class="flex flex-wrap gap-2">
-      <Button
-        onclick={() => {
-          openDialog(ExportEntriesDialog, {
-            surveyRecord: data.surveyRecord,
-            entries: filteredEntries,
-            onexport: () => refresh(),
-          });
-        }}
-        disabled={!filteredEntries.length}
-        class="grow basis-48"
-      >
-        <ShareIcon class="text-theme" />
-        <div class="flex flex-col">
-          Export
-          <small>QRF code, File</small>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          openDialog(ImportEntriesDialog, {
-            surveyRecord: data.surveyRecord,
-            orderedSingleFields: data.fieldsWithDetails.orderedSingle,
-            existingEntries: data.entryRecords,
-            onimport: refresh,
-          });
-        }}
-        class="grow basis-48"
-      >
-        <ImportIcon class="text-theme" />
-        <div class="flex flex-col">
-          Import
-          <small>
-            {#if $cameraStore}
-              QRF code, File
-            {:else}
-              File
-            {/if}
-          </small>
-        </div>
-      </Button>
+      <div class="flex flex-wrap gap-2">
+        <Button
+          onclick={() => {
+            openDialog(ExportEntriesDialog, {
+              surveyRecord: data.surveyRecord,
+              entries: filteredEntries,
+              onexport: () => refresh(),
+            });
+          }}
+          disabled={!filteredEntries.length}
+          class="grow basis-48"
+        >
+          <ShareIcon class="text-theme" />
+          <div class="flex flex-col">
+            Export
+            <span class="text-xs font-light">QRF code, File</span>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            openDialog(ImportEntriesDialog, {
+              surveyRecord: data.surveyRecord,
+              orderedSingleFields: data.fieldsWithDetails.orderedSingle,
+              existingEntries: data.entryRecords,
+              onimport: refresh,
+            });
+          }}
+          class="grow basis-48"
+        >
+          <ImportIcon class="text-theme" />
+          <div class="flex flex-col">
+            Import
+            <span class="text-xs font-light">
+              {#if $cameraStore}
+                QRF code, File
+              {:else}
+                File
+              {/if}
+            </span>
+          </div>
+        </Button>
+      </div>
     </div>
 
     {#if data.surveyType == "match" && filteredEntries.length}
-      <div class="flex flex-col">
+      <div class="flex flex-col text-sm">
         <span>Group by</span>
         <div class="flex flex-wrap gap-2">
           {#if data.surveyType == "match"}
@@ -505,28 +507,30 @@
     >
       {#if entry.type == "match" && $groupBy != "match"}
         <div class="flex flex-col">
-          <small class="font-light">Match</small>
+          <span class="text-xs font-light">Match</span>
           <span>{entry.match}</span>
         </div>
       {/if}
       {#if $groupBy != "team"}
         {@const teamName = data.surveyRecord.teams.find((t) => t.number == entry.team)?.name}
         <div class="flex w-32 max-w-full flex-col">
-          <small class="overflow-hidden font-light text-nowrap text-ellipsis">{teamName || "Team"}</small>
+          <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">{teamName || "Team"}</span>
           <span>{entry.team}</span>
         </div>
       {/if}
       {#if $groupBy != "scout" && entry.type == "match" && entry.scout}
         <div class="flex w-24 max-w-full flex-col">
-          <small class="font-light text-wrap">Scout</small>
+          <span class="text-xs font-light text-wrap">Scout</span>
           <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
         </div>
       {/if}
       <div class="flex flex-col">
-        {#if entry.type == "match"}
-          <small>{entry.absent ? "Absent" : ""}</small>
+        {#if entry.type == "match" && entry.absent}
+          <span class="text-xs">Absent</span>
         {/if}
-        <small>{entry.status == "exported" ? "Exported" : ""}</small>
+        {#if entry.status == "exported"}
+          <span class="text-xs">Exported</span>
+        {/if}
       </div>
     </Button>
   {/snippet}
@@ -564,7 +568,7 @@
           <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
             <h2 class="font-bold">Team {team}</h2>
             {#if teamName}
-              <small>{teamName}</small>
+              <span class="text-xs font-light">{teamName}</span>
             {/if}
           </div>
           {#each thisTeamEntries as entry (entry.id)}
