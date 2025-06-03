@@ -59,44 +59,45 @@
 
   {#if upcomingMatches.length || previousMatches.length}
     {#snippet teamRow(match: Match)}
-      <Button
-        onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })}
-        class="col-span-full grid grid-cols-subgrid gap-x-3 text-center!"
-      >
-        <div>{match.number}</div>
-        <div class="col-span-3 grid grid-cols-subgrid gap-x-3">
-          <div class="text-red {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
-          <div class="text-red {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
-          <div class="text-red {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
-          <div class="text-blue {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
-          <div class="text-blue {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
-          <div class="text-blue {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
+      <Button onclick={() => openDialog(ViewMatchDialog, { pageData: data, match })} class="flex-nowrap! text-center!">
+        <div class="min-w-8">{match.number}</div>
+        <div class="flex flex-wrap gap-x-2">
+          <div class="text-red flex flex-wrap gap-x-2">
+            <div class="min-w-13 {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
+            <div class="min-w-13 {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
+            <div class="min-w-13 {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
+          </div>
+          <div class="text-blue flex flex-wrap gap-x-2">
+            <div class="min-w-13 {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
+            <div class="min-w-13 {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
+            <div class="min-w-13 {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
+          </div>
         </div>
       </Button>
     {/snippet}
 
     <div class="flex flex-wrap gap-2">
-      {#if upcomingMatches.length}
-        <div class="flex grow basis-0 flex-col">
-          <span class="text-xs">Upcoming</span>
-          <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
-            {#each upcomingMatches as match (match)}
-              {@render teamRow(match)}
-            {/each}
-          </div>
+      <div class="flex grow basis-60 flex-col">
+        <span class="text-xs">Upcoming</span>
+        <div class="flex flex-col gap-2">
+          {#each upcomingMatches as match}
+            {@render teamRow(match)}
+          {:else}
+            <span class="text-sm">No upcoming matches.</span>
+          {/each}
         </div>
-      {/if}
+      </div>
 
-      {#if previousMatches.length}
-        <div class="flex grow basis-0 flex-col">
-          <span class="text-xs">Previous</span>
-          <div class="grid grid-cols-[repeat(4,min-content)_auto] gap-2">
-            {#each previousMatches as match (match)}
-              {@render teamRow(match)}
-            {/each}
-          </div>
+      <div class="flex grow basis-60 flex-col">
+        <span class="col-span-full text-xs">Previous</span>
+        <div class="flex flex-col gap-2">
+          {#each previousMatches as match}
+            {@render teamRow(match)}
+          {:else}
+            <span class="text-sm">No previous matches.</span>
+          {/each}
         </div>
-      {/if}
+      </div>
     </div>
   {:else}
     No matches.

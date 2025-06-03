@@ -161,7 +161,7 @@
   const upcomingMatches = $derived(
     matches
       .filter((match) => match.number > lastCompletedMatch)
-      .toSorted((a, b) => b.number - a.number)
+      .toSorted((a, b) => a.number - b.number)
       .slice(0, 3),
   );
 
@@ -416,27 +416,29 @@
       </div>
     </div>
 
-    {#if upcomingMatches.length}
-      <div class="flex flex-col">
-        <span class="col-span-full text-xs">Upcoming</span>
+    <div class="flex flex-wrap gap-2">
+      <div class="flex grow basis-60 flex-col">
+        <span class="text-xs">Upcoming</span>
         <div class="flex flex-col gap-2">
           {#each upcomingMatches as match}
             {@render teamRow(match)}
+          {:else}
+            <span class="text-sm">No upcoming matches.</span>
           {/each}
         </div>
       </div>
-    {/if}
 
-    {#if previousMatches.length}
-      <div class="flex flex-col">
+      <div class="flex grow basis-60 flex-col">
         <span class="col-span-full text-xs">Previous</span>
         <div class="flex flex-col gap-2">
           {#each previousMatches as match}
             {@render teamRow(match)}
+          {:else}
+            <span class="text-sm">No previous matches.</span>
           {/each}
         </div>
       </div>
-    {/if}
+    </div>
   </div>
 {/snippet}
 

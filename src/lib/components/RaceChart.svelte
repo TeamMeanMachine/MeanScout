@@ -6,11 +6,10 @@
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
   import Button from "./Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import ViewTeamDialog from "$lib/dialogs/ViewTeamDialog.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
   import type { SurveyPageData } from "$lib/survey";
+  import { goto } from "$app/navigation";
 
   let {
     pageData,
@@ -22,6 +21,7 @@
     analysisData: AnalysisData;
   } = $props();
 
+  const teamView = sessionStorageStore<string>("team-view", "");
   const playing = sessionStorageStore<"" | "true">("race-chart-playing", "");
 
   const changeDuration = 700;
@@ -229,23 +229,26 @@
   {#each data as teamData, rank (teamData.team)}
     {@const color = `rgb(var(--theme-color) / ${teamData.percentage.current.toFixed(2)}%)`}
 
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
+      onclick={() => ($teamView = teamData.team)}
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button
-        onclick={() => {
-          openDialog(ViewTeamDialog, { pageData, team: { number: teamData.team, name: teamData.teamName } });
-        }}
-        class="justify-center text-sm"
-      >
-        <div>
-          <span class="font-bold">{rank + 1}</span><span class="hidden text-xs sm:inline">{getOrdinal(rank + 1)}</span>
+      <Button onclick={() => goto(`#/survey/${pageData.surveyRecord.id}/teams`)} class="justify-center text-sm">
+        <div class="flex items-baseline">
+          <span class="font-bold">{rank + 1}</span>
+          <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
         </div>
       </Button>
 
       <div>
-        <div class="flex items-end justify-between gap-3">
+        <div
+          class={[
+            "flex items-end justify-between gap-3",
+            $teamView == teamData.team && "border-l-[6px] border-neutral-400 bg-neutral-800 pl-1",
+          ]}
+        >
           <div class="flex flex-col">
             <span class="font-bold" class:underline={matchData?.includes(teamData.team)}>{teamData.team}</span>
             {#if teamData.teamName}
@@ -260,7 +263,7 @@
             <span>{teamData.percentage.current.toFixed(1)}<span class="text-xs font-light">%</span></span>
           {/if}
         </div>
-        <div class="bg-neutral-800">
+        <div class={$teamView == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
           <div style="background-color:{color};width:{teamData.percentage.current.toFixed(2)}%;height:6px"></div>
         </div>
       </div>
