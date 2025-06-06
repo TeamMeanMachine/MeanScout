@@ -45,12 +45,22 @@
   const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 
   const prefilledMatch = $derived.by(() => {
+    if (data.surveyType == "pit") return 0;
     const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
     return 1 + Math.max(...recordedMatches, 0);
   });
 
   const prefilledTeam = $derived.by(() => {
-    if (data.surveyType != "match") return "";
+    if (data.surveyType == "pit") {
+      if (!data.surveyRecord.teams.length) return "";
+
+      const scoutedTeams = data.entryRecords.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
+      const unscoutedTeams = data.surveyRecord.teams
+        .filter((t) => !scoutedTeams.includes(t.number))
+        .toSorted((a, b) => Number(a.number) - Number(b.number));
+
+      return unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
+    }
 
     const matchData = data.surveyRecord.matches.find((match) => match.number == prefilledMatch);
     if (!matchData) return "";
