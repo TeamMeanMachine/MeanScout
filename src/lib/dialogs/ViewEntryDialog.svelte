@@ -52,10 +52,54 @@
   }
 </script>
 
+<div class="flex flex-wrap items-center gap-2">
+  {#if onchange}
+    <Button
+      onclick={() =>
+        openDialog(ExportEntriesDialog, {
+          surveyRecord,
+          entries: [entry],
+          onexport(newEntry) {
+            if (newEntry) {
+              entry = newEntry;
+              onchange();
+            }
+          },
+        })}
+    >
+      <ShareIcon class="text-theme size-5" />
+    </Button>
+  {/if}
+
+  <span class="grow font-bold">Entry</span>
+
+  {#if onchange}
+    {#if entry.type != "match" || !entry.absent}
+      <Button onclick={editEntry}>
+        <SquarePenIcon class="text-theme size-5" />
+      </Button>
+    {/if}
+
+    <Button
+      onclick={() =>
+        openDialog(DeleteEntryDialog, {
+          surveyRecord,
+          entryRecord,
+          ondelete: () => {
+            onchange();
+            closeDialog();
+          },
+        })}
+    >
+      <Trash2Icon class="text-theme size-5" />
+    </Button>
+  {/if}
+</div>
+
 {#snippet fieldRow(field: SingleField, value: Value)}
   {#if field.type == "text"}
     <tr>
-      <td colspan="2" class="p-2">
+      <td colspan="2" class="p-2 pl-0">
         <div class="flex flex-col">
           <span class="text-sm">{field.name}</span>
           <span class="font-bold">"{value}"</span>
@@ -64,26 +108,24 @@
     </tr>
   {:else}
     <tr>
-      <td class="p-2 text-sm">{field.name}</td>
+      <td class="p-2 pl-0 text-sm">{field.name}</td>
       <td class="p-2 font-bold">{value}</td>
     </tr>
   {/if}
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
+<div class="max-h-[500px] overflow-auto">
   <table class="w-full text-left">
     <tbody>
-      <tr><th colspan="2" class="p-2">Entry</th></tr>
-
       {#if entryRecord.type == "match"}
         <tr>
-          <td class="p-2 text-sm">Match</td>
+          <td class="p-2 pl-0 text-sm">Match</td>
           <td class="p-2 font-bold">{entryRecord.match}</td>
         </tr>
       {/if}
 
       <tr>
-        <td class="w-0 p-2 text-sm">Team</td>
+        <td class="w-0 p-2 pl-0 text-sm">Team</td>
         <td class="p-2 font-bold">
           {entryRecord.team}
           {#if teamName}
@@ -94,14 +136,14 @@
 
       {#if entryRecord.scout}
         <tr>
-          <td class="w-0 p-2 text-sm">Scout</td>
+          <td class="w-0 p-2 pl-0 text-sm">Scout</td>
           <td class="p-2 font-bold">
             {entryRecord.scout}
           </td>
         </tr>
         {#if entryRecord.type == "match" && entryRecord.prediction}
           <tr>
-            <td class="w-0 p-2 text-sm">Prediction</td>
+            <td class="w-0 p-2 pl-0 text-sm">Prediction</td>
             <td class="p-2">
               <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
               {#if entryRecord.predictionReason}
@@ -114,23 +156,23 @@
 
       {#if entryRecord.type == "match" && entryRecord.absent}
         <tr>
-          <td class="p-2 text-sm">Absent</td>
+          <td class="p-2 pl-0 text-sm">Absent</td>
           <td class="p-2 font-bold">{entryRecord.absent}</td>
         </tr>
       {/if}
 
       {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
         <tr><td class="p-2"></td></tr>
-        <tr><th colspan="2" class="p-2">TBA</th></tr>
+        <tr><th colspan="2" class="p-2 pl-0">TBA</th></tr>
         {#if entryRecord.tbaMetrics?.length}
           {#each entryRecord.tbaMetrics as tbaMetric}
             <tr>
-              <td class="p-2 text-sm">{tbaMetric.name}</td>
+              <td class="p-2 pl-0 text-sm">{tbaMetric.name}</td>
               <td class="p-2 font-bold">{tbaMetric.value}</td>
             </tr>
           {/each}
         {:else}
-          <tr><td class="p-2">No data pulled</td></tr>
+          <tr><td class="p-2 pl-0">No data pulled</td></tr>
         {/if}
       {/if}
 
@@ -143,7 +185,7 @@
               .map((id) => fieldsWithDetails.nested.find((f) => f.field.id == id))
               .filter((f) => f !== undefined)}
 
-            <tr><th colspan="2" class="p-2">{fieldDetails.field.name}</th></tr>
+            <tr><th colspan="2" class="p-2 pl-0">{fieldDetails.field.name}</th></tr>
             {#each nestedFields as nestedField}
               {@render fieldRow(nestedField.field, entryRecord.values[nestedField.valueIndex])}
             {/each}
@@ -156,51 +198,6 @@
     </tbody>
   </table>
 </div>
-
-{#if onchange}
-  <Button
-    onclick={() =>
-      openDialog(ExportEntriesDialog, {
-        surveyRecord,
-        entries: [entry],
-        onexport(newEntry) {
-          if (newEntry) {
-            entry = newEntry;
-            onchange();
-          }
-        },
-      })}
-  >
-    <ShareIcon class="text-theme" />
-    {#if entry.status == "exported"}
-      Re-export
-    {:else}
-      Export
-    {/if}
-  </Button>
-
-  {#if entry.type != "match" || !entry.absent}
-    <Button onclick={editEntry}>
-      <SquarePenIcon class="text-theme" />
-      Convert to draft and edit
-    </Button>
-  {/if}
-
-  <Button
-    onclick={() =>
-      openDialog(DeleteEntryDialog, {
-        surveyRecord,
-        entryRecord,
-        ondelete: () => {
-          onchange();
-          closeDialog();
-        },
-      })}
-  >
-    <Trash2Icon class="text-theme" />
-    Delete
-  </Button>
-{/if}
 
 {#if error}
   <span>{error}</span>
