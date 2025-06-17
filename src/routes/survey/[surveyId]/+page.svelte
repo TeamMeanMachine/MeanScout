@@ -250,8 +250,10 @@
         <h2 class="font-bold">Entries</h2>
         <span class="text-xs font-light">
           {data.entryRecords.length - drafts.length} completed
-          {#if data.surveyRecord.matches.length}
+          {#if data.surveyType == "match" && data.surveyRecord.matches.length}
             of {data.surveyRecord.matches.length * 6}
+          {:else if data.surveyRecord.teams.length}
+            of {data.surveyRecord.teams.length}
           {/if}
         </span>
       </div>

@@ -299,122 +299,126 @@
   {/if}
 
   <div class="flex flex-col gap-3">
-    <div class="flex flex-wrap gap-4">
-      <div class="flex flex-col">
-        <h2 class="font-bold">Filters</h2>
-        <Button onclick={resetFilters} disabled={!filtersApplied}>
-          <Undo2Icon class="text-theme" />
-          Reset
-        </Button>
-      </div>
+    {#if !data.entryRecords.length}
+      <span class="text-sm">No entries.</span>
+    {:else}
+      <div class="flex flex-wrap gap-4">
+        <div class="flex flex-col">
+          <h2 class="font-bold">Filters</h2>
+          <Button onclick={resetFilters} disabled={!filtersApplied}>
+            <Undo2Icon class="text-theme" />
+            Reset
+          </Button>
+        </div>
 
-      <div class="flex grow flex-wrap gap-2">
-        {#if data.surveyType == "match"}
+        <div class="flex grow flex-wrap gap-2">
+          {#if data.surveyType == "match"}
+            <label class="flex grow flex-col">
+              Match
+              <select
+                bind:value={filters.match}
+                onchange={() => {
+                  if (filters.match) $groupBy = "match";
+                  onscroll();
+                }}
+                class="text-theme bg-neutral-800 p-2"
+                class:font-bold={filters.match !== undefined}
+              >
+                <option value={undefined}>--</option>
+                {#each filterableMatches as match}
+                  <option>{match}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+
           <label class="flex grow flex-col">
-            Match
+            Team
             <select
-              bind:value={filters.match}
+              bind:value={filters.team}
               onchange={() => {
-                if (filters.match) $groupBy = "match";
+                if (filters.team) $groupBy = "team";
                 onscroll();
               }}
-              class="text-theme bg-neutral-800 p-2"
-              class:font-bold={filters.match !== undefined}
+              class="text-theme bg-neutral-800 p-2 capitalize"
+              class:font-bold={filters.team !== undefined}
             >
               <option value={undefined}>--</option>
-              {#each filterableMatches as match}
-                <option>{match}</option>
+              {#each filterableTeams as team}
+                <option>{team}</option>
               {/each}
             </select>
           </label>
-        {/if}
 
-        <label class="flex grow flex-col">
-          Team
-          <select
-            bind:value={filters.team}
-            onchange={() => {
-              if (filters.team) $groupBy = "team";
-              onscroll();
-            }}
-            class="text-theme bg-neutral-800 p-2 capitalize"
-            class:font-bold={filters.team !== undefined}
-          >
-            <option value={undefined}>--</option>
-            {#each filterableTeams as team}
-              <option>{team}</option>
-            {/each}
-          </select>
-        </label>
+          {#if data.surveyType == "match"}
+            <label class="flex grow flex-col">
+              Absent
+              <select
+                bind:value={filters.absent}
+                onchange={onscroll}
+                class="text-theme bg-neutral-800 p-2"
+                class:font-bold={filters.absent !== undefined}
+              >
+                <option value={undefined}>--</option>
+                <option value={true}>True</option>
+                <option value={false}>False</option>
+              </select>
+            </label>
+          {/if}
 
-        {#if data.surveyType == "match"}
           <label class="flex grow flex-col">
-            Absent
+            Exported
             <select
-              bind:value={filters.absent}
+              bind:value={filters.exported}
               onchange={onscroll}
               class="text-theme bg-neutral-800 p-2"
-              class:font-bold={filters.absent !== undefined}
+              class:font-bold={filters.exported !== undefined}
             >
               <option value={undefined}>--</option>
               <option value={true}>True</option>
               <option value={false}>False</option>
             </select>
           </label>
-        {/if}
 
-        <label class="flex grow flex-col">
-          Exported
-          <select
-            bind:value={filters.exported}
-            onchange={onscroll}
-            class="text-theme bg-neutral-800 p-2"
-            class:font-bold={filters.exported !== undefined}
-          >
-            <option value={undefined}>--</option>
-            <option value={true}>True</option>
-            <option value={false}>False</option>
-          </select>
-        </label>
+          {#if data.surveyType == "match" && data.surveyRecord.matches.length}
+            <label class="flex grow flex-col">
+              Target
+              <select
+                bind:value={filters.target}
+                onchange={onscroll}
+                class="text-theme bg-neutral-800 p-2 capitalize"
+                class:font-bold={filters.target !== undefined}
+              >
+                <option value={undefined}>--</option>
+                {#each matchTargets as value}
+                  <option>{value}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
 
-        {#if data.surveyType == "match" && data.surveyRecord.matches.length}
-          <label class="flex grow flex-col">
-            Target
-            <select
-              bind:value={filters.target}
-              onchange={onscroll}
-              class="text-theme bg-neutral-800 p-2 capitalize"
-              class:font-bold={filters.target !== undefined}
-            >
-              <option value={undefined}>--</option>
-              {#each matchTargets as value}
-                <option>{value}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-
-        {#if filterableScouts?.length}
-          <label class="flex grow flex-col">
-            Scout
-            <select
-              bind:value={filters.scout}
-              onchange={() => {
-                if (filters.scout) $groupBy = "scout";
-                onscroll();
-              }}
-              class="text-theme bg-neutral-800 p-2"
-              class:font-bold={filters.scout !== undefined}
-            >
-              <option value={undefined}>--</option>
-              {#each filterableScouts as scout}
-                <option>{scout}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
+          {#if filterableScouts?.length}
+            <label class="flex grow flex-col">
+              Scout
+              <select
+                bind:value={filters.scout}
+                onchange={() => {
+                  if (filters.scout) $groupBy = "scout";
+                  onscroll();
+                }}
+                class="text-theme bg-neutral-800 p-2"
+                class:font-bold={filters.scout !== undefined}
+              >
+                <option value={undefined}>--</option>
+                {#each filterableScouts as scout}
+                  <option>{scout}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+        </div>
       </div>
-    </div>
+    {/if}
 
     <div class="flex flex-col">
       <div>
@@ -422,29 +426,32 @@
           {filteredEntries.length}<span class="text-xs font-light">/{data.entryRecords.length}</span>
           - {filtersApplied}
           {filtersApplied == 1 ? "filter" : "filters"}
-        {:else}
+        {:else if data.entryRecords.length}
           {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
         {/if}
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <Button
-          onclick={() => {
-            openDialog(ExportEntriesDialog, {
-              surveyRecord: data.surveyRecord,
-              entries: filteredEntries,
-              onexport: () => refresh(),
-            });
-          }}
-          disabled={!filteredEntries.length}
-          class="grow basis-48"
-        >
-          <ShareIcon class="text-theme" />
-          <div class="flex flex-col">
-            Export
-            <span class="text-xs font-light">QRF code, File</span>
-          </div>
-        </Button>
+        {#if data.entryRecords.length}
+          <Button
+            onclick={() => {
+              openDialog(ExportEntriesDialog, {
+                surveyRecord: data.surveyRecord,
+                entries: filteredEntries,
+                onexport: () => refresh(),
+              });
+            }}
+            disabled={!filteredEntries.length}
+            class="grow basis-48"
+          >
+            <ShareIcon class="text-theme" />
+            <div class="flex flex-col">
+              Export
+              <span class="text-xs font-light">QRF code, File</span>
+            </div>
+          </Button>
+        {/if}
+
         <Button
           onclick={() => {
             openDialog(ImportEntriesDialog, {

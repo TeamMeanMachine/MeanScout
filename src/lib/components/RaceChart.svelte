@@ -246,7 +246,7 @@
         <div
           class={[
             "flex items-end justify-between gap-3",
-            $teamView == teamData.team && "border-l-[6px] border-neutral-400 bg-neutral-800 pl-1",
+            $teamView == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
           <div class="flex flex-col">

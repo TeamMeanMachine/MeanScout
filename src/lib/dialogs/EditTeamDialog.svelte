@@ -24,19 +24,19 @@
   };
 </script>
 
-<span>Edit Team {team.number}</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>Edit Team {team.number}</span>
+  <Button
+    onclick={() => {
+      ondelete();
+      closeDialog();
+    }}
+  >
+    <Trash2Icon class="text-theme size-5" />
+  </Button>
+</div>
 
 <label class="flex flex-col">
   Name
   <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
-
-<Button
-  onclick={() => {
-    ondelete();
-    closeDialog();
-  }}
->
-  <Trash2Icon class="text-theme" />
-  Delete
-</Button>

@@ -100,6 +100,17 @@
   </label>
 </div>
 
+<div class="flex gap-2">
+  <label class="flex flex-col">
+    Red Score
+    <input maxlength="3" bind:value={match.redScore} class="text-red w-full bg-neutral-800 p-2" />
+  </label>
+  <label class="flex flex-col">
+    Blue Score
+    <input maxlength="3" bind:value={match.blueScore} class="text-blue w-full bg-neutral-800 p-2" />
+  </label>
+</div>
+
 {#if error}
   <span>Error: {error}</span>
 {/if}

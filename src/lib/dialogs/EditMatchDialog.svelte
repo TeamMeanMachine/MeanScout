@@ -63,7 +63,21 @@
   };
 </script>
 
-<span>Edit match {changes.number}</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>Edit match {changes.number}</span>
+  <Button
+    onclick={() =>
+      openDialog(DeleteMatchDialog, {
+        number: match.number,
+        ondelete() {
+          ondelete();
+          closeDialog();
+        },
+      })}
+  >
+    <Trash2Icon class="text-theme size-5" />
+  </Button>
+</div>
 
 <div class="flex gap-2">
   <label class="flex flex-col">
@@ -95,19 +109,16 @@
   </label>
 </div>
 
-<Button
-  onclick={() =>
-    openDialog(DeleteMatchDialog, {
-      number: match.number,
-      ondelete() {
-        ondelete();
-        closeDialog();
-      },
-    })}
->
-  <Trash2Icon class="text-theme" />
-  Delete
-</Button>
+<div class="flex gap-2">
+  <label class="flex flex-col">
+    Red Score
+    <input maxlength="3" bind:value={changes.redScore} class="text-red w-full bg-neutral-800 p-2" />
+  </label>
+  <label class="flex flex-col">
+    Blue Score
+    <input maxlength="3" bind:value={changes.blueScore} class="text-blue w-full bg-neutral-800 p-2" />
+  </label>
+</div>
 
 {#if error}
   <span>Error: {error}</span>
