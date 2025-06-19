@@ -53,25 +53,27 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-2">
-  {#if onchange}
-    <Button
-      onclick={() =>
-        openDialog(ExportEntriesDialog, {
-          surveyRecord,
-          entries: [entry],
-          onexport(newEntry) {
-            if (newEntry) {
-              entry = newEntry;
-              onchange();
-            }
-          },
-        })}
-    >
-      <ShareIcon class="text-theme size-5" />
-    </Button>
-  {/if}
+  <div class="flex grow items-center gap-3">
+    {#if onchange}
+      <Button
+        onclick={() =>
+          openDialog(ExportEntriesDialog, {
+            surveyRecord,
+            entries: [entry],
+            onexport(newEntry) {
+              if (newEntry) {
+                entry = newEntry;
+                onchange();
+              }
+            },
+          })}
+      >
+        <ShareIcon class="text-theme size-5" />
+      </Button>
+    {/if}
 
-  <span class="grow font-bold">Entry</span>
+    <span class="font-bold">Entry</span>
+  </div>
 
   {#if onchange}
     {#if entry.type != "match" || !entry.absent}
@@ -98,105 +100,81 @@
 
 {#snippet fieldRow(field: SingleField, value: Value)}
   {#if field.type == "text"}
-    <tr>
-      <td colspan="2" class="p-2 pl-0">
-        <div class="flex flex-col">
-          <span class="text-sm">{field.name}</span>
-          <span class="font-bold">"{value}"</span>
-        </div>
-      </td>
-    </tr>
+    <div class="col-span-full flex flex-col">
+      <span class="text-sm">{field.name}</span>
+      <span class="font-bold">"{value}"</span>
+    </div>
   {:else}
-    <tr>
-      <td class="p-2 pl-0 text-sm">{field.name}</td>
-      <td class="p-2 font-bold">{value}</td>
-    </tr>
+    <div class="text-sm">{field.name}</div>
+    <div class="font-bold">{value}</div>
   {/if}
 {/snippet}
 
-<div class="max-h-[500px] overflow-auto">
-  <table class="w-full text-left">
-    <tbody>
-      {#if entryRecord.type == "match"}
-        <tr>
-          <td class="p-2 pl-0 text-sm">Match</td>
-          <td class="p-2 font-bold">{entryRecord.match}</td>
-        </tr>
-      {/if}
+<div class="grid max-h-[500px] grid-cols-[min-content_auto] items-center gap-x-6 gap-y-3 overflow-auto">
+  {#if entryRecord.type == "match"}
+    <div class="text-sm">Match</div>
+    <div class="font-bold">{entryRecord.match}</div>
+  {/if}
 
-      <tr>
-        <td class="w-0 p-2 pl-0 text-sm">Team</td>
-        <td class="p-2 font-bold">
-          {entryRecord.team}
-          {#if teamName}
-            <div class="text-xs font-light">{teamName}</div>
-          {/if}
-        </td>
-      </tr>
+  <div class="text-sm">Team</div>
+  <div class="font-bold">
+    {entryRecord.team}
+    {#if teamName}
+      <div class="text-xs font-light">{teamName}</div>
+    {/if}
+  </div>
 
-      {#if entryRecord.scout}
-        <tr>
-          <td class="w-0 p-2 pl-0 text-sm">Scout</td>
-          <td class="p-2 font-bold">
-            {entryRecord.scout}
-          </td>
-        </tr>
-        {#if entryRecord.type == "match" && entryRecord.prediction}
-          <tr>
-            <td class="w-0 p-2 pl-0 text-sm">Prediction</td>
-            <td class="p-2">
-              <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
-              {#if entryRecord.predictionReason}
-                <div class="text-xs font-light">"{entryRecord.predictionReason}"</div>
-              {/if}
-            </td>
-          </tr>
+  {#if entryRecord.scout}
+    <div class="text-sm">Scout</div>
+    <div class="font-bold">
+      {entryRecord.scout}
+    </div>
+
+    {#if entryRecord.type == "match" && entryRecord.prediction}
+      <div class="text-sm">Prediction</div>
+      <div>
+        <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
+        {#if entryRecord.predictionReason}
+          <div class="text-xs font-light">"{entryRecord.predictionReason}"</div>
         {/if}
-      {/if}
+      </div>
+    {/if}
+  {/if}
 
-      {#if entryRecord.type == "match" && entryRecord.absent}
-        <tr>
-          <td class="p-2 pl-0 text-sm">Absent</td>
-          <td class="p-2 font-bold">{entryRecord.absent}</td>
-        </tr>
-      {/if}
+  {#if entryRecord.type == "match" && entryRecord.absent}
+    <div class="text-sm">Absent</div>
+    <div class="font-bold">{entryRecord.absent}</div>
+  {/if}
 
-      {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
-        <tr><td class="p-2"></td></tr>
-        <tr><th colspan="2" class="p-2 pl-0">TBA</th></tr>
-        {#if entryRecord.tbaMetrics?.length}
-          {#each entryRecord.tbaMetrics as tbaMetric}
-            <tr>
-              <td class="p-2 pl-0 text-sm">{tbaMetric.name}</td>
-              <td class="p-2 font-bold">{tbaMetric.value}</td>
-            </tr>
-          {/each}
-        {:else}
-          <tr><td class="p-2 pl-0">No data pulled</td></tr>
-        {/if}
-      {/if}
+  {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
+    <div class="sticky -top-3 col-span-full bg-neutral-900 pt-3 font-bold">TBA</div>
 
-      <tr><td class="p-2"></td></tr>
+    {#if entryRecord.tbaMetrics?.length}
+      {#each entryRecord.tbaMetrics as tbaMetric}
+        <div class="text-sm">{tbaMetric.name}</div>
+        <div class="font-bold">{tbaMetric.value}</div>
+      {/each}
+    {:else}
+      <div class="col-span-full">No data pulled</div>
+    {/if}
+  {/if}
 
-      {#if entryRecord.type != "match" || !entryRecord.absent}
-        {#each fieldsWithDetails.topLevel as fieldDetails}
-          {#if fieldDetails.type == "group"}
-            {@const nestedFields = fieldDetails.field.fieldIds
-              .map((id) => fieldsWithDetails.nested.find((f) => f.field.id == id))
-              .filter((f) => f !== undefined)}
+  {#if entryRecord.type != "match" || !entryRecord.absent}
+    {#each fieldsWithDetails.topLevel as fieldDetails}
+      {#if fieldDetails.type == "group"}
+        {@const nestedFields = fieldDetails.field.fieldIds
+          .map((id) => fieldsWithDetails.nested.find((f) => f.field.id == id))
+          .filter((f) => f !== undefined)}
 
-            <tr><th colspan="2" class="p-2 pl-0">{fieldDetails.field.name}</th></tr>
-            {#each nestedFields as nestedField}
-              {@render fieldRow(nestedField.field, entryRecord.values[nestedField.valueIndex])}
-            {/each}
-            <tr><td class="p-2"></td></tr>
-          {:else}
-            {@render fieldRow(fieldDetails.field, entryRecord.values[fieldDetails.valueIndex])}
-          {/if}
+        <div class="sticky -top-3 col-span-full bg-neutral-900 pt-3 font-bold">{fieldDetails.field.name}</div>
+        {#each nestedFields as nestedField}
+          {@render fieldRow(nestedField.field, entryRecord.values[nestedField.valueIndex])}
         {/each}
+      {:else}
+        {@render fieldRow(fieldDetails.field, entryRecord.values[fieldDetails.valueIndex])}
       {/if}
-    </tbody>
-  </table>
+    {/each}
+  {/if}
 </div>
 
 {#if error}
