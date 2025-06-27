@@ -1,61 +1,27 @@
-import type { Value } from "$lib";
-import type { MatchEntry, PitEntry } from "$lib/entry";
+import type { EntryPageData } from "$lib/entry";
 import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
-import { transaction } from "$lib/idb";
-import type { MatchSurvey, PitSurvey, Survey } from "$lib/survey";
+import { idb } from "$lib/idb";
 
-export function loadEntryPageData(entryId: number) {
-  return new Promise<
-    (
-      | { surveyType: "match"; entryRecord: IDBRecord<MatchEntry>; surveyRecord: IDBRecord<MatchSurvey> }
-      | { surveyType: "pit"; entryRecord: IDBRecord<PitEntry>; surveyRecord: IDBRecord<PitSurvey> }
-    ) & {
-      fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
-      defaultValues: Value[];
-      teamName: string | undefined;
-    }
-  >((resolve) => {
-    const entryTransaction = transaction(["entries", "surveys", "fields"]);
+export async function loadEntryPageData(entryId: number) {
+  const entryRecord = await idb.getOne({ from: "entries", is: entryId });
+  const surveyRecord = await idb.getOne({ from: "surveys", is: entryRecord.surveyId });
+  const compRecord = await idb.getOne({ from: "comps", is: surveyRecord.compId });
+  const fieldRecords = await idb.getAll({ from: "fields", where: "surveyId", is: surveyRecord.id });
 
-    entryTransaction.onabort = () => {
-      throw entryTransaction.error;
-    };
+  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
+  const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
+  const teamName = compRecord.teams.find((t) => t.number == entryRecord.team)?.name;
 
-    const entryRequest = entryTransaction.objectStore("entries").get(entryId);
+  localStorage.removeItem("comp");
+  localStorage.setItem("survey", surveyRecord.id.toString());
 
-    entryRequest.onsuccess = () => {
-      const entryRecord = entryRequest.result;
-      if (!entryRecord) {
-        return entryTransaction.abort();
-      }
-
-      const surveyRequest = entryTransaction.objectStore("surveys").get(entryRecord.surveyId);
-
-      surveyRequest.onsuccess = () => {
-        const surveyRecord = surveyRequest.result as IDBRecord<Survey> | undefined;
-        if (!surveyRecord) {
-          return entryTransaction.abort();
-        }
-
-        const fieldsRequest = entryTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
-
-        fieldsRequest.onsuccess = () => {
-          const fieldRecords = fieldsRequest.result;
-          if (!fieldRecords) {
-            return entryTransaction.abort();
-          }
-
-          const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
-          const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
-          const teamName = surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name;
-
-          if (surveyRecord.type == "match") {
-            resolve({ surveyType: "match", entryRecord, surveyRecord, fieldsWithDetails, defaultValues, teamName });
-          } else {
-            resolve({ surveyType: "pit", entryRecord, surveyRecord, fieldsWithDetails, defaultValues, teamName });
-          }
-        };
-      };
-    };
-  });
+  return {
+    surveyType: surveyRecord.type,
+    entryRecord,
+    surveyRecord,
+    compRecord,
+    fieldsWithDetails,
+    defaultValues,
+    teamName,
+  } as EntryPageData;
 }

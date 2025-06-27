@@ -51,7 +51,7 @@
   let interval = $state<NodeJS.Timeout>();
 
   let matchData = $derived.by(() => {
-    const possibleMatch = pageData.surveyRecord.matches.find((m) => m.number == match);
+    const possibleMatch = pageData.compRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
       return [
         possibleMatch.red1,
@@ -86,12 +86,14 @@
     let data =
       analysisData.type == "picklist"
         ? getPickListData(
+            pageData.compRecord,
             analysisData.pickList.name,
             pageData.surveyRecord,
             subsetEntriesByTeam,
             pageData.fieldsWithDetails.orderedSingle,
           )
         : getExpressionData(
+            pageData.compRecord,
             analysisData.expression.name,
             pageData.surveyRecord,
             subsetEntriesByTeam,

@@ -1,8 +1,19 @@
-import { matchValueSchema, valueSchema, type Value } from "$lib";
+import { matchValueSchema, valueSchema, type Value } from "./";
 import { z } from "zod";
-import type { Survey } from "./survey";
-import { getDefaultFieldValue, type SingleFieldWithDetails, type SingleField } from "./field";
+import type { MatchSurvey, PitSurvey, Survey } from "./survey";
+import { getDefaultFieldValue, type SingleFieldWithDetails, type SingleField, getFieldsWithDetails } from "./field";
 import { compress, decompress } from "./compress";
+import type { Comp } from "./comp";
+
+export type EntryPageData = {
+  compRecord: IDBRecord<Comp>;
+  fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
+  defaultValues: Value[];
+  teamName: string | undefined;
+} & (
+  | { surveyType: "match"; entryRecord: IDBRecord<MatchEntry>; surveyRecord: IDBRecord<MatchSurvey> }
+  | { surveyType: "pit"; entryRecord: IDBRecord<PitEntry>; surveyRecord: IDBRecord<PitSurvey> }
+);
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];

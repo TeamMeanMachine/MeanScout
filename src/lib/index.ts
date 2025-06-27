@@ -3,7 +3,7 @@ import { teamStore, type MatchTarget } from "./settings";
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
 
-export const schemaVersion = 14;
+export const schemaVersion = 15;
 
 export type Heading = { type: "h1" | "sm"; text: string }[] | string;
 

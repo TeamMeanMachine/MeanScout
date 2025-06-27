@@ -2,12 +2,11 @@
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
-  import EditSurveyTbaEventKeyDialog from "$lib/dialogs/EditSurveyTbaEventKeyDialog.svelte";
-  import { objectStore, transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
-  import { CalendarDaysIcon, CloudDownloadIcon, LoaderIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
+  import { CloudDownloadIcon, LoaderIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
-  import AdminHeader from "./AdminHeader.svelte";
+  import SurveyAdminHeader from "./SurveyAdminHeader.svelte";
 
   let {
     data,
@@ -40,17 +39,17 @@
   }
 
   async function getMatchesFromTbaEvent() {
-    if (!data.surveyRecord.tbaEventKey) return;
+    if (!data.compRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventMatches(data.surveyRecord.tbaEventKey);
+    const response = await tbaGetEventMatches(data.compRecord.tbaEventKey);
 
     if (response) {
-      const matchesTx = transaction(["surveys", "entries"], "readwrite");
+      const matchesTx = idb.transaction(["comps", "surveys", "entries"], "readwrite");
       matchesTx.onabort = () => {
         getTbaDataError = "Error while trying to get matches";
       };
 
-      const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
+      const matches = structuredClone($state.snapshot(data.compRecord.matches));
 
       for (const { match } of response) {
         const matchIndex = matches.findIndex((m) => m.number == match.number);
@@ -79,18 +78,20 @@
 
       data = {
         ...data,
-        surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
+        compRecord: { ...data.compRecord, matches, modified: new Date() },
+        surveyRecord: { ...data.surveyRecord, modified: new Date() },
       } as PageData;
+      matchesTx.objectStore("comps").put($state.snapshot(data.compRecord));
       matchesTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
     }
   }
 
   async function getTeamsFromTbaEvent() {
-    if (!data.surveyRecord.tbaEventKey) return;
+    if (!data.compRecord.tbaEventKey) return;
 
-    const response = await tbaGetEventTeams(data.surveyRecord.tbaEventKey);
+    const response = await tbaGetEventTeams(data.compRecord.tbaEventKey);
     if (response) {
-      const teams = structuredClone($state.snapshot(data.surveyRecord.teams));
+      const teams = structuredClone($state.snapshot(data.compRecord.teams));
       for (const team of response) {
         const teamIndex = teams.findIndex((t) => t.number == team.number);
         if (teamIndex == -1) {
@@ -102,26 +103,28 @@
 
       data = {
         ...data,
-        surveyRecord: { ...data.surveyRecord, teams, modified: new Date() },
+        compRecord: { ...data.compRecord, teams, modified: new Date() },
+        surveyRecord: { ...data.surveyRecord, modified: new Date() },
       } as PageData;
-      objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+      idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+      idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
     }
   }
 
   function useTbaMetrics() {
-    if (data.surveyType != "match" || !data.surveyRecord.tbaEventKey) return;
+    if (data.surveyType != "match" || !data.compRecord.tbaEventKey) return;
 
     data = {
       ...data,
       surveyRecord: { ...data.surveyRecord, tbaMetrics: [], modified: new Date() },
     };
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 
   let tbaMetricInput = $state("");
 
   function addTbaMetric() {
-    if (data.surveyType != "match" || !data.surveyRecord.tbaEventKey) return;
+    if (data.surveyType != "match" || !data.compRecord.tbaEventKey) return;
 
     tbaMetricInput = tbaMetricInput.trim();
     if (!tbaMetricInput) return;
@@ -134,13 +137,13 @@
         modified: new Date(),
       },
     };
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
 
     tbaMetricInput = "";
   }
 
   function removeTbaMetric(tbaMetric: string) {
-    if (data.surveyType != "match" || !data.surveyRecord.tbaEventKey || !data.surveyRecord.tbaMetrics?.length) return;
+    if (data.surveyType != "match" || !data.compRecord.tbaEventKey || !data.surveyRecord.tbaMetrics?.length) return;
     data = {
       ...data,
       surveyRecord: {
@@ -148,12 +151,12 @@
         tbaMetrics: data.surveyRecord.tbaMetrics.filter((m) => m != tbaMetric),
       },
     };
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
   }
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="general" />
+  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="general" />
 
   <div class="flex flex-col gap-2">
     <Button
@@ -165,7 +168,7 @@
               ...data,
               surveyRecord: { ...data.surveyRecord, name, modified: new Date() },
             } as PageData;
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },
         })}
     >
@@ -177,33 +180,13 @@
     </Button>
   </div>
 
-  <div class="flex flex-col gap-2">
-    <h2 class="font-bold">The Blue Alliance</h2>
-    <Button
-      onclick={() =>
-        openDialog(EditSurveyTbaEventKeyDialog, {
-          surveyRecord: data.surveyRecord,
-          onedit(tbaEventKey) {
-            data = {
-              ...data,
-              surveyRecord: { ...data.surveyRecord, tbaEventKey, modified: new Date() },
-            } as PageData;
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-          },
-        })}
-    >
-      <CalendarDaysIcon class="text-theme" />
-      {#if data.surveyRecord.tbaEventKey}
-        <div class="flex flex-col">
-          {data.surveyRecord.tbaEventKey}
-          <span class="text-xs font-light">Edit event</span>
-        </div>
-      {:else}
-        Add event
-      {/if}
-    </Button>
+  {#if data.compRecord.tbaEventKey}
+    <div class="flex flex-col gap-2">
+      <div class="flex flex-col">
+        <h2 class="font-bold">The Blue Alliance</h2>
+        <span class="text-xs font-light">{data.compRecord.tbaEventKey}</span>
+      </div>
 
-    {#if data.surveyRecord.tbaEventKey}
       <Button onclick={getDataFromTbaEvent}>
         {#if isLoadingTbaData}
           <LoaderIcon class="text-theme animate-spin" />
@@ -222,28 +205,28 @@
       {#if getTbaDataError}
         <span>{getTbaDataError}</span>
       {/if}
-    {/if}
-  </div>
-
-  {#if data.surveyType == "match" && data.surveyRecord.tbaEventKey}
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">TBA Metrics</h2>
-
-      {#if data.surveyRecord.tbaMetrics}
-        <div class="flex flex-wrap gap-2">
-          <input bind:value={tbaMetricInput} class="text-theme bg-neutral-800 p-2" />
-          <Button onclick={addTbaMetric}>
-            <PlusIcon class="text-theme" />
-          </Button>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          {#each data.surveyRecord.tbaMetrics as tbaMetric}
-            <Button onclick={() => removeTbaMetric(tbaMetric)}>{tbaMetric}</Button>
-          {/each}
-        </div>
-      {:else}
-        <Button onclick={useTbaMetrics}>Use TBA metrics</Button>
-      {/if}
     </div>
+
+    {#if data.surveyType == "match"}
+      <div class="flex flex-col gap-2">
+        <h2 class="font-bold">TBA Metrics</h2>
+
+        {#if data.surveyRecord.tbaMetrics}
+          <div class="flex flex-wrap gap-2">
+            <input bind:value={tbaMetricInput} class="text-theme bg-neutral-800 p-2" />
+            <Button onclick={addTbaMetric}>
+              <PlusIcon class="text-theme" />
+            </Button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {#each data.surveyRecord.tbaMetrics as tbaMetric}
+              <Button onclick={() => removeTbaMetric(tbaMetric)}>{tbaMetric}</Button>
+            {/each}
+          </div>
+        {:else}
+          <Button onclick={useTbaMetrics}>Use TBA metrics</Button>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </div>

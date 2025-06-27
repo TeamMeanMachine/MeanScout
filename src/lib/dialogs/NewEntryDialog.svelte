@@ -4,7 +4,7 @@
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue } from "$lib/field";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import { EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import NewScoutDialog from "./NewScoutDialog.svelte";
@@ -36,10 +36,10 @@
 
   let error = $state("");
 
-  let matchData = $derived(pageData.surveyRecord.matches.find((m) => m.number == match));
+  let matchData = $derived(pageData.compRecord.matches.find((m) => m.number == match));
 
   let teamNumberNameMap = new Map<string, string>();
-  for (const team of pageData.surveyRecord.teams) {
+  for (const team of pageData.compRecord.teams) {
     teamNumberNameMap.set(team.number, team.name);
   }
 
@@ -69,9 +69,9 @@
           break;
       }
 
-      for (const team of pageData.surveyRecord.teams) {
+      for (const team of pageData.compRecord.teams) {
         if (
-          !pageData.surveyRecord.matches
+          !pageData.compRecord.matches
             .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
             .includes(team.number)
         ) {
@@ -79,13 +79,13 @@
         }
       }
     } else {
-      for (const team of pageData.surveyRecord.teams) {
+      for (const team of pageData.compRecord.teams) {
         teamSet.add(team.number);
       }
     }
 
     return [...teamSet]
-      .map((team): Team => pageData.surveyRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
+      .map((team): Team => pageData.compRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
       .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
   });
 
@@ -105,7 +105,7 @@
         return;
       }
 
-      if (pageData.surveyRecord.scouts && !scout) {
+      if (pageData.compRecord.scouts && !scout) {
         error = "scout name missing";
         return;
       }
@@ -146,7 +146,7 @@
         };
       }
 
-      const addRequest = objectStore("entries", "readwrite").add($state.snapshot(entry));
+      const addRequest = idb.objectStore("entries", "readwrite").add($state.snapshot(entry));
       addRequest.onerror = () => {
         error = "Could not create new entry";
       };
@@ -174,44 +174,42 @@
 
 <h2 class="font-bold">New entry</h2>
 
-{#if pageData.surveyRecord.scouts}
+{#if pageData.compRecord.scouts}
   <div class="flex flex-col">
     Your name
     <div class="flex flex-wrap gap-2">
-      {#if pageData.surveyRecord.scouts}
-        {#if pageData.surveyRecord.scouts.length}
-          <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
-            {#each pageData.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
-              <option>{scout}</option>
-            {/each}
-          </select>
-        {/if}
-        <Button
-          onclick={() => {
-            openDialog(NewScoutDialog, {
-              scouts: pageData.surveyRecord.scouts ?? [],
-              onadd(newScout) {
-                pageData = {
-                  ...pageData,
-                  surveyRecord: {
-                    ...pageData.surveyRecord,
-                    scouts: [...(pageData.surveyRecord.scouts || []), newScout],
-                  },
-                } as SurveyPageData;
-                objectStore("surveys", "readwrite").put($state.snapshot(pageData.surveyRecord));
-                scout = newScout;
-                onnewscout(newScout);
-              },
-            });
-          }}
-          class={pageData.surveyRecord.scouts.length ? "" : "w-full"}
-        >
-          <PlusIcon class="text-theme" />
-          {#if !pageData.surveyRecord.scouts.length}
-            New scout
-          {/if}
-        </Button>
+      {#if pageData.compRecord.scouts.length}
+        <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
+          {#each pageData.compRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+            <option>{scout}</option>
+          {/each}
+        </select>
       {/if}
+      <Button
+        onclick={() => {
+          openDialog(NewScoutDialog, {
+            scouts: pageData.compRecord.scouts ?? [],
+            onadd(newScout) {
+              pageData = {
+                ...pageData,
+                compRecord: {
+                  ...pageData.compRecord,
+                  scouts: [...(pageData.compRecord.scouts || []), newScout],
+                },
+              } as SurveyPageData;
+              idb.objectStore("comps", "readwrite").put($state.snapshot(pageData.compRecord));
+              scout = newScout;
+              onnewscout(newScout);
+            },
+          });
+        }}
+        class={pageData.compRecord.scouts.length ? "" : "w-full"}
+      >
+        <PlusIcon class="text-theme" />
+        {#if !pageData.compRecord.scouts.length}
+          New scout
+        {/if}
+      </Button>
     </div>
   </div>
 {/if}
@@ -340,7 +338,7 @@
   </label>
 {/if}
 
-{#if pageData.surveyType == "match" && pageData.surveyRecord.scouts}
+{#if pageData.surveyType == "match" && pageData.compRecord.scouts}
   <h2 class="mt-4 font-bold">Prediction</h2>
 
   <Button

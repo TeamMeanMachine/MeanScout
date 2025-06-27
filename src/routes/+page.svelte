@@ -3,11 +3,11 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
-  import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
-  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
+  import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
   import { cameraStore } from "$lib/settings";
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
+  import ImportCompDialog from "$lib/dialogs/ImportCompDialog.svelte";
 
   let {
     data,
@@ -18,20 +18,20 @@
 
 <Header />
 
-<div class="flex flex-col gap-2" style="view-transition-name:surveys">
-  <h2 class="font-bold">Surveys</h2>
+<div class="flex flex-col gap-2" style="view-transition-name:comps">
+  <h2 class="font-bold">Comps</h2>
 
-  {#if data.surveys.length}
-    {#each data.surveys.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
-      <Anchor route="survey/{survey.id}">
-        <div class="grow">{survey.name}</div>
+  {#if data.compRecords.length}
+    {#each data.compRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
+      <Anchor route="comp/{comp.id}">
+        <div class="grow">{comp.name}</div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     {/each}
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(ImportSurveyDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(ImportCompDialog, {})} class="grow basis-0">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import
@@ -44,7 +44,7 @@
         </span>
       </div>
     </Button>
-    <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(NewCompDialog, {})} class="grow basis-0">
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create
@@ -74,7 +74,7 @@
       <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
-  <span class="text-sm">
+  <span class="text-sm" style="view-transition-name:meanscout-version">
     {import.meta.env.VITE_GIT_COMMIT_HASH}
     <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
   </span>

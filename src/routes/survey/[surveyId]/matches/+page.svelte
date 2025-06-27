@@ -16,11 +16,9 @@
 
   const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 
-  let matches = $derived(
-    $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches,
-  );
+  let matches = $derived($filterMatches ? data.compRecord.matches.filter(matchHasTeamStore) : data.compRecord.matches);
 
-  const lastCompletedMatch = getLastCompletedMatch(data.surveyRecord, data.entryRecords);
+  const lastCompletedMatch = getLastCompletedMatch(data.compRecord, data.surveyRecord, data.entryRecords);
 
   let upcomingMatches = $derived(
     matches.filter((match) => match.number > lastCompletedMatch).toSorted((a, b) => a.number - b.number),
@@ -35,7 +33,7 @@
   }
 </script>
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="matches" pageTitle="Matches" />
+<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="matches" pageTitle="Matches" />
 
 <div class="flex flex-col gap-3" style="view-transition-name:matches">
   {#if $teamStore}

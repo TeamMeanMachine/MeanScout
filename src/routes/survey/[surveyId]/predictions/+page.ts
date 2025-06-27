@@ -10,8 +10,8 @@ export const load: PageLoad = async (event) => {
     throw new Error("Survey type is not a match!");
   }
 
-  const predictionsPerScout = getPredictionsPerScout(data.surveyRecord, data.entryRecords);
-  const predictionsPerMatch = getPredictionsPerMatch(data.surveyRecord, data.entryRecords);
+  const predictionsPerScout = getPredictionsPerScout(data.compRecord, data.entryRecords);
+  const predictionsPerMatch = getPredictionsPerMatch(data.compRecord, data.entryRecords);
 
   return {
     ...data,

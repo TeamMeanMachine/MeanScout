@@ -49,6 +49,7 @@
   let analysisData = $derived.by<AnalysisData | undefined>(() => {
     if (selected?.type == "picklist") {
       return getPickListData(
+        data.compRecord,
         selected.pickList.name,
         data.surveyRecord,
         data.entriesByTeam,
@@ -56,6 +57,7 @@
       );
     } else if (selected?.type == "expression") {
       return getExpressionData(
+        data.compRecord,
         selected.expression.name,
         data.surveyRecord,
         data.entriesByTeam,
@@ -103,7 +105,7 @@
   }
 </script>
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="analysis" pageTitle="Analysis" />
+<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="analysis" pageTitle="Analysis" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || (!data.surveyRecord.pickLists.length && !data.surveyRecord.expressions.length)}

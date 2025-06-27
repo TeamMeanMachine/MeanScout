@@ -5,7 +5,7 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { csvToEntries, importEntries, type Entry, type MatchEntry } from "$lib/entry";
   import type { SingleFieldWithDetails } from "$lib/field";
-  import { transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { CircleCheckBigIcon, CircleIcon, Undo2Icon } from "@lucide/svelte";
@@ -63,7 +63,7 @@
         return;
       }
 
-      const addTransaction = transaction("entries", "readwrite");
+      const addTransaction = idb.transaction("entries", "readwrite");
       addTransaction.onabort = () => {
         error = "Could not add entries!";
       };

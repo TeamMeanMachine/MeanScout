@@ -1,14 +1,40 @@
 import { schemaVersion } from "./";
-import type { Expression } from "./expression";
+import type { Comp } from "./comp";
+import type { Entry } from "./entry";
+import type { Field } from "./field";
+import type { Survey } from "./survey";
 
-let idb: IDBDatabase | undefined = undefined;
+type IDBStoreRecordMap = {
+  comps: IDBRecord<Comp>;
+  surveys: IDBRecord<Survey>;
+  fields: IDBRecord<Field>;
+  entries: IDBRecord<Entry>;
+};
 
-export function initIDB(callback: (error?: string) => void) {
+type IDBStoreIndexMap = {
+  surveys: "compId";
+  fields: "surveyId";
+  entries: "surveyId";
+};
+
+export type IDBStoreName = keyof IDBStoreRecordMap;
+
+let db: IDBDatabase | undefined = undefined;
+
+function init(callback: (error?: string) => void) {
   const request = indexedDB.open("MeanScout", schemaVersion);
+
   request.onerror = () => {
     callback(`${request.error?.message}`);
   };
-  request.onupgradeneeded = (e) => migrate(request, e.oldVersion);
+
+  request.onupgradeneeded = (e) => {
+    updateObjectStores(request);
+
+    if (e.oldVersion < schemaVersion && request.transaction) {
+      migrateData(request.transaction);
+    }
+  };
 
   request.onsuccess = () => {
     if (!request.result) {
@@ -16,29 +42,69 @@ export function initIDB(callback: (error?: string) => void) {
       return;
     }
 
-    idb = request.result;
+    db = request.result;
     callback();
   };
 }
 
-export function database() {
-  if (!idb) throw new Error("IDB not ready");
-  return idb;
+function database() {
+  if (!db) throw new Error("IDB not ready");
+  return db;
 }
 
-export function transaction(
-  storeNames: "surveys" | "fields" | "entries" | ("surveys" | "fields" | "entries")[],
+function transaction(
+  storeNames: IDBStoreName | IDBStoreName[],
   mode?: IDBTransactionMode,
   options?: IDBTransactionOptions,
 ) {
   return database().transaction(storeNames, mode, options);
 }
 
-export function objectStore(name: "surveys" | "fields" | "entries", mode?: IDBTransactionMode) {
+function objectStore(name: IDBStoreName, mode?: IDBTransactionMode) {
   return database().transaction(name, mode).objectStore(name);
 }
 
-function migrate(request: IDBOpenDBRequest, oldVersion: number) {
+function getAll<T extends IDBStoreName>({
+  from,
+  where,
+  is,
+}: {
+  from: T;
+  where?: T extends keyof IDBStoreIndexMap ? IDBStoreIndexMap[T] : undefined;
+  is?: number;
+}) {
+  return new Promise<IDBStoreRecordMap[T][]>((resolve, reject) => {
+    let req;
+
+    if (where && is) {
+      req = objectStore(from).index(where).getAll(is);
+    } else {
+      req = objectStore(from).getAll();
+    }
+
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+  });
+}
+
+function getOne<T extends IDBStoreName>({ from, is }: { from: T; is: number }) {
+  return new Promise<IDBStoreRecordMap[T]>((resolve, reject) => {
+    const req = objectStore(from).get(is);
+
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      if (!req.result) {
+        return reject(`No ${from} record found for id ${is}`);
+      }
+
+      resolve(req.result);
+    };
+  });
+}
+
+export const idb = { init, database, transaction, objectStore, getAll, getOne };
+
+function updateObjectStores(request: IDBOpenDBRequest) {
   const storeNames = request.result.objectStoreNames;
 
   if (!storeNames.contains("entries")) {
@@ -62,280 +128,69 @@ function migrate(request: IDBOpenDBRequest, oldVersion: number) {
   }
 
   if (!storeNames.contains("surveys")) {
-    request.result.createObjectStore("surveys", { keyPath: "id", autoIncrement: true });
+    const surveyStore = request.result.createObjectStore("surveys", { keyPath: "id", autoIncrement: true });
+    surveyStore.createIndex("compId", "compId", { unique: false });
+  } else if (request.transaction) {
+    const surveyStore = request.transaction.objectStore("surveys");
+    if (!surveyStore.indexNames.contains("compId")) {
+      surveyStore.createIndex("compId", "compId", { unique: false });
+    }
   }
 
-  if (oldVersion < schemaVersion && request.transaction) {
-    migrateSurveys(request.transaction);
+  if (!storeNames.contains("comps")) {
+    request.result.createObjectStore("comps", { keyPath: "id", autoIncrement: true });
   }
 }
 
-function migrateSurveys(transaction: IDBTransaction) {
+function migrateData(transaction: IDBTransaction) {
+  const compStore = transaction.objectStore("comps");
   const surveyStore = transaction.objectStore("surveys");
-  const fieldStore = transaction.objectStore("fields");
-  const entryStore = transaction.objectStore("entries");
 
   const surveyCursorRequest = surveyStore.openCursor();
   surveyCursorRequest.onsuccess = async () => {
     const surveyCursor = surveyCursorRequest.result;
     if (!surveyCursor) return;
 
-    const survey = surveyCursor.value as any;
+    const survey = surveyCursor.value;
 
-    if (!survey.type) {
-      survey.type = "match";
-    }
-
-    if (!Array.isArray(survey.matches)) {
-      survey.matches = [];
-    }
-
-    if (survey.type == "match") {
-      if (!survey.pickLists) {
-        survey.pickLists = [];
-      }
-
-      if (!survey.expressions) {
-        survey.expressions = [];
+    if (!survey.compId) {
+      try {
+        const { compId } = await createCompFromSurvey(compStore, structuredClone(survey));
+        survey.compId = compId;
+        survey.name = survey.type == "pit" ? "Pit Survey" : "Match Survey";
+        delete survey.tbaEventKey;
+        delete survey.matches;
+        delete survey.teams;
+      } catch (error) {
+        console.error(error);
+        surveyCursor.continue();
+        return;
       }
     }
-
-    if (Array.isArray(survey.teams)) {
-      survey.teams = survey.teams.map((team: any) => {
-        if (typeof team == "string") {
-          return { number: team, name: "" };
-        }
-        return team;
-      });
-    } else {
-      survey.teams = [];
-    }
-
-    if (!Array.isArray(survey.fieldIds)) {
-      survey.fieldIds = [];
-    }
-
-    if (Array.isArray(survey.fields)) {
-      let flattenedIndex = 0;
-
-      for (const field of survey.fields) {
-        try {
-          let migratedFieldId;
-
-          ({ migratedFieldId, flattenedIndex } = await migrateField(
-            fieldStore,
-            field,
-            survey.id,
-            survey.expressions,
-            flattenedIndex,
-          ));
-
-          survey.fieldIds.push(migratedFieldId);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      delete survey.fields;
-    }
-
-    if (Array.isArray(survey.expressions)) {
-      survey.expressions = survey.expressions.map((expression: any): Expression => {
-        if (!expression.scope) {
-          expression.scope = "survey";
-        }
-
-        if (Array.isArray(expression.inputs)) {
-          if (expression.inputs.every((input: any) => input.from == "field")) {
-            expression.input = {
-              from: "fields",
-              fieldIds: expression.inputs.map((input: any) => input.fieldId),
-            };
-          } else if (expression.inputs.every((input: any) => input.from == "expression")) {
-            expression.input = {
-              from: "expressions",
-              expressionNames: expression.inputs.map((input: any) => input.expressionName),
-            };
-          } else {
-            expression.input = {
-              from: "fields",
-              fieldIds: [],
-            };
-          }
-
-          delete expression.inputs;
-        }
-
-        if (!expression.input) {
-          if (expression.from == "fields") {
-            expression.input = {
-              from: expression.from,
-              fieldIds: expression.fieldIds,
-            };
-            delete expression.fieldIds;
-          } else if (expression.from == "expressions") {
-            expression.input = {
-              from: expression.from,
-              expressionNames: expression.expressionNames,
-            };
-            delete expression.expressionNames;
-          }
-          delete expression.from;
-        }
-
-        if (expression.type && !expression.method) {
-          switch (expression.type) {
-            case "average":
-            case "min":
-            case "max":
-            case "sum":
-              expression.method = {
-                type: expression.type,
-              };
-              break;
-            case "count":
-              expression.method = {
-                type: expression.type,
-                valueToCount: expression.valueToCount,
-              };
-              delete expression.valueToCount;
-              break;
-            case "convert":
-              expression.method = {
-                type: expression.type,
-                converters: expression.converters,
-                defaultTo: expression.defaultTo,
-              };
-              delete expression.converters;
-              delete expression.defaultTo;
-              break;
-            case "multiply":
-              expression.method = {
-                type: expression.type,
-                multiplier: expression.multiplier,
-              };
-              delete expression.multiplier;
-              break;
-            case "divide":
-              expression.method = {
-                type: expression.type,
-                divisor: expression.divider,
-              };
-              delete expression.divisor;
-              break;
-          }
-
-          delete expression.type;
-        }
-
-        return expression;
-      });
-    }
-
-    migrateEntries(entryStore, survey.id);
 
     surveyCursor.update(survey);
     surveyCursor.continue();
   };
 }
 
-function migrateField(
-  fieldStore: IDBObjectStore,
-  field: any,
-  surveyId: number,
-  expressions: any[] | undefined,
-  flattenedIndex: number,
-) {
-  return new Promise<{ migratedFieldId: IDBValidKey; flattenedIndex: number }>(async (resolve, reject) => {
-    if (field.type == "group") {
-      if (!Array.isArray(field.fieldIds)) {
-        field.fieldIds = [];
-      }
+function createCompFromSurvey(compStore: IDBObjectStore, survey: any) {
+  return new Promise<{ compId: IDBValidKey }>(async (resolve, reject) => {
+    const request = compStore.add({
+      name: survey.name,
+      tbaEventKey: survey.tbaEventKey,
+      matches: survey.matches,
+      teams: survey.teams,
+      scouts: survey.scouts,
+      created: survey.created,
+      modified: survey.modified,
+    });
 
-      if (Array.isArray(field.fields)) {
-        for (const nestedField of field.fields) {
-          try {
-            let migratedFieldId;
+    request.onerror = () => {
+      reject(`Could not create comp from survey ${survey.name} (id ${survey.id})`);
+    };
 
-            ({ migratedFieldId, flattenedIndex } = await migrateField(
-              fieldStore,
-              nestedField,
-              surveyId,
-              expressions,
-              flattenedIndex,
-            ));
-
-            field.fieldIds.push(migratedFieldId);
-          } catch (error) {
-            return reject(error);
-          }
-        }
-
-        delete field.fields;
-      }
-    }
-
-    const addRequest = fieldStore.add({ ...field, surveyId });
-    addRequest.onerror = () => reject(`Could not migrate field ${field.name} for survey id ${surveyId}`);
-
-    addRequest.onsuccess = () => {
-      const migratedFieldId = addRequest.result;
-
-      if (field.type != "group") {
-        if (expressions?.length) {
-          for (let expressionIndex = 0; expressionIndex < expressions.length; expressionIndex++) {
-            expressions[expressionIndex].inputs = expressions[expressionIndex].inputs.map((input: any) => {
-              if (input.from == "field" && input.fieldIndex == flattenedIndex) {
-                input.fieldId = migratedFieldId;
-                delete input.fieldIndex;
-              }
-
-              return input;
-            });
-          }
-        }
-
-        flattenedIndex++;
-      }
-
-      resolve({ migratedFieldId, flattenedIndex });
+    request.onsuccess = () => {
+      resolve({ compId: request.result });
     };
   });
-}
-
-function migrateEntries(entryStore: IDBObjectStore, surveyId: number) {
-  const entryCursorRequest = entryStore.index("surveyId").openCursor(surveyId);
-  entryCursorRequest.onerror = () => {};
-
-  entryCursorRequest.onsuccess = () => {
-    const entryCursor = entryCursorRequest.result;
-    if (!entryCursor) return;
-
-    const entry = entryCursor.value;
-
-    if (!entry.type) {
-      entry.type = "match";
-    }
-
-    if (!Array.isArray(entry.values)) {
-      entry.values = [];
-    }
-
-    if (entry.team == undefined) {
-      entry.team = (entry.values as any[]).shift() || "";
-    }
-
-    if (entry.type == "match") {
-      if (entry.match == undefined) {
-        entry.match = (entry.values as any[]).shift() || 1;
-      }
-
-      if (entry.absent == undefined) {
-        entry.absent = (entry.values as any[]).shift() || false;
-      }
-    }
-
-    entryCursor.update(entry);
-    entryCursor.continue();
-  };
 }

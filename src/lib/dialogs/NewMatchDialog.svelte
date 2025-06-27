@@ -1,18 +1,17 @@
 <script lang="ts">
   import type { Match } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
+    matches,
     oncreate,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    matches: Match[];
     oncreate: (match: Match) => void;
   } = $props();
 
   let match = $state<Match>({
-    number: 1 + Math.max(0, ...surveyRecord.matches.map((m) => m.number)),
+    number: 1 + Math.max(0, ...matches.map((m) => m.number)),
     red1: "",
     red2: "",
     red3: "",

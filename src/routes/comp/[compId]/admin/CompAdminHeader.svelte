@@ -1,17 +1,17 @@
 <script lang="ts">
+  import type { Comp } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import type { Survey } from "$lib/survey";
 
   let {
-    surveyRecord,
+    compRecord,
     page,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    compRecord: IDBRecord<Comp>;
     page: string;
   } = $props();
 
-  const routeBase = `survey/${surveyRecord.id}/admin`;
+  const routeBase = `comp/${compRecord.id}/admin`;
 
   function getAnchorClass(matching: string) {
     return "active:left-0! active:top-0.5 " + (page == matching ? "font-bold underline" : "font-light");
@@ -24,26 +24,21 @@
 
 <div class="flex flex-col gap-4">
   <Header
-    title="Admin - {surveyRecord.name} - MeanScout"
+    title="Admin - {compRecord.name} - MeanScout"
     heading={[
-      { type: "sm", text: surveyRecord.name },
+      { type: "sm", text: compRecord.name },
       { type: "h1", text: "Admin" },
     ]}
-    backLink="survey/{surveyRecord.id}"
+    backLink="comp/{compRecord.id}"
   />
 
   <div
     use:navBar
     class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap"
-    style="view-transition-name:survey-header"
+    style="view-transition-name:comp-header"
   >
     <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
-    <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
-    <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
-    {#if surveyRecord.type == "match"}
-      <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
-      <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
-    {/if}
+    <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
     <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
     <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
     <Anchor route="{routeBase}/danger" class={getAnchorClass("danger")}>Danger Zone</Anchor>

@@ -1,17 +1,14 @@
+import type { Comp } from "./comp";
 import type { Entry, MatchEntry } from "./entry";
-import type { MatchSurvey, Survey } from "./survey";
 
-export function getAllScoutNames(survey: Survey, entries: Entry[]) {
+export function getAllScoutNames(comp: Comp, entries: Entry[]) {
   return [
-    ...new Set([
-      ...entries.map((entry) => entry.scout).filter((scout) => scout !== undefined),
-      ...(survey.scouts || []),
-    ]),
+    ...new Set([...entries.map((entry) => entry.scout).filter((scout) => scout !== undefined), ...(comp.scouts || [])]),
   ];
 }
 
-export function getPredictionsPerScout(survey: IDBRecord<MatchSurvey>, entries: IDBRecord<MatchEntry>[]) {
-  const allScoutNames = getAllScoutNames(survey, entries);
+export function getPredictionsPerScout(comp: IDBRecord<Comp>, entries: IDBRecord<MatchEntry>[]) {
+  const allScoutNames = getAllScoutNames(comp, entries);
 
   const predictionsPerScout = allScoutNames
     .map((scout) => {
@@ -23,7 +20,7 @@ export function getPredictionsPerScout(survey: IDBRecord<MatchSurvey>, entries: 
       let coopPoints = 0;
 
       for (const entry of scoutEntries) {
-        const match = survey.matches.find((m) => m.number == entry.match);
+        const match = comp.matches.find((m) => m.number == entry.match);
         if (!match || !match.redScore || !match.blueScore) {
           continue;
         }
@@ -80,8 +77,8 @@ export function getPredictionsPerScout(survey: IDBRecord<MatchSurvey>, entries: 
   };
 }
 
-export function getPredictionsPerMatch(survey: IDBRecord<MatchSurvey>, entries: IDBRecord<MatchEntry>[]) {
-  return survey.matches
+export function getPredictionsPerMatch(comp: IDBRecord<Comp>, entries: IDBRecord<MatchEntry>[]) {
+  return comp.matches
     .filter((match) => match.redScore !== undefined && match.blueScore !== undefined)
     .toSorted((a, b) => b.number - a.number)
     .map((match) => {

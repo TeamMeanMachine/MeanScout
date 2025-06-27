@@ -4,19 +4,22 @@
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { getFieldsWithDetails, type Field, type SingleField } from "$lib/field";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
   import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
   import { goto } from "$app/navigation";
+  import type { Comp } from "$lib/comp";
 
   let {
+    compRecord,
     surveyRecord,
     fieldRecords,
     entryRecord,
     onchange,
   }: {
+    compRecord: IDBRecord<Comp>;
     surveyRecord: IDBRecord<Survey>;
     fieldRecords: IDBRecord<Field>[];
     entryRecord: IDBRecord<Entry>;
@@ -28,7 +31,7 @@
   let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
 
-  let teamName = $derived(surveyRecord.teams.find((t) => t.number == entryRecord.team)?.name);
+  let teamName = $derived(compRecord.teams.find((t) => t.number == entryRecord.team)?.name);
 
   function editEntry() {
     if (entry.status == "draft") {
@@ -39,14 +42,14 @@
     entry.status = "draft";
     entry.modified = new Date();
 
-    const editRequest = objectStore("entries", "readwrite").put($state.snapshot(entry));
+    const editRequest = idb.objectStore("entries", "readwrite").put($state.snapshot(entry));
 
     editRequest.onerror = () => {
       error = `Could not edit entry: ${editRequest.error?.message}`;
     };
 
     editRequest.onsuccess = () => {
-      objectStore("surveys", "readwrite").put({ ...$state.snapshot(surveyRecord), modified: new Date() });
+      idb.objectStore("surveys", "readwrite").put({ ...$state.snapshot(surveyRecord), modified: new Date() });
       goto(`#/entry/${entry.id}`);
     };
   }
@@ -146,7 +149,7 @@
     <div class="font-bold">{entryRecord.absent}</div>
   {/if}
 
-  {#if surveyRecord.type == "match" && surveyRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
+  {#if surveyRecord.type == "match" && compRecord.tbaEventKey && entryRecord.type == "match" && surveyRecord.tbaMetrics?.length}
     <div class="sticky -top-3 col-span-full bg-neutral-900 pt-3 font-bold">TBA</div>
 
     {#if entryRecord.tbaMetrics?.length}

@@ -1,12 +1,14 @@
-import { matchSchema, schemaVersion, teamSchema } from "./";
+import { schemaVersion } from "./";
 import { z } from "zod";
 import { pickListSchema } from "./analysis";
 import type { Field, getFieldsWithDetails } from "./field";
 import { compress, decompress } from "./compress";
 import { expressionSchema } from "./expression";
 import type { Entry, MatchEntry, PitEntry } from "./entry";
+import type { Comp } from "./comp";
 
 export type SurveyPageData = {
+  compRecord: IDBRecord<Comp>;
   fieldRecords: IDBRecord<Field>[];
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
 } & (
@@ -19,11 +21,8 @@ export type SurveyType = (typeof surveyTypes)[number];
 
 const baseSurveySchema = z.object({
   name: z.string(),
-  tbaEventKey: z.optional(z.string()),
+  compId: z.number(),
   fieldIds: z.array(z.number()),
-  matches: z.array(matchSchema),
-  teams: z.array(teamSchema),
-  scouts: z.optional(z.array(z.string())),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });
@@ -52,6 +51,7 @@ export function exportSurvey(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBR
   const survey = {
     ...structuredClone(surveyRecord),
     id: undefined,
+    compId: undefined,
     created: undefined,
     modified: undefined,
   };
@@ -90,6 +90,7 @@ export function exportSurveyCompressed(surveyRecord: IDBRecord<Survey>, fieldRec
 }
 
 export function importSurvey(
+  compId: number,
   data: string,
 ): { success: true; survey: Survey; fields: Map<number, Field> } | { success: false; error: string } {
   let json: {
@@ -117,6 +118,7 @@ export function importSurvey(
 
   const survey: Survey = {
     ...json.survey,
+    compId,
     created: new Date(),
     modified: new Date(),
   };
@@ -148,21 +150,21 @@ export function importSurvey(
   return { success: true, survey, fields };
 }
 
-export async function importSurveyCompressed(data: Uint8Array) {
-  return importSurvey(await decompress(data));
+export async function importSurveyCompressed(compId: number, data: Uint8Array) {
+  return importSurvey(compId, await decompress(data));
 }
 
-export function getLastCompletedMatch(survey: Survey, entries: Entry[]) {
+export function getLastCompletedMatch(comp: Comp, survey: Survey, entries: Entry[]) {
   let lastCompletedMatch = 0;
 
   if (survey.type == "match") {
-    for (const match of survey.matches) {
+    for (const match of comp.matches) {
       if (entries.some((e) => e.type == "match" && e.status != "draft" && e.match == match.number)) {
         lastCompletedMatch = Math.max(lastCompletedMatch, match.number);
       }
     }
   } else if (survey.type == "pit") {
-    for (const match of survey.matches) {
+    for (const match of comp.matches) {
       if (match.redScore && match.blueScore) {
         lastCompletedMatch = Math.max(lastCompletedMatch, match.number);
       }

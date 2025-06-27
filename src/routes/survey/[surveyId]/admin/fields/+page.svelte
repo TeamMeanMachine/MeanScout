@@ -5,8 +5,8 @@
   import EditFieldDialog from "$lib/dialogs/EditFieldDialog.svelte";
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
-  import { objectStore, transaction } from "$lib/idb";
-  import AdminHeader from "../AdminHeader.svelte";
+  import { idb } from "$lib/idb";
+  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -83,7 +83,7 @@
             }
             sortUpdateQueue.push(() => {
               group.fieldIds = order;
-              objectStore("fields", "readwrite").put($state.snapshot(group));
+              idb.objectStore("fields", "readwrite").put($state.snapshot(group));
             });
             if (!sortUpdateTimeout) sortUpdateTimeout = window.setTimeout(updateAndRefresh, 10);
           } else {
@@ -115,9 +115,9 @@
     }
 
     surveyRecord.modified = new Date();
-    objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
 
-    const refreshTransaction = transaction("fields");
+    const refreshTransaction = idb.transaction("fields");
     refreshTransaction.onabort = () => {
       location.reload();
     };
@@ -178,7 +178,7 @@
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader {surveyRecord} page="fields" />
+  <SurveyAdminHeader compRecord={data.compRecord} {surveyRecord} page="fields" />
 
   {#if data.disabled}
     <span class="text-sm">

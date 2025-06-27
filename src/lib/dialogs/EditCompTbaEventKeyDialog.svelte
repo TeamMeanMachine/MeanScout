@@ -1,20 +1,20 @@
 <script lang="ts">
+  import type { Comp } from "$lib/comp";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { teamStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
   import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
   import { LoaderIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   let {
-    surveyRecord,
+    compRecord,
     onedit,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    compRecord: IDBRecord<Comp>;
     onedit: (tbaEventKey: string) => void;
   } = $props();
 
-  let event = $state(surveyRecord.tbaEventKey ?? "");
+  let event = $state(compRecord.tbaEventKey ?? "");
   let error = $state("");
   let events = $state<{ name: string; key: string }[]>([]);
 

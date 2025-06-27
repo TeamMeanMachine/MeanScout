@@ -1,14 +1,11 @@
-import { objectStore } from "$lib/idb";
-import type { Survey } from "$lib/survey";
+import { idb } from "$lib/idb";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async () => {
+  const compRecords = await idb.getAll({ from: "comps" });
+
+  localStorage.removeItem("comp");
   localStorage.removeItem("survey");
-  return {
-    surveys: await new Promise<IDBRecord<Survey>[]>((resolve) => {
-      const surveysRequest = objectStore("surveys").getAll();
-      surveysRequest.onerror = () => resolve([]);
-      surveysRequest.onsuccess = () => resolve(surveysRequest.result);
-    }),
-  };
+
+  return { compRecords };
 };

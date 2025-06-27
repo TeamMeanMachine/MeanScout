@@ -22,7 +22,12 @@
   }
 </script>
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="predictions" pageTitle="Predictions" />
+<SurveyPageHeader
+  compRecord={data.compRecord}
+  surveyRecord={data.surveyRecord}
+  page="predictions"
+  pageTitle="Predictions"
+/>
 
 <div class="flex flex-col gap-6" style="view-transition-name:predictions">
   <div class="flex flex-wrap gap-2 text-sm">
@@ -75,6 +80,7 @@
                 <Button
                   onclick={() => {
                     openDialog(ViewEntryDialog, {
+                      compRecord: data.compRecord,
                       surveyRecord: data.surveyRecord,
                       fieldRecords: data.fieldRecords,
                       entryRecord: entry,
@@ -164,6 +170,7 @@
               <Button
                 onclick={() => {
                   openDialog(ViewEntryDialog, {
+                    compRecord: data.compRecord,
                     surveyRecord: data.surveyRecord,
                     fieldRecords: data.fieldRecords,
                     entryRecord: entry,

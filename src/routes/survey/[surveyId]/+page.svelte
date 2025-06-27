@@ -7,14 +7,14 @@
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { type MatchEntry } from "$lib/entry";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { cameraStore, targetStore, teamStore } from "$lib/settings";
-  import { getLastCompletedMatch, type MatchSurvey } from "$lib/survey";
+  import { getLastCompletedMatch } from "$lib/survey";
   import {
+    ArrowLeftIcon,
     ArrowRightIcon,
     ChartBarBigIcon,
     DicesIcon,
-    ImportIcon,
     InfoIcon,
     ListOrderedIcon,
     NotepadTextIcon,
@@ -32,8 +32,6 @@
   import SurveyPageHeader from "./SurveyPageHeader.svelte";
   import { type PickList } from "$lib/analysis";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
-  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { goto } from "$app/navigation";
 
   let {
@@ -52,17 +50,17 @@
 
   const prefilledTeam = $derived.by(() => {
     if (data.surveyType == "pit") {
-      if (!data.surveyRecord.teams.length) return "";
+      if (!data.compRecord.teams.length) return "";
 
       const scoutedTeams = data.entryRecords.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
-      const unscoutedTeams = data.surveyRecord.teams
+      const unscoutedTeams = data.compRecord.teams
         .filter((t) => !scoutedTeams.includes(t.number))
         .toSorted((a, b) => Number(a.number) - Number(b.number));
 
       return unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
     }
 
-    const matchData = data.surveyRecord.matches.find((match) => match.number == prefilledMatch);
+    const matchData = data.compRecord.matches.find((match) => match.number == prefilledMatch);
     if (!matchData) return "";
 
     switch ($targetStore) {
@@ -83,7 +81,7 @@
     }
   });
 
-  const prefilledTeamName = $derived(data.surveyRecord.teams.find((t) => t.number == prefilledTeam)?.name);
+  const prefilledTeamName = $derived(data.compRecord.teams.find((t) => t.number == prefilledTeam)?.name);
 
   const prefilledScout = $derived.by(() => {
     const latestEntries = data.entryRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime());
@@ -93,7 +91,7 @@
         if (
           entry.scout &&
           entry.type == "match" &&
-          data.surveyRecord.matches.some(
+          data.compRecord.matches.some(
             (m) => m.number == entry.match && m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
           )
         ) {
@@ -124,7 +122,7 @@
     return data.entryRecords
       .filter((e) => {
         if (e.status == "draft") return false;
-        return data.surveyRecord.matches.some((m) => {
+        return data.compRecord.matches.some((m) => {
           if (m.number != e.match) return false;
           switch ($targetStore) {
             case "red 1":
@@ -149,9 +147,9 @@
 
   const teamCount = $derived(
     data.surveyType == "pit"
-      ? data.surveyRecord.teams.length
+      ? data.compRecord.teams.length
       : new Set([
-          ...data.surveyRecord.matches.flatMap((match) => [
+          ...data.compRecord.matches.flatMap((match) => [
             match.red1,
             match.red2,
             match.red3,
@@ -159,14 +157,14 @@
             match.blue2,
             match.blue3,
           ]),
-          ...data.surveyRecord.teams.map((team) => team.number),
+          ...data.compRecord.teams.map((team) => team.number),
         ]).size,
   );
 
   const matches = $derived(
-    $filterMatches ? data.surveyRecord.matches.filter(matchHasTeamStore) : data.surveyRecord.matches,
+    $filterMatches ? data.compRecord.matches.filter(matchHasTeamStore) : data.compRecord.matches,
   );
-  const lastCompletedMatch = $derived(getLastCompletedMatch(data.surveyRecord, data.entryRecords));
+  const lastCompletedMatch = $derived(getLastCompletedMatch(data.compRecord, data.surveyRecord, data.entryRecords));
 
   const upcomingMatches = $derived(
     matches
@@ -183,7 +181,7 @@
   );
 
   const matchesScouted = $derived(
-    data.surveyRecord.matches.filter((match) => {
+    data.compRecord.matches.filter((match) => {
       const teams = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
       return data.entryRecords.find(
         (e) => e.type == "match" && e.status != "draft" && teams.includes(e.team) && e.match == match.number,
@@ -196,7 +194,7 @@
   }
 
   function refresh() {
-    const entriesRequest = objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
+    const entriesRequest = idb.objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
 
     entriesRequest.onerror = () => {
       location.reload();
@@ -216,7 +214,7 @@
   }
 </script>
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="overview" />
+<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="overview" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
   {@render entriesWidget()}
@@ -225,7 +223,7 @@
     {@render analysisWidget(data.surveyRecord.pickLists, data.surveyRecord.expressions)}
   {/if}
 
-  {#if data.surveyRecord.matches.length}
+  {#if data.compRecord.matches.length}
     {@render matchesWidget()}
   {/if}
 
@@ -233,12 +231,12 @@
     {@render teamsWidget()}
   {/if}
 
-  {#if data.surveyType == "match" && data.surveyRecord.scouts}
-    {@render predictionsWidget(data.surveyRecord, data.entryRecords)}
+  {#if data.surveyType == "match" && data.compRecord.scouts}
+    {@render predictionsWidget(data.entryRecords)}
   {/if}
 
   {@render surveyWidget()}
-  {@render switchSurveyWidget()}
+  {@render compWidget()}
   {@render appWidget()}
 </div>
 
@@ -250,10 +248,10 @@
         <h2 class="font-bold">Entries</h2>
         <span class="text-xs font-light">
           {data.entryRecords.length - drafts.length} completed
-          {#if data.surveyType == "match" && data.surveyRecord.matches.length}
-            of {data.surveyRecord.matches.length * 6}
-          {:else if data.surveyRecord.teams.length}
-            of {data.surveyRecord.teams.length}
+          {#if data.surveyType == "match" && data.compRecord.matches.length}
+            of {data.compRecord.matches.length * 6}
+          {:else if data.compRecord.teams.length}
+            of {data.compRecord.teams.length}
           {/if}
         </span>
       </div>
@@ -272,9 +270,9 @@
           onnewscout(newScout) {
             data = {
               ...data,
-              surveyRecord: { ...data.surveyRecord, scouts: [...(data.surveyRecord.scouts || []), newScout] },
+              compRecord: { ...data.compRecord, scouts: [...(data.compRecord.scouts || []), newScout] },
             } as PageData;
-            objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
           },
         });
       }}
@@ -298,7 +296,7 @@
                 {@render entryOverview(
                   draft.type == "match" ? draft.match : undefined,
                   draft.team,
-                  data.surveyRecord.teams.find((t) => t.number == draft.team)?.name,
+                  data.compRecord.teams.find((t) => t.number == draft.team)?.name,
                 )}
               </div>
               <ArrowRightIcon class="text-theme" />
@@ -317,6 +315,7 @@
             <Button
               onclick={() => {
                 openDialog(ViewEntryDialog, {
+                  compRecord: data.compRecord,
                   surveyRecord: data.surveyRecord,
                   fieldRecords: data.fieldRecords,
                   entryRecord: entry,
@@ -327,7 +326,7 @@
               {@render entryOverview(
                 entry.type == "match" ? entry.match : undefined,
                 entry.team,
-                data.surveyRecord.teams.find((t) => t.number == entry.team)?.name,
+                data.compRecord.teams.find((t) => t.number == entry.team)?.name,
               )}
             </Button>
           {/each}
@@ -397,9 +396,9 @@
         <h2 class="font-bold">Matches</h2>
         <span class="text-xs font-light">
           {#if data.surveyType == "match"}
-            {matchesScouted} scouted of {data.surveyRecord.matches.length}
+            {matchesScouted} scouted of {data.compRecord.matches.length}
           {:else}
-            {data.surveyRecord.matches.length} total
+            {data.compRecord.matches.length} total
           {/if}
         </span>
       </div>
@@ -465,8 +464,8 @@
   </Anchor>
 {/snippet}
 
-{#snippet predictionsWidget(surveyRecord: IDBRecord<MatchSurvey>, entryRecords: IDBRecord<MatchEntry>[])}
-  {@const { overallAccuracy } = getPredictionsPerScout(surveyRecord, entryRecords)}
+{#snippet predictionsWidget(entryRecords: IDBRecord<MatchEntry>[])}
+  {@const { overallAccuracy } = getPredictionsPerScout(data.compRecord, entryRecords)}
 
   <Anchor route="survey/{data.surveyRecord.id}/predictions" style="view-transition-name:predictions">
     <DicesIcon class="text-theme" />
@@ -503,6 +502,7 @@
       <Button
         onclick={() => {
           openDialog(OverwriteSurveyDialog, {
+            compId: data.compRecord.id,
             surveyRecord: data.surveyRecord,
             fieldRecords: data.fieldRecords,
             entryCount: data.entryRecords.length,
@@ -534,47 +534,29 @@
   </div>
 {/snippet}
 
-{#snippet switchSurveyWidget()}
-  <div class="flex flex-col gap-2" style="view-transition-name:surveys">
-    <h2 class="font-bold">Switch Survey</h2>
-
-    {#if data.otherSurveys.length}
-      {#each data.otherSurveys.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
-        <Anchor route="survey/{survey.id}">
-          <div class="grow">{survey.name}</div>
-          <ArrowRightIcon class="text-theme" />
-        </Anchor>
-      {/each}
-    {/if}
-
-    <div class="flex flex-wrap gap-2">
-      <Button onclick={() => openDialog(ImportSurveyDialog, {})} class="grow basis-0">
-        <ImportIcon class="text-theme" />
-        <div class="flex flex-col">
-          Import
-          <span class="text-xs font-light">
-            {#if $cameraStore}
-              QRF code, File
-            {:else}
-              File
-            {/if}
-          </span>
-        </div>
-      </Button>
-      <Button onclick={() => openDialog(NewSurveyDialog, {})} class="grow basis-0">
-        <PlusIcon class="text-theme" />
-        <div class="flex flex-col">
-          Create
-          <span class="text-xs font-light">New</span>
-        </div>
-      </Button>
-    </div>
+{#snippet compWidget()}
+  <div class="flex flex-col gap-2" style="view-transition-name:comp">
+    <h2 class="font-bold">{data.compRecord.name}</h2>
+    <Anchor route="comp/{data.compRecord.id}" class="active:-left-0.5!">
+      <ArrowLeftIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        Comp page
+        <span class="text-xs font-light">Switch survey</span>
+      </div>
+    </Anchor>
   </div>
 {/snippet}
 
 {#snippet appWidget()}
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
     <h2 class="font-bold">MeanScout</h2>
+    <Anchor route="" class="active:-left-0.5!">
+      <ArrowLeftIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        Main page
+        <span class="text-xs font-light">Switch comp</span>
+      </div>
+    </Anchor>
     <div class="flex flex-wrap gap-2">
       <Anchor route="settings" class="grow basis-48" style="view-transition-name:settings">
         <SettingsIcon class="text-theme" />
@@ -593,7 +575,7 @@
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
-    <span class="text-sm">
+    <span class="text-sm" style="view-transition-name:meanscout-version">
       {import.meta.env.VITE_GIT_COMMIT_HASH}
       <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
     </span>

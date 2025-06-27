@@ -7,9 +7,9 @@
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import AdminHeader from "../AdminHeader.svelte";
+  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -91,14 +91,14 @@
       oncreate(expression) {
         surveyRecord.expressions.push(expression);
         surveyRecord.modified = new Date();
-        objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+        idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
       },
     });
   }
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="analysis" />
+  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="analysis" />
 
   {#if !data.fieldRecords.length}
     <span class="text-sm">To setup analysis, go create some fields.</span>
@@ -116,12 +116,12 @@
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
                     surveyRecord.modified = new Date();
-                    objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
                   },
                   ondelete() {
                     surveyRecord.pickLists.splice(index, 1);
                     surveyRecord.modified = new Date();
-                    objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
                   },
                 });
               }}
@@ -280,7 +280,7 @@
                   oncreate(pickList) {
                     surveyRecord.pickLists.push(pickList);
                     surveyRecord.modified = new Date();
-                    objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
                   },
                 });
               }}
@@ -341,12 +341,12 @@
           surveyRecord.pickLists = pickLists;
           surveyRecord.expressions = expressions;
           surveyRecord.modified = new Date();
-          objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+          idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
         },
         ondelete() {
           surveyRecord.expressions.splice(index, 1);
           surveyRecord.modified = new Date();
-          objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+          idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
         },
       });
     }}

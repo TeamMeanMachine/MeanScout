@@ -1,8 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { DialogExports } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
+
+  let {
+    compId,
+  }: {
+    compId: number;
+  } = $props();
 
   let name = $state("");
   let type = $state<SurveyType>("match");
@@ -19,11 +25,10 @@
       let survey: Survey;
       if (type == "match") {
         survey = {
+          compId,
           name,
           type,
           fieldIds: [],
-          matches: [],
-          teams: [],
           expressions: [],
           pickLists: [],
           created: new Date(),
@@ -31,11 +36,10 @@
         };
       } else if (type == "pit") {
         survey = {
+          compId,
           name,
           type,
           fieldIds: [],
-          matches: [],
-          teams: [],
           created: new Date(),
           modified: new Date(),
         };
@@ -44,7 +48,7 @@
         return;
       }
 
-      const addRequest = objectStore("surveys", "readwrite").add(survey);
+      const addRequest = idb.objectStore("surveys", "readwrite").add(survey);
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };

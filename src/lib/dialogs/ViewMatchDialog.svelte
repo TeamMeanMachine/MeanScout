@@ -61,6 +61,7 @@
 
     if (selected?.type == "picklist") {
       return getPickListData(
+        pageData.compRecord,
         selected.pickList.name,
         pageData.surveyRecord,
         entriesByTeam,
@@ -68,6 +69,7 @@
       );
     } else if (selected?.type == "expression") {
       return getExpressionData(
+        pageData.compRecord,
         selected.expression.name,
         pageData.surveyRecord,
         entriesByTeam,
@@ -189,7 +191,7 @@
 
 {#snippet teamRow(alliance: "red" | "blue", team: string | AnalysisTeamData)}
   {#if typeof team == "string"}
-    {@const teamName = pageData.surveyRecord.teams.find((t) => t.number == team)?.name || ""}
+    {@const teamName = pageData.compRecord.teams.find((t) => t.number == team)?.name || ""}
 
     <Button
       onclick={() => {

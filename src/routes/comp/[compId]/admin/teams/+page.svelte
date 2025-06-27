@@ -4,8 +4,8 @@
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
   import type { PageData } from "./$types";
-  import { objectStore } from "$lib/idb";
-  import AdminHeader from "../AdminHeader.svelte";
+  import { idb } from "$lib/idb";
+  import CompAdminHeader from "../CompAdminHeader.svelte";
   import { PlusIcon } from "@lucide/svelte";
 
   let {
@@ -16,36 +16,36 @@
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="teams" />
+  <CompAdminHeader compRecord={data.compRecord} page="teams" />
 
   <div class="flex flex-col gap-3">
-    {#if data.surveyRecord.teams.length}
+    {#if data.compRecord.teams.length}
       <div class="grid gap-2" style="grid-template-columns: min-content auto">
-        {#each data.surveyRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true }, ), ) as team (team.number)}
+        {#each data.compRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true }, ), ) as team (team.number)}
           <Button
             onclick={() => {
               openDialog(EditTeamDialog, {
                 team,
                 onedit(name) {
-                  const teams = structuredClone($state.snapshot(data.surveyRecord.teams));
+                  const teams = structuredClone($state.snapshot(data.compRecord.teams));
                   const teamToEdit = teams.find((t) => t.number == team.number);
                   if (teamToEdit) teamToEdit.name = name;
                   data = {
                     ...data,
-                    surveyRecord: { ...data.surveyRecord, teams: teams, modified: new Date() },
+                    compRecord: { ...data.compRecord, teams: teams, modified: new Date() },
                   } as PageData;
-                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
                 },
                 ondelete() {
                   data = {
                     ...data,
-                    surveyRecord: {
-                      ...data.surveyRecord,
-                      teams: data.surveyRecord.teams.filter((team) => team.number != team.number),
+                    compRecord: {
+                      ...data.compRecord,
+                      teams: data.compRecord.teams.filter((team) => team.number != team.number),
                       modified: new Date(),
                     },
                   } as PageData;
-                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
                 },
               });
             }}
@@ -61,7 +61,7 @@
     {:else}
       <span class="text-sm">
         No custom teams.
-        {#if data.surveyType == "match" && data.surveyRecord.matches.length}
+        {#if data.compRecord.matches.length}
           Teams from matches are allowed depending on the selected target.
         {:else}
           Any team value is allowed.
@@ -75,17 +75,17 @@
       <Button
         onclick={() => {
           openDialog(NewTeamsDialog, {
-            teams: data.surveyRecord.teams,
+            teams: data.compRecord.teams,
             onadd(teams) {
               data = {
                 ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  teams: [...data.surveyRecord.teams, ...teams.map((team) => ({ number: team, name: "" }))],
+                compRecord: {
+                  ...data.compRecord,
+                  teams: [...data.compRecord.teams, ...teams.map((team) => ({ number: team, name: "" }))],
                   modified: new Date(),
                 },
               } as PageData;
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
             },
           });
         }}

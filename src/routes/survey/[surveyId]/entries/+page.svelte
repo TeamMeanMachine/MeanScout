@@ -6,7 +6,7 @@
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
   import type { PageData } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
@@ -42,11 +42,11 @@
   });
 
   let filterableScouts = $derived.by(() => {
-    if (!data.surveyRecord.scouts) return undefined;
+    if (!data.compRecord.scouts) return undefined;
     return [
       ...new Set([
         ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
-        ...(data.surveyRecord.scouts || []),
+        ...(data.compRecord.scouts || []),
       ]),
     ].toSorted((a, b) => a.localeCompare(b));
   });
@@ -160,7 +160,7 @@
       }
 
       if (filters.target != undefined && data.surveyType == "match") {
-        const teamsOfThisTarget = data.surveyRecord.matches
+        const teamsOfThisTarget = data.compRecord.matches
           .filter((match) => match.number == entry.match)
           .map((match) => {
             switch (filters.target) {
@@ -199,7 +199,7 @@
 
     if ($groupBy == "match") {
       if (matchCompare == 0 && a.type == "match" && b.type == "match") {
-        const match = data.surveyRecord.matches.find((m) => m.number == a.match);
+        const match = data.compRecord.matches.find((m) => m.number == a.match);
         if (match) {
           const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
           const targetA = targets.findIndex((t) => t == a.team);
@@ -222,9 +222,9 @@
       ...data,
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
     } as PageData;
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
 
-    const entriesRequest = objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
+    const entriesRequest = idb.objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
 
     entriesRequest.onerror = () => {
       location.reload();
@@ -244,7 +244,7 @@
   }
 
   function fixEntries() {
-    const cursorRequest = objectStore("entries", "readwrite").index("surveyId").openCursor(data.surveyRecord.id);
+    const cursorRequest = idb.objectStore("entries", "readwrite").index("surveyId").openCursor(data.surveyRecord.id);
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor == null) {
@@ -285,7 +285,7 @@
 
 <svelte:window {onscroll} />
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="entries" pageTitle="Entries" />
+<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="entries" pageTitle="Entries" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:entries">
   {#if duplicateEntryIds.length}
@@ -380,7 +380,7 @@
             </select>
           </label>
 
-          {#if data.surveyType == "match" && data.surveyRecord.matches.length}
+          {#if data.surveyType == "match" && data.compRecord.matches.length}
             <label class="flex grow flex-col">
               Target
               <select
@@ -504,6 +504,7 @@
     <Button
       onclick={() => {
         openDialog(ViewEntryDialog, {
+          compRecord: data.compRecord,
           surveyRecord: data.surveyRecord,
           fieldRecords: data.fieldRecords,
           entryRecord: entry,
@@ -519,7 +520,7 @@
         </div>
       {/if}
       {#if $groupBy != "team"}
-        {@const teamName = data.surveyRecord.teams.find((t) => t.number == entry.team)?.name}
+        {@const teamName = data.compRecord.teams.find((t) => t.number == entry.team)?.name}
         <div class="flex w-32 max-w-full flex-col">
           <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">{teamName || "Team"}</span>
           <span>{entry.team}</span>
@@ -570,7 +571,7 @@
     {#each filterableTeams as team}
       {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
       {#if thisTeamEntries.length}
-        {@const teamName = data.surveyRecord.teams.find((t) => t.number == team)?.name}
+        {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
         <div class="-mx-1 flex flex-col gap-2 px-1">
           <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
             <h2 class="font-bold">Team {team}</h2>

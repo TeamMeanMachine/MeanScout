@@ -1,8 +1,8 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { PageData } from "./$types";
-  import AdminHeader from "../AdminHeader.svelte";
+  import CompAdminHeader from "../CompAdminHeader.svelte";
   import { openDialog } from "$lib/dialog";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
   import { PlusIcon } from "@lucide/svelte";
@@ -15,41 +15,41 @@
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="scouts" />
+  <CompAdminHeader compRecord={data.compRecord} page="scouts" />
 
   <div class="flex flex-col gap-3">
-    {#if !data.surveyRecord.scouts}
+    {#if !data.compRecord.scouts}
       <Button
         onclick={() => {
           data = {
             ...data,
-            surveyRecord: {
-              ...data.surveyRecord,
+            compRecord: {
+              ...data.compRecord,
               scouts: [],
               modified: new Date(),
             },
           } as PageData;
-          objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+          idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
         }}
       >
         Enable scout names and prediction
       </Button>
     {/if}
 
-    {#if data.surveyRecord.scouts?.length}
+    {#if data.compRecord.scouts?.length}
       <div class="flex flex-col gap-2">
-        {#each [...new Set(data.surveyRecord.scouts)].toSorted() as scout (scout)}
+        {#each [...new Set(data.compRecord.scouts)].toSorted() as scout (scout)}
           <Button
             onclick={() => {
               data = {
                 ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  scouts: data.surveyRecord.scouts?.filter((s) => s != scout),
+                compRecord: {
+                  ...data.compRecord,
+                  scouts: data.compRecord.scouts?.filter((s) => s != scout),
                   modified: new Date(),
                 },
               } as PageData;
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
             }}
           >
             {scout}
@@ -58,25 +58,25 @@
       </div>
     {/if}
 
-    {#if data.surveyRecord.scouts}
+    {#if data.compRecord.scouts}
       <div
         class="sticky bottom-3 z-20 ml-2 flex flex-col self-start border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
       >
         <Button
           onclick={() => {
-            if (!data.surveyRecord.scouts) return;
+            if (!data.compRecord.scouts) return;
             openDialog(NewScoutsDialog, {
-              scouts: data.surveyRecord.scouts,
+              scouts: data.compRecord.scouts,
               onadd(scouts) {
                 data = {
                   ...data,
-                  surveyRecord: {
-                    ...data.surveyRecord,
-                    scouts: [...(data.surveyRecord.scouts || []), ...scouts],
+                  compRecord: {
+                    ...data.compRecord,
+                    scouts: [...(data.compRecord.scouts || []), ...scouts],
                     modified: new Date(),
                   },
                 } as PageData;
-                objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
               },
             });
           }}

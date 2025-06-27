@@ -3,7 +3,8 @@ import type { Entry } from "./entry";
 import type { SingleFieldWithDetails } from "./field";
 import { expressionSchema, type Expression, type ExpressionMethod } from "./expression";
 import type { MatchSurvey } from "./survey";
-import { type Value } from "$lib";
+import { type Value } from "./";
+import type { Comp } from "./comp";
 
 const weightSchema = z.object({ expressionName: z.string(), percentage: z.number() });
 
@@ -56,6 +57,7 @@ const analysisData = z.discriminatedUnion("type", [pickListAnalysisData, express
 export type AnalysisData = z.infer<typeof analysisData>;
 
 export function getPickListData(
+  compRecord: Comp,
   pickListName: string,
   surveyRecord: MatchSurvey,
   entriesByTeam: Record<string, IDBRecord<Entry>[]>,
@@ -88,7 +90,7 @@ export function getPickListData(
     .map(
       (team): PickListTeamData => ({
         team,
-        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: compRecord.teams.find((t) => t.number == team)?.name || "",
         percentage: normalizedPickListData[team],
         inputs: weightsData[team],
       }),
@@ -106,6 +108,7 @@ export function getPickListData(
 }
 
 export function getExpressionData(
+  compRecord: Comp,
   expressionName: string,
   surveyRecord: MatchSurvey,
   entriesByTeam: Record<string, IDBRecord<Entry>[]>,
@@ -139,7 +142,7 @@ export function getExpressionData(
     .map(
       (team): ExpressionTeamData => ({
         team,
-        teamName: surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: compRecord.teams.find((t) => t.number == team)?.name || "",
         value: expressionData[team].value,
         percentage: Math.abs(
           ((expressionData[team].value - Math.min(minValue, 0)) /

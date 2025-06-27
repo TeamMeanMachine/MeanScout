@@ -1,7 +1,7 @@
 <script lang="ts">
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import { getDefaultFieldValue } from "$lib/field";
-  import AdminHeader from "../AdminHeader.svelte";
+  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -12,7 +12,7 @@
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="preview" />
+  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="preview" />
 
   {#if data.fieldRecords.length}
     <div class="flex flex-col gap-4">

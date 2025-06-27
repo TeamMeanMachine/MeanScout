@@ -1,4 +1,4 @@
-import type { Entry, Survey } from "$lib";
+import type { IDBStoreName } from "$lib/idb";
 
 declare global {
   // See https://svelte.dev/docs/kit/types#app
@@ -14,14 +14,15 @@ declare global {
   type IDBRecord<T> = T & { id: number };
 
   interface IDBTransaction {
-    objectStore(name: "surveys"): IDBObjectStore;
+    objectStore(name: "comps"): IDBObjectStore;
+    objectStore(name: "surveys"): IDBObjectStore & { index(name: "compId"): IDBIndex };
     objectStore(name: "fields"): IDBObjectStore & { index(name: "surveyId"): IDBIndex };
     objectStore(name: "entries"): IDBObjectStore & { index(name: "surveyId"): IDBIndex };
   }
 
   interface IDBDatabase {
     transaction(
-      storeNames: "surveys" | "fields" | "entries" | ("surveys" | "fields" | "entries")[],
+      storeNames: IDBStoreName | IDBStoreName[],
       mode?: IDBTransactionMode,
       options?: IDBTransactionOptions,
     ): IDBTransaction;

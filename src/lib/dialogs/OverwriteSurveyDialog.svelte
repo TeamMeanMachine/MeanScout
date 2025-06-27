@@ -5,16 +5,18 @@
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
-  import { transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import { importSurvey, surveySchema, type Survey } from "$lib/survey";
   import { Undo2Icon } from "@lucide/svelte";
 
   let {
+    compId,
     surveyRecord,
     fieldRecords,
     entryCount,
   }: {
+    compId: number;
     surveyRecord: IDBRecord<Survey>;
     fieldRecords: IDBRecord<Field>[];
     entryCount: number;
@@ -49,7 +51,7 @@
         return;
       }
 
-      const importTransaction = transaction(["surveys", "fields"], "readwrite");
+      const importTransaction = idb.transaction(["surveys", "fields"], "readwrite");
       importTransaction.onabort = () => {
         error = "Could not overwrite survey";
       };
@@ -118,7 +120,7 @@
   }
 
   function onread(data: string) {
-    const jsonResult = importSurvey(data);
+    const jsonResult = importSurvey(compId, data);
     if (!jsonResult.success) {
       error = jsonResult.error;
       return;
@@ -184,12 +186,6 @@
     <span class="text-xs font-light">Type</span>
     <span class="font-bold">{importedSurvey?.type}</span>
   </span>
-  {#if importedSurvey?.tbaEventKey}
-    <span>
-      <span class="text-xs font-light">TBA Event Key</span>
-      <span class="font-bold">{importedSurvey.tbaEventKey}</span>
-    </span>
-  {/if}
 {/snippet}
 
 {#if error}

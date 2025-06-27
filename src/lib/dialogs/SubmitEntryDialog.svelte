@@ -5,7 +5,7 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { exportEntries, type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type SingleFieldWithDetails } from "$lib/field";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { SquareCheckBigIcon, ChevronUpIcon, SquareIcon, ChevronDownIcon } from "@lucide/svelte";
 
   let {
@@ -44,7 +44,7 @@
         submittedEntry.values = defaultValues;
       }
 
-      const submitRequest = objectStore("entries", "readwrite").put(submittedEntry);
+      const submitRequest = idb.objectStore("entries", "readwrite").put(submittedEntry);
       submitRequest.onerror = () => {
         error = `Could not submit entry: ${submitRequest.error?.message}`;
       };

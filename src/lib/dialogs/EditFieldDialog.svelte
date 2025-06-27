@@ -2,7 +2,7 @@
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { type Field, type GroupField, type SingleField } from "$lib/field";
-  import { objectStore, transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import {
     ArrowDownIcon,
@@ -81,7 +81,7 @@
         }
       }
 
-      const putRequest = objectStore("fields", "readwrite").put($state.snapshot(changes));
+      const putRequest = idb.objectStore("fields", "readwrite").put($state.snapshot(changes));
       putRequest.onsuccess = () => {
         onedit();
         closeDialog();
@@ -98,7 +98,7 @@
       const updatedFieldIds = structuredClone($state.snapshot(parentField.fieldIds));
       updatedFieldIds.splice(index + by, 0, ...updatedFieldIds.splice(index, 1));
 
-      const request = objectStore("fields", "readwrite").put({
+      const request = idb.objectStore("fields", "readwrite").put({
         ...$state.snapshot(parentField),
         fieldIds: updatedFieldIds,
       });
@@ -118,7 +118,7 @@
   }
 
   function duplicateField() {
-    const newTransaction = transaction("fields", "readwrite");
+    const newTransaction = idb.transaction("fields", "readwrite");
     const fieldStore = newTransaction.objectStore("fields");
 
     newTransaction.onabort = () => {
@@ -175,7 +175,7 @@
   }
 
   function deleteField() {
-    const deleteTransaction = transaction("fields", "readwrite");
+    const deleteTransaction = idb.transaction("fields", "readwrite");
     const fieldStore = deleteTransaction.objectStore("fields");
 
     fieldStore.delete(field.id);

@@ -2,7 +2,7 @@
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { type Field, type FieldType, type GroupField } from "$lib/field";
-  import { transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
@@ -64,7 +64,7 @@
         }
       }
 
-      const addTransaction = transaction("fields", "readwrite");
+      const addTransaction = idb.transaction("fields", "readwrite");
       const fieldStore = addTransaction.objectStore("fields");
 
       addTransaction.onabort = () => {

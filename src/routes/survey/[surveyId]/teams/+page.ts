@@ -6,7 +6,7 @@ export const load: PageLoad = async (event) => {
   const surveyId = Number(event.params.surveyId);
   const data = await loadSurveyPageData(surveyId);
 
-  const teamsFromMatches = data.surveyRecord.matches.flatMap((match) => [
+  const teamsFromMatches = data.compRecord.matches.flatMap((match) => [
     match.red1,
     match.red2,
     match.red3,
@@ -15,11 +15,11 @@ export const load: PageLoad = async (event) => {
     match.blue3,
   ]);
 
-  const teams = [...new Set([...data.surveyRecord.teams.map((team) => team.number), ...teamsFromMatches])]
+  const teams = [...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches])]
     .map(
       (team: string): Team => ({
         number: team,
-        name: data.surveyRecord.teams.find((t) => t.number == team)?.name || "",
+        name: data.compRecord.teams.find((t) => t.number == team)?.name || "",
       }),
     )
     .filter((team) => data.entryRecords.some((e) => e.team == team.number))

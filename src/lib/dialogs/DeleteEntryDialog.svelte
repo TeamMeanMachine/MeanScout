@@ -1,7 +1,7 @@
 <script lang="ts">
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
 
   let {
     entryRecord,
@@ -15,7 +15,7 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      const deleteRequest = objectStore("entries", "readwrite").delete(entryRecord.id);
+      const deleteRequest = idb.objectStore("entries", "readwrite").delete(entryRecord.id);
       deleteRequest.onerror = () => {
         error = `Could not delete entry: ${deleteRequest.error?.message}`;
       };

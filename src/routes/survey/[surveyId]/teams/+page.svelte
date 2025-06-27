@@ -36,7 +36,7 @@
   }
 </script>
 
-<SurveyPageHeader surveyRecord={data.surveyRecord} page="teams" pageTitle="Teams" />
+<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="teams" pageTitle="Teams" />
 
 <div class="flex flex-col gap-4" style="view-transition-name:teams">
   {#if data.teams.length}

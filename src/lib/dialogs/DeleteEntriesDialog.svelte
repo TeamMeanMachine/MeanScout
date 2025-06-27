@@ -1,6 +1,6 @@
 <script lang="ts">
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -15,7 +15,7 @@
 
   export const { onopen, onconfirm }: DialogExports = {
     onconfirm() {
-      const entryCursorRequest = objectStore("entries", "readwrite").index("surveyId").openCursor(surveyRecord.id);
+      const entryCursorRequest = idb.objectStore("entries", "readwrite").index("surveyId").openCursor(surveyRecord.id);
       entryCursorRequest.onerror = () => {
         error = `Could not delete entries: ${entryCursorRequest.error?.message}`;
       };

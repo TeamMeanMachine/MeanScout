@@ -5,7 +5,7 @@
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { PageData } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { getDefaultFieldValue } from "$lib/field";
@@ -27,17 +27,19 @@
       ...data,
       entryRecord: { ...entry, modified: new Date() },
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
+      compRecord: { ...data.compRecord, modified: new Date() },
     } as PageData;
-    objectStore("entries", "readwrite").put($state.snapshot(data.entryRecord));
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("entries", "readwrite").put($state.snapshot(data.entryRecord));
+    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
   }
 </script>
 
 <Header
-  title="Draft - {data.surveyRecord.name} - MeanScout"
+  title="Draft - {data.compRecord.name} - {data.surveyRecord.name} - MeanScout"
   heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Draft" },
+    { type: "sm", text: `${data.compRecord.name} - ${data.surveyRecord.name}` },
+    { type: "h1", text: `Draft` },
   ]}
   backLink="survey/{data.surveyRecord.id}"
 />
@@ -55,7 +57,7 @@
       <span class="font-bold">{data.entryRecord.team}</span>
     </div>
 
-    {#if data.surveyRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
+    {#if data.compRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
       <div class="flex flex-col">
         <span class="text-xs">Prediction</span>
         <span class="font-bold capitalize text-{data.entryRecord.prediction}">
@@ -65,13 +67,13 @@
     {/if}
   </div>
 
-  {#if data.surveyRecord.scouts}
+  {#if data.compRecord.scouts}
     <div class="flex flex-wrap items-end gap-2">
-      {#if data.surveyRecord.scouts.length}
+      {#if data.compRecord.scouts.length}
         <label class="flex flex-col">
           <span class="text-sm">Scout</span>
           <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
-            {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+            {#each data.compRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
               <option>{scout}</option>
             {/each}
           </select>
@@ -80,16 +82,16 @@
       <Button
         onclick={() => {
           openDialog(NewScoutDialog, {
-            scouts: data.surveyRecord.scouts ?? [],
+            scouts: data.compRecord.scouts ?? [],
             onadd(newScout) {
               data = {
                 ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  scouts: [...(data.surveyRecord.scouts || []), newScout],
+                compRecord: {
+                  ...data.compRecord,
+                  scouts: [...(data.compRecord.scouts || []), newScout],
                 },
               } as PageData;
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
               entry.scout = newScout;
               onchange();
             },
@@ -169,7 +171,10 @@
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: data.entryRecord,
           onexport: () => {
-            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb
+              .objectStore("surveys", "readwrite")
+              .put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.objectStore("comps", "readwrite").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             goto(`#/survey/${data.surveyRecord.id}`);
           },
         });
@@ -184,7 +189,10 @@
         openDialog(DeleteEntryDialog, {
           entryRecord: data.entryRecord,
           ondelete: () => {
-            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb
+              .objectStore("surveys", "readwrite")
+              .put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.objectStore("comps", "readwrite").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             goto(`#/survey/${data.surveyRecord.id}`);
           },
         })}

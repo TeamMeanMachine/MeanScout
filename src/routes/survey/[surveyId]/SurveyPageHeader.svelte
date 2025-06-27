@@ -1,13 +1,16 @@
 <script lang="ts">
+  import type { Comp } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
   import type { Survey } from "$lib/survey";
 
   let {
+    compRecord,
     surveyRecord,
     page,
     pageTitle,
   }: {
+    compRecord: IDBRecord<Comp>;
     surveyRecord: IDBRecord<Survey>;
     page: string;
     pageTitle?: string;
@@ -15,13 +18,17 @@
 
   const routeBase = $derived(`survey/${surveyRecord.id}`);
 
-  const title = $derived(pageTitle ? `${pageTitle} - ${surveyRecord.name}` : surveyRecord.name);
+  const title = $derived(
+    pageTitle
+      ? `${pageTitle} - ${compRecord.name} - ${surveyRecord.name}`
+      : `${compRecord.name} - ${surveyRecord.name}`,
+  );
 
   const teamCount = $derived(
     surveyRecord.type == "pit"
-      ? surveyRecord.teams.length
+      ? compRecord.teams.length
       : new Set([
-          ...surveyRecord.matches.flatMap((match) => [
+          ...compRecord.matches.flatMap((match) => [
             match.red1,
             match.red2,
             match.red3,
@@ -29,7 +36,7 @@
             match.blue2,
             match.blue3,
           ]),
-          ...surveyRecord.teams.map((team) => team.number),
+          ...compRecord.teams.map((team) => team.number),
         ]).size,
   );
 
@@ -43,7 +50,13 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <Header title="{title} - MeanScout" heading={surveyRecord.name} />
+  <Header
+    title="{title} - MeanScout"
+    heading={[
+      { type: "sm", text: compRecord.name },
+      { type: "h1", text: surveyRecord.name },
+    ]}
+  />
 
   <div
     use:navBar
@@ -55,13 +68,13 @@
     {#if surveyRecord.type == "match" && (surveyRecord.pickLists.length || surveyRecord.expressions.length)}
       <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
     {/if}
-    {#if surveyRecord.matches.length}
+    {#if compRecord.matches.length}
       <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
     {/if}
     {#if teamCount}
       <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
     {/if}
-    {#if surveyRecord.type == "match" && surveyRecord.scouts}
+    {#if surveyRecord.type == "match" && compRecord.scouts}
       <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>Predictions</Anchor>
     {/if}
   </div>

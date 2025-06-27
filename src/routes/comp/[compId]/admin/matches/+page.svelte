@@ -4,9 +4,9 @@
   import { openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import AdminHeader from "../AdminHeader.svelte";
+  import CompAdminHeader from "../CompAdminHeader.svelte";
   import type { PageData } from "./$types";
 
   let {
@@ -17,37 +17,37 @@
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
-  <AdminHeader surveyRecord={data.surveyRecord} page="matches" />
+  <CompAdminHeader compRecord={data.compRecord} page="matches" />
 
   <div class="flex flex-col gap-3">
-    {#if data.surveyRecord.matches.length}
+    {#if data.compRecord.matches.length}
       <div class="flex flex-wrap gap-2">
-        {#each data.surveyRecord.matches.toSorted((a, b) => a.number - b.number) as match (match)}
+        {#each data.compRecord.matches.toSorted((a, b) => a.number - b.number) as match (match)}
           <Button
             onclick={() => {
               openDialog(EditMatchDialog, {
                 match,
                 onupdate(match: Match) {
-                  const matches = structuredClone($state.snapshot(data.surveyRecord.matches));
+                  const matches = structuredClone($state.snapshot(data.compRecord.matches));
                   const index = matches.findIndex((m) => m.number == match.number);
                   if (index >= 0) matches[index] = match;
 
                   data = {
                     ...data,
-                    surveyRecord: { ...data.surveyRecord, matches, modified: new Date() },
+                    compRecord: { ...data.compRecord, matches, modified: new Date() },
                   } as PageData;
-                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
                 },
                 ondelete() {
                   data = {
                     ...data,
-                    surveyRecord: {
-                      ...data.surveyRecord,
-                      matches: data.surveyRecord.matches.filter((m) => m.number != match.number),
+                    compRecord: {
+                      ...data.compRecord,
+                      matches: data.compRecord.matches.filter((m) => m.number != match.number),
                       modified: new Date(),
                     },
                   } as PageData;
-                  objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
                 },
               });
             }}
@@ -79,17 +79,17 @@
       <Button
         onclick={() =>
           openDialog(NewMatchDialog, {
-            surveyRecord: data.surveyRecord,
+            matches: data.compRecord.matches,
             oncreate(match) {
               data = {
                 ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  matches: [...data.surveyRecord.matches, match],
+                compRecord: {
+                  ...data.compRecord,
+                  matches: [...data.compRecord.matches, match],
                   modified: new Date(),
                 },
               } as PageData;
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
             },
           })}
         class="text-sm"

@@ -16,8 +16,9 @@
   import { onMount } from "svelte";
   import { prefersReducedMotion } from "svelte/motion";
 
+  const lastComp = localStorage.getItem("comp");
   const lastSurvey = localStorage.getItem("survey");
-  const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
+  const backLink = lastComp ? `comp/${lastComp}` : lastSurvey ? `survey/${lastSurvey}` : "";
 
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);

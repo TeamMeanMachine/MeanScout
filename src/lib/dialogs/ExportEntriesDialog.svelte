@@ -4,7 +4,7 @@
   import QRCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { entryToCSV, exportEntries, type Entry } from "$lib/entry";
-  import { objectStore, transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
   import { FileJsonIcon, FileSpreadsheetIcon, Share2Icon } from "@lucide/svelte";
@@ -33,7 +33,7 @@
 
         const updated: IDBRecord<Entry> = { ...$state.snapshot(entries[0]), status: "exported", modified: new Date() };
 
-        const request = objectStore("entries", "readwrite").put($state.snapshot(updated));
+        const request = idb.objectStore("entries", "readwrite").put($state.snapshot(updated));
         request.onerror = () => {
           error = "Could not mark entry as exported";
         };
@@ -46,7 +46,7 @@
         return;
       }
 
-      const entriesTransaction = transaction("entries", "readwrite");
+      const entriesTransaction = idb.transaction("entries", "readwrite");
       const entryStore = entriesTransaction.objectStore("entries");
 
       entriesTransaction.onabort = () => {
