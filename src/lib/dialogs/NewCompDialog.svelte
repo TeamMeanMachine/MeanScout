@@ -1,11 +1,22 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { Comp } from "$lib/comp";
-  import type { DialogExports } from "$lib/dialog";
+  import Button from "$lib/components/Button.svelte";
+  import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
+  import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
+  import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
+  import type { Match, Team } from "$lib";
+  import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
 
   let name = $state("");
+  let event = $state<string | undefined>();
+  let matches = $state<Match[]>([]);
+  let teams = $state<Team[]>([]);
+
   let error = $state("");
+
+  let isLoadingTbaData = $state(false);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -17,13 +28,15 @@
 
       const comp: Comp = {
         name,
-        matches: [],
-        teams: [],
+        matches,
+        teams,
         created: new Date(),
         modified: new Date(),
       };
 
-      const addRequest = idb.objectStore("comps", "readwrite").add(comp);
+      if (event) comp.tbaEventKey = event;
+
+      const addRequest = idb.objectStore("comps", "readwrite").add($state.snapshot(comp));
       addRequest.onerror = () => {
         error = `Could not add comp: ${addRequest.error?.message}`;
       };
@@ -35,18 +48,114 @@
           return;
         }
 
-        goto(`#/comp/${id}`);
+        goto(`#/comp/${id}/admin`);
       };
     },
   };
+
+  async function getDataFromTbaEvent() {
+    matches = [];
+    teams = [];
+    isLoadingTbaData = true;
+
+    [matches, teams] = await Promise.all([getMatchesFromTbaEvent(), getTeamsFromTbaEvent()]);
+    isLoadingTbaData = false;
+  }
+
+  async function getMatchesFromTbaEvent() {
+    if (!event) return [];
+
+    const response = await tbaGetEventMatches(event);
+
+    if (response) {
+      const matches: Match[] = [];
+
+      for (const { match } of response) {
+        const matchIndex = matches.findIndex((m) => m.number == match.number);
+
+        if (matchIndex == -1) {
+          matches.push(match);
+        } else {
+          matches[matchIndex] = match;
+        }
+      }
+
+      return matches;
+    }
+
+    return [];
+  }
+
+  async function getTeamsFromTbaEvent() {
+    if (!event) return [];
+
+    const response = await tbaGetEventTeams(event);
+
+    if (response) {
+      const teams: Team[] = [];
+
+      for (const team of response) {
+        const teamIndex = teams.findIndex((t) => t.number == team.number);
+
+        if (teamIndex == -1) {
+          teams.push(team);
+        } else {
+          teams[teamIndex] = team;
+        }
+      }
+
+      return teams;
+    }
+
+    return [];
+  }
 </script>
 
 <span>New comp</span>
 
 <label class="flex flex-col">
-  Comp name
+  Name
   <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
+
+<div class="flex flex-col">
+  The Blue Alliance
+  <Button
+    onclick={() => {
+      openDialog(EditCompTbaEventKeyDialog, {
+        tbaEventKey: event,
+        onedit(tbaEventKey) {
+          event = tbaEventKey;
+          getDataFromTbaEvent();
+        },
+      });
+    }}
+  >
+    <CalendarDaysIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      {#if event}
+        {event}
+        <span class="text-xs font-light">Edit event</span>
+      {:else}
+        Add event
+      {/if}
+    </div>
+    {#if isLoadingTbaData}
+      <LoaderIcon class="text-theme animate-spin" />
+    {/if}
+  </Button>
+</div>
+
+{#if matches.length || teams.length}
+  <div class="flex flex-col gap-1 text-sm">
+    {#if matches.length}
+      <span>Matches: {matches.length}</span>
+    {/if}
+    {#if teams.length}
+      <span>Teams: {teams.length}</span>
+    {/if}
+  </div>
+{/if}
 
 {#if error}
   <span>{error}</span>

@@ -161,6 +161,7 @@ function migrateData(transaction: IDBTransaction) {
         delete survey.tbaEventKey;
         delete survey.matches;
         delete survey.teams;
+        delete survey.scouts;
       } catch (error) {
         console.error(error);
         surveyCursor.continue();

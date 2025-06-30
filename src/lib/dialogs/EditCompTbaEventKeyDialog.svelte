@@ -1,20 +1,20 @@
 <script lang="ts">
-  import type { Comp } from "$lib/comp";
+  import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { teamStore } from "$lib/settings";
   import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
-  import { LoaderIcon } from "@lucide/svelte";
+  import { CircleCheckBigIcon, CircleIcon, LoaderIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   let {
-    compRecord,
+    tbaEventKey,
     onedit,
   }: {
-    compRecord: IDBRecord<Comp>;
+    tbaEventKey?: string | undefined;
     onedit: (tbaEventKey: string) => void;
   } = $props();
 
-  let event = $state(compRecord.tbaEventKey ?? "");
+  let event = $state(tbaEventKey ?? "");
   let error = $state("");
   let events = $state<{ name: string; key: string }[]>([]);
 
@@ -57,18 +57,35 @@
 </script>
 
 <div class="flex flex-wrap justify-between gap-2">
-  <span>Edit TBA event:</span>
+  <span>Choose TBA event</span>
   {#if isLoadingEvents}
     <LoaderIcon class="text-theme animate-spin" />
   {/if}
 </div>
 
-<datalist id="events-list">
-  {#each events as { name, key }}
-    <option value={key}>{name}</option>
-  {/each}
-</datalist>
-<input bind:value={event} list="events-list" class="text-theme bg-neutral-800 p-2" />
+{#if events.length}
+  <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+    {#each events as { name, key }}
+      {@const font = event == key ? "font-bold" : "font-light"}
+      <Button onclick={() => (event = key)} class="flex-nowrap! {font}">
+        {#if event == key}
+          <CircleCheckBigIcon class="text-theme size-5 shrink-0" />
+        {:else}
+          <CircleIcon class="text-theme size-5 shrink-0" />
+        {/if}
+        <span class="text-sm">{name}</span>
+      </Button>
+    {/each}
+  </div>
+{/if}
+
+{#if !isLoadingEvents}
+  <label class="flex flex-col">
+    <span>Event key</span>
+    <input bind:value={event} class="text-theme bg-neutral-800 p-2" />
+    <span class="pt-1 text-xs">Tip: you can input any TBA event key.</span>
+  </label>
+{/if}
 
 {#if error}
   <span>Error: {error}</span>

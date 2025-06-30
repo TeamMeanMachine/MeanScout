@@ -1,8 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Button from "$lib/components/Button.svelte";
   import type { DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
+  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
 
   let {
     compId,
@@ -10,7 +12,7 @@
     compId: number;
   } = $props();
 
-  let name = $state("");
+  let name = $state("Match Survey");
   let type = $state<SurveyType>("match");
   let error = $state("");
 
@@ -68,17 +70,30 @@
 
 <span>New survey</span>
 
-<label class="flex flex-col">
-  Survey name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
-</label>
-<label class="flex flex-col">
-  Survey type
-  <select bind:value={type} class="text-theme bg-neutral-800 p-2 capitalize">
+<div class="flex flex-col">
+  <div class="flex flex-wrap gap-2">
     {#each surveyTypes as surveyType}
-      <option>{surveyType}</option>
+      <Button
+        onclick={() => {
+          type = surveyType;
+          if (!name || name == "Match Survey" || name == "Pit Survey") {
+            name = type == "pit" ? "Pit Survey" : "Match Survey";
+          }
+        }}
+      >
+        {#if type == surveyType}
+          <CircleCheckBigIcon class="text-theme" />
+        {:else}
+          <CircleIcon class="text-theme" />
+        {/if}
+        <span class="capitalize {type == surveyType ? 'font-bold' : 'font-light'}">{surveyType}</span>
+      </Button>
     {/each}
-  </select>
+  </div>
+</div>
+<label class="flex flex-col">
+  Name
+  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
 
 {#if error}
