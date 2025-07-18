@@ -2,7 +2,6 @@
   import { flushSync, onMount } from "svelte";
   import { sessionStorageStore, type EntryFilters } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import ExportEntriesDialog from "$lib/dialogs/ExportEntriesDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import type { Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
@@ -12,6 +11,7 @@
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
+  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
 
   let {
     data,
@@ -435,10 +435,19 @@
         {#if data.entryRecords.length}
           <Button
             onclick={() => {
-              openDialog(ExportEntriesDialog, {
-                surveyRecord: data.surveyRecord,
+              openDialog(BulkExportDialog, {
                 entries: filteredEntries,
-                onexport: () => refresh(),
+                onexport() {
+                  const tx = idb.transaction("entries", "readwrite");
+                  const entryStore = tx.objectStore("entries");
+                  for (const entry of filteredEntries) {
+                    if (entry.status == "exported") {
+                      continue;
+                    }
+                    entryStore.put({ ...$state.snapshot(entry), status: "exported", modified: new Date() });
+                  }
+                  tx.oncomplete = refresh;
+                },
               });
             }}
             disabled={!filteredEntries.length}

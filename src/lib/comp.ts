@@ -2,10 +2,14 @@ import { matchSchema, schemaVersion, teamSchema } from "./";
 import { z } from "zod";
 import type { Survey } from "./survey";
 import { compress, decompress } from "./compress";
+import type { Field } from "./field";
+import type { Entry } from "./entry";
 
 export type CompPageData = {
   compRecord: IDBRecord<Comp>;
   surveyRecords: IDBRecord<Survey>[];
+  fieldRecords: IDBRecord<Field>[];
+  entryRecords: IDBRecord<Entry>[];
 };
 
 export const compSchema = z.object({

@@ -8,9 +8,9 @@
   import type { Survey } from "$lib/survey";
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
-  import ExportEntriesDialog from "./ExportEntriesDialog.svelte";
   import { goto } from "$app/navigation";
   import type { Comp } from "$lib/comp";
+  import BulkExportDialog from "./BulkExportDialog.svelte";
 
   let {
     compRecord,
@@ -59,17 +59,24 @@
   <div class="flex grow items-center gap-3">
     {#if onchange}
       <Button
-        onclick={() =>
-          openDialog(ExportEntriesDialog, {
-            surveyRecord,
+        onclick={() => {
+          openDialog(BulkExportDialog, {
             entries: [entry],
-            onexport(newEntry) {
-              if (newEntry) {
-                entry = newEntry;
+            onexport() {
+              if (entry.status == "exported") {
                 onchange();
+                return;
               }
+
+              const req = idb.objectStore("entries", "readwrite").put({
+                ...$state.snapshot(entry),
+                status: "exported",
+                modified: new Date(),
+              });
+              req.onsuccess = onchange;
             },
-          })}
+          });
+        }}
       >
         <ShareIcon class="text-theme size-5" />
       </Button>

@@ -8,6 +8,7 @@
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import ImportCompDialog from "$lib/dialogs/ImportCompDialog.svelte";
+  import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
   let {
     data,
@@ -31,7 +32,7 @@
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(ImportCompDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-0">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import

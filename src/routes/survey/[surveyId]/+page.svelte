@@ -3,7 +3,6 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
-  import ExportSurveyDialog from "$lib/dialogs/ExportSurveyDialog.svelte";
   import NewEntryDialog from "$lib/dialogs/NewEntryDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { type MatchEntry } from "$lib/entry";
@@ -33,6 +32,7 @@
   import { type PickList } from "$lib/analysis";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { goto } from "$app/navigation";
+  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
 
   let {
     data,
@@ -486,9 +486,10 @@
     <div class="flex flex-wrap gap-2">
       <Button
         onclick={() => {
-          openDialog(ExportSurveyDialog, {
-            surveyRecord: data.surveyRecord,
-            fieldRecords: data.fieldRecords,
+          openDialog(BulkExportDialog, {
+            surveys: [data.surveyRecord],
+            fields: data.fieldRecords,
+            entries: data.entryRecords,
           });
         }}
         class="grow basis-0"

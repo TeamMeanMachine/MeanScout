@@ -3,7 +3,6 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
-  import ImportSurveyDialog from "$lib/dialogs/ImportSurveyDialog.svelte";
   import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { cameraStore } from "$lib/settings";
   import {
@@ -19,7 +18,8 @@
   } from "@lucide/svelte";
   import type { PageData } from "./$types";
   import OverwriteCompDialog from "$lib/dialogs/OverwriteCompDialog.svelte";
-  import ExportCompDialog from "$lib/dialogs/ExportCompDialog.svelte";
+  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
+  import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
   let {
     data,
@@ -43,7 +43,7 @@
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(ImportSurveyDialog, { compId: data.compRecord.id })} class="grow basis-0">
+    <Button onclick={() => openDialog(BulkImportDialog, { compId: data.compRecord.id })} class="grow basis-0">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import
@@ -72,8 +72,11 @@
   <div class="flex flex-wrap gap-2">
     <Button
       onclick={() => {
-        openDialog(ExportCompDialog, {
-          compRecord: data.compRecord,
+        openDialog(BulkExportDialog, {
+          comps: [data.compRecord],
+          surveys: data.surveyRecords,
+          fields: data.fieldRecords,
+          entries: data.entryRecords,
         });
       }}
       class="grow basis-0"
