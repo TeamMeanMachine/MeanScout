@@ -1,13 +1,13 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
-  import { sessionStorageStore } from "$lib";
+  import { schemaVersion, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { addField, type Field } from "$lib/field";
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
-  import { importSurvey, surveySchema, type Survey } from "$lib/survey";
+  import { type Survey } from "$lib/survey";
   import { Undo2Icon } from "@lucide/svelte";
 
   let {
@@ -26,28 +26,29 @@
 
   let files = $state<FileList | undefined>();
   let importedSurvey = $state<Survey | undefined>();
-  let importedFields: Map<number, Field> | undefined = undefined;
+  let importedFields = $state<Map<number, Field> | undefined>();
+
+  let changes = $state<{
+    name: boolean;
+    type: boolean;
+    fields: boolean;
+    tbaMetrics: boolean;
+    pickLists: boolean;
+    expressions: boolean;
+  }>({
+    name: false,
+    type: false,
+    fields: false,
+    tbaMetrics: false,
+    pickLists: false,
+    expressions: false,
+  });
+
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     async onconfirm() {
-      if (!importedSurvey) {
-        error = "No input";
-        return;
-      }
-
-      if (importedSurvey.name != surveyRecord.name) {
-        error = "Different survey names";
-        return;
-      }
-
-      if (importedSurvey.type != surveyRecord.type) {
-        error = "Different survey types";
-        return;
-      }
-
-      if (entryCount && (importedFields?.size || 0) != fieldRecords.length) {
-        error = "Different field counts aren't allowed with entries present";
+      if (error) {
         return;
       }
 
@@ -67,6 +68,7 @@
       const overwriteRequest = surveyStore.put({
         ...$state.snapshot(importedSurvey),
         id: surveyRecord.id,
+        compId,
         modified: new Date(),
       });
 
@@ -100,6 +102,7 @@
           surveyStore.put({
             ...$state.snapshot(importedSurvey),
             id: surveyRecord.id,
+            compId,
             modified: new Date(),
           });
 
@@ -120,26 +123,114 @@
   }
 
   function onread(data: string) {
-    const jsonResult = importSurvey(compId, data);
-    if (!jsonResult.success) {
-      error = jsonResult.error;
+    retry();
+
+    let json: {
+      version: number;
+      surveys?: Partial<IDBRecord<Survey>>[];
+      fields?: IDBRecord<Field>[];
+    };
+
+    try {
+      json = JSON.parse(data);
+    } catch (e) {
+      console.error("JSON failed to parse imported data:", data);
+      error = "JSON failed to parse";
       return;
     }
 
-    const schemaResult = surveySchema.safeParse(jsonResult.survey);
-    if (!schemaResult.success) {
-      error = schemaResult.error.toString();
+    if (json.version < schemaVersion) {
+      error = "Outdated version";
+      return;
+    } else if (json.version > schemaVersion) {
+      error = "Unsupported version";
       return;
     }
 
-    importedSurvey = schemaResult.data;
-    importedFields = jsonResult.fields;
+    const jsonSurvey =
+      json.surveys?.find(
+        (jsonSurvey) => jsonSurvey.name == surveyRecord.name || jsonSurvey.type == surveyRecord.type,
+      ) || json.surveys?.[0];
+
+    if (!jsonSurvey) {
+      error = "No survey imported";
+      return;
+    }
+
+    if (jsonSurvey.name != undefined && jsonSurvey.name != surveyRecord.name) {
+      changes.name = true;
+    }
+
+    if (jsonSurvey.type != undefined && jsonSurvey.type != surveyRecord.type) {
+      changes.type = true;
+    }
+
+    const jsonFields = json.fields?.filter((jsonField) => jsonField.surveyId == jsonSurvey.id);
+
+    if (entryCount && (jsonFields?.length || 0) != fieldRecords.length) {
+      error = "Different field counts aren't allowed with entries present";
+      return;
+    }
+
+    importedFields = new Map();
+
+    for (const field of jsonFields || []) {
+      importedFields.set(field.id, field);
+    }
+
+    if (importedFields.size != fieldRecords.length) {
+      changes.fields = true;
+    }
+
+    if (jsonSurvey.type == "match") {
+      importedSurvey = {
+        compId,
+        name: jsonSurvey.name || surveyRecord.name,
+        type: "match",
+        fieldIds: jsonSurvey.fieldIds || [],
+        pickLists: jsonSurvey.pickLists || [],
+        expressions: jsonSurvey.expressions || [],
+        created: surveyRecord.created,
+        modified: surveyRecord.modified,
+      };
+
+      if (surveyRecord.type == "match") {
+        changes.pickLists = jsonSurvey.pickLists?.length != surveyRecord.pickLists.length;
+        changes.expressions = jsonSurvey.expressions?.length != surveyRecord.expressions.length;
+      } else {
+        changes.pickLists = !!jsonSurvey.pickLists?.length;
+        changes.expressions = !!jsonSurvey.expressions?.length;
+      }
+
+      if (jsonSurvey.tbaMetrics?.length) {
+        importedSurvey.tbaMetrics = jsonSurvey.tbaMetrics;
+      }
+    }
+
+    if (jsonSurvey.type == "pit") {
+      importedSurvey = {
+        compId,
+        name: jsonSurvey.name || surveyRecord.name,
+        type: "pit",
+        fieldIds: jsonSurvey.fieldIds || [],
+        created: surveyRecord.created,
+        modified: surveyRecord.modified,
+      };
+    }
   }
 
   function retry() {
     error = "";
     importedSurvey = undefined;
     importedFields = undefined;
+    changes = {
+      name: false,
+      type: false,
+      fields: false,
+      tbaMetrics: false,
+      pickLists: false,
+      expressions: false,
+    };
   }
 </script>
 
@@ -154,8 +245,6 @@
 
 {#if $tab == "qrfcode" && $cameraStore}
   {#if importedSurvey}
-    {@render preview()}
-
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
       Retry
@@ -171,22 +260,45 @@
     {onchange}
     class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
   />
-
-  {#if importedSurvey}
-    {@render preview()}
-  {/if}
 {/if}
 
-{#snippet preview()}
-  <span>
-    <span class="text-xs font-light">Name</span>
-    <span class="font-bold">{importedSurvey?.name}</span>
-  </span>
-  <span>
-    <span class="text-xs font-light">Type</span>
-    <span class="font-bold">{importedSurvey?.type}</span>
-  </span>
-{/snippet}
+{#if importedSurvey}
+  <div class="grid grid-cols-3 gap-1">
+    <div class="text-sm font-light">Data</div>
+    <div class="text-sm font-light">Existing</div>
+    <div class="text-sm font-light">Imported</div>
+
+    {#if changes.name}
+      <div>Name</div>
+      <div>{surveyRecord.name}</div>
+      <div>{importedSurvey.name}</div>
+    {/if}
+
+    {#if changes.type}
+      <div>Type</div>
+      <div>{surveyRecord.type}</div>
+      <div>{importedSurvey.type}</div>
+    {/if}
+
+    {#if changes.fields}
+      <div>Fields</div>
+      <div>{fieldRecords.length || "-"}</div>
+      <div>{importedFields?.size || "-"}</div>
+    {/if}
+
+    {#if changes.pickLists}
+      <div>Pick Lists</div>
+      <div>{(surveyRecord.type == "match" ? surveyRecord.pickLists.length : 0) || "-"}</div>
+      <div>{(importedSurvey.type == "match" ? importedSurvey.pickLists.length : 0) || "-"}</div>
+    {/if}
+
+    {#if changes.expressions}
+      <div>Expressions</div>
+      <div>{(surveyRecord.type == "match" ? surveyRecord.expressions.length : 0) || "-"}</div>
+      <div>{(importedSurvey.type == "match" ? importedSurvey.expressions.length : 0) || "-"}</div>
+    {/if}
+  </div>
+{/if}
 
 {#if error}
   <span>{error}</span>
