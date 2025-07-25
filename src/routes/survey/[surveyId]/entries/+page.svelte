@@ -465,7 +465,6 @@
           onclick={() => {
             openDialog(ImportEntriesDialog, {
               surveyRecord: data.surveyRecord,
-              orderedSingleFields: data.fieldsWithDetails.orderedSingle,
               existingEntries: data.entryRecords,
               onimport: refresh,
             });

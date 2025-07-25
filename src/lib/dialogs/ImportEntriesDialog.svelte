@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
+  import { schemaVersion, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { csvToEntries, importEntries, type Entry, type MatchEntry } from "$lib/entry";
-  import type { SingleFieldWithDetails } from "$lib/field";
+  import { type Entry, type MatchEntry } from "$lib/entry";
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -12,12 +11,10 @@
 
   let {
     surveyRecord,
-    orderedSingleFields,
     existingEntries,
     onimport,
   }: {
     surveyRecord: IDBRecord<Survey>;
-    orderedSingleFields: SingleFieldWithDetails[];
     existingEntries: IDBRecord<Entry>[];
     onimport: () => void;
   } = $props();
@@ -120,39 +117,85 @@
       return;
     }
 
-    const allFiles = await Promise.all(
-      [...files].map(async (file) => {
-        return { type: file.type, data: await file.text() };
-      }),
-    );
-
-    for (const { type, data } of allFiles) {
-      if (type == "text/csv") {
-        importedEntries.push(...csvToEntries(data, surveyRecord, orderedSingleFields));
-      } else {
-        const result = importEntries(surveyRecord, data);
-        if (!result.success) {
-          error = result.error;
-          return;
-        }
-        importedEntries.push(...result.entries);
-      }
-    }
+    onread(await files[0].text());
   }
 
   function onread(data: string) {
-    if (!data.length) {
-      error = "No input";
+    retry();
+
+    let json: {
+      version: number;
+      entries: Partial<Entry>[];
+    };
+
+    try {
+      json = JSON.parse(data);
+    } catch (e) {
+      console.error("JSON failed to parse imported entries:", data);
+      error = "JSON failed to parse";
       return;
     }
 
-    const result = importEntries(surveyRecord, data);
-    if (!result.success) {
-      error = result.error;
+    if (json.version < schemaVersion) {
+      error = "Outdated version";
+      return;
+    } else if (json.version > schemaVersion) {
+      error = "Unsupported version";
       return;
     }
 
-    importedEntries = result.entries;
+    if (surveyRecord.type == "pit") {
+      importedEntries = json.entries.map((jsonEntry) => {
+        const entry: Entry = {
+          surveyId: surveyRecord.id,
+          type: "pit",
+          status: "exported",
+          team: jsonEntry.team || "",
+          values: jsonEntry.values || [],
+          created: new Date(),
+          modified: new Date(),
+        };
+
+        if (jsonEntry.scout) {
+          entry.scout = jsonEntry.scout;
+        }
+
+        return entry;
+      });
+
+      return;
+    }
+
+    importedEntries = (json.entries as Partial<MatchEntry>[]).map((jsonEntry) => {
+      const entry: Entry = {
+        surveyId: surveyRecord.id,
+        type: "match",
+        status: "exported",
+        team: jsonEntry.team || "",
+        match: jsonEntry.match || 0,
+        absent: jsonEntry.absent || false,
+        values: jsonEntry.values || [],
+        created: new Date(),
+        modified: new Date(),
+      };
+
+      if (jsonEntry.scout) {
+        entry.scout = jsonEntry.scout;
+      }
+
+      if (jsonEntry.tbaMetrics) {
+        entry.tbaMetrics = jsonEntry.tbaMetrics;
+      }
+
+      if (jsonEntry.scout && jsonEntry.prediction) {
+        entry.prediction = jsonEntry.prediction;
+        if (jsonEntry.predictionReason) {
+          entry.predictionReason = jsonEntry.predictionReason;
+        }
+      }
+
+      return entry;
+    });
   }
 
   function retry() {
@@ -172,8 +215,6 @@
 
 {#if $tab == "qrfcode" && $cameraStore}
   {#if importedEntries.length}
-    {@render preview()}
-
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
       Retry
@@ -184,18 +225,14 @@
 {:else}
   <input
     type="file"
-    accept=".csv,.json,.txt"
+    accept=".json,.txt"
     bind:files
     {onchange}
     class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
   />
-
-  {#if importedEntries.length}
-    {@render preview()}
-  {/if}
 {/if}
 
-{#snippet preview()}
+{#if importedEntries.length}
   <div class="flex max-h-[500px] flex-col gap-2 overflow-auto">
     <table class="w-full text-left">
       <thead>
@@ -258,7 +295,7 @@
       </div>
     </div>
   {/if}
-{/snippet}
+{/if}
 
 {#if error}
   <span>{error}</span>

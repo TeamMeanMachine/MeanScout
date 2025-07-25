@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
+  import { schemaVersion, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { exportEntries, type Entry } from "$lib/entry";
+  import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue, type SingleFieldWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { SquareCheckBigIcon, ChevronUpIcon, SquareIcon, ChevronDownIcon } from "@lucide/svelte";
@@ -22,9 +22,20 @@
 
   const defaultValues = orderedSingleFields.map((field) => getDefaultFieldValue(field.field));
 
-  const entryJson = exportEntries([
-    entryRecord.type == "match" && entryRecord.absent ? { ...entryRecord, values: defaultValues } : entryRecord,
-  ]);
+  const entryJson = JSON.stringify({
+    version: schemaVersion,
+    entries: [
+      {
+        ...$state.snapshot(entryRecord),
+        id: undefined,
+        type: undefined,
+        surveyId: undefined,
+        status: undefined,
+        created: undefined,
+        modified: undefined,
+      },
+    ],
+  });
 
   let error = $state("");
 

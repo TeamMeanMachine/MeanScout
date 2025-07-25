@@ -7,7 +7,6 @@
   import { cameraStore } from "$lib/settings";
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageData } from "./$types";
-  import ImportCompDialog from "$lib/dialogs/ImportCompDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
   let {
