@@ -1,16 +1,12 @@
 <script lang="ts">
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
   import { sessionStorageStore } from "$lib";
   import { openDialog } from "$lib/dialog";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   const tab = sessionStorageStore<"scouts" | "matches">("predictions-tab", "scouts");
 

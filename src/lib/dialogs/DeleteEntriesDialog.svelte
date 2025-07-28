@@ -7,7 +7,7 @@
     surveyRecord,
     entryCount,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: Survey;
     entryCount: number;
   } = $props();
 

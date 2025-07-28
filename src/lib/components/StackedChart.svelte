@@ -2,7 +2,7 @@
   import { colors, type AnalysisData } from "$lib/analysis";
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
   import { goto } from "$app/navigation";
 
   let {

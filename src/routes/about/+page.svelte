@@ -4,9 +4,7 @@
   import Header from "$lib/components/Header.svelte";
   import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
 
-  const lastComp = localStorage.getItem("comp");
-  const lastSurvey = localStorage.getItem("survey");
-  const backLink = lastComp ? `comp/${lastComp}` : lastSurvey ? `survey/${lastSurvey}` : "";
+  const backLink = localStorage.getItem("home") || "";
 
   const tab = sessionStorageStore<"info" | "guides" | "prediction" | "qrfcode">("about-tab", "info");
 

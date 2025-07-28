@@ -5,7 +5,7 @@ export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] a
 export const mapExpressionTypes = ["convert", "multiply", "divide", "abs"] as const;
 const expressionTypes = [...reduceExpressionTypes, ...mapExpressionTypes] as const;
 
-const fieldInputSchema = z.object({ from: z.literal("fields"), fieldIds: z.array(z.number()) });
+const fieldInputSchema = z.object({ from: z.literal("fields"), fieldIds: z.array(z.string()) });
 const tbaMetricInputSchema = z.object({ from: z.literal("tba"), metrics: z.array(z.string()) });
 const expressionInputSchema = z.object({ from: z.literal("expressions"), expressionNames: z.array(z.string()) });
 const inputSchema = z.discriminatedUnion("from", [fieldInputSchema, tbaMetricInputSchema, expressionInputSchema]);

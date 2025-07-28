@@ -1,13 +1,9 @@
 <script lang="ts">
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let selectedString = $state(defaultSelectionString());
 

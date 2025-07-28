@@ -6,14 +6,10 @@
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
   import { cameraStore } from "$lib/settings";
   import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <Header />
@@ -21,8 +17,8 @@
 <div class="flex flex-col gap-2" style="view-transition-name:comps">
   <h2 class="font-bold">Comps</h2>
 
-  {#if data.compRecords.length}
-    {#each data.compRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
+  {#if data.all.comps.length}
+    {#each data.all.comps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
       <Anchor route="comp/{comp.id}">
         <div class="grow">{comp.name}</div>
         <ArrowRightIcon class="text-theme" />

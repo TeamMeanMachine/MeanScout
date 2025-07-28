@@ -27,6 +27,7 @@
       }
 
       const comp: Comp = {
+        id: event || idb.generateId(),
         name,
         matches,
         teams,
@@ -36,19 +37,13 @@
 
       if (event) comp.tbaEventKey = event;
 
-      const addRequest = idb.objectStore("comps", "readwrite").add($state.snapshot(comp));
+      const addRequest = idb.add("comps", $state.snapshot(comp));
       addRequest.onerror = () => {
         error = `Could not add comp: ${addRequest.error?.message}`;
       };
 
       addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not add comp";
-          return;
-        }
-
-        goto(`#/comp/${id}/admin`);
+        goto(`#/comp/${comp.id}/admin`);
       };
     },
   };

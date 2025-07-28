@@ -5,13 +5,9 @@
   import DeleteSurveyDialog from "$lib/dialogs/DeleteSurveyDialog.svelte";
   import { Trash2Icon } from "@lucide/svelte";
   import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">

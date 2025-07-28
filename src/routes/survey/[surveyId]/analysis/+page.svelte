@@ -1,7 +1,7 @@
 <script lang="ts">
   import { sortExpressions } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import { sessionStorageStore } from "$lib";
   import { type AnalysisData, getExpressionData, getPickListData } from "$lib/analysis";
   import RaceChart from "$lib/components/RaceChart.svelte";
@@ -10,11 +10,7 @@
   import BarChart from "$lib/components/BarChart.svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
   const sortedExpressions = data.surveyRecord.expressions.toSorted(sortExpressions);

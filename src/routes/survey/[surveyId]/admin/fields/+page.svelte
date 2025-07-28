@@ -7,13 +7,10 @@
   import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
   import { idb } from "$lib/idb";
   import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
+  import { invalidateAll } from "$app/navigation";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let surveyRecord = $state($state.snapshot(data.surveyRecord));
   let fieldRecords = $state($state.snapshot(data.fieldRecords));
@@ -32,12 +29,13 @@
   let sortUpdateQueue: Function[] = [];
   let sortUpdateTimeout: number | undefined = undefined;
 
-  function validateGroupSelect(): string {
-    if (!groups || !groupSelect || !groups.some((g) => g.id == Number(groupSelect))) return "";
-    return groupSelect;
-  }
+  $effect(() => {
+    if (!groups || !groupSelect || !groups.some((g) => g.id == groupSelect)) {
+      groupSelect = "";
+    }
+  });
 
-  function createSortable(list: HTMLElement, groupId?: number) {
+  function createSortable(list: HTMLElement, groupId?: string) {
     const sortable = new Sortable(list, {
       group: {
         name: "fields",
@@ -74,7 +72,7 @@
       store: {
         get: () => [],
         set(sortable) {
-          const order = sortable.toArray().map((id) => Number(id));
+          const order = sortable.toArray();
           if (groupId) {
             const group = fieldRecords.find((f) => f.id == groupId);
             if (!group || group.type != "group") {
@@ -83,7 +81,7 @@
             }
             sortUpdateQueue.push(() => {
               group.fieldIds = order;
-              idb.objectStore("fields", "readwrite").put($state.snapshot(group));
+              idb.put("fields", $state.snapshot(group));
             });
             if (!sortUpdateTimeout) sortUpdateTimeout = window.setTimeout(updateAndRefresh, 10);
           } else {
@@ -115,24 +113,12 @@
     }
 
     surveyRecord.modified = new Date();
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
-
-    const refreshTransaction = idb.transaction("fields");
-    refreshTransaction.onabort = () => {
-      location.reload();
-    };
-
-    const fieldsRequest = refreshTransaction.objectStore("fields").index("surveyId").getAll(surveyRecord.id);
-    fieldsRequest.onsuccess = () => {
-      fieldRecords = fieldsRequest.result;
-    };
-
-    groupSelect = validateGroupSelect();
+    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
   }
 
-  function onclickTopLevelField(field: IDBRecord<Field>) {
+  function onclickTopLevelField(field: Field) {
     if (field.type == "group") {
-      groupSelect = field.id.toString();
+      groupSelect = field.id;
     } else {
       groupSelect = "";
     }
@@ -151,7 +137,7 @@
       onduplicate(index, id) {
         surveyRecord.fieldIds = surveyRecord.fieldIds.toSpliced(index + 1, 0, id);
         updateAndRefresh();
-        groupSelect = id.toString();
+        groupSelect = id;
       },
       ondelete() {
         surveyRecord.fieldIds = surveyRecord.fieldIds.filter((id) => field.id != id);
@@ -161,8 +147,8 @@
     });
   }
 
-  function onclickNestedField(nestedField: IDBRecord<Field>, field: IDBRecord<GroupField>) {
-    groupSelect = field.id.toString();
+  function onclickNestedField(nestedField: Field, field: GroupField) {
+    groupSelect = field.id;
 
     openDialog(EditFieldDialog, {
       surveyRecord,
@@ -200,7 +186,7 @@
             <div data-id={field.id} class={["flex flex-col gap-3", field.type == "group" && "group"]}>
               {#if field.type == "group"}
                 <div class="flex flex-col">
-                  <h2 class={groupSelect == field.id.toString() ? "font-bold" : "font-light"}>{field.name}</h2>
+                  <h2 class={groupSelect == field.id ? "font-bold" : "font-light"}>{field.name}</h2>
 
                   <div class="flex w-full gap-3">
                     <Button onclick={() => onclickTopLevelField(field)} class="handle">
@@ -267,9 +253,9 @@
                       .filter((f) => f !== undefined && f.type == "group");
 
               const fixedGroupSelect = groups?.length
-                ? groups.some((g) => g.id.toString() == groupSelect)
+                ? groups.some((g) => g.id == groupSelect)
                   ? groupSelect
-                  : groups[0].id.toString()
+                  : groups[0].id
                 : "";
 
               openDialog(NewFieldDialog, {
@@ -283,9 +269,9 @@
                   }
                   updateAndRefresh();
                   if (fieldType == "group") {
-                    groupSelect = id.toString();
+                    groupSelect = id;
                   } else if (parentId) {
-                    groupSelect = parentId.toString();
+                    groupSelect = parentId;
                   } else {
                     groupSelect = "";
                   }

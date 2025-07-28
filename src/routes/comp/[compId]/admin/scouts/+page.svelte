@@ -1,17 +1,13 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { idb } from "$lib/idb";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import CompAdminHeader from "../CompAdminHeader.svelte";
   import { openDialog } from "$lib/dialog";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
   import { PlusIcon } from "@lucide/svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
@@ -29,7 +25,7 @@
               modified: new Date(),
             },
           } as PageData;
-          idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+          idb.put("comps", $state.snapshot(data.compRecord));
         }}
       >
         Enable scout names and prediction
@@ -49,7 +45,7 @@
                   modified: new Date(),
                 },
               } as PageData;
-              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord));
             }}
           >
             {scout}
@@ -76,7 +72,7 @@
                     modified: new Date(),
                   },
                 } as PageData;
-                idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+                idb.put("comps", $state.snapshot(data.compRecord));
               },
             });
           }}

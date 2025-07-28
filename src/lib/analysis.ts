@@ -60,7 +60,7 @@ export function getPickListData(
   compRecord: Comp,
   pickListName: string,
   surveyRecord: MatchSurvey,
-  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  entriesByTeam: Record<string, Entry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ): PickListAnalysisData | undefined {
   const pickList = surveyRecord.pickLists.find((pl) => pl.name == pickListName);
@@ -111,7 +111,7 @@ export function getExpressionData(
   compRecord: Comp,
   expressionName: string,
   surveyRecord: MatchSurvey,
-  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  entriesByTeam: Record<string, Entry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ): ExpressionAnalysisData | undefined {
   const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
@@ -189,7 +189,7 @@ export function getExpressionData(
 export function calculateTeamData(
   expressionName: string,
   expressions: Expression[],
-  entriesByTeam: Record<string, IDBRecord<Entry>[]>,
+  entriesByTeam: Record<string, Entry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ) {
   const expression = expressions.find((e) => e.name == expressionName);
@@ -253,7 +253,7 @@ export function normalizeTeamData(teamData: Record<string, { value: number }>, p
 }
 
 function runEntryExpression(
-  entry: IDBRecord<Entry>,
+  entry: Entry,
   expression: Extract<Expression, { scope: "entry" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],
@@ -329,7 +329,7 @@ function runEntryExpression(
 }
 
 function runSurveyExpression(
-  entries: IDBRecord<Entry>[],
+  entries: Entry[],
   expression: Extract<Expression, { scope: "survey" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],

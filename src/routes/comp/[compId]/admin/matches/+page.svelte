@@ -7,13 +7,9 @@
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import CompAdminHeader from "../CompAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">
@@ -36,7 +32,7 @@
                     ...data,
                     compRecord: { ...data.compRecord, matches, modified: new Date() },
                   } as PageData;
-                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord));
                 },
                 ondelete() {
                   data = {
@@ -47,7 +43,7 @@
                       modified: new Date(),
                     },
                   } as PageData;
-                  idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord));
                 },
               });
             }}
@@ -89,7 +85,7 @@
                   modified: new Date(),
                 },
               } as PageData;
-              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord));
             },
           })}
         class="text-sm"

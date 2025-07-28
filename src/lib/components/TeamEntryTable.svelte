@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Team } from "$lib";
   import type { Entry } from "$lib/entry";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
 
   let {
     pageData,
@@ -27,11 +27,11 @@
     });
   }
 
-  function filterEntries(entry: IDBRecord<Entry>) {
+  function filterEntries(entry: Entry) {
     return entry.status != "draft" && entry.team == team.number;
   }
 
-  function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
+  function sortEntries(a: Entry, b: Entry) {
     if (a.type != "match" || b.type != "match") {
       return 0;
     }

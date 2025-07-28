@@ -1,7 +1,6 @@
+import { loadEntryPageData } from "$lib/loaders/loadEntryPageData";
 import type { PageLoad } from "./$types";
-import { loadEntryPageData } from "./loadEntryPageData";
 
 export const load: PageLoad = async (event) => {
-  const entryId = Number(event.params.entryId);
-  return await loadEntryPageData(entryId);
+  return await loadEntryPageData(event.params.entryId);
 };

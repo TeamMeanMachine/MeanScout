@@ -7,17 +7,14 @@
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
+  import { invalidateAll } from "$app/navigation";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   const groupBy = sessionStorageStore<"match" | "team" | "scout">(
     "entries-group",
@@ -112,7 +109,7 @@
       return [];
     }
 
-    const duplicates: number[] = [];
+    const duplicates: string[] = [];
 
     const uniqueStringToId = new Set<string>();
     for (const entry of data.entryRecords) {
@@ -133,7 +130,7 @@
 
   onMount(() => onscroll());
 
-  function filterEntry(entry: IDBRecord<Entry>) {
+  function filterEntry(entry: Entry) {
     if (entry.status == "draft") {
       return false;
     }
@@ -192,7 +189,7 @@
     return true;
   }
 
-  function sortEntries(a: IDBRecord<Entry>, b: IDBRecord<Entry>) {
+  function sortEntries(a: Entry, b: Entry) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
     const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
     const scoutCompare = a.scout?.localeCompare(b.scout || "");
@@ -222,25 +219,7 @@
       ...data,
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
     } as PageData;
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-
-    const entriesRequest = idb.objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
-
-    entriesRequest.onerror = () => {
-      location.reload();
-    };
-
-    entriesRequest.onsuccess = () => {
-      if (!entriesRequest.result) {
-        location.reload();
-        return;
-      }
-
-      data = {
-        ...data,
-        entryRecords: entriesRequest.result,
-      };
-    };
+    idb.put("surveys", $state.snapshot(data.surveyRecord)).onsuccess = invalidateAll;
   }
 
   function fixEntries() {
@@ -508,7 +487,7 @@
     {/if}
   </div>
 
-  {#snippet entryButton(entry: IDBRecord<Entry>)}
+  {#snippet entryButton(entry: Entry)}
     <Button
       onclick={() => {
         openDialog(ViewEntryDialog, {

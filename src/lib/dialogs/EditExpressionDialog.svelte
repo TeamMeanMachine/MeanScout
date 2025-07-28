@@ -18,7 +18,7 @@
     onupdate,
     ondelete,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
+    surveyRecord: MatchSurvey;
     orderedSingleFields: SingleFieldWithDetails[];
     expressions: {
       entryDerived: Expression[];

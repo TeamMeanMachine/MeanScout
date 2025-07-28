@@ -6,7 +6,7 @@
     compRecord,
     onedit,
   }: {
-    compRecord: IDBRecord<Comp>;
+    compRecord: Comp;
     onedit: (name: string) => void;
   } = $props();
 

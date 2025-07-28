@@ -8,7 +8,7 @@
     compRecord,
     surveyCount,
   }: {
-    compRecord: IDBRecord<Comp>;
+    compRecord: Comp;
     surveyCount: number;
   } = $props();
 

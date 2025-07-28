@@ -5,14 +5,10 @@
   import { idb } from "$lib/idb";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CloudDownloadIcon, LoaderIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import SurveyAdminHeader from "./SurveyAdminHeader.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let getTbaDataError = $state("");
   let isLoadingTbaData = $state(false);
@@ -106,8 +102,8 @@
         compRecord: { ...data.compRecord, teams, modified: new Date() },
         surveyRecord: { ...data.surveyRecord, modified: new Date() },
       } as PageData;
-      idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
-      idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+      idb.put("comps", $state.snapshot(data.compRecord));
+      idb.put("surveys", $state.snapshot(data.surveyRecord));
     }
   }
 
@@ -118,7 +114,7 @@
       ...data,
       surveyRecord: { ...data.surveyRecord, tbaMetrics: [], modified: new Date() },
     };
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.surveyRecord));
   }
 
   let tbaMetricInput = $state("");
@@ -137,7 +133,7 @@
         modified: new Date(),
       },
     };
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.surveyRecord));
 
     tbaMetricInput = "";
   }
@@ -151,7 +147,7 @@
         tbaMetrics: data.surveyRecord.tbaMetrics.filter((m) => m != tbaMetric),
       },
     };
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.surveyRecord));
   }
 </script>
 
@@ -168,7 +164,7 @@
               ...data,
               surveyRecord: { ...data.surveyRecord, name, modified: new Date() },
             } as PageData;
-            idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            idb.put("surveys", $state.snapshot(data.surveyRecord));
           },
         })}
     >

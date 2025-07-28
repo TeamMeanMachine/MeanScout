@@ -5,7 +5,7 @@
   import { openDialog } from "$lib/dialog";
   import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
@@ -22,7 +22,7 @@
     !pageData.entryRecords.length ||
     (!pageData.surveyRecord.pickLists.length && !pageData.surveyRecord.expressions.length);
 
-  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as IDBRecord<MatchEntry>[]);
+  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as MatchEntry[]);
 
   const sortedExpressions =
     pageData.surveyType == "match" ? pageData.surveyRecord.expressions.toSorted(sortExpressions) : [];

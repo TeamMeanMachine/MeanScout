@@ -6,29 +6,21 @@
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
-  import { fieldTypes, type Field } from "$lib/field";
+  import { type Field } from "$lib/field";
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
-  import { surveyTypes, type Survey } from "$lib/survey";
+  import { type Survey } from "$lib/survey";
   import { Undo2Icon } from "@lucide/svelte";
 
-  let {
-    compId,
-    surveyId,
-  }: {
-    compId?: number;
-    surveyId?: number;
-  } = $props();
-
   let imported = $state<{
-    comps?: Map<number, Comp>;
-    surveys?: Map<number, Survey>;
-    fields?: Map<number, Field>;
+    comps?: Comp[];
+    surveys?: Survey[];
+    fields?: Field[];
     entries?: Entry[];
   }>({});
 
   let anyImported = $derived.by(() => {
-    return imported.comps?.size || imported.surveys?.size || imported.fields?.size || imported.entries?.length;
+    return imported.comps?.length || imported.surveys?.length || imported.fields?.length || imported.entries?.length;
   });
 
   const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
@@ -43,237 +35,50 @@
         return;
       }
 
-      const oldToNewCompIds = new Map<number, number>();
-      const oldToNewSurveyIds = new Map<number, number>();
-      const oldToNewFieldIds = new Map<number, number>();
+      const transaction = idb.transaction(["comps", "surveys", "fields", "entries"], "readwrite");
 
-      if (!compId && imported.comps?.size) {
-        await addImportedComps(oldToNewCompIds).catch(console.error);
+      const compStore = transaction.objectStore("comps");
+      const surveyStore = transaction.objectStore("surveys");
+      const fieldStore = transaction.objectStore("fields");
+      const entryStore = transaction.objectStore("entries");
+
+      transaction.oncomplete = () => {
+        invalidateAll();
+        closeDialog();
+      };
+
+      transaction.onabort = () => {
+        error = transaction.error?.message || "Could not import data";
+      };
+
+      if (imported.comps?.length) {
+        for (const importedComp of imported.comps) {
+          compStore.put($state.snapshot(importedComp));
+        }
       }
 
-      if (!surveyId && imported.surveys?.size) {
-        await addImportedSurveys(oldToNewCompIds, oldToNewSurveyIds).catch(console.error);
+      if (imported.surveys?.length) {
+        for (const importedSurvey of imported.surveys) {
+          surveyStore.put($state.snapshot(importedSurvey));
+        }
       }
 
-      if (imported.fields?.size) {
-        await addImportedSingleFields(oldToNewSurveyIds, oldToNewFieldIds).catch(console.error);
-        await addImportedGroupFields(oldToNewSurveyIds, oldToNewFieldIds).catch(console.error);
-
-        if (surveyId) {
-          const survey = await idb.getOne({ from: "surveys", is: surveyId });
-          await updateExistingSurveyWithNewFields(survey, oldToNewFieldIds).catch(console.error);
-        } else {
-          await updateImportedSurveysWithNewFields(oldToNewSurveyIds, oldToNewFieldIds).catch(console.error);
+      if (imported.fields?.length) {
+        for (const importedField of imported.fields) {
+          fieldStore.put($state.snapshot(importedField));
         }
       }
 
       if (imported.entries?.length) {
-        await addImportedEntries(oldToNewSurveyIds).catch(console.error);
+        for (const importedEntry of imported.entries) {
+          entryStore.put($state.snapshot(importedEntry));
+        }
       }
 
       invalidateAll();
       closeDialog();
     },
   };
-
-  function addImportedComps(oldToNewCompIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.comps?.size) {
-        reject("No comps");
-        return;
-      }
-
-      const compTx = idb.transaction("comps", "readwrite");
-
-      for (const [id, importedComp] of imported.comps) {
-        const req = compTx.objectStore("comps").add($state.snapshot(importedComp));
-        req.onsuccess = () => {
-          oldToNewCompIds.set(id, req.result as number);
-        };
-      }
-
-      compTx.oncomplete = () => resolve();
-      compTx.onabort = () => reject(compTx.error?.message);
-    });
-  }
-
-  function addImportedSurveys(oldToNewCompIds: Map<number, number>, oldToNewSurveyIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.surveys?.size) {
-        reject("No surveys");
-        return;
-      }
-
-      const surveyTx = idb.transaction("surveys", "readwrite");
-
-      for (const [id, importedSurvey] of imported.surveys) {
-        const thisCompId = compId || oldToNewCompIds.get(importedSurvey.compId);
-        if (!thisCompId) {
-          continue;
-        }
-
-        const survey = $state.snapshot(importedSurvey);
-        survey.compId = thisCompId;
-
-        const req = surveyTx.objectStore("surveys").add(survey);
-        req.onsuccess = () => {
-          oldToNewSurveyIds.set(id, req.result as number);
-        };
-      }
-
-      surveyTx.oncomplete = () => resolve();
-      surveyTx.onabort = () => reject(surveyTx.error?.message);
-    });
-  }
-
-  function addImportedSingleFields(oldToNewSurveyIds: Map<number, number>, oldToNewFieldIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.fields?.size) {
-        reject("No fields");
-        return;
-      }
-
-      const fieldTx = idb.transaction("fields", "readwrite");
-
-      for (const [id, importedField] of imported.fields) {
-        if (importedField.type == "group") {
-          continue;
-        }
-
-        const thisSurveyId = surveyId || oldToNewSurveyIds.get(importedField.surveyId);
-        if (!thisSurveyId) {
-          continue;
-        }
-
-        const field = $state.snapshot(importedField);
-        field.surveyId = thisSurveyId;
-
-        const req = fieldTx.objectStore("fields").add(field);
-        req.onsuccess = () => {
-          oldToNewFieldIds.set(id, req.result as number);
-        };
-      }
-
-      fieldTx.oncomplete = () => resolve();
-      fieldTx.onabort = () => reject(fieldTx.error?.message);
-    });
-  }
-
-  function addImportedGroupFields(oldToNewSurveyIds: Map<number, number>, oldToNewFieldIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.fields?.size) {
-        reject("No fields");
-        return;
-      }
-
-      const fieldTx = idb.transaction("fields", "readwrite");
-
-      for (const [id, importedField] of imported.fields) {
-        if (importedField.type != "group") {
-          continue;
-        }
-
-        const thisSurveyId = surveyId || oldToNewSurveyIds.get(importedField.surveyId);
-        if (!thisSurveyId) {
-          continue;
-        }
-
-        const field = $state.snapshot(importedField);
-        field.surveyId = thisSurveyId;
-        field.fieldIds = field.fieldIds
-          .map((innerId) => oldToNewFieldIds.get(innerId))
-          .filter((id) => id !== undefined);
-
-        const req = fieldTx.objectStore("fields").add(field);
-        req.onsuccess = () => {
-          oldToNewFieldIds.set(id, req.result as number);
-        };
-      }
-
-      fieldTx.oncomplete = () => resolve();
-      fieldTx.onabort = () => reject(fieldTx.error?.message);
-    });
-  }
-
-  function updateExistingSurveyWithNewFields(survey: IDBRecord<Survey>, oldToNewFieldIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      survey.fieldIds = survey.fieldIds.map((id) => oldToNewFieldIds.get(id)).filter((id) => id !== undefined);
-
-      if (survey.type == "match") {
-        survey.expressions = survey.expressions.map((e) => {
-          if (e.input.from == "fields") {
-            e.input.fieldIds = e.input.fieldIds.map((id) => oldToNewFieldIds.get(id)).filter((id) => id !== undefined);
-          }
-          return e;
-        });
-      }
-
-      const req = idb.objectStore("surveys", "readwrite").put(survey);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error?.message);
-    });
-  }
-
-  function updateImportedSurveysWithNewFields(
-    oldToNewSurveyIds: Map<number, number>,
-    oldToNewFieldIds: Map<number, number>,
-  ) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.surveys?.size || !imported.fields?.size) {
-        reject("No surveys or fields");
-        return;
-      }
-
-      const surveyTx = idb.transaction("surveys", "readwrite");
-
-      for (const [oldId, importedSurvey] of imported.surveys) {
-        const survey = $state.snapshot(importedSurvey);
-
-        survey.fieldIds = survey.fieldIds.map((id) => oldToNewFieldIds.get(id)).filter((id) => id !== undefined);
-
-        if (survey.type == "match") {
-          survey.expressions = survey.expressions.map((e) => {
-            if (e.input.from == "fields") {
-              e.input.fieldIds = e.input.fieldIds
-                .map((id) => oldToNewFieldIds.get(id))
-                .filter((id) => id !== undefined);
-            }
-            return e;
-          });
-        }
-
-        surveyTx.objectStore("surveys").put({ ...survey, id: oldToNewSurveyIds.get(oldId) });
-      }
-
-      surveyTx.oncomplete = () => resolve();
-      surveyTx.onabort = () => reject(surveyTx.error?.message);
-    });
-  }
-
-  function addImportedEntries(oldToNewSurveyIds: Map<number, number>) {
-    return new Promise<void>((resolve, reject) => {
-      if (!imported.entries?.length) {
-        reject("No entries");
-        return;
-      }
-
-      const entryTx = idb.transaction("entries", "readwrite");
-
-      for (const importedEntry of imported.entries) {
-        const thisSurveyId = surveyId || oldToNewSurveyIds.get(importedEntry.surveyId);
-        if (!thisSurveyId) {
-          continue;
-        }
-
-        const entry: Entry = $state.snapshot(importedEntry);
-        entry.surveyId = thisSurveyId;
-        entryTx.objectStore("entries").add(entry);
-      }
-
-      entryTx.oncomplete = () => resolve();
-      entryTx.onabort = () => reject(entryTx.error?.message);
-    });
-  }
 
   async function onchange() {
     if (!files?.length) {
@@ -286,10 +91,10 @@
   function onread(data: string) {
     let json: {
       version: number;
-      comps?: Partial<IDBRecord<Comp>>[];
-      surveys?: Partial<IDBRecord<Survey>>[];
-      fields?: Partial<IDBRecord<Field>>[];
-      entries?: Partial<Entry>[];
+      comps?: Comp[];
+      surveys?: Survey[];
+      fields?: Field[];
+      entries?: Entry[];
     };
 
     try {
@@ -308,15 +113,12 @@
       return;
     }
 
-    const importedComps = new Map<number, Comp>();
-    const importedSurveys = new Map<number, Survey>();
-    const importedFields = new Map<number, Field>();
-
-    json.comps?.forEach((jsonComp, index) => {
+    const importedComps = json.comps?.map((jsonComp) => {
       const comp: Comp = {
-        name: jsonComp.name || jsonComp.tbaEventKey || `Comp ${index}`,
-        matches: jsonComp.matches || [],
-        teams: jsonComp.teams || [],
+        id: jsonComp.id,
+        name: jsonComp.name,
+        matches: jsonComp.matches,
+        teams: jsonComp.teams,
         created: new Date(),
         modified: new Date(),
       };
@@ -329,77 +131,58 @@
         comp.scouts = jsonComp.scouts;
       }
 
-      importedComps.set(jsonComp.id || index + 1, comp);
+      return comp;
     });
 
-    json.surveys?.forEach((jsonSurvey, index) => {
-      let compIdToUse = 0;
+    const importedSurveys = json.surveys
+      ?.map((jsonSurvey) => {
+        let survey: Survey;
 
-      if (compId) {
-        compIdToUse = compId;
-      } else if (jsonSurvey.compId !== undefined && importedComps?.has(jsonSurvey.compId)) {
-        compIdToUse = jsonSurvey.compId;
-      }
+        switch (jsonSurvey.type) {
+          case "match":
+            survey = {
+              id: jsonSurvey.id,
+              compId: jsonSurvey.compId,
+              name: jsonSurvey.name,
+              type: "match",
+              fieldIds: jsonSurvey.fieldIds,
+              pickLists: jsonSurvey.pickLists,
+              expressions: jsonSurvey.expressions,
+              created: new Date(),
+              modified: new Date(),
+            };
+            if (jsonSurvey.tbaMetrics?.length) {
+              survey.tbaMetrics = jsonSurvey.tbaMetrics;
+            }
+            break;
+          case "pit":
+            survey = {
+              id: jsonSurvey.id,
+              compId: jsonSurvey.compId,
+              name: jsonSurvey.name,
+              type: "pit",
+              fieldIds: jsonSurvey.fieldIds,
+              created: new Date(),
+              modified: new Date(),
+            };
+            break;
+          default:
+            return;
+        }
 
-      if (!jsonSurvey.type || !surveyTypes.includes(jsonSurvey.type)) {
-        return;
-      }
+        return survey;
+      })
+      .filter((jsonSurvey) => jsonSurvey !== undefined);
 
-      let survey: Survey;
-
-      switch (jsonSurvey.type) {
-        case "match":
-          survey = {
-            compId: compIdToUse,
-            name: jsonSurvey.name || "Match Survey",
-            type: "match",
-            fieldIds: jsonSurvey.fieldIds || [],
-            pickLists: jsonSurvey.pickLists || [],
-            expressions: jsonSurvey.expressions || [],
-            created: new Date(),
-            modified: new Date(),
-          };
-          if (jsonSurvey.tbaMetrics?.length) {
-            survey.tbaMetrics = jsonSurvey.tbaMetrics;
-          }
-          break;
-        case "pit":
-          survey = {
-            compId: compIdToUse,
-            name: jsonSurvey.name || "Pit Survey",
-            type: "pit",
-            fieldIds: jsonSurvey.fieldIds || [],
-            created: new Date(),
-            modified: new Date(),
-          };
-          break;
-        default:
-          return;
-      }
-
-      importedSurveys.set(jsonSurvey.id || index + 1, survey);
-    });
-
-    json.fields?.forEach((jsonField, index) => {
-      let surveyIdToUse = 0;
-
-      if (surveyId) {
-        surveyIdToUse = surveyId;
-      } else if (jsonField.surveyId !== undefined && importedSurveys?.has(jsonField.surveyId)) {
-        surveyIdToUse = jsonField.surveyId;
-      }
-
-      if (!jsonField.type || !fieldTypes.includes(jsonField.type)) {
-        return;
-      }
-
+    const importedFields = json.fields?.map((jsonField) => {
       let field: Field;
 
       switch (jsonField.type) {
         case "number":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
           };
           if (jsonField.allowNegative) {
@@ -408,17 +191,19 @@
           break;
         case "toggle":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
           };
           break;
         case "select":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
-            values: jsonField.values || [],
+            values: jsonField.values,
           };
           if (jsonField.radio) {
             field.radio = true;
@@ -426,8 +211,9 @@
           break;
         case "text":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
           };
           if (jsonField.long) {
@@ -436,93 +222,90 @@
           break;
         case "rating":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
           };
           break;
         case "timer":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
           };
           break;
         case "group":
           field = {
-            surveyId: surveyIdToUse,
-            name: jsonField.name || jsonField.type,
+            id: jsonField.id,
+            surveyId: jsonField.surveyId,
+            name: jsonField.name,
             type: jsonField.type,
-            fieldIds: jsonField.fieldIds || [],
+            fieldIds: jsonField.fieldIds,
           };
           break;
-        default:
-          return;
       }
 
       if ("tip" in field && "tip" in jsonField && jsonField.tip) {
         field.tip = jsonField.tip;
       }
 
-      importedFields.set(jsonField.id || index + 1, field);
+      return field;
+    });
+
+    const importedEntries = json.entries?.map((jsonEntry) => {
+      let entry: Entry;
+
+      if ("match" in jsonEntry) {
+        entry = {
+          id: jsonEntry.id,
+          surveyId: jsonEntry.surveyId,
+          type: "match",
+          status: "exported",
+          team: jsonEntry.team,
+          match: jsonEntry.match,
+          absent: jsonEntry.absent,
+          values: jsonEntry.values,
+          created: new Date(),
+          modified: new Date(),
+        };
+
+        if (jsonEntry.tbaMetrics) {
+          entry.tbaMetrics = jsonEntry.tbaMetrics;
+        }
+
+        if (jsonEntry.scout && jsonEntry.prediction) {
+          entry.prediction = jsonEntry.prediction;
+          if (jsonEntry.predictionReason) {
+            entry.predictionReason = jsonEntry.predictionReason;
+          }
+        }
+      } else {
+        entry = {
+          id: jsonEntry.id,
+          surveyId: jsonEntry.surveyId,
+          type: "pit",
+          status: "exported",
+          team: jsonEntry.team,
+          values: jsonEntry.values,
+          created: new Date(),
+          modified: new Date(),
+        };
+      }
+
+      if (jsonEntry.scout) {
+        entry.scout = jsonEntry.scout;
+      }
+
+      return entry;
     });
 
     imported = {
-      comps: importedComps.size ? importedComps : undefined,
-      surveys: importedSurveys.size ? importedSurveys : undefined,
-      fields: importedFields.size ? importedFields : undefined,
-      entries: json.entries?.map((jsonEntry) => {
-        let surveyIdToUse = 0;
-
-        if (surveyId) {
-          surveyIdToUse = surveyId;
-        } else if (jsonEntry.surveyId !== undefined && importedSurveys?.has(jsonEntry.surveyId)) {
-          surveyIdToUse = jsonEntry.surveyId;
-        }
-
-        let entry: Entry;
-
-        if ("match" in jsonEntry) {
-          entry = {
-            surveyId: surveyIdToUse,
-            type: "match",
-            status: "exported",
-            team: jsonEntry.team || "",
-            match: jsonEntry.match || 0,
-            absent: jsonEntry.absent || false,
-            values: jsonEntry.values || [],
-            created: new Date(),
-            modified: new Date(),
-          };
-
-          if (jsonEntry.tbaMetrics) {
-            entry.tbaMetrics = jsonEntry.tbaMetrics;
-          }
-
-          if (jsonEntry.scout && jsonEntry.prediction) {
-            entry.prediction = jsonEntry.prediction;
-            if (jsonEntry.predictionReason) {
-              entry.predictionReason = jsonEntry.predictionReason;
-            }
-          }
-        } else {
-          entry = {
-            surveyId: surveyIdToUse,
-            type: "pit",
-            status: "exported",
-            team: jsonEntry.team || "",
-            values: jsonEntry.values || [],
-            created: new Date(),
-            modified: new Date(),
-          };
-        }
-
-        if (jsonEntry.scout) {
-          entry.scout = jsonEntry.scout;
-        }
-
-        return entry;
-      }),
+      comps: importedComps?.length ? importedComps : undefined,
+      surveys: importedSurveys?.length ? importedSurveys : undefined,
+      fields: importedFields?.length ? importedFields : undefined,
+      entries: importedEntries?.length ? importedEntries : undefined,
     };
   }
 
@@ -568,20 +351,16 @@
 
 {#snippet preview(imp: typeof imported)}
   <div class="flex flex-col gap-1 text-sm">
-    {#if compId}
-      <span>Adding to comp {compId}</span>
-    {:else if imp.comps?.size}
-      <span>Comps: {imp.comps.size == 1 ? [...imp.comps.values()][0].name : imp.comps.size}</span>
+    {#if imp.comps?.length}
+      <span>Comps: {imp.comps.length == 1 ? imp.comps[0].name : imp.comps.length}</span>
     {/if}
 
-    {#if surveyId}
-      <span>Adding to survey {surveyId}</span>
-    {:else if imp.surveys?.size}
-      <span>Surveys: {imp.surveys.size == 1 ? [...imp.surveys.values()][0].name : imp.surveys.size}</span>
+    {#if imp.surveys?.length}
+      <span>Surveys: {imp.surveys.length == 1 ? imp.surveys[0].name : imp.surveys.length}</span>
     {/if}
 
-    {#if imp.fields?.size}
-      <span>Fields: {imp.fields.size}</span>
+    {#if imp.fields?.length}
+      <span>Fields: {imp.fields.length}</span>
     {/if}
 
     {#if imp.entries?.length}

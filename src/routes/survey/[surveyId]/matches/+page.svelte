@@ -6,13 +6,9 @@
   import { teamStore } from "$lib/settings";
   import { getLastCompletedMatch } from "$lib/survey";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 

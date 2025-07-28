@@ -19,10 +19,10 @@
     entryRecord,
     onchange,
   }: {
-    compRecord: IDBRecord<Comp>;
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    entryRecord: IDBRecord<Entry>;
+    compRecord: Comp;
+    surveyRecord: Survey;
+    fieldRecords: Field[];
+    entryRecord: Entry;
     onchange?: () => void;
   } = $props();
 
@@ -42,14 +42,14 @@
     entry.status = "draft";
     entry.modified = new Date();
 
-    const editRequest = idb.objectStore("entries", "readwrite").put($state.snapshot(entry));
+    const editRequest = idb.put("entries", $state.snapshot(entry));
 
     editRequest.onerror = () => {
       error = `Could not edit entry: ${editRequest.error?.message}`;
     };
 
     editRequest.onsuccess = () => {
-      idb.objectStore("surveys", "readwrite").put({ ...$state.snapshot(surveyRecord), modified: new Date() });
+      idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
       goto(`#/entry/${entry.id}`);
     };
   }
@@ -68,7 +68,7 @@
                 return;
               }
 
-              const req = idb.objectStore("entries", "readwrite").put({
+              const req = idb.put("entries", {
                 ...$state.snapshot(entry),
                 status: "exported",
                 modified: new Date(),

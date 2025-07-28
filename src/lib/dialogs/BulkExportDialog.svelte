@@ -16,10 +16,10 @@
     entries,
     onexport,
   }: {
-    comps?: IDBRecord<Comp>[];
-    surveys?: IDBRecord<Survey>[];
-    fields?: IDBRecord<Field>[];
-    entries?: IDBRecord<Entry>[];
+    comps?: Comp[];
+    surveys?: Survey[];
+    fields?: Field[];
+    entries?: Entry[];
     onexport?: () => void;
   } = $props();
 
@@ -75,75 +75,27 @@
   }
 
   function generateExportedData() {
-    const oldToNewCompIds = new Map<number, number>();
-    const oldToNewSurveyIds = new Map<number, number>();
-    const oldToNewFieldIds = new Map<number, number>();
-
-    const preparedComps = $state.snapshot(comps)?.map((comp, index) => {
-      oldToNewCompIds.set(comp.id, index + 1);
-
+    const preparedComps = $state.snapshot(comps)?.map((comp) => {
       return {
         ...structuredClone(comp),
-        id: index + 1,
         created: undefined,
         modified: undefined,
       };
     });
 
-    const partiallyPreparedSurveys = $state.snapshot(surveys)?.map((survey, index) => {
-      oldToNewSurveyIds.set(survey.id, index + 1);
-
+    const preparedSurveys = $state.snapshot(surveys)?.map((survey) => {
       return {
         ...structuredClone(survey),
-        id: index + 1,
-        compId: oldToNewCompIds.get(survey.compId),
         created: undefined,
         modified: undefined,
       };
     });
 
-    fields?.forEach((field, index) => {
-      oldToNewFieldIds.set(field.id, index + 1);
-    });
-
-    const preparedFields = $state.snapshot(fields)?.map((field) => {
-      if (field.type == "group") {
-        return {
-          ...structuredClone(field),
-          id: oldToNewFieldIds.get(field.id)!,
-          surveyId: oldToNewSurveyIds.get(field.surveyId)!,
-          fieldIds: field.fieldIds.map((id) => oldToNewFieldIds.get(id)!),
-        };
-      }
-
-      return {
-        ...structuredClone(field),
-        id: oldToNewFieldIds.get(field.id)!,
-        surveyId: oldToNewSurveyIds.get(field.surveyId)!,
-      };
-    });
-
-    const fullyPreparedSurveys = partiallyPreparedSurveys?.map((survey) => {
-      survey.fieldIds = survey.fieldIds.map((id) => oldToNewFieldIds.get(id)!);
-
-      if (survey.type == "match") {
-        survey.expressions = survey.expressions.map((e) => {
-          if (e.input.from == "fields") {
-            e.input.fieldIds = e.input.fieldIds.map((id) => oldToNewFieldIds.get(id)!);
-          }
-
-          return e;
-        });
-      }
-
-      return survey;
-    });
+    const preparedFields = $state.snapshot(fields);
 
     const preparedEntries = $state.snapshot(entries)?.map((entry) => {
       return {
         ...structuredClone(entry),
-        id: undefined,
-        surveyId: oldToNewSurveyIds.get(entry.surveyId),
         type: undefined,
         status: undefined,
         created: undefined,
@@ -154,7 +106,7 @@
     const data = {
       version: schemaVersion,
       comps: preparedComps,
-      surveys: fullyPreparedSurveys,
+      surveys: preparedSurveys,
       fields: preparedFields,
       entries: preparedEntries,
     };

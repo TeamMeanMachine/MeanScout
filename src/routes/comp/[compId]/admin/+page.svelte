@@ -4,16 +4,12 @@
   import { idb } from "$lib/idb";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CalendarDaysIcon, CloudDownloadIcon, LoaderIcon, SquarePenIcon } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import CompAdminHeader from "./CompAdminHeader.svelte";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let getTbaDataError = $state("");
   let isLoadingTbaData = $state(false);
@@ -89,7 +85,7 @@
         ...data,
         compRecord: { ...data.compRecord, teams, modified: new Date() },
       } as PageData;
-      idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+      idb.put("comps", $state.snapshot(data.compRecord));
     }
   }
 </script>
@@ -107,7 +103,7 @@
               ...data,
               compRecord: { ...data.compRecord, name, modified: new Date() },
             } as PageData;
-            idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord));
           },
         })}
     >
@@ -130,7 +126,7 @@
               ...data,
               compRecord: { ...data.compRecord, tbaEventKey, modified: new Date() },
             } as PageData;
-            idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord));
           },
         })}
     >

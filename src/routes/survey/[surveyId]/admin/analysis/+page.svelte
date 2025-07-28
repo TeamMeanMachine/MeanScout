@@ -10,13 +10,9 @@
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let surveyRecord = $state($state.snapshot(data.surveyRecord));
 
@@ -91,7 +87,7 @@
       oncreate(expression) {
         surveyRecord.expressions.push(expression);
         surveyRecord.modified = new Date();
-        idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+        idb.put("surveys", $state.snapshot(surveyRecord));
       },
     });
   }
@@ -116,12 +112,12 @@
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
                     surveyRecord.modified = new Date();
-                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord));
                   },
                   ondelete() {
                     surveyRecord.pickLists.splice(index, 1);
                     surveyRecord.modified = new Date();
-                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord));
                   },
                 });
               }}
@@ -280,7 +276,7 @@
                   oncreate(pickList) {
                     surveyRecord.pickLists.push(pickList);
                     surveyRecord.modified = new Date();
-                    idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord));
                   },
                 });
               }}
@@ -341,12 +337,12 @@
           surveyRecord.pickLists = pickLists;
           surveyRecord.expressions = expressions;
           surveyRecord.modified = new Date();
-          idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+          idb.put("surveys", $state.snapshot(surveyRecord));
         },
         ondelete() {
           surveyRecord.expressions.splice(index, 1);
           surveyRecord.modified = new Date();
-          idb.objectStore("surveys", "readwrite").put($state.snapshot(surveyRecord));
+          idb.put("surveys", $state.snapshot(surveyRecord));
         },
       });
     }}

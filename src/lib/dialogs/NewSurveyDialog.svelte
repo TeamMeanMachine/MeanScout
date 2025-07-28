@@ -9,7 +9,7 @@
   let {
     compId,
   }: {
-    compId: number;
+    compId: string;
   } = $props();
 
   let name = $state("Match Survey");
@@ -27,6 +27,7 @@
       let survey: Survey;
       if (type == "match") {
         survey = {
+          id: idb.generateId(),
           compId,
           name,
           type,
@@ -38,6 +39,7 @@
         };
       } else if (type == "pit") {
         survey = {
+          id: idb.generateId(),
           compId,
           name,
           type,
@@ -50,19 +52,13 @@
         return;
       }
 
-      const addRequest = idb.objectStore("surveys", "readwrite").add(survey);
+      const addRequest = idb.add("surveys", survey);
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };
 
       addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not add survey";
-          return;
-        }
-
-        goto(`#/survey/${id}/admin`);
+        goto(`#/survey/${survey.id}/admin`);
       };
     },
   };

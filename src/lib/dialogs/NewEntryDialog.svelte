@@ -10,7 +10,7 @@
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
   import { goto } from "$app/navigation";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
 
   let {
     pageData,
@@ -120,6 +120,7 @@
       let entry: Entry;
       if (pageData.surveyType == "match") {
         entry = {
+          id: idb.generateId(),
           surveyId: pageData.surveyRecord.id,
           type: pageData.surveyRecord.type,
           status: "draft",
@@ -127,38 +128,43 @@
           match,
           absent: false,
           values: defaultValues,
-          scout: scout || undefined,
-          prediction: prediction || undefined,
-          predictionReason: predictionReason || undefined,
           created: new Date(),
           modified: new Date(),
         };
+
+        if (scout) {
+          entry.scout = scout;
+          if (prediction) {
+            entry.prediction = prediction;
+            if (predictionReason) {
+              entry.predictionReason = predictionReason;
+            }
+          }
+        }
       } else {
         entry = {
+          id: idb.generateId(),
           surveyId: pageData.surveyRecord.id,
           type: pageData.surveyRecord.type,
           status: "draft",
           team,
           values: defaultValues,
-          scout: scout || undefined,
           created: new Date(),
           modified: new Date(),
         };
+
+        if (scout) {
+          entry.scout = scout;
+        }
       }
 
-      const addRequest = idb.objectStore("entries", "readwrite").add($state.snapshot(entry));
+      const addRequest = idb.add("entries", $state.snapshot(entry));
       addRequest.onerror = () => {
         error = "Could not create new entry";
       };
 
       addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not create new entry";
-          return;
-        }
-
-        goto(`#/entry/${id}`);
+        goto(`#/entry/${entry.id}`);
       };
     },
   };
@@ -197,7 +203,7 @@
                   scouts: [...(pageData.compRecord.scouts || []), newScout],
                 },
               } as SurveyPageData;
-              idb.objectStore("comps", "readwrite").put($state.snapshot(pageData.compRecord));
+              idb.put("comps", $state.snapshot(pageData.compRecord));
               scout = newScout;
               onnewscout(newScout);
             },

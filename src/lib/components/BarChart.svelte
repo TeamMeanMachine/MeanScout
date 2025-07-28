@@ -2,8 +2,8 @@
   import Button from "./Button.svelte";
   import type { AnalysisData } from "$lib/analysis";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import type { SurveyPageData } from "$lib/survey";
   import { goto } from "$app/navigation";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
 
   let {
     pageData,

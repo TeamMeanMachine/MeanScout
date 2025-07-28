@@ -16,16 +16,12 @@
     SettingsIcon,
     ShareIcon,
   } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
   import OverwriteCompDialog from "$lib/dialogs/OverwriteCompDialog.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <Header title="{data.compRecord.name} - MeanScout" heading={data.compRecord.name} />
@@ -43,7 +39,7 @@
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(BulkImportDialog, { compId: data.compRecord.id })} class="grow basis-0">
+    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-0">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import

@@ -7,7 +7,7 @@ export function getAllScoutNames(comp: Comp, entries: Entry[]) {
   ];
 }
 
-export function getPredictionsPerScout(comp: IDBRecord<Comp>, entries: IDBRecord<MatchEntry>[]) {
+export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
   const allScoutNames = getAllScoutNames(comp, entries);
 
   const predictionsPerScout = allScoutNames
@@ -77,7 +77,7 @@ export function getPredictionsPerScout(comp: IDBRecord<Comp>, entries: IDBRecord
   };
 }
 
-export function getPredictionsPerMatch(comp: IDBRecord<Comp>, entries: IDBRecord<MatchEntry>[]) {
+export function getPredictionsPerMatch(comp: Comp, entries: MatchEntry[]) {
   return comp.matches
     .filter((match) => match.redScore !== undefined && match.blueScore !== undefined)
     .toSorted((a, b) => b.number - a.number)

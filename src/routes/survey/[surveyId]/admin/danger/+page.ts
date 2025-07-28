@@ -1,7 +1,6 @@
-import { loadSurveyPageData } from "../../loadSurveyPageData";
+import { loadSurveyPageData } from "$lib/loaders/loadSurveyPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
-  const surveyId = Number(event.params.surveyId);
-  return await loadSurveyPageData(surveyId);
+  return await loadSurveyPageData(event.params.surveyId);
 };

@@ -7,7 +7,7 @@
     entryRecord,
     ondelete,
   }: {
-    entryRecord: IDBRecord<Entry>;
+    entryRecord: Entry;
     ondelete: () => void;
   } = $props();
 
@@ -15,7 +15,7 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      const deleteRequest = idb.objectStore("entries", "readwrite").delete(entryRecord.id);
+      const deleteRequest = idb.delete("entries", entryRecord.id);
       deleteRequest.onerror = () => {
         error = `Could not delete entry: ${deleteRequest.error?.message}`;
       };

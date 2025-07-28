@@ -4,14 +4,10 @@
   import { idb } from "$lib/idb";
   import { Trash2Icon } from "@lucide/svelte";
   import CompAdminHeader from "../CompAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import DeleteCompDialog from "$lib/dialogs/DeleteCompDialog.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let showDangerZone = $derived(
     data.compRecord.scouts?.length || data.compRecord.matches.length || data.compRecord.teams.length,
@@ -30,7 +26,7 @@
               ...data,
               compRecord: { ...data.compRecord, scouts: [], modified: new Date() },
             } as PageData;
-            idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -47,7 +43,7 @@
               ...data,
               compRecord: { ...data.compRecord, matches: [], modified: new Date() },
             } as PageData;
-            idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -64,7 +60,7 @@
               ...data,
               compRecord: { ...data.compRecord, teams: [], modified: new Date() },
             } as PageData;
-            idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >
           <Trash2Icon class="text-theme" />

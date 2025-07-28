@@ -1,26 +1,17 @@
 import { z } from "zod";
 import { pickListSchema } from "./analysis";
-import type { Field, getFieldsWithDetails } from "./field";
 import { expressionSchema } from "./expression";
-import type { Entry, MatchEntry, PitEntry } from "./entry";
+import type { Entry } from "./entry";
 import type { Comp } from "./comp";
-
-export type SurveyPageData = {
-  compRecord: IDBRecord<Comp>;
-  fieldRecords: IDBRecord<Field>[];
-  fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
-} & (
-  | { surveyType: "match"; surveyRecord: IDBRecord<MatchSurvey>; entryRecords: IDBRecord<MatchEntry>[] }
-  | { surveyType: "pit"; surveyRecord: IDBRecord<PitSurvey>; entryRecords: IDBRecord<PitEntry>[] }
-);
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
 
 const baseSurveySchema = z.object({
+  id: z.string(),
+  compId: z.string(),
   name: z.string(),
-  compId: z.number(),
-  fieldIds: z.array(z.number()),
+  fieldIds: z.array(z.string()),
   created: z.coerce.date(),
   modified: z.coerce.date(),
 });

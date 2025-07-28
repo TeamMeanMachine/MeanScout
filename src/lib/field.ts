@@ -18,7 +18,8 @@ export const fieldTypes = [...singleFieldTypes, "group"] as const;
 export type FieldType = (typeof fieldTypes)[number];
 
 const baseSingleFieldSchema = z.object({
-  surveyId: z.number(),
+  id: z.string(),
+  surveyId: z.string(),
   name: z.string(),
   tip: z.optional(z.string()),
 });
@@ -80,10 +81,11 @@ const singleFieldSchema = z.discriminatedUnion("type", [
 export type SingleField = z.infer<typeof singleFieldSchema>;
 
 const groupFieldSchema = z.object({
-  surveyId: z.number(),
+  id: z.string(),
+  surveyId: z.string(),
   name: z.string(),
   type: z.literal("group"),
-  fieldIds: z.array(z.number()),
+  fieldIds: z.array(z.string()),
 });
 export type GroupField = z.infer<typeof groupFieldSchema>;
 
@@ -120,52 +122,19 @@ export function getDefaultFieldValue(field: SingleField) {
   }
 }
 
-export function addField(
-  fieldStore: IDBObjectStore,
-  fields: Map<number, Field>,
-  oldNewMap: Map<number, number>,
-  fieldId: number,
-  surveyId: number,
-) {
-  return new Promise<number>(async (resolve, reject) => {
-    const field = fields.get(fieldId);
-    if (!field) return reject(`Could not add field with id ${fieldId} for survey id ${surveyId}`);
-
-    if (field.type == "group") {
-      const newIds: number[] = [];
-
-      for (const nestedFieldId of field.fieldIds) {
-        try {
-          const addedNestedFieldId = await addField(fieldStore, fields, oldNewMap, nestedFieldId, surveyId);
-          newIds.push(addedNestedFieldId);
-          oldNewMap.set(nestedFieldId, addedNestedFieldId);
-        } catch (error) {
-          return reject(error);
-        }
-      }
-
-      field.fieldIds = newIds;
-    }
-
-    const request = fieldStore.add({ ...field, surveyId });
-    request.onerror = () => reject(`Could not add field ${field.name} for survey id ${surveyId}`);
-    request.onsuccess = () => resolve(request.result as number);
-  });
-}
-
 export type SingleFieldWithDetails = {
   type: "single";
-  field: IDBRecord<SingleField>;
+  field: SingleField;
   detailedName: string;
   valueIndex: number;
 };
 
 export type GroupFieldWithDetails = {
   type: "group";
-  field: IDBRecord<GroupField>;
+  field: GroupField;
 };
 
-export function getFieldsWithDetails(surveyRecord: IDBRecord<Survey>, fieldRecords: IDBRecord<Field>[]) {
+export function getFieldsWithDetails(surveyRecord: Survey, fieldRecords: Field[]) {
   const topLevel: (SingleFieldWithDetails | GroupFieldWithDetails)[] = [];
   const nested: SingleFieldWithDetails[] = [];
   const orderedSingle: SingleFieldWithDetails[] = [];

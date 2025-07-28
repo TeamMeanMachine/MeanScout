@@ -8,7 +8,7 @@
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
   import { goto } from "$app/navigation";
 
   let {
@@ -17,7 +17,7 @@
     analysisData,
   }: {
     pageData: Extract<SurveyPageData, { surveyType: "match" }>;
-    entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
+    entriesByTeam: Record<string, MatchEntry[]>;
     analysisData: AnalysisData;
   } = $props();
 
@@ -77,7 +77,7 @@
   }
 
   function generateRaceData(toMatch: number) {
-    const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
+    const subsetEntriesByTeam: Record<string, MatchEntry[]> = {};
 
     for (const team in entriesByTeam) {
       subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);

@@ -9,8 +9,8 @@
     surveyRecord,
     page,
   }: {
-    compRecord: IDBRecord<Comp>;
-    surveyRecord: IDBRecord<Survey>;
+    compRecord: Comp;
+    surveyRecord: Survey;
     page: string;
   } = $props();
 

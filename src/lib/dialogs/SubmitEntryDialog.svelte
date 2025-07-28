@@ -14,7 +14,7 @@
     onexport,
   }: {
     orderedSingleFields: SingleFieldWithDetails[];
-    entryRecord: IDBRecord<Entry>;
+    entryRecord: Entry;
     onexport: () => void;
   } = $props();
 
@@ -55,7 +55,7 @@
         submittedEntry.values = defaultValues;
       }
 
-      const submitRequest = idb.objectStore("entries", "readwrite").put(submittedEntry);
+      const submitRequest = idb.put("entries", submittedEntry);
       submitRequest.onerror = () => {
         error = `Could not submit entry: ${submitRequest.error?.message}`;
       };

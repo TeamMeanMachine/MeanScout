@@ -10,8 +10,8 @@
     page,
     pageTitle,
   }: {
-    compRecord: IDBRecord<Comp>;
-    surveyRecord: IDBRecord<Survey>;
+    compRecord: Comp;
+    surveyRecord: Survey;
     page: string;
     pageTitle?: string;
   } = $props();

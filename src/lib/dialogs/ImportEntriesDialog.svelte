@@ -14,8 +14,8 @@
     existingEntries,
     onimport,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    existingEntries: IDBRecord<Entry>[];
+    surveyRecord: Survey;
+    existingEntries: Entry[];
     onimport: () => void;
   } = $props();
 
@@ -31,10 +31,10 @@
   }
 
   let duplicateEntryStringsAndIds = $derived.by(() => {
-    const output = new Map<string, number>();
+    const uniqueStringsToIds = new Map<string, string>();
 
     if (surveyRecord.type != "match") {
-      return output;
+      return uniqueStringsToIds;
     }
 
     for (const entry of importedEntries) {
@@ -46,11 +46,11 @@
 
       const existingEntry = existingEntries.find((e) => e.type == "match" && uniqueString == getEntryUniqueString(e));
       if (existingEntry) {
-        output.set(uniqueString, $state.snapshot(existingEntry).id);
+        uniqueStringsToIds.set(uniqueString, $state.snapshot(existingEntry).id);
       }
     }
 
-    return output;
+    return uniqueStringsToIds;
   });
 
   export const { onconfirm }: DialogExports = {
@@ -74,14 +74,14 @@
 
       if (!duplicateEntryStringsAndIds.size) {
         for (const entry of importedEntries) {
-          entryStore.add($state.snapshot(entry));
+          entryStore.put($state.snapshot(entry));
         }
         return;
       }
 
       for (const entry of importedEntries) {
         if (entry.type != "match") {
-          entryStore.add($state.snapshot(entry));
+          entryStore.put($state.snapshot(entry));
           continue;
         }
 
@@ -90,7 +90,7 @@
         const matchingEntryId = duplicateEntryStringsAndIds.get(uniqueString);
 
         if (!matchingEntryId) {
-          entryStore.add($state.snapshot(entry));
+          entryStore.put($state.snapshot(entry));
           continue;
         }
 
@@ -125,7 +125,7 @@
 
     let json: {
       version: number;
-      entries: Partial<Entry>[];
+      entries: Entry[];
     };
 
     try {
@@ -147,11 +147,12 @@
     if (surveyRecord.type == "pit") {
       importedEntries = json.entries.map((jsonEntry) => {
         const entry: Entry = {
+          id: jsonEntry.id,
           surveyId: surveyRecord.id,
           type: "pit",
           status: "exported",
-          team: jsonEntry.team || "",
-          values: jsonEntry.values || [],
+          team: jsonEntry.team,
+          values: jsonEntry.values,
           created: new Date(),
           modified: new Date(),
         };
@@ -166,32 +167,32 @@
       return;
     }
 
-    importedEntries = (json.entries as Partial<MatchEntry>[]).map((jsonEntry) => {
+    importedEntries = (json.entries as MatchEntry[]).map((jsonEntry) => {
       const entry: Entry = {
+        id: jsonEntry.id,
         surveyId: surveyRecord.id,
         type: "match",
         status: "exported",
-        team: jsonEntry.team || "",
-        match: jsonEntry.match || 0,
-        absent: jsonEntry.absent || false,
-        values: jsonEntry.values || [],
+        team: jsonEntry.team,
+        match: jsonEntry.match,
+        absent: jsonEntry.absent,
+        values: jsonEntry.values,
         created: new Date(),
         modified: new Date(),
       };
 
       if (jsonEntry.scout) {
         entry.scout = jsonEntry.scout;
+        if (jsonEntry.prediction) {
+          entry.prediction = jsonEntry.prediction;
+          if (jsonEntry.predictionReason) {
+            entry.predictionReason = jsonEntry.predictionReason;
+          }
+        }
       }
 
       if (jsonEntry.tbaMetrics) {
         entry.tbaMetrics = jsonEntry.tbaMetrics;
-      }
-
-      if (jsonEntry.scout && jsonEntry.prediction) {
-        entry.prediction = jsonEntry.prediction;
-        if (jsonEntry.predictionReason) {
-          entry.predictionReason = jsonEntry.predictionReason;
-        }
       }
 
       return entry;

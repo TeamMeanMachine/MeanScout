@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Team } from "$lib";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
-  import type { SurveyPageData } from "$lib/survey";
+  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
 
   let {
     pageData,

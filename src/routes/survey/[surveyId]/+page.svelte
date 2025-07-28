@@ -24,21 +24,17 @@
     ShareIcon,
     UsersIcon,
   } from "@lucide/svelte";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
   import OverwriteSurveyDialog from "$lib/dialogs/OverwriteSurveyDialog.svelte";
   import SurveyPageHeader from "./SurveyPageHeader.svelte";
   import { type PickList } from "$lib/analysis";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   const filterMatches = sessionStorageStore<"true" | "">("filter-matches", "");
 
@@ -194,23 +190,7 @@
   }
 
   function refresh() {
-    const entriesRequest = idb.objectStore("entries").index("surveyId").getAll(data.surveyRecord.id);
-
-    entriesRequest.onerror = () => {
-      location.reload();
-    };
-
-    entriesRequest.onsuccess = () => {
-      if (!entriesRequest.result) {
-        location.reload();
-        return;
-      }
-
-      data = {
-        ...data,
-        entryRecords: entriesRequest.result,
-      };
-    };
+    invalidateAll();
   }
 </script>
 
@@ -272,7 +252,7 @@
               ...data,
               compRecord: { ...data.compRecord, scouts: [...(data.compRecord.scouts || []), newScout] },
             } as PageData;
-            idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+            idb.put("surveys", $state.snapshot(data.surveyRecord));
           },
         });
       }}
@@ -464,7 +444,7 @@
   </Anchor>
 {/snippet}
 
-{#snippet predictionsWidget(entryRecords: IDBRecord<MatchEntry>[])}
+{#snippet predictionsWidget(entryRecords: MatchEntry[])}
   {@const { overallAccuracy } = getPredictionsPerScout(data.compRecord, entryRecords)}
 
   <Anchor route="survey/{data.surveyRecord.id}/predictions" style="view-transition-name:predictions">

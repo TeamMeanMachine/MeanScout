@@ -7,7 +7,7 @@
     compRecord,
     page,
   }: {
-    compRecord: IDBRecord<Comp>;
+    compRecord: Comp;
     page: string;
   } = $props();
 

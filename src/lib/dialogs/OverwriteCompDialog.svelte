@@ -12,7 +12,7 @@
   let {
     compRecord,
   }: {
-    compRecord: IDBRecord<Comp>;
+    compRecord: Comp;
   } = $props();
 
   const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
@@ -42,15 +42,11 @@
 
   export const { onconfirm }: DialogExports = {
     async onconfirm() {
-      if (error) {
+      if (error || !importedComp) {
         return;
       }
 
-      const request = idb.objectStore("comps", "readwrite").put({
-        ...$state.snapshot(importedComp),
-        id: compRecord.id,
-        modified: new Date(),
-      });
+      const request = idb.put("comps", { ...$state.snapshot(importedComp), modified: new Date() });
 
       request.onerror = () => {
         error = "Could not overwrite comp";
@@ -76,7 +72,7 @@
 
     let json: {
       version: number;
-      comps?: Partial<IDBRecord<Comp>>[];
+      comps?: Comp[];
     };
 
     try {
@@ -95,17 +91,14 @@
       return;
     }
 
-    const jsonComp =
-      json.comps?.find(
-        (c) => c.name == compRecord.name || (c.tbaEventKey && c.tbaEventKey == compRecord.tbaEventKey),
-      ) || json.comps?.[0];
+    const jsonComp = json.comps?.find((c) => c.id == compRecord.id);
 
     if (!jsonComp) {
-      error = "No comp imported";
+      error = "No matching comp found";
       return;
     }
 
-    if (jsonComp.name != undefined && jsonComp.name != compRecord.name) {
+    if (jsonComp.name != compRecord.name) {
       changes.name = true;
     }
 
@@ -119,7 +112,7 @@
       matches.set(match.number, match);
     }
 
-    for (const importedMatch of jsonComp.matches || []) {
+    for (const importedMatch of jsonComp.matches) {
       const existingMatch = matches.get(importedMatch.number);
 
       if (existingMatch) {
@@ -164,7 +157,7 @@
       teams.set(team.number, team);
     }
 
-    for (const importedTeam of jsonComp.teams || []) {
+    for (const importedTeam of jsonComp.teams) {
       const existingTeam = teams.get(importedTeam.number);
 
       if (existingTeam) {
@@ -181,7 +174,8 @@
     }
 
     const comp: Comp = {
-      name: jsonComp.name || compRecord.name,
+      id: compRecord.id,
+      name: jsonComp.name,
       matches: matches
         .values()
         .toArray()

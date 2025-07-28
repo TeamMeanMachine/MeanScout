@@ -1,9 +1,8 @@
-import { loadSurveyPageData } from "../../loadSurveyPageData";
+import { loadSurveyPageData } from "$lib/loaders/loadSurveyPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
-  const surveyId = Number(event.params.surveyId);
-  const data = await loadSurveyPageData(surveyId);
+  const data = await loadSurveyPageData(event.params.surveyId);
   if (data.surveyType != "match") {
     throw new Error("Survey type is not a match!");
   }

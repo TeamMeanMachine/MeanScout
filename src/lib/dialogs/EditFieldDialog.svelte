@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { type Field, type GroupField, type SingleField } from "$lib/field";
+  import { type Field, type GroupField } from "$lib/field";
   import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import {
@@ -26,13 +26,13 @@
     onduplicate,
     ondelete,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
-    field: IDBRecord<Field>;
-    parentField?: IDBRecord<GroupField> | undefined;
+    surveyRecord: Survey;
+    fieldRecords: Field[];
+    field: Field;
+    parentField?: GroupField | undefined;
     onedit: () => void;
     onmove?: (index: number, by: number) => void;
-    onduplicate?: (index: number, id: number) => void;
+    onduplicate?: (index: number, id: string) => void;
     ondelete?: () => void;
   } = $props();
 
@@ -81,7 +81,7 @@
         }
       }
 
-      const putRequest = idb.objectStore("fields", "readwrite").put($state.snapshot(changes));
+      const putRequest = idb.put("fields", $state.snapshot(changes));
       putRequest.onsuccess = () => {
         onedit();
         closeDialog();
@@ -98,11 +98,7 @@
       const updatedFieldIds = structuredClone($state.snapshot(parentField.fieldIds));
       updatedFieldIds.splice(index + by, 0, ...updatedFieldIds.splice(index, 1));
 
-      const request = idb.objectStore("fields", "readwrite").put({
-        ...$state.snapshot(parentField),
-        fieldIds: updatedFieldIds,
-      });
-
+      const request = idb.put("fields", { ...$state.snapshot(parentField), fieldIds: updatedFieldIds });
       request.onsuccess = () => {
         onmove?.(index, by);
         closeDialog();
@@ -117,7 +113,7 @@
     }
   }
 
-  function duplicateField() {
+  async function duplicateField() {
     const newTransaction = idb.transaction("fields", "readwrite");
     const fieldStore = newTransaction.objectStore("fields");
 
@@ -125,52 +121,32 @@
       error = "Could not duplicate field";
     };
 
-    const fieldWithoutId = structuredClone($state.snapshot(field)) as Field & { id?: number };
-    delete fieldWithoutId.id;
+    const duplicateField = structuredClone($state.snapshot(field));
+    duplicateField.id = idb.generateId();
 
-    const duplicateRequest = fieldStore.add(fieldWithoutId);
-
-    duplicateRequest.onsuccess = async () => {
-      const id = duplicateRequest.result as number;
-
-      if (parentField) {
-        const updatedParentField = structuredClone($state.snapshot(parentField));
-        updatedParentField.fieldIds.splice(index + 1, 0, id);
-        fieldStore.put(updatedParentField).onsuccess = () => {
-          onduplicate?.(index, id);
-          closeDialog();
-        };
-      } else {
-        if (field.type == "group") {
-          const newIds: number[] = [];
-          const nestedFields = field.fieldIds
-            .map((id) => fieldRecords.find((f) => f.id == id))
-            .filter((f) => f !== undefined && f.type != "group");
-
-          for (const nestedField of nestedFields) {
-            const fieldWithoutId = structuredClone($state.snapshot(nestedField)) as SingleField & { id?: number };
-            delete fieldWithoutId.id;
-
-            const newId = await new Promise<number>((resolve, reject) => {
-              const request = fieldStore.add(fieldWithoutId);
-              request.onsuccess = () => {
-                if (request.result) {
-                  resolve(request.result as number);
-                } else {
-                  reject();
-                }
-              };
-            });
-
-            newIds.push(newId);
-          }
-
-          fieldStore.put({ ...fieldWithoutId, id, fieldIds: newIds });
-        }
-
-        onduplicate?.(index, id);
-        closeDialog();
+    if (parentField) {
+      const updatedParentField = structuredClone($state.snapshot(parentField));
+      updatedParentField.fieldIds.splice(index + 1, 0, duplicateField.id);
+      fieldStore.put(updatedParentField);
+    } else {
+      if (field.type == "group" && duplicateField.type == "group") {
+        duplicateField.fieldIds = field.fieldIds
+          .map((id) => fieldRecords.find((f) => f.id == id))
+          .filter((f) => f !== undefined && f.type != "group")
+          .map((nestedField) => {
+            const duplicateInnerField = structuredClone($state.snapshot(nestedField));
+            duplicateInnerField.id = idb.generateId();
+            fieldStore.add(duplicateInnerField);
+            return duplicateInnerField.id;
+          });
       }
+    }
+
+    fieldStore.add(duplicateField);
+
+    newTransaction.oncomplete = () => {
+      onduplicate?.(index, duplicateField.id);
+      closeDialog();
     };
   }
 

@@ -4,7 +4,7 @@
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { addField, type Field } from "$lib/field";
+  import { type Field } from "$lib/field";
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import { type Survey } from "$lib/survey";
@@ -16,9 +16,9 @@
     fieldRecords,
     entryCount,
   }: {
-    compId: number;
-    surveyRecord: IDBRecord<Survey>;
-    fieldRecords: IDBRecord<Field>[];
+    compId: string;
+    surveyRecord: Survey;
+    fieldRecords: Field[];
     entryCount: number;
   } = $props();
 
@@ -26,7 +26,7 @@
 
   let files = $state<FileList | undefined>();
   let importedSurvey = $state<Survey | undefined>();
-  let importedFields = $state<Map<number, Field> | undefined>();
+  let importedFields = $state<Map<string, Field> | undefined>();
 
   let changes = $state<{
     name: boolean;
@@ -47,14 +47,14 @@
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
-    async onconfirm() {
-      if (error) {
+    onconfirm() {
+      if (error || !importedSurvey) {
         return;
       }
 
       const importTransaction = idb.transaction(["surveys", "fields"], "readwrite");
       importTransaction.onabort = () => {
-        error = "Could not overwrite survey";
+        error ||= "Could not overwrite survey";
       };
 
       importTransaction.oncomplete = () => {
@@ -65,52 +65,19 @@
       const surveyStore = importTransaction.objectStore("surveys");
       const fieldStore = importTransaction.objectStore("fields");
 
-      const overwriteRequest = surveyStore.put({
-        ...$state.snapshot(importedSurvey),
-        id: surveyRecord.id,
-        compId,
-        modified: new Date(),
-      });
+      surveyStore.put($state.snapshot(importedSurvey));
 
-      overwriteRequest.onsuccess = async () => {
-        if (importedFields?.size && importedSurvey?.fieldIds.length) {
-          const newIds: number[] = [];
-          const oldNewMap = new Map<number, number>();
-
-          for (const fieldId of importedSurvey.fieldIds) {
-            try {
-              const addedFieldId = await addField(fieldStore, importedFields, oldNewMap, fieldId, surveyRecord.id);
-              newIds.push(addedFieldId);
-              oldNewMap.set(fieldId, addedFieldId);
-            } catch (error) {
-              importTransaction.abort();
-              console.error(fieldId, error);
-              return;
-            }
-          }
-
-          importedSurvey.fieldIds = newIds;
-          if (importedSurvey.type == "match") {
-            importedSurvey.expressions = importedSurvey.expressions.map((e) => {
-              if (e.input.from == "fields") {
-                e.input.fieldIds = e.input.fieldIds.map((oldId) => oldNewMap.get(oldId) || oldId);
-              }
-              return e;
-            });
-          }
-
-          surveyStore.put({
-            ...$state.snapshot(importedSurvey),
-            id: surveyRecord.id,
-            compId,
-            modified: new Date(),
-          });
-
-          for (const field of fieldRecords) {
-            fieldStore.delete(field.id);
-          }
+      if (importedFields?.size) {
+        for (const [, importedField] of importedFields) {
+          fieldStore.put($state.snapshot(importedField));
         }
-      };
+      }
+
+      for (const field of fieldRecords) {
+        if (!importedFields?.size || !importedFields.has(field.id)) {
+          fieldStore.delete(field.id);
+        }
+      }
     },
   };
 
@@ -127,8 +94,8 @@
 
     let json: {
       version: number;
-      surveys?: Partial<IDBRecord<Survey>>[];
-      fields?: IDBRecord<Field>[];
+      surveys?: Survey[];
+      fields?: Field[];
     };
 
     try {
@@ -147,21 +114,18 @@
       return;
     }
 
-    const jsonSurvey =
-      json.surveys?.find(
-        (jsonSurvey) => jsonSurvey.name == surveyRecord.name || jsonSurvey.type == surveyRecord.type,
-      ) || json.surveys?.[0];
+    const jsonSurvey = json.surveys?.find((jsonSurvey) => jsonSurvey.id == surveyRecord.id);
 
     if (!jsonSurvey) {
-      error = "No survey imported";
+      error = "No matching survey found";
       return;
     }
 
-    if (jsonSurvey.name != undefined && jsonSurvey.name != surveyRecord.name) {
+    if (jsonSurvey.name != surveyRecord.name) {
       changes.name = true;
     }
 
-    if (jsonSurvey.type != undefined && jsonSurvey.type != surveyRecord.type) {
+    if (jsonSurvey.type != surveyRecord.type) {
       changes.type = true;
     }
 
@@ -184,22 +148,23 @@
 
     if (jsonSurvey.type == "match") {
       importedSurvey = {
+        id: surveyRecord.id,
         compId,
-        name: jsonSurvey.name || surveyRecord.name,
+        name: jsonSurvey.name,
         type: "match",
-        fieldIds: jsonSurvey.fieldIds || [],
-        pickLists: jsonSurvey.pickLists || [],
-        expressions: jsonSurvey.expressions || [],
+        fieldIds: jsonSurvey.fieldIds,
+        pickLists: jsonSurvey.pickLists,
+        expressions: jsonSurvey.expressions,
         created: surveyRecord.created,
         modified: surveyRecord.modified,
       };
 
       if (surveyRecord.type == "match") {
-        changes.pickLists = jsonSurvey.pickLists?.length != surveyRecord.pickLists.length;
-        changes.expressions = jsonSurvey.expressions?.length != surveyRecord.expressions.length;
+        changes.pickLists = jsonSurvey.pickLists.length != surveyRecord.pickLists.length;
+        changes.expressions = jsonSurvey.expressions.length != surveyRecord.expressions.length;
       } else {
-        changes.pickLists = !!jsonSurvey.pickLists?.length;
-        changes.expressions = !!jsonSurvey.expressions?.length;
+        changes.pickLists = !!jsonSurvey.pickLists.length;
+        changes.expressions = !!jsonSurvey.expressions.length;
       }
 
       if (jsonSurvey.tbaMetrics?.length) {
@@ -209,10 +174,11 @@
 
     if (jsonSurvey.type == "pit") {
       importedSurvey = {
+        id: surveyRecord.id,
         compId,
-        name: jsonSurvey.name || surveyRecord.name,
+        name: jsonSurvey.name,
         type: "pit",
-        fieldIds: jsonSurvey.fieldIds || [],
+        fieldIds: jsonSurvey.fieldIds,
         created: surveyRecord.created,
         modified: surveyRecord.modified,
       };

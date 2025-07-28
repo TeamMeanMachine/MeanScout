@@ -2,13 +2,9 @@
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import { getDefaultFieldValue } from "$lib/field";
   import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
-  import type { PageData } from "./$types";
+  import type { PageProps } from "./$types";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 </script>
 
 <div class="flex flex-col gap-6" style="view-transition-name:admin">

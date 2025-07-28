@@ -13,12 +13,14 @@
     groupSelect,
     oncreate,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: Survey;
     type?: FieldType;
-    groups?: IDBRecord<GroupField>[];
+    groups?: GroupField[];
     groupSelect: string;
-    oncreate: (id: number, parentId?: number) => void;
+    oncreate: (id: string, parentId?: string) => void;
   } = $props();
+
+  const initId = idb.generateId();
 
   let field = $state<Field>(initField());
   let error = $state("");
@@ -30,11 +32,11 @@
       case "text":
       case "rating":
       case "timer":
-        return { surveyId: surveyRecord.id, name: "", type };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type };
       case "select":
-        return { surveyId: surveyRecord.id, name: "", type: "select", values: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type: "select", values: [] };
       case "group":
-        return { surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] };
     }
   }
 
@@ -71,27 +73,23 @@
         error = "Could not create new field";
       };
 
-      const addRequest = fieldStore.add($state.snapshot(field));
+      fieldStore.add($state.snapshot(field));
 
-      addRequest.onsuccess = () => {
-        const id = addRequest.result as number;
-        const parentField = groups?.find((g) => g.id == Number(groupSelect));
+      const parentField = groups?.find((g) => g.id == groupSelect);
 
-        if (type == "group" || parentField == undefined) {
-          oncreate(id);
+      if (type == "group" || parentField == undefined) {
+        addTransaction.oncomplete = () => {
+          oncreate(initId);
           closeDialog();
-        } else {
-          const updatedParentField = {
-            ...$state.snapshot(parentField),
-            fieldIds: [...parentField.fieldIds, id],
-          };
+        };
+      } else {
+        fieldStore.put({ ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, initId] });
 
-          fieldStore.put(updatedParentField).onsuccess = () => {
-            oncreate(id, parentField.id);
-            closeDialog();
-          };
-        }
-      };
+        addTransaction.oncomplete = () => {
+          oncreate(initId, parentField.id);
+          closeDialog();
+        };
+      }
     },
   };
 
@@ -126,7 +124,7 @@
   }
 </script>
 
-<span class="text-sm">New {groups?.find((g) => g.id.toString() == groupSelect)?.name} {type}</span>
+<span class="text-sm">New {groups?.find((g) => g.id == groupSelect)?.name} {type}</span>
 
 {#if field.type != "group" && groups && groups.length > 1}
   <div class="flex flex-col">
@@ -135,8 +133,8 @@
       <div class="flex flex-wrap gap-2">
         {#each groups as group}
           <Button
-            onclick={() => (groupSelect = group.id.toString())}
-            class={groupSelect == group.id.toString() ? "text-theme font-bold" : "font-light"}
+            onclick={() => (groupSelect = group.id)}
+            class={groupSelect == group.id ? "text-theme font-bold" : "font-light"}
           >
             {group.name}
           </Button>

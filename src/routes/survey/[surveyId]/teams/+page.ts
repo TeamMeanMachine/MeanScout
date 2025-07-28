@@ -1,10 +1,9 @@
-import type { Team } from "$lib";
-import { loadSurveyPageData } from "../loadSurveyPageData";
+import { type Team } from "$lib";
+import { loadSurveyPageData } from "$lib/loaders/loadSurveyPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
-  const surveyId = Number(event.params.surveyId);
-  const data = await loadSurveyPageData(surveyId);
+  const data = await loadSurveyPageData(event.params.surveyId);
 
   const teamsFromMatches = data.compRecord.matches.flatMap((match) => [
     match.red1,

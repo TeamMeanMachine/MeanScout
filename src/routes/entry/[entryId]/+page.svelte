@@ -6,17 +6,13 @@
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
-  import type { PageData } from "./$types";
+  import type { PageData, PageProps } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { getDefaultFieldValue } from "$lib/field";
   import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
@@ -29,9 +25,9 @@
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
       compRecord: { ...data.compRecord, modified: new Date() },
     } as PageData;
-    idb.objectStore("entries", "readwrite").put($state.snapshot(data.entryRecord));
-    idb.objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
-    idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+    idb.put("entries", $state.snapshot(data.entryRecord));
+    idb.put("surveys", $state.snapshot(data.surveyRecord));
+    idb.put("comps", $state.snapshot(data.compRecord));
   }
 </script>
 
@@ -91,7 +87,7 @@
                   scouts: [...(data.compRecord.scouts || []), newScout],
                 },
               } as PageData;
-              idb.objectStore("comps", "readwrite").put($state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord));
               entry.scout = newScout;
               onchange();
             },
@@ -171,10 +167,8 @@
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: data.entryRecord,
           onexport: () => {
-            idb
-              .objectStore("surveys", "readwrite")
-              .put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            idb.objectStore("comps", "readwrite").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
             goto(`#/survey/${data.surveyRecord.id}`);
           },
         });
@@ -189,10 +183,8 @@
         openDialog(DeleteEntryDialog, {
           entryRecord: data.entryRecord,
           ondelete: () => {
-            idb
-              .objectStore("surveys", "readwrite")
-              .put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            idb.objectStore("comps", "readwrite").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
             goto(`#/survey/${data.surveyRecord.id}`);
           },
         })}
