@@ -133,9 +133,9 @@
         duplicateField.fieldIds = field.fieldIds
           .map((id) => fieldRecords.find((f) => f.id == id))
           .filter((f) => f !== undefined && f.type != "group")
-          .map((nestedField) => {
+          .map((nestedField, index) => {
             const duplicateInnerField = structuredClone($state.snapshot(nestedField));
-            duplicateInnerField.id = idb.generateId();
+            duplicateInnerField.id = idb.generateId() + index;
             fieldStore.add(duplicateInnerField);
             return duplicateInnerField.id;
           });

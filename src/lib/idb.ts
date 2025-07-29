@@ -48,33 +48,29 @@ function init(callback: (error?: string) => void) {
   };
 }
 
-function database() {
+function transaction(storeNames: IDBStoreName | IDBStoreName[], mode?: IDBTransactionMode) {
   if (!db) throw new Error("IDB not ready");
-  return db;
+  return db.transaction(storeNames, mode);
 }
 
-function transaction(
-  storeNames: IDBStoreName | IDBStoreName[],
-  mode?: IDBTransactionMode,
-  options?: IDBTransactionOptions,
-) {
-  return database().transaction(storeNames, mode, options);
-}
-
-function objectStore(name: IDBStoreName, mode?: IDBTransactionMode) {
-  return database().transaction(name, mode).objectStore(name);
+function objectStore(storeName: IDBStoreName, mode?: IDBTransactionMode) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, mode).objectStore(storeName);
 }
 
 function add<T extends IDBStoreName>(storeName: T, record: IDBStoreRecordMap[T]) {
-  return objectStore(storeName, "readwrite").add(record);
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).add(record);
 }
 
 function put<T extends IDBStoreName>(storeName: T, record: IDBStoreRecordMap[T]) {
-  return objectStore(storeName, "readwrite").put(record);
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).put(record);
 }
 
 function deleteRecord(storeName: IDBStoreName, id: string) {
-  return objectStore(storeName, "readwrite").delete(id);
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).delete(id);
 }
 
 function getAllAsync() {
@@ -119,7 +115,6 @@ function generateId() {
 
 export const idb = {
   init,
-  database,
   transaction,
   objectStore,
   add,
@@ -183,7 +178,7 @@ function migrateData(transaction: IDBTransaction) {
     for (const comp of compsRequest.result) {
       if (typeof comp.id == "number") {
         compStore.delete(comp.id);
-        const newId = compIdMap.get(comp.id) || generateId();
+        const newId = compIdMap.get(comp.id) || comp.tbaEventKey || generateId() + comp.id;
         compIdMap.set(comp.id, newId);
         comp.id = newId;
         compStore.put(comp);
@@ -193,16 +188,19 @@ function migrateData(transaction: IDBTransaction) {
 
   const surveysRequest = surveyStore.getAll();
   surveysRequest.onsuccess = () => {
+    let compConversionIdSuffix = 1;
+
     for (const survey of surveysRequest.result) {
       if (typeof survey.id == "number") {
         surveyStore.delete(survey.id);
-        const newId = surveyIdMap.get(survey.id) || generateId();
+        const newId = surveyIdMap.get(survey.id) || generateId() + survey.id;
         surveyIdMap.set(survey.id, newId);
         survey.id = newId;
       }
 
       if (!survey.compId) {
-        const compId = survey.tbaEventKey || generateId();
+        const compId = survey.tbaEventKey || generateId() + compConversionIdSuffix;
+        compConversionIdSuffix++;
 
         const comp: Comp = {
           id: compId,
@@ -228,19 +226,35 @@ function migrateData(transaction: IDBTransaction) {
         delete survey.teams;
         delete survey.scouts;
       } else if (typeof survey.compId == "number") {
-        const newId = compIdMap.get(survey.compId) || generateId();
+        const newId = compIdMap.get(survey.compId) || generateId() + survey.compId;
         compIdMap.set(survey.compId, newId);
         survey.compId = newId;
       }
 
       survey.fieldIds = survey.fieldIds.map((id: any) => {
         if (typeof id == "number") {
-          const newId = fieldIdMap.get(id) || generateId();
+          const newId = fieldIdMap.get(id) || generateId() + id;
           fieldIdMap.set(id, newId);
           return newId;
         }
         return id;
       });
+
+      if (survey.type == "match") {
+        survey.expressions = survey.expressions.map((expression: any) => {
+          if (expression.input.from == "fields") {
+            expression.input.fieldIds = expression.input.fieldIds.map((id: any) => {
+              if (typeof id == "number") {
+                const newId = fieldIdMap.get(id) || generateId() + id;
+                fieldIdMap.set(id, newId);
+                return newId;
+              }
+              return id;
+            });
+          }
+          return expression;
+        });
+      }
 
       surveyStore.put(survey);
     }
@@ -251,13 +265,13 @@ function migrateData(transaction: IDBTransaction) {
     for (const field of fieldsRequest.result) {
       if (typeof field.id == "number") {
         fieldStore.delete(field.id);
-        const newId = fieldIdMap.get(field.id) || generateId();
+        const newId = fieldIdMap.get(field.id) || generateId() + field.id;
         fieldIdMap.set(field.id, newId);
         field.id = newId;
       }
 
       if (typeof field.surveyId == "number") {
-        const newId = surveyIdMap.get(field.surveyId) || generateId();
+        const newId = surveyIdMap.get(field.surveyId) || generateId() + field.surveyId;
         surveyIdMap.set(field.surveyId, newId);
         field.surveyId = newId;
       }
@@ -265,7 +279,7 @@ function migrateData(transaction: IDBTransaction) {
       if (field.type == "group") {
         field.fieldIds = field.fieldIds.map((id: any) => {
           if (typeof id == "number") {
-            const newId = fieldIdMap.get(id) || generateId();
+            const newId = fieldIdMap.get(id) || generateId() + id;
             fieldIdMap.set(id, newId);
             return newId;
           }
@@ -282,13 +296,13 @@ function migrateData(transaction: IDBTransaction) {
     for (const entry of entriesRequest.result) {
       if (typeof entry.id == "number") {
         entryStore.delete(entry.id);
-        const newId = entryIdMap.get(entry.id) || generateId();
+        const newId = entryIdMap.get(entry.id) || generateId() + entry.id;
         entryIdMap.set(entry.id, newId);
         entry.id = newId;
       }
 
       if (typeof entry.surveyId == "number") {
-        const newId = surveyIdMap.get(entry.surveyId) || generateId();
+        const newId = surveyIdMap.get(entry.surveyId) || generateId() + entry.surveyId;
         surveyIdMap.set(entry.surveyId, newId);
         entry.surveyId = newId;
       }
