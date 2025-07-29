@@ -26,6 +26,8 @@
     onnewscout: (scout: string) => void;
   } = $props();
 
+  const id = idb.generateId();
+
   let match = $state(prefilledMatch);
   let team = $state(prefilledTeam);
 
@@ -120,7 +122,7 @@
       let entry: Entry;
       if (pageData.surveyType == "match") {
         entry = {
-          id: idb.generateId(),
+          id,
           surveyId: pageData.surveyRecord.id,
           type: pageData.surveyRecord.type,
           status: "draft",
@@ -143,7 +145,7 @@
         }
       } else {
         entry = {
-          id: idb.generateId(),
+          id,
           surveyId: pageData.surveyRecord.id,
           type: pageData.surveyRecord.type,
           status: "draft",
@@ -178,7 +180,10 @@
   }
 </script>
 
-<h2 class="font-bold">New entry</h2>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <h2 class="font-bold">New entry</h2>
+  <span class="text-xs font-light">{id}</span>
+</div>
 
 {#if pageData.compRecord.scouts}
   <div class="flex flex-col">

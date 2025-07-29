@@ -11,12 +11,17 @@
 
   let name = $state("");
   let event = $state<string | undefined>();
+  let id = $state("");
   let matches = $state<Match[]>([]);
   let teams = $state<Team[]>([]);
 
   let error = $state("");
 
   let isLoadingTbaData = $state(false);
+
+  $effect(() => {
+    id = event || idb.generateId({ randomChars: 0 });
+  });
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -27,7 +32,7 @@
       }
 
       const comp: Comp = {
-        id: event || idb.generateId(),
+        id,
         name,
         matches,
         teams,
@@ -151,6 +156,21 @@
     {/if}
   </div>
 {/if}
+
+<div class="flex flex-wrap items-end gap-2 text-sm">
+  <label class="flex grow flex-col">
+    ID
+    <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
+  </label>
+  {#if event}
+    <Button onclick={() => (id = event!)}>
+      <span class={id == event ? "font-bold" : "font-light"}>Event</span>
+    </Button>
+  {/if}
+  <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
+    <span class={id != event ? "font-bold" : "font-light"}>Random</span>
+  </Button>
+</div>
 
 {#if error}
   <span>{error}</span>

@@ -14,7 +14,12 @@
 
   let name = $state("Match Survey");
   let type = $state<SurveyType>("match");
+  let id = $state("");
   let error = $state("");
+
+  $effect(() => {
+    id = compId + "-" + type;
+  });
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -27,7 +32,7 @@
       let survey: Survey;
       if (type == "match") {
         survey = {
-          id: idb.generateId(),
+          id,
           compId,
           name,
           type,
@@ -39,7 +44,7 @@
         };
       } else if (type == "pit") {
         survey = {
-          id: idb.generateId(),
+          id,
           compId,
           name,
           type,
@@ -91,6 +96,19 @@
   Name
   <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
+
+<div class="flex flex-wrap items-end gap-2 text-sm">
+  <label class="flex grow flex-col">
+    ID
+    <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
+  </label>
+  <Button onclick={() => (id = compId + "-" + type)}>
+    <span class={id == compId + "-" + type ? "font-bold" : "font-light"}>Default</span>
+  </Button>
+  <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
+    <span class={id != compId + "-" + type ? "font-bold" : "font-light"}>Random</span>
+  </Button>
+</div>
 
 {#if error}
   <span>{error}</span>

@@ -20,7 +20,10 @@
   {#if data.all.comps.length}
     {#each data.all.comps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
       <Anchor route="comp/{comp.id}">
-        <div class="grow">{comp.name}</div>
+        <div class="flex grow flex-col">
+          <span>{comp.name}</span>
+          <span class="text-xs font-light">{comp.id}</span>
+        </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     {/each}
@@ -51,7 +54,13 @@
 </div>
 
 <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
-  <h2 class="font-bold">MeanScout</h2>
+  <div class="flex flex-col">
+    <h2 class="font-bold">MeanScout</h2>
+    <span class="text-xs font-light">
+      {import.meta.env.VITE_GIT_COMMIT_HASH}
+      ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
+    </span>
+  </div>
   <div class="flex flex-wrap gap-2">
     <Anchor route="settings" class="grow basis-48" style="view-transition-name:settings">
       <SettingsIcon class="text-theme" />
@@ -70,8 +79,4 @@
       <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
-  <span class="text-sm" style="view-transition-name:meanscout-version">
-    {import.meta.env.VITE_GIT_COMMIT_HASH}
-    <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
-  </span>
 </div>

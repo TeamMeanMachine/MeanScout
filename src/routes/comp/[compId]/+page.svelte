@@ -32,14 +32,17 @@
   {#if data.surveyRecords.length}
     {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
-        <div class="grow">{survey.name}</div>
+        <div class="flex grow flex-col">
+          <span>{survey.name}</span>
+          <span class="text-xs font-light">{survey.id}</span>
+        </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     {/each}
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-48">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import
@@ -52,7 +55,7 @@
         </span>
       </div>
     </Button>
-    <Button onclick={() => openDialog(NewSurveyDialog, { compId: data.compRecord.id })} class="grow basis-0">
+    <Button onclick={() => openDialog(NewSurveyDialog, { compId: data.compRecord.id })} class="grow basis-48">
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create
@@ -63,7 +66,10 @@
 </div>
 
 <div class="flex flex-col gap-2" style="view-transition-name:comp">
-  <h2 class="font-bold">{data.compRecord.name}</h2>
+  <div class="flex flex-col">
+    <h2 class="font-bold">{data.compRecord.name}</h2>
+    <span class="text-xs font-light">{data.compRecord.id}</span>
+  </div>
 
   <div class="flex flex-wrap gap-2">
     <Button
@@ -75,7 +81,7 @@
           entries: data.entryRecords,
         });
       }}
-      class="grow basis-0"
+      class="grow basis-48"
     >
       <ShareIcon class="text-theme" />
       <div class="flex flex-col">
@@ -89,7 +95,7 @@
           compRecord: data.compRecord,
         });
       }}
-      class="grow basis-0"
+      class="grow basis-48"
     >
       <ReplaceIcon class="text-theme" />
       <div class="flex flex-col">
@@ -115,7 +121,13 @@
 </div>
 
 <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
-  <h2 class="font-bold">MeanScout</h2>
+  <div class="flex flex-col">
+    <h2 class="font-bold">MeanScout</h2>
+    <span class="text-xs font-light">
+      {import.meta.env.VITE_GIT_COMMIT_HASH}
+      ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
+    </span>
+  </div>
   <Anchor route="" class="active:-left-0.5!">
     <ArrowLeftIcon class="text-theme" />
     <div class="flex grow flex-col">
@@ -141,8 +153,4 @@
       <ArrowRightIcon class="text-theme" />
     </Anchor>
   </div>
-  <span class="text-sm" style="view-transition-name:meanscout-version">
-    {import.meta.env.VITE_GIT_COMMIT_HASH}
-    <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
-  </span>
 </div>

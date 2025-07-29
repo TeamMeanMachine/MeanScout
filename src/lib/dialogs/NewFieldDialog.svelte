@@ -8,24 +8,24 @@
 
   let {
     surveyRecord,
-    type = "toggle",
+    type,
     groups,
     groupSelect,
     oncreate,
   }: {
     surveyRecord: Survey;
-    type?: FieldType;
+    type: FieldType;
     groups?: GroupField[];
     groupSelect: string;
     oncreate: (id: string, parentId?: string) => void;
   } = $props();
 
-  const initId = idb.generateId();
-
   let field = $state<Field>(initField());
   let error = $state("");
 
   function initField(): Field {
+    const initId = idb.generateId({ randomChars: 0 });
+
     switch (type) {
       case "toggle":
       case "number":
@@ -34,9 +34,9 @@
       case "timer":
         return { id: initId, surveyId: surveyRecord.id, name: "", type };
       case "select":
-        return { id: initId, surveyId: surveyRecord.id, name: "", type: "select", values: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type, values: [] };
       case "group":
-        return { id: initId, surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type, fieldIds: [] };
     }
   }
 
@@ -79,14 +79,14 @@
 
       if (type == "group" || parentField == undefined) {
         addTransaction.oncomplete = () => {
-          oncreate(initId);
+          oncreate(field.id);
           closeDialog();
         };
       } else {
-        fieldStore.put({ ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, initId] });
+        fieldStore.put({ ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, field.id] });
 
         addTransaction.oncomplete = () => {
-          oncreate(initId, parentField.id);
+          oncreate(field.id, parentField.id);
           closeDialog();
         };
       }
@@ -197,6 +197,16 @@
     <input bind:value={field.tip} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
+
+<div class="flex flex-wrap items-end gap-2 text-sm">
+  <label class="flex grow flex-col">
+    ID
+    <input bind:value={field.id} class="text-theme bg-neutral-800 p-2" />
+  </label>
+  <Button onclick={() => (field.id = idb.generateId({ randomChars: 0 }))}>
+    <span class="font-bold">Random</span>
+  </Button>
+</div>
 
 {#if error}
   <span>Error: {error}</span>

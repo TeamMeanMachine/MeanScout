@@ -109,8 +109,20 @@ function getAllAsync() {
   });
 }
 
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 6).padStart(4, "0");
+/** Generates a unique base-36 id using the current timestamp and random characters (0+, default 4). */
+function generateId(options: { randomChars: number } = { randomChars: 4 }) {
+  const datePart = Date.now().toString(36);
+
+  if (options.randomChars > 0) {
+    const randomPart = Math.random()
+      .toString(36)
+      .substring(2, options.randomChars + 2)
+      .padStart(options.randomChars, "0");
+
+    return datePart + randomPart;
+  }
+
+  return datePart;
 }
 
 export const idb = {

@@ -461,7 +461,10 @@
 
 {#snippet surveyWidget()}
   <div class="flex flex-col gap-2" style="view-transition-name:survey">
-    <h2 class="font-bold">{data.surveyRecord.name}</h2>
+    <div class="flex flex-col">
+      <h2 class="font-bold">{data.surveyRecord.name}</h2>
+      <span class="text-xs font-light">{data.surveyRecord.id}</span>
+    </div>
 
     <div class="flex flex-wrap gap-2">
       <Button
@@ -517,7 +520,10 @@
 
 {#snippet compWidget()}
   <div class="flex flex-col gap-2" style="view-transition-name:comp">
-    <h2 class="font-bold">{data.compRecord.name}</h2>
+    <div class="flex flex-col">
+      <h2 class="font-bold">{data.compRecord.name}</h2>
+      <span class="text-xs font-light">{data.compRecord.id}</span>
+    </div>
     <Anchor route="comp/{data.compRecord.id}" class="active:-left-0.5!">
       <ArrowLeftIcon class="text-theme" />
       <div class="flex grow flex-col">
@@ -530,7 +536,13 @@
 
 {#snippet appWidget()}
   <div class="flex flex-col gap-2" style="view-transition-name:meanscout">
-    <h2 class="font-bold">MeanScout</h2>
+    <div class="flex flex-col">
+      <h2 class="font-bold">MeanScout</h2>
+      <span class="text-xs font-light">
+        {import.meta.env.VITE_GIT_COMMIT_HASH}
+        ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
+      </span>
+    </div>
     <Anchor route="" class="active:-left-0.5!">
       <ArrowLeftIcon class="text-theme" />
       <div class="flex grow flex-col">
@@ -556,10 +568,6 @@
         <ArrowRightIcon class="text-theme" />
       </Anchor>
     </div>
-    <span class="text-sm" style="view-transition-name:meanscout-version">
-      {import.meta.env.VITE_GIT_COMMIT_HASH}
-      <span class="text-xs">({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})</span>
-    </span>
   </div>
 {/snippet}
 

@@ -122,7 +122,7 @@
     };
 
     const duplicateField = structuredClone($state.snapshot(field));
-    duplicateField.id = idb.generateId();
+    duplicateField.id = idb.generateId({ randomChars: 0 });
 
     if (parentField) {
       const updatedParentField = structuredClone($state.snapshot(parentField));
@@ -135,7 +135,7 @@
           .filter((f) => f !== undefined && f.type != "group")
           .map((nestedField, index) => {
             const duplicateInnerField = structuredClone($state.snapshot(nestedField));
-            duplicateInnerField.id = idb.generateId() + index;
+            duplicateInnerField.id = idb.generateId({ randomChars: 0 }) + index;
             fieldStore.add(duplicateInnerField);
             return duplicateInnerField.id;
           });

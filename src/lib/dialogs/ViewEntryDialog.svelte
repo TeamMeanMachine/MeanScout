@@ -55,34 +55,35 @@
   }
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
-  <div class="flex grow items-center gap-3">
-    {#if onchange}
-      <Button
-        onclick={() => {
-          openDialog(BulkExportDialog, {
-            entries: [entry],
-            onexport() {
-              if (entry.status == "exported") {
-                onchange();
-                return;
-              }
+<div class="flex items-center gap-2">
+  {#if onchange}
+    <Button
+      onclick={() => {
+        openDialog(BulkExportDialog, {
+          entries: [entry],
+          onexport() {
+            if (entry.status == "exported") {
+              onchange();
+              return;
+            }
 
-              const req = idb.put("entries", {
-                ...$state.snapshot(entry),
-                status: "exported",
-                modified: new Date(),
-              });
-              req.onsuccess = onchange;
-            },
-          });
-        }}
-      >
-        <ShareIcon class="text-theme size-5" />
-      </Button>
-    {/if}
+            const req = idb.put("entries", {
+              ...$state.snapshot(entry),
+              status: "exported",
+              modified: new Date(),
+            });
+            req.onsuccess = onchange;
+          },
+        });
+      }}
+    >
+      <ShareIcon class="text-theme size-5" />
+    </Button>
+  {/if}
 
+  <div class="flex grow flex-wrap items-center justify-between gap-2">
     <span class="font-bold">Entry</span>
+    <span class="text-xs font-light">{entry.id}</span>
   </div>
 
   {#if onchange}
