@@ -8,8 +8,8 @@ export const compSchema = z.object({
   matches: z.array(matchSchema),
   teams: z.array(teamSchema),
   scouts: z.optional(z.array(z.string())),
-  created: z.coerce.date(),
-  modified: z.coerce.date(),
+  created: z.date(),
+  modified: z.date(),
 });
 
 export type Comp = z.infer<typeof compSchema>;

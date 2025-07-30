@@ -12,25 +12,23 @@ const baseSurveySchema = z.object({
   compId: z.string(),
   name: z.string(),
   fieldIds: z.array(z.string()),
-  created: z.coerce.date(),
-  modified: z.coerce.date(),
+  created: z.date(),
+  modified: z.date(),
 });
 
-const matchSurveySchema = baseSurveySchema.merge(
-  z.object({
-    type: z.literal("match"),
-    tbaMetrics: z.optional(z.array(z.string())),
-    pickLists: z.array(pickListSchema),
-    expressions: z.array(expressionSchema),
-  }),
-);
+const matchSurveySchema = z.object({
+  ...baseSurveySchema.shape,
+  type: z.literal("match"),
+  tbaMetrics: z.optional(z.array(z.string())),
+  pickLists: z.array(pickListSchema),
+  expressions: z.array(expressionSchema),
+});
 export type MatchSurvey = z.infer<typeof matchSurveySchema>;
 
-const pitSurveySchema = baseSurveySchema.merge(
-  z.object({
-    type: z.literal("pit"),
-  }),
-);
+const pitSurveySchema = z.object({
+  ...baseSurveySchema.shape,
+  type: z.literal("pit"),
+});
 export type PitSurvey = z.infer<typeof pitSurveySchema>;
 
 export const surveySchema = z.discriminatedUnion("type", [matchSurveySchema, pitSurveySchema]);

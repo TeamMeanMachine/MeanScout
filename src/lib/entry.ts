@@ -14,28 +14,25 @@ const baseEntrySchema = z.object({
   team: z.string(),
   values: z.array(valueSchema),
   scout: z.optional(z.string()),
-  created: z.coerce.date(),
-  modified: z.coerce.date(),
+  created: z.date(),
+  modified: z.date(),
 });
 
-const matchEntrySchema = baseEntrySchema.merge(
-  z.object({
-    type: z.literal("match"),
-    match: matchValueSchema,
-    absent: z.boolean(),
-    tbaMetrics: z.optional(tbaMetricsSchema),
-    prediction: z.optional(z.literal("red").or(z.literal("blue"))),
-    predictionReason: z.optional(z.string()),
-  }),
-);
-
+const matchEntrySchema = z.object({
+  ...baseEntrySchema.shape,
+  type: z.literal("match"),
+  match: matchValueSchema,
+  absent: z.boolean(),
+  tbaMetrics: z.optional(tbaMetricsSchema),
+  prediction: z.optional(z.literal("red").or(z.literal("blue"))),
+  predictionReason: z.optional(z.string()),
+});
 export type MatchEntry = z.infer<typeof matchEntrySchema>;
 
-const pitEntrySchema = baseEntrySchema.merge(
-  z.object({
-    type: z.literal("pit"),
-  }),
-);
+const pitEntrySchema = z.object({
+  ...baseEntrySchema.shape,
+  type: z.literal("pit"),
+});
 export type PitEntry = z.infer<typeof pitEntrySchema>;
 
 const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);

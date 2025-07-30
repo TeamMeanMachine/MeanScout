@@ -475,7 +475,7 @@
             entries: data.entryRecords,
           });
         }}
-        class="grow basis-0"
+        class="grow basis-48"
       >
         <ShareIcon class="text-theme" />
         <div class="flex flex-col">
@@ -492,7 +492,7 @@
             entryCount: data.entryRecords.length,
           });
         }}
-        class="grow basis-0"
+        class="grow basis-48"
       >
         <ReplaceIcon class="text-theme" />
         <div class="flex flex-col">

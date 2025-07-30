@@ -24,7 +24,7 @@ const convertMethodSchema = z.object({
 });
 const mapMethodsSchema = z.discriminatedUnion("type", [
   convertMethodSchema,
-  z.object({ type: z.literal("multiply"), multiplier: z.number().finite() }),
+  z.object({ type: z.literal("multiply"), multiplier: z.number() }),
   z.object({ type: z.literal("divide"), divisor: z.number().gt(0).or(z.number().lt(0)) }),
   z.object({ type: z.literal("abs") }),
 ]);

@@ -162,14 +162,16 @@
     ID
     <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
   </label>
-  {#if event}
-    <Button onclick={() => (id = event!)}>
-      <span class={id == event ? "font-bold" : "font-light"}>Event</span>
+  <div class="flex gap-2">
+    {#if event}
+      <Button onclick={() => (id = event!)}>
+        <span class={id == event ? "font-bold" : "font-light"}>Event</span>
+      </Button>
+    {/if}
+    <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
+      <span class={id != event ? "font-bold" : "font-light"}>Random</span>
     </Button>
-  {/if}
-  <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
-    <span class={id != event ? "font-bold" : "font-light"}>Random</span>
-  </Button>
+  </div>
 </div>
 
 {#if error}

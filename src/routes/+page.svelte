@@ -30,7 +30,7 @@
   {/if}
 
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-48">
       <ImportIcon class="text-theme" />
       <div class="flex flex-col">
         Import
@@ -43,7 +43,7 @@
         </span>
       </div>
     </Button>
-    <Button onclick={() => openDialog(NewCompDialog, {})} class="grow basis-0">
+    <Button onclick={() => openDialog(NewCompDialog, {})} class="grow basis-48">
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create

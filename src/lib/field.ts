@@ -24,50 +24,44 @@ const baseSingleFieldSchema = z.object({
   tip: z.optional(z.string()),
 });
 
-const toggleFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("toggle"),
-  }),
-);
+const toggleFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("toggle"),
+});
 export type ToggleField = z.infer<typeof toggleFieldSchema>;
 
-const numberFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("number"),
-    allowNegative: z.optional(z.boolean()),
-  }),
-);
+const numberFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("number"),
+  allowNegative: z.optional(z.boolean()),
+});
 export type NumberField = z.infer<typeof numberFieldSchema>;
 
-const selectFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("select"),
-    values: z.array(z.string()),
-    radio: z.optional(z.boolean()),
-  }),
-);
+const selectFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("select"),
+  values: z.array(z.string()),
+  radio: z.optional(z.boolean()),
+});
 export type SelectField = z.infer<typeof selectFieldSchema>;
 
-const textFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("text"),
-    long: z.optional(z.boolean()),
-  }),
-);
+const textFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("text"),
+  long: z.optional(z.boolean()),
+});
 export type TextField = z.infer<typeof textFieldSchema>;
 
-const ratingFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("rating"),
-  }),
-);
+const ratingFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("rating"),
+});
 export type RatingField = z.infer<typeof ratingFieldSchema>;
 
-const timerFieldSchema = baseSingleFieldSchema.merge(
-  z.object({
-    type: z.literal("timer"),
-  }),
-);
+const timerFieldSchema = z.object({
+  ...baseSingleFieldSchema.shape,
+  type: z.literal("timer"),
+});
 export type TimerField = z.infer<typeof timerFieldSchema>;
 
 const singleFieldSchema = z.discriminatedUnion("type", [

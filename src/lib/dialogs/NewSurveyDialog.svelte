@@ -102,12 +102,14 @@
     ID
     <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
   </label>
-  <Button onclick={() => (id = compId + "-" + type)}>
-    <span class={id == compId + "-" + type ? "font-bold" : "font-light"}>Default</span>
-  </Button>
-  <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
-    <span class={id != compId + "-" + type ? "font-bold" : "font-light"}>Random</span>
-  </Button>
+  <div class="flex gap-2">
+    <Button onclick={() => (id = compId + "-" + type)}>
+      <span class={id == compId + "-" + type ? "font-bold" : "font-light"}>Default</span>
+    </Button>
+    <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
+      <span class={id != compId + "-" + type ? "font-bold" : "font-light"}>Random</span>
+    </Button>
+  </div>
 </div>
 
 {#if error}
