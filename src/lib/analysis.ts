@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Entry } from "./entry";
+import type { MatchEntry } from "./entry";
 import type { SingleFieldWithDetails } from "./field";
 import { expressionSchema, type Expression, type ExpressionMethod } from "./expression";
 import type { MatchSurvey } from "./survey";
@@ -60,7 +60,7 @@ export function getPickListData(
   compRecord: Comp,
   pickListName: string,
   surveyRecord: MatchSurvey,
-  entriesByTeam: Record<string, Entry[]>,
+  entriesByTeam: Record<string, MatchEntry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ): PickListAnalysisData | undefined {
   const pickList = surveyRecord.pickLists.find((pl) => pl.name == pickListName);
@@ -111,7 +111,7 @@ export function getExpressionData(
   compRecord: Comp,
   expressionName: string,
   surveyRecord: MatchSurvey,
-  entriesByTeam: Record<string, Entry[]>,
+  entriesByTeam: Record<string, MatchEntry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ): ExpressionAnalysisData | undefined {
   const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
@@ -189,7 +189,7 @@ export function getExpressionData(
 export function calculateTeamData(
   expressionName: string,
   expressions: Expression[],
-  entriesByTeam: Record<string, Entry[]>,
+  entriesByTeam: Record<string, MatchEntry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ) {
   const expression = expressions.find((e) => e.name == expressionName);
@@ -215,7 +215,7 @@ export function calculateTeamData(
         continue;
       }
 
-      const values = entriesByTeam[team].map((entry) => {
+      const values = mergeSameMatchEntries(entriesByTeam[team], orderedSingleFields).map((entry) => {
         return runEntryExpression(entry, expression, expressions, orderedSingleFields);
       });
 
@@ -236,7 +236,12 @@ export function calculateTeamData(
         continue;
       }
 
-      teamData[team] = runSurveyExpression(entriesByTeam[team], expression, expressions, orderedSingleFields);
+      teamData[team] = runSurveyExpression(
+        mergeSameMatchEntries(entriesByTeam[team], orderedSingleFields),
+        expression,
+        expressions,
+        orderedSingleFields,
+      );
     }
   }
 
@@ -253,7 +258,7 @@ export function normalizeTeamData(teamData: Record<string, { value: number }>, p
 }
 
 function runEntryExpression(
-  entry: Entry,
+  entry: MatchEntry,
   expression: Extract<Expression, { scope: "entry" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],
@@ -283,7 +288,7 @@ function runEntryExpression(
 
   if (input.from == "tba") {
     const values = input.metrics.map((metric) => {
-      if (entry.type != "match" || !entry.tbaMetrics?.length) return 0;
+      if (!entry.tbaMetrics?.length) return 0;
       return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
     });
 
@@ -329,7 +334,7 @@ function runEntryExpression(
 }
 
 function runSurveyExpression(
-  entries: Entry[],
+  entries: MatchEntry[],
   expression: Extract<Expression, { scope: "survey" }>,
   expressions: Expression[],
   orderedSingleFields: SingleFieldWithDetails[],
@@ -364,7 +369,7 @@ function runSurveyExpression(
     const values = input.metrics
       .map((metric) => {
         return entries.map((entry) => {
-          if (entry.type != "match" || !entry.tbaMetrics?.length) return 0;
+          if (!entry.tbaMetrics?.length) return 0;
           return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
         });
       })
@@ -456,6 +461,60 @@ function runExpressionMethod(method: ExpressionMethod, values: any[]) {
       const unhandledExpression: never = method;
       throw new Error(`Unhandled type for expression method: ${(unhandledExpression as ExpressionMethod).type}`);
   }
+}
+
+function mergeSameMatchEntries(entries: MatchEntry[], orderedSingleFields: SingleFieldWithDetails[]): MatchEntry[] {
+  return Map.groupBy(entries, ({ match }) => match)
+    .values()
+    .toArray()
+    .map((entries) => {
+      if (entries.length == 1) {
+        return entries[0];
+      }
+
+      const mergedValues: Value[] = [];
+
+      for (let i = 0; i < entries[0].values.length; i++) {
+        switch (orderedSingleFields[i].field.type) {
+          case "number":
+          case "rating":
+          case "timer":
+            const numberValues = entries.map((e) => e.values[i]) as number[];
+            mergedValues.push(numberValues.reduce((prev, curr) => prev + curr, 0) / (numberValues.length || 1));
+            break;
+          case "toggle":
+            const booleanValues = entries.map((e) => e.values[i]) as boolean[];
+            mergedValues.push(
+              booleanValues.reduce((prev, curr) => prev + Number(curr), 0) / (booleanValues.length || 1) >= 0.5,
+            );
+            break;
+          case "select":
+          case "text":
+            const stringValues = entries.map((e) => e.values[i]) as string[];
+            const stringCounts = new Map<string, number>();
+
+            for (const stringValue of stringValues) {
+              const thisStringCount = stringCounts.get(stringValue);
+              stringCounts.set(stringValue, (thisStringCount || 0) + 1);
+            }
+
+            let mostCommonString = "";
+            let highestCount = 0;
+
+            for (const [string, count] of stringCounts) {
+              if (count > highestCount) {
+                highestCount = count;
+                mostCommonString = string;
+              }
+            }
+
+            mergedValues.push(mostCommonString);
+            break;
+        }
+      }
+
+      return { ...entries[0], values: mergedValues };
+    });
 }
 
 export const colors = [

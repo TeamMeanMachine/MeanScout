@@ -326,8 +326,6 @@
 
 {#if $tab == "qrfcode" && $cameraStore}
   {#if anyImported}
-    {@render preview(imported)}
-
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
       Retry
@@ -343,31 +341,27 @@
     {onchange}
     class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
   />
-
-  {#if anyImported}
-    {@render preview(imported)}
-  {/if}
 {/if}
 
-{#snippet preview(imp: typeof imported)}
+{#if anyImported}
   <div class="flex flex-col gap-1 text-sm">
-    {#if imp.comps?.length}
-      <span>Comps: {imp.comps.length == 1 ? imp.comps[0].name : imp.comps.length}</span>
+    {#if imported.comps?.length}
+      <span>Comps: {imported.comps.length == 1 ? imported.comps[0].name : imported.comps.length}</span>
     {/if}
 
-    {#if imp.surveys?.length}
-      <span>Surveys: {imp.surveys.length == 1 ? imp.surveys[0].name : imp.surveys.length}</span>
+    {#if imported.surveys?.length}
+      <span>Surveys: {imported.surveys.length == 1 ? imported.surveys[0].name : imported.surveys.length}</span>
     {/if}
 
-    {#if imp.fields?.length}
-      <span>Fields: {imp.fields.length}</span>
+    {#if imported.fields?.length}
+      <span>Fields: {imported.fields.length}</span>
     {/if}
 
-    {#if imp.entries?.length}
-      <span>Entries: {imp.entries.length}</span>
+    {#if imported.entries?.length}
+      <span>Entries: {imported.entries.length}</span>
     {/if}
   </div>
-{/snippet}
+{/if}
 
 {#if error}
   <span>{error}</span>

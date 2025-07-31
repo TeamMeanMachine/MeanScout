@@ -27,9 +27,7 @@
     entries: [
       {
         ...$state.snapshot(entryRecord),
-        id: undefined,
         type: undefined,
-        surveyId: undefined,
         status: undefined,
         created: undefined,
         modified: undefined,

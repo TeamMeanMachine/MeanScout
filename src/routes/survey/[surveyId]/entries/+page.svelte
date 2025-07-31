@@ -9,7 +9,7 @@
   import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
   import type { PageData, PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon, WrenchIcon } from "@lucide/svelte";
+  import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon } from "@lucide/svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
@@ -104,30 +104,6 @@
   let displayedCount = $state(20);
   let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
 
-  let duplicateEntryIds = $derived.by(() => {
-    if (data.surveyType != "match") {
-      return [];
-    }
-
-    const duplicates: string[] = [];
-
-    const uniqueStringToId = new Set<string>();
-    for (const entry of data.entryRecords) {
-      if (entry.type != "match") {
-        continue;
-      }
-
-      const uniqueString = `${entry.team}_${entry.match}`;
-      if (uniqueStringToId.has(uniqueString)) {
-        duplicates.push($state.snapshot(entry).id);
-      } else {
-        uniqueStringToId.add(uniqueString);
-      }
-    }
-
-    return duplicates;
-  });
-
   onMount(() => onscroll());
 
   function filterEntry(entry: Entry) {
@@ -192,7 +168,7 @@
   function sortEntries(a: Entry, b: Entry) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
     const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
-    const scoutCompare = a.scout?.localeCompare(b.scout || "");
+    const scoutCompare = a.scout?.localeCompare(b.scout || "") || 0;
 
     if ($groupBy == "match") {
       if (matchCompare == 0 && a.type == "match" && b.type == "match") {
@@ -201,17 +177,17 @@
           const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
           const targetA = targets.findIndex((t) => t == a.team);
           const targetB = targets.findIndex((t) => t == b.team);
-          return targetA - targetB || matchCompare || teamCompare;
+          return targetA - targetB || matchCompare || teamCompare || scoutCompare;
         }
       }
-      return matchCompare || teamCompare;
+      return matchCompare || teamCompare || scoutCompare;
     }
 
     if ($groupBy == "scout") {
       return scoutCompare || matchCompare || teamCompare;
     }
 
-    return teamCompare || matchCompare;
+    return teamCompare || matchCompare || scoutCompare;
   }
 
   function refresh() {
@@ -220,23 +196,6 @@
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
     } as PageData;
     idb.put("surveys", $state.snapshot(data.surveyRecord)).onsuccess = invalidateAll;
-  }
-
-  function fixEntries() {
-    const cursorRequest = idb.objectStore("entries", "readwrite").index("surveyId").openCursor(data.surveyRecord.id);
-    cursorRequest.onsuccess = () => {
-      const cursor = cursorRequest.result;
-      if (cursor == null) {
-        refresh();
-        return;
-      }
-
-      if (duplicateEntryIds.includes(cursor.value.id)) {
-        cursor.delete();
-      }
-
-      cursor.continue();
-    };
   }
 
   function resetFilters() {
@@ -267,32 +226,31 @@
 <SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="entries" pageTitle="Entries" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:entries">
-  {#if duplicateEntryIds.length}
-    <Button onclick={fixEntries}>
-      <WrenchIcon class="text-theme" />
-      <div class="flex flex-col">
-        Fix entries
-        <span class="text-xs font-light">{duplicateEntryIds.length} duplicate entries were found</span>
-      </div>
-    </Button>
-  {/if}
-
   <div class="flex flex-col gap-3">
     {#if !data.entryRecords.length}
       <span class="text-sm">No entries.</span>
     {:else}
-      <div class="flex flex-wrap gap-4">
+      <div class="-m-1 flex gap-4 overflow-x-auto p-1 text-nowrap">
         <div class="flex flex-col">
           <h2 class="font-bold">Filters</h2>
-          <Button onclick={resetFilters} disabled={!filtersApplied}>
+          <Button onclick={resetFilters} disabled={!filtersApplied} class="flex-nowrap!">
             <Undo2Icon class="text-theme" />
             Reset
           </Button>
         </div>
 
-        <div class="flex grow flex-wrap gap-2">
+        <div class="flex gap-2">
+          <label class="flex grow flex-col {filters.exported !== undefined ? 'font-bold' : 'font-light'}">
+            Exported
+            <select bind:value={filters.exported} onchange={onscroll} class="text-theme bg-neutral-800 p-2">
+              <option value={undefined}>--</option>
+              <option value={false}>False</option>
+              <option value={true}>True</option>
+            </select>
+          </label>
+
           {#if data.surveyType == "match"}
-            <label class="flex grow flex-col">
+            <label class="flex grow flex-col {filters.match ? 'font-bold' : 'font-light'}">
               Match
               <select
                 bind:value={filters.match}
@@ -301,7 +259,6 @@
                   onscroll();
                 }}
                 class="text-theme bg-neutral-800 p-2"
-                class:font-bold={filters.match !== undefined}
               >
                 <option value={undefined}>--</option>
                 {#each filterableMatches as match}
@@ -311,7 +268,7 @@
             </label>
           {/if}
 
-          <label class="flex grow flex-col">
+          <label class="flex grow flex-col {filters.team ? 'font-bold' : 'font-light'}">
             Team
             <select
               bind:value={filters.team}
@@ -330,44 +287,20 @@
           </label>
 
           {#if data.surveyType == "match"}
-            <label class="flex grow flex-col">
+            <label class="flex grow flex-col {filters.absent !== undefined ? 'font-bold' : 'font-light'}">
               Absent
-              <select
-                bind:value={filters.absent}
-                onchange={onscroll}
-                class="text-theme bg-neutral-800 p-2"
-                class:font-bold={filters.absent !== undefined}
-              >
+              <select bind:value={filters.absent} onchange={onscroll} class="text-theme bg-neutral-800 p-2">
                 <option value={undefined}>--</option>
-                <option value={true}>True</option>
                 <option value={false}>False</option>
+                <option value={true}>True</option>
               </select>
             </label>
           {/if}
 
-          <label class="flex grow flex-col">
-            Exported
-            <select
-              bind:value={filters.exported}
-              onchange={onscroll}
-              class="text-theme bg-neutral-800 p-2"
-              class:font-bold={filters.exported !== undefined}
-            >
-              <option value={undefined}>--</option>
-              <option value={true}>True</option>
-              <option value={false}>False</option>
-            </select>
-          </label>
-
           {#if data.surveyType == "match" && data.compRecord.matches.length}
-            <label class="flex grow flex-col">
+            <label class="flex grow flex-col {filters.target !== undefined ? 'font-bold' : 'font-light'}">
               Target
-              <select
-                bind:value={filters.target}
-                onchange={onscroll}
-                class="text-theme bg-neutral-800 p-2 capitalize"
-                class:font-bold={filters.target !== undefined}
-              >
+              <select bind:value={filters.target} onchange={onscroll} class="text-theme bg-neutral-800 p-2 capitalize">
                 <option value={undefined}>--</option>
                 {#each matchTargets as value}
                   <option>{value}</option>
@@ -377,7 +310,7 @@
           {/if}
 
           {#if filterableScouts?.length}
-            <label class="flex grow flex-col">
+            <label class="flex grow flex-col {filters.scout ? 'font-bold' : 'font-light'}">
               Scout
               <select
                 bind:value={filters.scout}
@@ -386,7 +319,6 @@
                   onscroll();
                 }}
                 class="text-theme bg-neutral-800 p-2"
-                class:font-bold={filters.scout !== undefined}
               >
                 <option value={undefined}>--</option>
                 {#each filterableScouts as scout}

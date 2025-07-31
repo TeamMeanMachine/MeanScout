@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { type Entry, type MatchEntry } from "$lib/entry";
+  import { type Entry, type TbaMetrics } from "$lib/entry";
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
@@ -26,31 +26,16 @@
   let importedEntries = $state<Entry[]>([]);
   let error = $state("");
 
-  function getEntryUniqueString(entry: MatchEntry) {
-    return `${entry.match}_${entry.team}`;
-  }
-
-  let duplicateEntryStringsAndIds = $derived.by(() => {
-    const uniqueStringsToIds = new Map<string, string>();
-
-    if (surveyRecord.type != "match") {
-      return uniqueStringsToIds;
-    }
+  let duplicateIds = $derived.by(() => {
+    const duplicates = new Set<string>();
 
     for (const entry of importedEntries) {
-      if (entry.type != "match") {
-        continue;
-      }
-
-      const uniqueString = getEntryUniqueString(entry);
-
-      const existingEntry = existingEntries.find((e) => e.type == "match" && uniqueString == getEntryUniqueString(e));
-      if (existingEntry) {
-        uniqueStringsToIds.set(uniqueString, $state.snapshot(existingEntry).id);
+      if (existingEntries.some((e) => e.id == entry.id)) {
+        duplicates.add(entry.id);
       }
     }
 
-    return uniqueStringsToIds;
+    return duplicates;
   });
 
   export const { onconfirm }: DialogExports = {
@@ -72,41 +57,52 @@
 
       const entryStore = addTransaction.objectStore("entries");
 
-      if (!duplicateEntryStringsAndIds.size) {
+      if (!duplicateIds.size) {
         for (const entry of importedEntries) {
           entryStore.put($state.snapshot(entry));
         }
         return;
       }
 
-      for (const entry of importedEntries) {
-        if (entry.type != "match") {
-          entryStore.put($state.snapshot(entry));
+      for (const importedEntry of importedEntries) {
+        if (!duplicateIds.has(importedEntry.id)) {
+          entryStore.put($state.snapshot(importedEntry));
           continue;
         }
 
-        const uniqueString = getEntryUniqueString(entry);
+        const existingEntry = existingEntries.find((e) => e.id == importedEntry.id);
 
-        const matchingEntryId = duplicateEntryStringsAndIds.get(uniqueString);
-
-        if (!matchingEntryId) {
-          entryStore.put($state.snapshot(entry));
+        if (!existingEntry) {
+          entryStore.put($state.snapshot(importedEntry));
           continue;
         }
 
-        const matchingEntry = existingEntries.find((e) => e.id == matchingEntryId);
-        const tbaMetrics =
-          matchingEntry?.type == "match" && matchingEntry.tbaMetrics?.length
-            ? $state.snapshot(matchingEntry).tbaMetrics
-            : $state.snapshot(entry).tbaMetrics;
+        const tbaMetrics: TbaMetrics = [];
 
-        if ($duplicateFixMethod == "overwrite") {
-          entryStore.put({ ...$state.snapshot(entry), id: matchingEntryId, tbaMetrics });
-          continue;
+        if (existingEntry?.type == "match") {
+          for (const metric of existingEntry.tbaMetrics || []) {
+            tbaMetrics.push($state.snapshot(metric));
+          }
         }
 
-        if ($duplicateFixMethod == "ignore" && tbaMetrics) {
-          entryStore.put({ ...$state.snapshot(matchingEntry), tbaMetrics });
+        if (importedEntry.type == "match") {
+          for (const metric of importedEntry.tbaMetrics || []) {
+            const metricIndex = tbaMetrics.findIndex((m) => m.name == metric.name);
+            if (metricIndex !== -1 && $duplicateFixMethod == "overwrite") {
+              tbaMetrics[metricIndex].value = $state.snapshot(metric).value;
+            } else {
+              tbaMetrics.push($state.snapshot(metric));
+            }
+          }
+        }
+
+        let newEntry =
+          $duplicateFixMethod == "overwrite" ? $state.snapshot(importedEntry) : $state.snapshot(existingEntry);
+
+        if (tbaMetrics.length) {
+          entryStore.put({ ...newEntry, tbaMetrics });
+        } else {
+          entryStore.put(newEntry);
         }
       }
     },
@@ -144,33 +140,23 @@
       return;
     }
 
-    if (surveyRecord.type == "pit") {
-      importedEntries = json.entries.map((jsonEntry) => {
-        const entry: Entry = {
-          id: jsonEntry.id,
-          surveyId: surveyRecord.id,
-          type: "pit",
-          status: "exported",
-          team: jsonEntry.team,
-          values: jsonEntry.values,
-          created: new Date(),
-          modified: new Date(),
-        };
+    importedEntries = json.entries
+      .map(parseJsonEntry)
+      .filter((entry) => entry !== undefined)
+      .toSorted(sortEntries);
+  }
 
-        if (jsonEntry.scout) {
-          entry.scout = jsonEntry.scout;
-        }
-
-        return entry;
-      });
-
+  function parseJsonEntry(jsonEntry: Entry) {
+    if (jsonEntry.surveyId != surveyRecord.id) {
       return;
     }
 
-    importedEntries = (json.entries as MatchEntry[]).map((jsonEntry) => {
-      const entry: Entry = {
+    let entry: Entry;
+
+    if ("match" in jsonEntry) {
+      entry = {
         id: jsonEntry.id,
-        surveyId: surveyRecord.id,
+        surveyId: jsonEntry.surveyId,
         type: "match",
         status: "exported",
         team: jsonEntry.team,
@@ -181,22 +167,41 @@
         modified: new Date(),
       };
 
-      if (jsonEntry.scout) {
-        entry.scout = jsonEntry.scout;
-        if (jsonEntry.prediction) {
-          entry.prediction = jsonEntry.prediction;
-          if (jsonEntry.predictionReason) {
-            entry.predictionReason = jsonEntry.predictionReason;
-          }
-        }
-      }
-
       if (jsonEntry.tbaMetrics) {
         entry.tbaMetrics = jsonEntry.tbaMetrics;
       }
 
-      return entry;
-    });
+      if (jsonEntry.scout && jsonEntry.prediction) {
+        entry.prediction = jsonEntry.prediction;
+        if (jsonEntry.predictionReason) {
+          entry.predictionReason = jsonEntry.predictionReason;
+        }
+      }
+    } else {
+      entry = {
+        id: jsonEntry.id,
+        surveyId: jsonEntry.surveyId,
+        type: "pit",
+        status: "exported",
+        team: jsonEntry.team,
+        values: jsonEntry.values,
+        created: new Date(),
+        modified: new Date(),
+      };
+    }
+
+    if (jsonEntry.scout) {
+      entry.scout = jsonEntry.scout;
+    }
+
+    return entry;
+  }
+
+  function sortEntries(a: Entry, b: Entry) {
+    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
+    const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
+    const scoutCompare = a.scout?.localeCompare(b.scout || "") || 0;
+    return matchCompare || teamCompare || scoutCompare;
   }
 
   function retry() {
@@ -246,6 +251,9 @@
             <th class="w-0 p-2">Match</th>
             <th class="w-0 p-2">Absent</th>
           {/if}
+          {#if duplicateIds.size}
+            <th class="w-0 p-2">Duplicate</th>
+          {/if}
           <td></td>
         </tr>
       </thead>
@@ -257,20 +265,25 @@
               <td class="p-2 text-center">{entry.match}</td>
               <td class="p-2 text-center">{entry.absent || ""}</td>
             {/if}
+            {#if duplicateIds.size}
+              <td class="p-2">
+                {#if duplicateIds.has(entry.id)}
+                  Yes
+                {/if}
+              </td>
+            {/if}
             <td></td>
           </tr>
         {/each}
       </tbody>
     </table>
   </div>
-  {#if duplicateEntryStringsAndIds.size}
+  {#if duplicateIds.size}
     <div class="flex flex-col">
       <span>Duplicates</span>
       <div class="flex flex-wrap gap-2">
         <Button
-          onclick={() => {
-            $duplicateFixMethod = "overwrite";
-          }}
+          onclick={() => ($duplicateFixMethod = "overwrite")}
           class="grow basis-52 {$duplicateFixMethod == 'overwrite' ? 'font-bold' : 'font-light'}"
         >
           {#if $duplicateFixMethod == "overwrite"}
@@ -278,12 +291,10 @@
           {:else}
             <CircleIcon class="text-theme" />
           {/if}
-          Overwrite {duplicateEntryStringsAndIds.size}
+          Overwrite {duplicateIds.size}
         </Button>
         <Button
-          onclick={() => {
-            $duplicateFixMethod = "ignore";
-          }}
+          onclick={() => ($duplicateFixMethod = "ignore")}
           class="grow basis-52 {$duplicateFixMethod == 'ignore' ? 'font-bold' : 'font-light'}"
         >
           {#if $duplicateFixMethod == "ignore"}
@@ -291,7 +302,7 @@
           {:else}
             <CircleIcon class="text-theme" />
           {/if}
-          Ignore {duplicateEntryStringsAndIds.size}
+          Ignore {duplicateIds.size}
         </Button>
       </div>
     </div>
