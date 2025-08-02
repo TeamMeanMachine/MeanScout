@@ -18,6 +18,16 @@
 
   let error = $state("");
 
+  const suggestedScouts = $derived(
+    new Set([
+      ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+      ...(data.compRecord.scouts || []),
+    ])
+      .values()
+      .toArray()
+      .toSorted((a, b) => a.localeCompare(b)),
+  );
+
   async function onchange() {
     data = {
       ...data,
@@ -65,11 +75,11 @@
 
   {#if data.compRecord.scouts}
     <div class="flex flex-wrap items-end gap-2">
-      {#if data.compRecord.scouts.length}
+      {#if suggestedScouts.length}
         <label class="flex flex-col">
           <span class="text-sm">Scout</span>
           <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
-            {#each data.compRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+            {#each suggestedScouts as scout}
               <option>{scout}</option>
             {/each}
           </select>

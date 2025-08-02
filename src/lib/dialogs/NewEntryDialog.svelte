@@ -28,6 +28,16 @@
 
   const id = idb.generateId();
 
+  const suggestedScouts = $derived(
+    new Set([
+      ...pageData.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+      ...(pageData.compRecord.scouts || []),
+    ])
+      .values()
+      .toArray()
+      .toSorted((a, b) => a.localeCompare(b)),
+  );
+
   let match = $state(prefilledMatch);
   let team = $state(prefilledTeam);
 
@@ -189,9 +199,9 @@
   <div class="flex flex-col">
     Your name
     <div class="flex flex-wrap gap-2">
-      {#if pageData.compRecord.scouts.length}
+      {#if suggestedScouts.length}
         <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
-          {#each pageData.compRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+          {#each suggestedScouts as scout}
             <option>{scout}</option>
           {/each}
         </select>

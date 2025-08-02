@@ -12,8 +12,8 @@ export type EntryPageData = {
   defaultValues: Value[];
   teamName: string | undefined;
 } & (
-  | { surveyType: "match"; entryRecord: MatchEntry; surveyRecord: MatchSurvey }
-  | { surveyType: "pit"; entryRecord: PitEntry; surveyRecord: PitSurvey }
+  | { surveyType: "match"; entryRecord: MatchEntry; surveyRecord: MatchSurvey; entryRecords: MatchEntry[] }
+  | { surveyType: "pit"; entryRecord: PitEntry; surveyRecord: PitSurvey; entryRecords: PitEntry[] }
 );
 
 export async function loadEntryPageData(entryId: string): Promise<EntryPageData> {
@@ -28,6 +28,8 @@ export async function loadEntryPageData(entryId: string): Promise<EntryPageData>
   if (!surveyRecord) {
     throw new Error(`Survey record not found with id ${entryRecord.surveyId}`);
   }
+
+  const entryRecords = all.entries.filter((entry) => entry.surveyId == surveyRecord.id);
 
   const compRecord = all.comps.find((comp) => comp.id == surveyRecord.compId);
   if (!compRecord) {
@@ -51,5 +53,6 @@ export async function loadEntryPageData(entryId: string): Promise<EntryPageData>
     surveyType: surveyRecord.type,
     entryRecord,
     surveyRecord,
+    entryRecords,
   } as EntryPageData;
 }
