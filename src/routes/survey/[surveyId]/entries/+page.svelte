@@ -1,194 +1,125 @@
 <script lang="ts">
-  import { flushSync, onMount } from "svelte";
-  import { sessionStorageStore, type EntryFilters } from "$lib";
+  import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import type { Entry } from "$lib/entry";
+  import { type Entry, type EntryStatus } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
-  import { cameraStore, matchTargets, type MatchTarget } from "$lib/settings";
+  import { targetStore, type MatchTarget } from "$lib/settings";
   import type { PageData, PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import { ArrowDownIcon, ImportIcon, ShareIcon, Undo2Icon } from "@lucide/svelte";
+  import { ChevronDownIcon, ChevronRightIcon, ImportIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
   import SurveyPageHeader from "../SurveyPageHeader.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
+  import { SvelteSet } from "svelte/reactivity";
+  import { onMount } from "svelte";
 
   let { data }: PageProps = $props();
 
-  const groupBy = sessionStorageStore<"match" | "team" | "scout">(
+  const groupBy = sessionStorageStore<"status" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
-    data.surveyType == "match" ? "match" : "team",
+    "status",
   );
 
-  let filterableTeams = $derived.by(() => {
-    const teamSet = new Set(data.entryRecords.map((entry) => entry.team));
-    return [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
-  });
+  let statusToggleStates = new SvelteSet<EntryStatus>();
+  let matchToggleStates = new SvelteSet<number>();
+  let teamToggleStates = new SvelteSet<string>();
+  let scoutToggleStates = new SvelteSet<string>();
+  let targetToggleStates = new SvelteSet<MatchTarget>();
+  let absentToggleStates = new SvelteSet<boolean>();
 
-  let filterableMatches = $derived.by(() => {
-    if (data.surveyType != "match") return [];
-
-    const matchSet = new Set<number>();
-    for (const entry of data.entryRecords) {
-      if (entry.type != "match") continue;
-      matchSet.add(entry.match);
+  let bulkToggleState = $derived.by(() => {
+    switch ($groupBy) {
+      case "status":
+        return statusToggleStates.size == data.entriesPerStatus.length;
+      case "match":
+        return matchToggleStates.size == data.entriesPerMatch.length;
+      case "team":
+        return teamToggleStates.size == data.entriesPerTeam.length;
+      case "scout":
+        return scoutToggleStates.size == data.entriesPerScout.length;
+      case "target":
+        return targetToggleStates.size == data.entriesPerTarget.length;
+      case "absent":
+        return absentToggleStates.size == data.entriesPerAbsent.length;
     }
-
-    return [...matchSet].toSorted((a, b) => b - a);
   });
 
-  let filterableScouts = $derived.by(() => {
-    if (!data.compRecord.scouts) return undefined;
-    return [
-      ...new Set([
-        ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
-        ...(data.compRecord.scouts || []),
-      ]),
-    ].toSorted((a, b) => a.localeCompare(b));
-  });
-
-  const sessionStoredMatch = Number(sessionStorage.getItem("entries-filters-match") || NaN);
-
-  let filters = $state<EntryFilters>({
-    match: Number.isNaN(sessionStoredMatch) ? undefined : sessionStoredMatch,
-    team: sessionStorage.getItem("entries-filters-team") || undefined,
-    absent: JSON.parse(sessionStorage.getItem("entries-filters-absent") || "null") ?? undefined,
-    target: (sessionStorage.getItem("entries-filters-target") as MatchTarget) || undefined,
-    exported: JSON.parse(sessionStorage.getItem("entries-filters-exported") || "null") ?? undefined,
-    scout: sessionStorage.getItem("entries-filters-scout") || undefined,
-  });
-
-  $effect(() => {
-    filters.match
-      ? sessionStorage.setItem("entries-filters-match", filters.match.toString())
-      : sessionStorage.removeItem("entries-filters-match");
-  });
-
-  $effect(() => {
-    filters.team
-      ? sessionStorage.setItem("entries-filters-team", filters.team)
-      : sessionStorage.removeItem("entries-filters-team");
-  });
-
-  $effect(() => {
-    filters.absent !== undefined
-      ? sessionStorage.setItem("entries-filters-absent", filters.absent ? "true" : "false")
-      : sessionStorage.removeItem("entries-filters-absent");
-  });
-
-  $effect(() => {
-    filters.target
-      ? sessionStorage.setItem("entries-filters-target", filters.target)
-      : sessionStorage.removeItem("entries-filters-target");
-  });
-
-  $effect(() => {
-    filters.exported !== undefined
-      ? sessionStorage.setItem("entries-filters-exported", filters.exported ? "true" : "false")
-      : sessionStorage.removeItem("entries-filters-exported");
-  });
-
-  $effect(() => {
-    filters.scout
-      ? sessionStorage.setItem("entries-filters-scout", filters.scout)
-      : sessionStorage.removeItem("entries-filters-scout");
-  });
-
-  let filtersApplied = $derived.by(() => {
-    return Object.values(filters).filter((val) => val !== undefined).length;
-  });
-
-  let filteredEntries = $derived(data.entryRecords.filter(filterEntry).toSorted(sortEntries));
-
-  let displayedCount = $state(20);
-  let displayedEntries = $derived(filteredEntries.slice(0, displayedCount));
-
-  onMount(() => onscroll());
-
-  function filterEntry(entry: Entry) {
-    if (entry.status == "draft") {
-      return false;
-    }
-
-    if (filters.team?.length && entry.team != filters.team) {
-      return false;
-    }
-
-    if (filters.exported == true && entry.status != "exported") {
-      return false;
-    }
-
-    if (filters.exported == false && entry.status == "exported") {
-      return false;
-    }
-
-    if (filters.scout?.length && entry.scout != filters.scout) {
-      return false;
-    }
-
-    if (entry.type == "match") {
-      if (filters.match != undefined && entry.match != filters.match) {
-        return false;
-      }
-
-      if (filters.target != undefined && data.surveyType == "match") {
-        const teamsOfThisTarget = data.compRecord.matches
-          .filter((match) => match.number == entry.match)
-          .map((match) => {
-            switch (filters.target) {
-              case "red 1":
-                return match.red1;
-              case "red 2":
-                return match.red2;
-              case "red 3":
-                return match.red3;
-              case "blue 1":
-                return match.blue1;
-              case "blue 2":
-                return match.blue2;
-              case "blue 3":
-                return match.blue3;
-            }
-          });
-
-        if (!teamsOfThisTarget.includes(entry.team)) {
-          return false;
+  function toggleAll() {
+    switch ($groupBy) {
+      case "status":
+        if (bulkToggleState) {
+          statusToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerStatus) {
+            statusToggleStates.add(group.status);
+          }
         }
-      }
-
-      if (filters.absent != undefined && filters.absent != entry.absent) {
-        return false;
-      }
+      case "match":
+        if (bulkToggleState) {
+          matchToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerMatch) {
+            matchToggleStates.add(group.match);
+          }
+        }
+      case "team":
+        if (bulkToggleState) {
+          teamToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerTeam) {
+            teamToggleStates.add(group.team);
+          }
+        }
+      case "scout":
+        if (bulkToggleState) {
+          scoutToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerScout) {
+            scoutToggleStates.add(group.scout);
+          }
+        }
+      case "target":
+        if (bulkToggleState) {
+          targetToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerTarget) {
+            targetToggleStates.add(group.target);
+          }
+        }
+      case "absent":
+        if (bulkToggleState) {
+          absentToggleStates.clear();
+        } else {
+          for (const group of data.entriesPerAbsent) {
+            absentToggleStates.add(group.absent);
+          }
+        }
     }
-
-    return true;
   }
 
-  function sortEntries(a: Entry, b: Entry) {
-    const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
-    const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
-    const scoutCompare = a.scout?.localeCompare(b.scout || "") || 0;
-
-    if ($groupBy == "match") {
-      if (matchCompare == 0 && a.type == "match" && b.type == "match") {
-        const match = data.compRecord.matches.find((m) => m.number == a.match);
-        if (match) {
-          const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
-          const targetA = targets.findIndex((t) => t == a.team);
-          const targetB = targets.findIndex((t) => t == b.team);
-          return targetA - targetB || matchCompare || teamCompare || scoutCompare;
-        }
-      }
-      return matchCompare || teamCompare || scoutCompare;
+  onMount(() => {
+    if (data.entriesPerStatus.find((group) => group.status == "draft")) {
+      statusToggleStates.add("draft");
     }
 
-    if ($groupBy == "scout") {
-      return scoutCompare || matchCompare || teamCompare;
+    if (data.entriesPerStatus.find((group) => group.status == "submitted")) {
+      statusToggleStates.add("submitted");
     }
 
-    return teamCompare || matchCompare || scoutCompare;
-  }
+    if (data.entriesPerMatch.length) {
+      matchToggleStates.add(data.entriesPerMatch[0].match);
+    }
+
+    if (data.entriesPerTarget.find((group) => group.target == $targetStore) && $targetStore != "pit") {
+      targetToggleStates.add($targetStore);
+    }
+
+    if (data.entriesPerAbsent.find((group) => group.absent)) {
+      absentToggleStates.add(true);
+    }
+  });
 
   function refresh() {
     data = {
@@ -198,318 +129,396 @@
     idb.put("surveys", $state.snapshot(data.surveyRecord)).onsuccess = invalidateAll;
   }
 
-  function resetFilters() {
-    filters = {
-      team: undefined,
-      match: undefined,
-      absent: undefined,
-      target: undefined,
-      exported: undefined,
-      scout: undefined,
-    };
-    onscroll();
-  }
-
-  function onscroll() {
-    if (displayedCount >= filteredEntries.length) return;
-
-    if (document.body.offsetHeight <= window.scrollY + window.innerHeight * 2) {
-      displayedCount = Math.min(displayedCount + 20, filteredEntries.length);
-      flushSync();
-      onscroll();
+  function onexport(exportedEntries: Entry[]) {
+    const tx = idb.transaction(["surveys", "entries"], "readwrite");
+    const entryStore = tx.objectStore("entries");
+    for (const entry of $state.snapshot(exportedEntries)) {
+      if (entry.status == "exported") {
+        continue;
+      }
+      entryStore.put({ ...entry, status: "exported", modified: new Date() });
     }
+    tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+    tx.oncomplete = invalidateAll;
   }
 </script>
 
-<svelte:window {onscroll} />
-
 <SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="entries" pageTitle="Entries" />
 
-<div class="flex flex-col gap-6" style="view-transition-name:entries">
-  <div class="flex flex-col gap-3">
-    {#if !data.entryRecords.length}
-      <span class="text-sm">No entries.</span>
-    {:else}
-      <div class="-m-1 flex gap-4 overflow-x-auto p-1 text-nowrap">
-        <div class="flex flex-col">
-          <h2 class="font-bold">Filters</h2>
-          <Button onclick={resetFilters} disabled={!filtersApplied} class="flex-nowrap!">
-            <Undo2Icon class="text-theme" />
-            Reset
-          </Button>
-        </div>
-
-        <div class="flex gap-2">
-          <label class="flex grow flex-col {filters.exported !== undefined ? 'font-bold' : 'font-light'}">
-            Exported
-            <select bind:value={filters.exported} onchange={onscroll} class="text-theme bg-neutral-800 p-2">
-              <option value={undefined}>--</option>
-              <option value={false}>False</option>
-              <option value={true}>True</option>
-            </select>
-          </label>
-
-          {#if data.surveyType == "match"}
-            <label class="flex grow flex-col {filters.match ? 'font-bold' : 'font-light'}">
-              Match
-              <select
-                bind:value={filters.match}
-                onchange={() => {
-                  if (filters.match) $groupBy = "match";
-                  onscroll();
-                }}
-                class="text-theme bg-neutral-800 p-2"
-              >
-                <option value={undefined}>--</option>
-                {#each filterableMatches as match}
-                  <option>{match}</option>
-                {/each}
-              </select>
-            </label>
+<div class="mb-16 flex flex-col gap-6" style="view-transition-name:entries">
+  {#if !data.entryRecords.length}
+    <span class="text-sm">No entries.</span>
+  {:else}
+    <div class="flex flex-wrap gap-4">
+      <div class="flex grow gap-2">
+        <Button onclick={toggleAll}>
+          {#if bulkToggleState}
+            <ChevronDownIcon class="text-theme" />
+          {:else}
+            <ChevronRightIcon class="text-theme" />
           {/if}
-
-          <label class="flex grow flex-col {filters.team ? 'font-bold' : 'font-light'}">
-            Team
-            <select
-              bind:value={filters.team}
-              onchange={() => {
-                if (filters.team) $groupBy = "team";
-                onscroll();
-              }}
-              class="text-theme bg-neutral-800 p-2 capitalize"
-              class:font-bold={filters.team !== undefined}
-            >
-              <option value={undefined}>--</option>
-              {#each filterableTeams as team}
-                <option>{team}</option>
-              {/each}
-            </select>
-          </label>
-
-          {#if data.surveyType == "match"}
-            <label class="flex grow flex-col {filters.absent !== undefined ? 'font-bold' : 'font-light'}">
-              Absent
-              <select bind:value={filters.absent} onchange={onscroll} class="text-theme bg-neutral-800 p-2">
-                <option value={undefined}>--</option>
-                <option value={false}>False</option>
-                <option value={true}>True</option>
-              </select>
-            </label>
-          {/if}
-
-          {#if data.surveyType == "match" && data.compRecord.matches.length}
-            <label class="flex grow flex-col {filters.target !== undefined ? 'font-bold' : 'font-light'}">
-              Target
-              <select bind:value={filters.target} onchange={onscroll} class="text-theme bg-neutral-800 p-2 capitalize">
-                <option value={undefined}>--</option>
-                {#each matchTargets as value}
-                  <option>{value}</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-
-          {#if filterableScouts?.length}
-            <label class="flex grow flex-col {filters.scout ? 'font-bold' : 'font-light'}">
-              Scout
-              <select
-                bind:value={filters.scout}
-                onchange={() => {
-                  if (filters.scout) $groupBy = "scout";
-                  onscroll();
-                }}
-                class="text-theme bg-neutral-800 p-2"
-              >
-                <option value={undefined}>--</option>
-                {#each filterableScouts as scout}
-                  <option>{scout}</option>
-                {/each}
-              </select>
-            </label>
-          {/if}
-        </div>
-      </div>
-    {/if}
-
-    <div class="flex flex-col">
-      <div>
-        {#if filtersApplied}
-          {filteredEntries.length}<span class="text-xs font-light">/{data.entryRecords.length}</span>
-          - {filtersApplied}
-          {filtersApplied == 1 ? "filter" : "filters"}
-        {:else if data.entryRecords.length}
-          {data.entryRecords.length} {data.entryRecords.length == 1 ? "entry" : "entries"}
-        {/if}
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        {#if data.entryRecords.length}
-          <Button
-            onclick={() => {
-              openDialog(BulkExportDialog, {
-                entries: filteredEntries,
-                onexport() {
-                  const tx = idb.transaction("entries", "readwrite");
-                  const entryStore = tx.objectStore("entries");
-                  for (const entry of filteredEntries) {
-                    if (entry.status == "exported") {
-                      continue;
-                    }
-                    entryStore.put({ ...$state.snapshot(entry), status: "exported", modified: new Date() });
-                  }
-                  tx.oncomplete = refresh;
-                },
-              });
-            }}
-            disabled={!filteredEntries.length}
-            class="grow basis-48"
-          >
-            <ShareIcon class="text-theme" />
-            <div class="flex flex-col">
-              Export
-              <span class="text-xs font-light">QRF code, File</span>
-            </div>
-          </Button>
-        {/if}
-
-        <Button
-          onclick={() => {
-            openDialog(ImportEntriesDialog, {
-              surveyRecord: data.surveyRecord,
-              existingEntries: data.entryRecords,
-              onimport: refresh,
-            });
-          }}
-          class="grow basis-48"
-        >
-          <ImportIcon class="text-theme" />
-          <div class="flex flex-col">
-            Import
-            <span class="text-xs font-light">
-              {#if $cameraStore}
-                QRF code, File
-              {:else}
-                File
-              {/if}
-            </span>
-          </div>
         </Button>
+        <select bind:value={$groupBy} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+          <option value="status">Group by Status</option>
+          {#if data.surveyType == "match"}
+            <option value="match">Group by Match</option>
+          {/if}
+          <option value="team">Group by Team</option>
+          <option value="scout">Group by Scout</option>
+          {#if data.surveyType == "match"}
+            <option value="target">Group by Target</option>
+            <option value="absent">Group by Absent</option>
+          {/if}
+        </select>
       </div>
+      <Button
+        onclick={() => {
+          openDialog(ImportEntriesDialog, {
+            surveyRecord: data.surveyRecord,
+            existingEntries: data.entryRecords,
+            onimport: refresh,
+          });
+        }}
+        class="text-sm"
+      >
+        <ImportIcon class="text-theme size-5" />
+        Import
+      </Button>
     </div>
 
-    {#if data.surveyType == "match" && filteredEntries.length}
-      <div class="flex flex-col text-sm">
-        <span>Group by</span>
-        <div class="flex flex-wrap gap-2">
-          {#if data.surveyType == "match"}
-            <Button onclick={() => ($groupBy = "match")} class={$groupBy == "match" ? "font-bold" : "font-light"}>
-              Match
-            </Button>
-          {/if}
-          <Button onclick={() => ($groupBy = "team")} class={$groupBy == "team" ? "font-bold" : "font-light"}>
-            Team
-          </Button>
-          {#if filterableScouts?.length}
-            <Button onclick={() => ($groupBy = "scout")} class={$groupBy == "scout" ? "font-bold" : "font-light"}>
-              Scout
-            </Button>
-          {/if}
-        </div>
-      </div>
-    {/if}
-  </div>
-
-  {#snippet entryButton(entry: Entry)}
-    <Button
-      onclick={() => {
-        openDialog(ViewEntryDialog, {
-          compRecord: data.compRecord,
-          surveyRecord: data.surveyRecord,
-          fieldRecords: data.fieldRecords,
-          entryRecord: entry,
-          onchange: refresh,
-        });
-      }}
-      class="gap-x-4"
-    >
-      {#if entry.type == "match" && $groupBy != "match"}
+    {#snippet entryButton(entry: Entry)}
+      <Button
+        onclick={() => {
+          openDialog(ViewEntryDialog, {
+            compRecord: data.compRecord,
+            surveyRecord: data.surveyRecord,
+            fieldRecords: data.fieldRecords,
+            entryRecord: entry,
+            onchange: refresh,
+          });
+        }}
+        class="gap-x-4"
+      >
+        {#if entry.type == "match" && $groupBy != "match"}
+          <div class="flex flex-col">
+            <span class="text-xs font-light">Match</span>
+            <span>{entry.match}</span>
+          </div>
+        {/if}
+        {#if $groupBy != "team"}
+          <div class="flex w-32 max-w-full flex-col">
+            <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+              {data.teamNames.get(entry.team) || "Team"}
+            </span>
+            <span>{entry.team}</span>
+          </div>
+        {/if}
+        {#if $groupBy != "scout" && entry.type == "match" && entry.scout}
+          <div class="flex w-24 max-w-full flex-col">
+            <span class="text-xs font-light text-wrap">Scout</span>
+            <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+          </div>
+        {/if}
         <div class="flex flex-col">
-          <span class="text-xs font-light">Match</span>
-          <span>{entry.match}</span>
+          {#if $groupBy != "absent" && entry.type == "match" && entry.absent}
+            <span class="text-xs">Absent</span>
+          {/if}
+          {#if $groupBy != "status" && entry.status != "submitted"}
+            <span class="text-xs capitalize">{entry.status}</span>
+          {/if}
         </div>
-      {/if}
-      {#if $groupBy != "team"}
-        {@const teamName = data.compRecord.teams.find((t) => t.number == entry.team)?.name}
-        <div class="flex w-32 max-w-full flex-col">
-          <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">{teamName || "Team"}</span>
-          <span>{entry.team}</span>
-        </div>
-      {/if}
-      {#if $groupBy != "scout" && entry.type == "match" && entry.scout}
-        <div class="flex w-24 max-w-full flex-col">
-          <span class="text-xs font-light text-wrap">Scout</span>
-          <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
-        </div>
-      {/if}
-      <div class="flex flex-col">
-        {#if entry.type == "match" && entry.absent}
-          <span class="text-xs">Absent</span>
-        {/if}
-        {#if entry.status == "exported"}
-          <span class="text-xs">Exported</span>
-        {/if}
-      </div>
-    </Button>
-  {/snippet}
+      </Button>
+    {/snippet}
 
-  {#if $groupBy == "match" && data.surveyType == "match"}
-    {#each filterableMatches as matchNumber}
-      {@const thisMatchEntries = displayedEntries.filter((e) => e.type == "match" && e.match == matchNumber)}
-      {#if thisMatchEntries.length}
-        <div class="-mx-1 flex flex-col gap-2 px-1">
-          <h2 class="sticky top-0 z-20 bg-neutral-900 font-bold">Match {matchNumber}</h2>
-          {#each thisMatchEntries as entry (entry.id)}
-            {@render entryButton(entry)}
-          {/each}
-        </div>
-      {/if}
-    {/each}
-  {:else if $groupBy == "scout" && filterableScouts?.length}
-    {#each ["", ...filterableScouts] as scout}
-      {@const thisScoutEntries = displayedEntries.filter((e) => e.type == "match" && (e.scout || "") == scout)}
-      {#if thisScoutEntries.length}
-        <div class="-mx-1 flex flex-col gap-2 px-1">
-          <h2 class="sticky top-0 z-20 flex flex-col bg-neutral-900 font-bold">{scout || "No name"}</h2>
-          {#each thisScoutEntries as entry (entry.id)}
-            {@render entryButton(entry)}
-          {/each}
-        </div>
-      {/if}
-    {/each}
-  {:else}
-    {#each filterableTeams as team}
-      {@const thisTeamEntries = displayedEntries.filter((e) => e.team == team)}
-      {#if thisTeamEntries.length}
-        {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
-        <div class="-mx-1 flex flex-col gap-2 px-1">
-          <div class="sticky top-0 z-20 flex flex-col bg-neutral-900">
-            <h2 class="font-bold">Team {team}</h2>
-            {#if teamName}
-              <span class="text-xs font-light">{teamName}</span>
+    <div class="flex flex-col gap-4">
+      {#if $groupBy == "match" && data.surveyType == "match"}
+        {#each data.entriesPerMatch as { match, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (matchToggleStates.has(match)) {
+                    matchToggleStates.delete(match);
+                  } else {
+                    matchToggleStates.add(match);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if matchToggleStates.has(match)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between">
+                  <span class={matchToggleStates.has(match) ? "font-bold" : "font-light"}>Match {match}</span>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
+
+            {#if matchToggleStates.has(match)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
             {/if}
           </div>
-          {#each thisTeamEntries as entry (entry.id)}
-            {@render entryButton(entry)}
-          {/each}
-        </div>
-      {/if}
-    {/each}
-  {/if}
+        {/each}
+      {:else if $groupBy == "scout" && data.entriesPerScout.length}
+        {#each data.entriesPerScout as { scout, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (scoutToggleStates.has(scout)) {
+                    scoutToggleStates.delete(scout);
+                  } else {
+                    scoutToggleStates.add(scout);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if scoutToggleStates.has(scout)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between">
+                  <span class={scoutToggleStates.has(scout) ? "font-bold" : "font-light"}>{scout || "No name"}</span>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
 
-  {#if displayedEntries.length < filteredEntries.length}
-    <Button onclick={() => (displayedCount += 20)}>
-      <ArrowDownIcon class="text-theme" />
-      Show more
-    </Button>
+            {#if scoutToggleStates.has(scout)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {:else if $groupBy == "target" && data.surveyType == "match"}
+        {#each data.entriesPerTarget as { target, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (targetToggleStates.has(target)) {
+                    targetToggleStates.delete(target);
+                  } else {
+                    targetToggleStates.add(target);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if targetToggleStates.has(target)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between">
+                  <span class="capitalize {targetToggleStates.has(target) ? 'font-bold' : 'font-light'}">{target}</span>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
+
+            {#if targetToggleStates.has(target)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {:else if $groupBy == "team"}
+        {#each data.entriesPerTeam as { team, teamName, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (teamToggleStates.has(team)) {
+                    teamToggleStates.delete(team);
+                  } else {
+                    teamToggleStates.add(team);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if teamToggleStates.has(team)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between gap-x-1">
+                  <div class="flex flex-col">
+                    <span class="font-bold">{team}</span>
+                    {#if teamName}
+                      <span class="text-xs {teamToggleStates.has(team) ? 'font-bold' : 'font-light'}">{teamName}</span>
+                    {/if}
+                  </div>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
+
+            {#if teamToggleStates.has(team)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {:else if $groupBy == "absent" && data.entriesPerAbsent.length}
+        {#each data.entriesPerAbsent as { absent, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (absentToggleStates.has(absent)) {
+                    absentToggleStates.delete(absent);
+                  } else {
+                    absentToggleStates.add(absent);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if absentToggleStates.has(absent)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between">
+                  <span class="capitalize {absentToggleStates.has(absent) ? 'font-bold' : 'font-light'}">{absent}</span>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
+
+            {#if absentToggleStates.has(absent)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {:else}
+        {#each data.entriesPerStatus as { status, entries }}
+          <div class="flex flex-col gap-2">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+              <Button
+                onclick={() => {
+                  if (statusToggleStates.has(status)) {
+                    statusToggleStates.delete(status);
+                  } else {
+                    statusToggleStates.add(status);
+                  }
+                }}
+                class="grow flex-nowrap!"
+              >
+                {#if statusToggleStates.has(status)}
+                  <ChevronDownIcon class="text-theme shrink-0" />
+                {:else}
+                  <ChevronRightIcon class="text-theme shrink-0" />
+                {/if}
+                <div class="flex grow items-center justify-between">
+                  <span class="capitalize {statusToggleStates.has(status) ? 'font-bold' : 'font-light'}">{status}</span>
+                  <div class="flex gap-0.5 text-sm">
+                    {entries.length}<NotepadTextIcon class="size-4" />
+                  </div>
+                </div>
+              </Button>
+            </div>
+
+            {#if statusToggleStates.has(status)}
+              <Button
+                onclick={() => {
+                  openDialog(BulkExportDialog, {
+                    entries,
+                    onexport: () => onexport(entries),
+                  });
+                }}
+                class="self-start text-sm"
+              >
+                <ShareIcon class="text-theme size-5" />
+                Export
+              </Button>
+              {#each entries as entry (entry.id)}
+                {@render entryButton(entry)}
+              {/each}
+            {/if}
+          </div>
+        {/each}
+      {/if}
+    </div>
   {/if}
 </div>
