@@ -84,15 +84,6 @@ export function getPredictionsPerMatch(comp: Comp, entries: MatchEntry[]) {
     .map((match) => {
       const matchEntries = entries
         .filter((entry) => entry.status != "draft" && entry.match == match.number && entry.scout && entry.prediction)
-        /*
-        .map((entry) => {
-          if (!entry.scout && !entry.prediction) {
-            entry.scout = "Scout";
-            entry.prediction = Math.random() > 0.5 ? "blue" : "red";
-          }
-          return entry;
-        })
-        //*/
         .toSorted((a, b) => a.scout?.localeCompare(b.scout || "") || 0);
 
       const redEntries = matchEntries.filter((entry) => entry.prediction == "red");
