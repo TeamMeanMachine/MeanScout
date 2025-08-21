@@ -4,7 +4,7 @@
   import { idb } from "$lib/idb";
   import { Trash2Icon } from "@lucide/svelte";
   import CompAdminHeader from "../CompAdminHeader.svelte";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
   import DeleteCompDialog from "$lib/dialogs/DeleteCompDialog.svelte";
 
   let { data }: PageProps = $props();
@@ -25,7 +25,7 @@
             data = {
               ...data,
               compRecord: { ...data.compRecord, scouts: [], modified: new Date() },
-            } as PageData;
+            };
             idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >
@@ -42,7 +42,7 @@
             data = {
               ...data,
               compRecord: { ...data.compRecord, matches: [], modified: new Date() },
-            } as PageData;
+            };
             idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >
@@ -59,7 +59,7 @@
             data = {
               ...data,
               compRecord: { ...data.compRecord, teams: [], modified: new Date() },
-            } as PageData;
+            };
             idb.put("comps", $state.snapshot(data.compRecord));
           }}
         >

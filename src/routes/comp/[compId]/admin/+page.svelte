@@ -4,7 +4,7 @@
   import { idb } from "$lib/idb";
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CalendarDaysIcon, CloudDownloadIcon, LoaderIcon, SquarePenIcon } from "@lucide/svelte";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
   import CompAdminHeader from "./CompAdminHeader.svelte";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
@@ -61,7 +61,7 @@
       data = {
         ...data,
         compRecord: { ...data.compRecord, matches, modified: new Date() },
-      } as PageData;
+      };
       matchesTx.objectStore("comps").put($state.snapshot(data.compRecord));
     }
   }
@@ -84,7 +84,7 @@
       data = {
         ...data,
         compRecord: { ...data.compRecord, teams, modified: new Date() },
-      } as PageData;
+      };
       idb.put("comps", $state.snapshot(data.compRecord));
     }
   }
@@ -102,7 +102,7 @@
             data = {
               ...data,
               compRecord: { ...data.compRecord, name, modified: new Date() },
-            } as PageData;
+            };
             idb.put("comps", $state.snapshot(data.compRecord));
           },
         })}
@@ -125,7 +125,7 @@
             data = {
               ...data,
               compRecord: { ...data.compRecord, tbaEventKey, modified: new Date() },
-            } as PageData;
+            };
             idb.put("comps", $state.snapshot(data.compRecord));
           },
         })}

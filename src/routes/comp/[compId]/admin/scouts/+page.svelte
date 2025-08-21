@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import { idb } from "$lib/idb";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
   import CompAdminHeader from "../CompAdminHeader.svelte";
   import { openDialog } from "$lib/dialog";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
@@ -24,7 +24,7 @@
               scouts: [],
               modified: new Date(),
             },
-          } as PageData;
+          };
           idb.put("comps", $state.snapshot(data.compRecord));
         }}
       >
@@ -44,7 +44,7 @@
                   scouts: data.compRecord.scouts?.filter((s) => s != scout),
                   modified: new Date(),
                 },
-              } as PageData;
+              };
               idb.put("comps", $state.snapshot(data.compRecord));
             }}
           >
@@ -71,7 +71,7 @@
                     scouts: [...(data.compRecord.scouts || []), ...scouts],
                     modified: new Date(),
                   },
-                } as PageData;
+                };
                 idb.put("comps", $state.snapshot(data.compRecord));
               },
             });

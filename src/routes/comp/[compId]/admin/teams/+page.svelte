@@ -3,7 +3,7 @@
   import { openDialog } from "$lib/dialog";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
   import { idb } from "$lib/idb";
   import CompAdminHeader from "../CompAdminHeader.svelte";
   import { PlusIcon } from "@lucide/svelte";
@@ -28,8 +28,8 @@
                   if (teamToEdit) teamToEdit.name = name;
                   data = {
                     ...data,
-                    compRecord: { ...data.compRecord, teams: teams, modified: new Date() },
-                  } as PageData;
+                    compRecord: { ...data.compRecord, teams, modified: new Date() },
+                  };
                   idb.put("comps", $state.snapshot(data.compRecord));
                 },
                 ondelete() {
@@ -40,7 +40,7 @@
                       teams: data.compRecord.teams.filter((team) => team.number != team.number),
                       modified: new Date(),
                     },
-                  } as PageData;
+                  };
                   idb.put("comps", $state.snapshot(data.compRecord));
                 },
               });
@@ -80,7 +80,7 @@
                   teams: [...data.compRecord.teams, ...teams.map((team) => ({ number: team, name: "" }))],
                   modified: new Date(),
                 },
-              } as PageData;
+              };
               idb.put("comps", $state.snapshot(data.compRecord));
             },
           });

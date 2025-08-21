@@ -62,17 +62,18 @@
         openDialog(BulkExportDialog, {
           entries: [entry],
           onexport() {
+            idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
+
             if (entry.status == "exported") {
               onchange();
               return;
             }
 
-            const req = idb.put("entries", {
+            idb.put("entries", {
               ...$state.snapshot(entry),
               status: "exported",
               modified: new Date(),
-            });
-            req.onsuccess = onchange;
+            }).onsuccess = onchange;
           },
         });
       }}
@@ -82,7 +83,10 @@
   {/if}
 
   <div class="flex grow flex-wrap items-center justify-between gap-2">
-    <span class="font-bold">Entry</span>
+    <div class="flex flex-col">
+      <h2 class="font-bold">Entry</h2>
+      <span class="text-xs font-light">{surveyRecord.name}</span>
+    </div>
     <span class="text-xs font-light">{entry.id}</span>
   </div>
 
@@ -99,6 +103,7 @@
           surveyRecord,
           entryRecord,
           ondelete: () => {
+            idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
             onchange();
             closeDialog();
           },

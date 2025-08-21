@@ -3,119 +3,170 @@
   import { getExpressionData, getPickListData, type AnalysisData, type AnalysisTeamData } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
-  import { getMatchEntriesByTeam, type MatchEntry } from "$lib/entry";
+  import { type MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
+  import { getFieldsWithDetails } from "$lib/field";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
 
   let {
     pageData,
     match,
   }: {
-    pageData: SurveyPageData;
+    pageData: CompPageData;
     match: Match;
   } = $props();
 
-  const hideAnalysis =
-    pageData.surveyType == "pit" ||
-    !pageData.fieldRecords.length ||
-    !pageData.entryRecords.length ||
-    (!pageData.surveyRecord.pickLists.length && !pageData.surveyRecord.expressions.length);
+  const matchSurveys = $derived(
+    pageData.surveyRecords
+      .filter((survey) => survey.type == "match")
+      .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
+  );
 
-  const entriesByTeam = getMatchEntriesByTeam(pageData.entryRecords as MatchEntry[]);
+  const showAnalysis = $derived(matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length));
 
-  const sortedExpressions =
-    pageData.surveyType == "match" ? pageData.surveyRecord.expressions.toSorted(sortExpressions) : [];
+  let selectedSurveyId = $state(defaultSurveyId());
 
-  const expressions = Object.groupBy(sortedExpressions, (e) => {
-    if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
-    if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
-    if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
-    if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
-    if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
-    if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
-    return "";
+  const selectedSurvey = $derived.by(() => {
+    if (!selectedSurveyId) return defaultSurvey();
+    return matchSurveys.find((survey) => survey.id == selectedSurveyId) || defaultSurvey();
   });
 
-  let selectedString = $state(defaultSelectionString());
+  const sortedExpressions = $derived(selectedSurvey?.expressions.toSorted(sortExpressions));
 
-  let selected = $derived.by(() => {
-    if (!selectedString || pageData.surveyType != "match") return defaultSelection();
-    const [type, name] = selectedString.split("-", 2);
+  const expressions = $derived(
+    sortedExpressions
+      ? Object.groupBy(sortedExpressions, (e) => {
+          if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
+          if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
+          if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
+          if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
+          if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
+          if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
+          return "";
+        })
+      : undefined,
+  );
+
+  const entriesByTeam = $derived.by(() => {
+    const record: Record<string, MatchEntry[]> = {};
+
+    for (const entry of pageData.entryRecords.filter(
+      (e): e is MatchEntry => e.surveyId == selectedSurveyId && e.type == "match",
+    )) {
+      if (entry.team in record) {
+        record[entry.team].push(entry);
+      } else {
+        record[entry.team] = [entry];
+      }
+    }
+
+    return record;
+  });
+
+  const fieldsWithDetails = $derived.by(() => {
+    if (!selectedSurvey) return;
+    return getFieldsWithDetails(
+      selectedSurvey,
+      pageData.fieldRecords.filter((field) => field.surveyId == selectedSurveyId),
+    );
+  });
+
+  let selectedAnalysisString = $state(defaultAnalysisString());
+
+  const selectedAnalysis = $derived.by(() => {
+    if (!selectedAnalysisString) return defaultAnalysis();
+    const [type, name] = selectedAnalysisString.split("-", 2);
 
     if (type == "picklist") {
-      const pickList = pageData.surveyRecord.pickLists.find((pl) => pl.name == name);
+      const pickList = selectedSurvey?.pickLists.find((pl) => pl.name == name);
       if (pickList) return { type: "picklist" as const, pickList };
     } else if (type == "expression") {
-      const expression = pageData.surveyRecord.expressions.find((e) => e.name == name);
+      const expression = sortedExpressions?.find((e) => e.name == name);
       if (expression) return { type: "expression" as const, expression };
     }
 
-    return defaultSelection();
+    return defaultAnalysis();
   });
 
-  let analysisData = $derived.by<AnalysisData | undefined>(() => {
-    if (hideAnalysis) {
-      return;
-    }
-
-    if (selected?.type == "picklist") {
+  const analysisData = $derived.by<AnalysisData | undefined>(() => {
+    if (!selectedSurvey || !fieldsWithDetails) return;
+    if (selectedAnalysis?.type == "picklist") {
       return getPickListData(
         pageData.compRecord,
-        selected.pickList.name,
-        pageData.surveyRecord,
+        selectedAnalysis.pickList.name,
+        selectedSurvey,
         entriesByTeam,
-        pageData.fieldsWithDetails.orderedSingle,
+        fieldsWithDetails.orderedSingle,
       );
-    } else if (selected?.type == "expression") {
+    } else if (selectedAnalysis?.type == "expression") {
       return getExpressionData(
         pageData.compRecord,
-        selected.expression.name,
-        pageData.surveyRecord,
+        selectedAnalysis.expression.name,
+        selectedSurvey,
         entriesByTeam,
-        pageData.fieldsWithDetails.orderedSingle,
+        fieldsWithDetails.orderedSingle,
       );
     }
   });
 
   $effect(() => {
-    if (!selectedString) return;
-    sessionStorage.setItem("analysis-view", selectedString);
+    if (!selectedSurveyId) return;
+    sessionStorage.setItem("analysis-survey", selectedSurveyId);
   });
 
-  function defaultSelection() {
-    if (pageData.surveyType != "match") return;
+  $effect(() => {
+    if (!selectedAnalysisString) return;
+    sessionStorage.setItem("analysis-view", selectedAnalysisString);
+  });
 
-    if (pageData.surveyRecord.pickLists.length) {
-      return { type: "picklist" as const, pickList: pageData.surveyRecord.pickLists[0] };
+  function defaultSurvey() {
+    if (matchSurveys.length) {
+      return matchSurveys[0];
+    }
+  }
+
+  function defaultSurveyId() {
+    const value = sessionStorage.getItem("analysis-survey");
+
+    if (value) {
+      return value;
     }
 
-    if (sortedExpressions.length) {
+    if (matchSurveys.length) {
+      return matchSurveys[0].id;
+    }
+  }
+
+  function defaultAnalysis() {
+    if (selectedSurvey?.pickLists.length) {
+      return { type: "picklist" as const, pickList: selectedSurvey.pickLists[0] };
+    }
+
+    if (sortedExpressions?.length) {
       return { type: "expression" as const, expression: sortedExpressions[0] };
     }
   }
 
-  function defaultSelectionString() {
-    if (pageData.surveyType != "match") return;
-
+  function defaultAnalysisString() {
     const value = sessionStorage.getItem("analysis-view");
 
     if (value) {
       const [type, name] = value.split("-", 2);
 
       if (
-        (type == "picklist" && pageData.surveyRecord.pickLists.some((pl) => pl.name == name)) ||
-        (type == "expression" && sortedExpressions.some((e) => e.name == name))
+        (type == "picklist" && selectedSurvey?.pickLists.some((pl) => pl.name == name)) ||
+        (type == "expression" && sortedExpressions?.some((e) => e.name == name))
       ) {
         return value;
       }
     }
 
-    if (pageData.surveyRecord.pickLists.length) {
-      return "picklist-" + pageData.surveyRecord.pickLists[0].name;
+    if (selectedSurvey?.pickLists.length) {
+      return "picklist-" + selectedSurvey?.pickLists[0].name;
     }
 
-    if (sortedExpressions.length) {
+    if (sortedExpressions?.length) {
       return "expression-" + sortedExpressions[0].name;
     }
   }
@@ -123,58 +174,67 @@
 
 <span>Match {match.number}</span>
 
-{#if !hideAnalysis}
-  <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2 text-sm">
-    {#if pageData.surveyRecord.pickLists.length}
-      <optgroup label="Pick Lists">
-        {#each pageData.surveyRecord.pickLists as pickList}
-          <option value="picklist-{pickList.name}">{pickList.name}</option>
+{#if showAnalysis}
+  <div class="flex flex-wrap gap-2 text-sm">
+    {#if matchSurveys.length > 1}
+      <select bind:value={selectedSurveyId} class="text-theme bg-neutral-800 p-2">
+        {#each matchSurveys as survey (survey.id)}
+          <option value={survey.id}>{survey.name}</option>
         {/each}
-      </optgroup>
+      </select>
     {/if}
-    {#if expressions.surveyDerived?.length}
-      <optgroup label="Survey Expressions from expressions">
-        {#each expressions.surveyDerived as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.surveyTba?.length}
-      <optgroup label="Survey Expressions from TBA">
-        {#each expressions.surveyTba as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.surveyPrimitive?.length}
-      <optgroup label="Survey Expressions from fields">
-        {#each expressions.surveyPrimitive as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryDerived?.length}
-      <optgroup label="Entry Expressions from expressions">
-        {#each expressions.entryDerived as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryTba?.length}
-      <optgroup label="Entry Expressions from TBA">
-        {#each expressions.entryTba as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-    {#if expressions.entryPrimitive?.length}
-      <optgroup label="Entry Expressions from fields">
-        {#each expressions.entryPrimitive as expression}
-          <option value="expression-{expression.name}">{expression.name}</option>
-        {/each}
-      </optgroup>
-    {/if}
-  </select>
+    <select bind:value={selectedAnalysisString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+      {#if selectedSurvey?.pickLists.length}
+        <optgroup label="Pick Lists">
+          {#each selectedSurvey.pickLists as pickList}
+            <option value="picklist-{pickList.name}">{pickList.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.surveyDerived?.length}
+        <optgroup label="Survey Expressions from expressions">
+          {#each expressions.surveyDerived as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.surveyTba?.length}
+        <optgroup label="Survey Expressions from TBA">
+          {#each expressions.surveyTba as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.surveyPrimitive?.length}
+        <optgroup label="Survey Expressions from fields">
+          {#each expressions.surveyPrimitive as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.entryDerived?.length}
+        <optgroup label="Entry Expressions from expressions">
+          {#each expressions.entryDerived as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.entryTba?.length}
+        <optgroup label="Entry Expressions from TBA">
+          {#each expressions.entryTba as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      {#if expressions?.entryPrimitive?.length}
+        <optgroup label="Entry Expressions from fields">
+          {#each expressions.entryPrimitive as expression}
+            <option value="expression-{expression.name}">{expression.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
+    </select>
+  </div>
 {/if}
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">

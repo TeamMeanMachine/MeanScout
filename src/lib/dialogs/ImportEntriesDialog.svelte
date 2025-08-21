@@ -10,11 +10,11 @@
   import { CircleCheckBigIcon, CircleIcon, Undo2Icon } from "@lucide/svelte";
 
   let {
-    surveyRecord,
+    surveyRecords,
     existingEntries,
     onimport,
   }: {
-    surveyRecord: Survey;
+    surveyRecords: Survey[];
     existingEntries: Entry[];
     onimport: () => void;
   } = $props();
@@ -147,7 +147,7 @@
   }
 
   function parseJsonEntry(jsonEntry: Entry) {
-    if (jsonEntry.surveyId != surveyRecord.id) {
+    if (!surveyRecords.some((survey) => survey.id == jsonEntry.surveyId)) {
       return;
     }
 
@@ -247,7 +247,7 @@
         </tr>
         <tr>
           <th class="w-0 p-2 text-center">Team</th>
-          {#if surveyRecord.type == "match"}
+          {#if surveyRecords.some((survey) => survey.type == "match")}
             <th class="w-0 p-2">Match</th>
             <th class="w-0 p-2">Absent</th>
           {/if}
@@ -261,9 +261,9 @@
         {#each importedEntries as entry}
           <tr>
             <td class="p-2 text-center">{entry.team}</td>
-            {#if entry.type == "match"}
-              <td class="p-2 text-center">{entry.match}</td>
-              <td class="p-2 text-center">{entry.absent || ""}</td>
+            {#if surveyRecords.some((survey) => survey.type == "match")}
+              <td class="p-2 text-center">{entry.type == "match" ? entry.match : ""}</td>
+              <td class="p-2 text-center">{entry.type == "match" ? entry.absent || "" : ""}</td>
             {/if}
             {#if duplicateIds.size}
               <td class="p-2">

@@ -42,7 +42,7 @@ export async function loadEntryPageData(entryId: string): Promise<EntryPageData>
   const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
   const teamName = compRecord.teams.find((t) => t.number == entryRecord.team)?.name;
 
-  localStorage.setItem("home", `survey/${surveyRecord.id}`);
+  localStorage.setItem("home", `comp/${compRecord.id}`);
 
   return {
     all,

@@ -20,7 +20,7 @@
     ShareIcon,
     UsersIcon,
   } from "@lucide/svelte";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
   import OverwriteCompDialog from "$lib/dialogs/OverwriteCompDialog.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
@@ -31,8 +31,6 @@
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import { getMatchTeamFontWeight, sessionStorageStore, type Match } from "$lib";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
-  import { getFieldsWithDetails } from "$lib/field";
   import { sortExpressions } from "$lib/expression";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { getPredictionsPerScout } from "$lib/prediction";
@@ -212,33 +210,6 @@
       .slice(0, 2);
   }
 
-  function getSurveyPageData(surveyRecord: Survey, entryRecords: Entry[]): SurveyPageData {
-    const fieldRecords = data.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
-    const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
-
-    if (surveyRecord.type == "match") {
-      return {
-        all: data.all,
-        compRecord: data.compRecord,
-        fieldRecords,
-        fieldsWithDetails,
-        surveyType: "match",
-        surveyRecord,
-        entryRecords: entryRecords.filter((e) => e.type == "match"),
-      };
-    } else {
-      return {
-        all: data.all,
-        compRecord: data.compRecord,
-        fieldRecords,
-        fieldsWithDetails,
-        surveyType: "pit",
-        surveyRecord,
-        entryRecords: entryRecords.filter((e) => e.type == "pit"),
-      };
-    }
-  }
-
   function matchHasTeamStore(match: Match) {
     return [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3].includes($teamStore);
   }
@@ -278,7 +249,7 @@
       <div class="flex grow flex-col">
         <h2 class="font-bold">Entries</h2>
         <span class="text-xs font-light text-balance">
-          {data.entryRecords.filter((e) => e.status != "draft").length} total
+          {data.entryRecords.length} total
         </span>
       </div>
       <Anchor route="comp/{data.compRecord.id}/entries">
@@ -300,13 +271,14 @@
           <Button
             onclick={() => {
               openDialog(NewEntryDialog, {
-                pageData: getSurveyPageData(surveyRecord, entryRecords),
+                pageData: data,
+                surveyRecord,
                 prefills,
                 onnewscout(newScout) {
                   data = {
                     ...data,
                     compRecord: { ...data.compRecord, scouts: [...(data.compRecord.scouts || []), newScout] },
-                  } as PageData;
+                  };
                   idb.put("comps", $state.snapshot(data.compRecord));
                 },
               });

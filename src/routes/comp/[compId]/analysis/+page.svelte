@@ -10,9 +10,7 @@
   import BarChart from "$lib/components/BarChart.svelte";
   import CompPageHeader from "../CompPageHeader.svelte";
   import { getFieldsWithDetails } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
-  import type { Entry, MatchEntry } from "$lib/entry";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
+  import type { MatchEntry } from "$lib/entry";
 
   let { data }: PageProps = $props();
 
@@ -72,14 +70,6 @@
     return getFieldsWithDetails(
       selectedSurvey,
       data.fieldRecords.filter((field) => field.surveyId == selectedSurveyId),
-    );
-  });
-
-  const chartPageData = $derived.by(() => {
-    if (!selectedSurvey) return;
-    return getSurveyPageData(
-      selectedSurvey,
-      data.entryRecords.filter((e) => e.surveyId == selectedSurveyId),
     );
   });
 
@@ -180,24 +170,6 @@
     if (sortedExpressions?.length) {
       return "expression-" + sortedExpressions[0].name;
     }
-  }
-
-  function getSurveyPageData(
-    surveyRecord: MatchSurvey,
-    entryRecords: Entry[],
-  ): Extract<SurveyPageData, { surveyType: "match" }> {
-    const fieldRecords = data.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
-    const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
-
-    return {
-      all: data.all,
-      compRecord: data.compRecord,
-      fieldRecords,
-      fieldsWithDetails,
-      surveyType: "match",
-      surveyRecord,
-      entryRecords: entryRecords.filter((e) => e.type == "match"),
-    };
   }
 </script>
 
@@ -300,15 +272,15 @@
       </div>
     </div>
 
-    {#if analysisData && chartPageData}
+    {#if analysisData && selectedSurvey}
       {#if $chartType == "bar"}
-        <BarChart pageData={chartPageData} {analysisData} />
+        <BarChart pageData={data} {analysisData} />
       {:else if $chartType == "race"}
         {#key analysisData}
-          <RaceChart pageData={chartPageData} {entriesByTeam} {analysisData} />
+          <RaceChart pageData={data} surveyRecord={selectedSurvey} {entriesByTeam} {analysisData} />
         {/key}
       {:else if $chartType == "stacked"}
-        <StackedChart pageData={chartPageData} {analysisData} />
+        <StackedChart pageData={data} {analysisData} />
       {/if}
     {/if}
   {/if}

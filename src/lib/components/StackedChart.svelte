@@ -2,14 +2,14 @@
   import { colors, type AnalysisData } from "$lib/analysis";
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import { goto } from "$app/navigation";
 
   let {
     pageData,
     analysisData,
   }: {
-    pageData: SurveyPageData;
+    pageData: CompPageData;
     analysisData: AnalysisData;
   } = $props();
 

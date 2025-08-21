@@ -8,18 +8,25 @@
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
   import { goto } from "$app/navigation";
+  import type { MatchSurvey } from "$lib/survey";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import { getFieldsWithDetails } from "$lib/field";
 
   let {
     pageData,
+    surveyRecord,
     entriesByTeam,
     analysisData,
   }: {
-    pageData: Extract<SurveyPageData, { surveyType: "match" }>;
+    pageData: CompPageData;
+    surveyRecord: MatchSurvey;
     entriesByTeam: Record<string, MatchEntry[]>;
     analysisData: AnalysisData;
   } = $props();
+
+  const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const teamView = sessionStorageStore<string>("team-view", "");
   const playing = sessionStorageStore<"" | "true">("race-chart-playing", "");
@@ -27,7 +34,7 @@
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
   const tweenOptions = { delay: 0, easing: linear, duration: changeDuration };
-  const maxMatch = Math.max(...pageData.entryRecords.map((e) => e.match));
+  const maxMatch = Math.max(...pageData.entryRecords.map((e) => (e.type == "match" ? e.match : 0)));
 
   const initMatch = getInitMatch();
 
@@ -88,16 +95,16 @@
         ? getPickListData(
             pageData.compRecord,
             analysisData.pickList.name,
-            pageData.surveyRecord,
+            surveyRecord,
             subsetEntriesByTeam,
-            pageData.fieldsWithDetails.orderedSingle,
+            fieldsWithDetails.orderedSingle,
           )
         : getExpressionData(
             pageData.compRecord,
             analysisData.expression.name,
-            pageData.surveyRecord,
+            surveyRecord,
             subsetEntriesByTeam,
-            pageData.fieldsWithDetails.orderedSingle,
+            fieldsWithDetails.orderedSingle,
           );
 
     if (!data) {

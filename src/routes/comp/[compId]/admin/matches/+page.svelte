@@ -7,7 +7,7 @@
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import CompAdminHeader from "../CompAdminHeader.svelte";
-  import type { PageData, PageProps } from "./$types";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
@@ -31,7 +31,7 @@
                   data = {
                     ...data,
                     compRecord: { ...data.compRecord, matches, modified: new Date() },
-                  } as PageData;
+                  };
                   idb.put("comps", $state.snapshot(data.compRecord));
                 },
                 ondelete() {
@@ -42,7 +42,7 @@
                       matches: data.compRecord.matches.filter((m) => m.number != match.number),
                       modified: new Date(),
                     },
-                  } as PageData;
+                  };
                   idb.put("comps", $state.snapshot(data.compRecord));
                 },
               });
@@ -84,7 +84,7 @@
                   matches: [...data.compRecord.matches, match],
                   modified: new Date(),
                 },
-              } as PageData;
+              };
               idb.put("comps", $state.snapshot(data.compRecord));
             },
           })}

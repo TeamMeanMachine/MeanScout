@@ -1,13 +1,13 @@
 <script lang="ts">
   import { type Team } from "$lib";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
 
   let {
     pageData,
     team,
   }: {
-    pageData: SurveyPageData;
+    pageData: CompPageData;
     team: Team;
   } = $props();
 </script>
@@ -19,6 +19,9 @@
   {/if}
 </div>
 
-<div class="@container max-h-[500px] overflow-auto">
-  <TeamEntryTable {pageData} {team} />
+<div class="@container flex max-h-[500px] flex-col overflow-auto">
+  {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+    <h2 class="sticky left-0 font-bold not-first-of-type:mt-4">{surveyRecord.name}</h2>
+    <TeamEntryTable {pageData} {surveyRecord} {team} />
+  {/each}
 </div>

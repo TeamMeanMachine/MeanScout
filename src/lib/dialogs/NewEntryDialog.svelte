@@ -3,21 +3,24 @@
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
-  import { getDefaultFieldValue } from "$lib/field";
+  import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import { EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import NewScoutDialog from "./NewScoutDialog.svelte";
   import ViewMatchDialog from "./ViewMatchDialog.svelte";
   import { goto } from "$app/navigation";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { Survey } from "$lib/survey";
 
   let {
     pageData,
+    surveyRecord,
     prefills,
     onnewscout,
   }: {
-    pageData: SurveyPageData;
+    pageData: CompPageData;
+    surveyRecord: Survey;
     prefills: {
       match: number;
       team: string;
@@ -25,6 +28,9 @@
     };
     onnewscout: (scout: string) => void;
   } = $props();
+
+  const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const id = idb.generateId();
 
@@ -59,7 +65,7 @@
     match;
     const teamSet = new Set<string>();
 
-    if (matchData && pageData.surveyType == "match") {
+    if (matchData && surveyRecord.type == "match") {
       switch ($targetStore) {
         case "red 1":
           teamSet.add(matchData.red1);
@@ -122,19 +128,19 @@
         return;
       }
 
-      if (pageData.surveyType == "match" && !/\d{1,3}/.test(`${match}`)) {
+      if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${match}`)) {
         error = "invalid value for match";
         return;
       }
 
-      const defaultValues = pageData.fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
+      const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
       let entry: Entry;
-      if (pageData.surveyType == "match") {
+      if (surveyRecord.type == "match") {
         entry = {
           id,
-          surveyId: pageData.surveyRecord.id,
-          type: pageData.surveyRecord.type,
+          surveyId: surveyRecord.id,
+          type: surveyRecord.type,
           status: "draft",
           team,
           match,
@@ -156,8 +162,8 @@
       } else {
         entry = {
           id,
-          surveyId: pageData.surveyRecord.id,
-          type: pageData.surveyRecord.type,
+          surveyId: surveyRecord.id,
+          type: surveyRecord.type,
           status: "draft",
           team,
           values: defaultValues,
@@ -193,7 +199,7 @@
 <div class="flex flex-wrap items-center justify-between gap-2">
   <div class="flex flex-col">
     <h2 class="font-bold">New entry</h2>
-    <span class="text-xs font-light">{pageData.compRecord.name} - {pageData.surveyRecord.name}</span>
+    <span class="text-xs font-light">{surveyRecord.name}</span>
   </div>
   <span class="text-xs font-light">{id}</span>
 </div>
@@ -220,7 +226,7 @@
                   ...pageData.compRecord,
                   scouts: [...(pageData.compRecord.scouts || []), newScout],
                 },
-              } as SurveyPageData;
+              };
               idb.put("comps", $state.snapshot(pageData.compRecord));
               scout = newScout;
               onnewscout(newScout);
@@ -238,7 +244,7 @@
   </div>
 {/if}
 
-{#if pageData.surveyType == "match"}
+{#if surveyRecord.type == "match"}
   <div class="flex items-end gap-2">
     <label class="flex grow flex-col">
       Match
@@ -362,7 +368,7 @@
   </label>
 {/if}
 
-{#if pageData.surveyType == "match" && pageData.compRecord.scouts}
+{#if surveyRecord.type == "match" && pageData.compRecord.scouts}
   <h2 class="mt-4 font-bold">Prediction</h2>
 
   <Button

@@ -18,9 +18,14 @@
 
   let error = $state("");
 
+  const thisCompSurveys = data.all.surveys.filter((survey) => survey.compId == data.compRecord.id);
+
   const suggestedScouts = $derived(
     new Set([
-      ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+      ...data.all.entries
+        .filter((entry) => thisCompSurveys.some((survey) => survey.id == entry.surveyId))
+        .map((entry) => entry.scout)
+        .filter((scout) => scout !== undefined),
       ...(data.compRecord.scouts || []),
     ])
       .values()
@@ -47,7 +52,7 @@
     { type: "sm", text: `${data.compRecord.name} - ${data.surveyRecord.name}` },
     { type: "h1", text: `Draft` },
   ]}
-  backLink="survey/{data.surveyRecord.id}"
+  backLink="comp/{data.compRecord.id}"
 />
 
 <div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
@@ -96,7 +101,7 @@
                   ...data.compRecord,
                   scouts: [...(data.compRecord.scouts || []), newScout],
                 },
-              } as PageData;
+              };
               idb.put("comps", $state.snapshot(data.compRecord));
               entry.scout = newScout;
               onchange();
@@ -179,7 +184,7 @@
           onexport: () => {
             idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
             idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
-            goto(`#/survey/${data.surveyRecord.id}`);
+            goto(`#/comp/${data.compRecord.id}`);
           },
         });
       }}
@@ -195,7 +200,7 @@
           ondelete: () => {
             idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
             idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
-            goto(`#/survey/${data.surveyRecord.id}`);
+            goto(`#/comp/${data.compRecord.id}`);
           },
         })}
     >

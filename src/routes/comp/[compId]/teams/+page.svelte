@@ -2,10 +2,6 @@
   import type { PageProps } from "./$types";
   import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
   import CompPageHeader from "../CompPageHeader.svelte";
-  import type { Survey } from "$lib/survey";
-  import type { Entry } from "$lib/entry";
-  import type { SurveyPageData } from "$lib/loaders/loadSurveyPageData";
-  import { getFieldsWithDetails } from "$lib/field";
 
   let { data }: PageProps = $props();
 
@@ -34,34 +30,6 @@
   function defaultSelection() {
     return data.teams.at(0);
   }
-
-  function getSurveyPageData(surveyRecord: Survey): SurveyPageData {
-    const entryRecords = data.entryRecords.filter((e) => e.surveyId == surveyRecord.id);
-    const fieldRecords = data.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
-    const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
-
-    if (surveyRecord.type == "match") {
-      return {
-        all: data.all,
-        compRecord: data.compRecord,
-        fieldRecords,
-        fieldsWithDetails,
-        surveyType: "match",
-        surveyRecord,
-        entryRecords: entryRecords.filter((e) => e.type == "match"),
-      };
-    } else {
-      return {
-        all: data.all,
-        compRecord: data.compRecord,
-        fieldRecords,
-        fieldsWithDetails,
-        surveyType: "pit",
-        surveyRecord,
-        entryRecords: entryRecords.filter((e) => e.type == "pit"),
-      };
-    }
-  }
 </script>
 
 <CompPageHeader compRecord={data.compRecord} surveyRecords={data.surveyRecords} page="teams" pageTitle="Teams" />
@@ -76,13 +44,13 @@
       </select>
     </div>
 
-    {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
+    {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
       <div class="flex flex-col gap-2">
-        <h2 class="font-bold">{survey.name}</h2>
+        <h2 class="font-bold">{surveyRecord.name}</h2>
 
         {#if selected}
           <div class="@container overflow-x-auto">
-            <TeamEntryTable pageData={getSurveyPageData(survey)} team={selected} />
+            <TeamEntryTable pageData={data} {surveyRecord} team={selected} />
           </div>
         {/if}
       </div>
