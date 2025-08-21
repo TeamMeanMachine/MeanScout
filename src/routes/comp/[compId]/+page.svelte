@@ -430,6 +430,7 @@
               <Button
                 onclick={() => {
                   sessionStorage.setItem("analysis-view", `picklist-${pickList.name}`);
+                  sessionStorage.setItem("analysis-survey", survey.id);
                   goto(`#/comp/${data.compRecord.id}/analysis`);
                 }}
                 class="justify-between"
@@ -443,6 +444,7 @@
               <Button
                 onclick={() => {
                   sessionStorage.setItem("analysis-view", `expression-${expression.name}`);
+                  sessionStorage.setItem("analysis-survey", survey.id);
                   goto(`#/comp/${data.compRecord.id}/analysis`);
                 }}
                 class="justify-between"
@@ -498,7 +500,7 @@
         <span class="text-xs">Upcoming</span>
         <div class="flex flex-col gap-2">
           {#each upcomingMatches as match}
-            {@render teamRow(match)}
+            {@render matchRow(match)}
           {:else}
             <span class="text-sm">No upcoming matches.</span>
           {/each}
@@ -509,7 +511,7 @@
         <span class="col-span-full text-xs">Previous</span>
         <div class="flex flex-col gap-2">
           {#each previousMatches as match}
-            {@render teamRow(match)}
+            {@render matchRow(match)}
           {:else}
             <span class="text-sm">No previous matches.</span>
           {/each}
@@ -712,7 +714,7 @@
   </div>
 {/snippet}
 
-{#snippet teamRow(match: Match)}
+{#snippet matchRow(match: Match)}
   <Button
     onclick={() =>
       openDialog(ViewMatchDialog, {
