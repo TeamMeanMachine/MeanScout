@@ -14,7 +14,7 @@
     page: string;
   } = $props();
 
-  const routeBase = `survey/${surveyRecord.id}/admin`;
+  const routeBase = `survey/${surveyRecord.id}`;
 
   function getAnchorClass(matching: string) {
     return "active:left-0! active:top-0.5 " + (page == matching ? "font-bold underline" : "font-light");

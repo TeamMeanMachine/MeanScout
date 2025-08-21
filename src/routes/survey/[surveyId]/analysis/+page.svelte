@@ -1,208 +1,353 @@
 <script lang="ts">
-  import { sortExpressions } from "$lib/expression";
-  import Button from "$lib/components/Button.svelte";
-  import type { PageProps } from "./$types";
   import { sessionStorageStore } from "$lib";
-  import { type AnalysisData, getExpressionData, getPickListData } from "$lib/analysis";
-  import RaceChart from "$lib/components/RaceChart.svelte";
-  import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
-  import StackedChart from "$lib/components/StackedChart.svelte";
-  import BarChart from "$lib/components/BarChart.svelte";
-  import SurveyPageHeader from "../SurveyPageHeader.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
+  import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
+  import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
+  import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
+  import { sortExpressions, type Expression } from "$lib/expression";
+  import { idb } from "$lib/idb";
+  import { PlusIcon } from "@lucide/svelte";
+  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
-  const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
-  const sortedExpressions = data.surveyRecord.expressions.toSorted(sortExpressions);
+  let surveyRecord = $state($state.snapshot(data.surveyRecord));
 
-  const expressions = Object.groupBy(sortedExpressions, (e) => {
-    if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
-    if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
-    if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
-    if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
-    if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
-    if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
-    return "";
+  const newTab = sessionStorageStore<"entry" | "survey" | "picklist">("admin-analysis-new-tab", "entry");
+
+  const sortedExpressions = $derived(surveyRecord.expressions.toSorted(sortExpressions));
+
+  const usedExpressionNames = $derived([
+    ...surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
+    ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
+  ]);
+
+  const expressions = $derived({
+    surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
+    surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+    entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
+    entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
   });
 
-  let selectedString = $state(defaultSelectionString());
+  function expressionReferencesOther(e: Expression, other: Expression) {
+    if (e.input.from != "expressions") return false;
 
-  let selected = $derived.by(() => {
-    if (!selectedString) return defaultSelection();
-    const [type, name] = selectedString.split("-", 2);
+    for (const expressionName of e.input.expressionNames) {
+      if (expressionName == other.name) {
+        return true;
+      }
 
-    if (type == "picklist") {
-      const pickList = data.surveyRecord.pickLists.find((pl) => pl.name == name);
-      if (pickList) return { type: "picklist" as const, pickList };
-    } else if (type == "expression") {
-      const expression = data.surveyRecord.expressions.find((e) => e.name == name);
-      if (expression) return { type: "expression" as const, expression };
-    }
-
-    return defaultSelection();
-  });
-
-  let analysisData = $derived.by<AnalysisData | undefined>(() => {
-    if (selected?.type == "picklist") {
-      return getPickListData(
-        data.compRecord,
-        selected.pickList.name,
-        data.surveyRecord,
-        data.entriesByTeam,
-        data.fieldsWithDetails.orderedSingle,
-      );
-    } else if (selected?.type == "expression") {
-      return getExpressionData(
-        data.compRecord,
-        selected.expression.name,
-        data.surveyRecord,
-        data.entriesByTeam,
-        data.fieldsWithDetails.orderedSingle,
-      );
-    }
-  });
-
-  $effect(() => {
-    if (!selectedString) return;
-    sessionStorage.setItem("analysis-view", selectedString);
-  });
-
-  function defaultSelection() {
-    if (data.surveyRecord.pickLists.length) {
-      return { type: "picklist" as const, pickList: data.surveyRecord.pickLists[0] };
-    }
-
-    if (sortedExpressions.length) {
-      return { type: "expression" as const, expression: sortedExpressions[0] };
-    }
-  }
-
-  function defaultSelectionString() {
-    const value = sessionStorage.getItem("analysis-view");
-
-    if (value) {
-      const [type, name] = value.split("-", 2);
-
-      if (
-        (type == "picklist" && data.surveyRecord.pickLists.some((pl) => pl.name == name)) ||
-        (type == "expression" && sortedExpressions.some((e) => e.name == name))
-      ) {
-        return value;
+      const newExp = surveyRecord.expressions.find((newExp) => newExp.name == expressionName);
+      if (newExp && expressionReferencesOther(newExp, e)) {
+        return true;
       }
     }
 
-    if (data.surveyRecord.pickLists.length) {
-      return "picklist-" + data.surveyRecord.pickLists[0].name;
-    }
+    return false;
+  }
 
-    if (sortedExpressions.length) {
-      return "expression-" + sortedExpressions[0].name;
-    }
+  function getExpressionsAvailableTo(expression: Expression) {
+    return {
+      entryDerived: expressions.entryDerived.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+      entryTba: expressions.entryTba.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+      entryPrimitive: expressions.entryPrimitive.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+      surveyDerived: expressions.surveyDerived.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+      surveyTba: expressions.surveyTba.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+      surveyPrimitive: expressions.surveyPrimitive.filter(
+        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+      ),
+    };
+  }
+
+  function tabClass(matching: string) {
+    return $newTab == matching ? "font-bold" : "font-light";
+  }
+
+  function newExpression(constrain: { scope: "entry" | "survey"; input: "fields" | "tba" | "expressions" }) {
+    openDialog(NewExpressionDialog, {
+      surveyRecord,
+      orderedSingleFields: data.fieldsWithDetails.orderedSingle,
+      expressions,
+      constrain,
+      oncreate(expression) {
+        surveyRecord.expressions.push(expression);
+        surveyRecord.modified = new Date();
+        idb.put("surveys", $state.snapshot(surveyRecord));
+      },
+    });
   }
 </script>
 
-<SurveyPageHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="analysis" pageTitle="Analysis" />
+<div class="flex flex-col gap-6" style="view-transition-name:admin">
+  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="analysis" />
 
-<div class="flex flex-col gap-6" style="view-transition-name:analysis">
-  {#if !data.fieldRecords.length || !data.entryRecords.length || (!data.surveyRecord.pickLists.length && !data.surveyRecord.expressions.length)}
-    <span class="text-sm">No analysis available.</span>
+  {#if !data.fieldRecords.length}
+    <span class="text-sm">To setup analysis, go create some fields.</span>
   {:else}
-    <div class="flex flex-wrap gap-4">
-      <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
-        {#if data.surveyRecord.pickLists.length}
-          <optgroup label="Pick Lists">
-            {#each data.surveyRecord.pickLists as pickList}
-              <option value="picklist-{pickList.name}">{pickList.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.surveyDerived?.length}
-          <optgroup label="Survey Expressions from expressions">
-            {#each expressions.surveyDerived as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.surveyTba?.length}
-          <optgroup label="Survey Expressions from TBA">
-            {#each expressions.surveyTba as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.surveyPrimitive?.length}
-          <optgroup label="Survey Expressions from fields">
-            {#each expressions.surveyPrimitive as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.entryDerived?.length}
-          <optgroup label="Entry Expressions from expressions">
-            {#each expressions.entryDerived as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.entryTba?.length}
-          <optgroup label="Entry Expressions from TBA">
-            {#each expressions.entryTba as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions.entryPrimitive?.length}
-          <optgroup label="Entry Expressions from fields">
-            {#each expressions.entryPrimitive as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-      </select>
-
-      <div class="flex flex-wrap gap-4">
-        <div class="flex flex-wrap gap-2 text-sm">
-          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
-            Bar
-          </Button>
-          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
-            Race
-          </Button>
-          <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
-            Stacked
-          </Button>
+    {#if surveyRecord.pickLists.length}
+      <div class="flex flex-col gap-3">
+        <h2 class="font-bold">Pick Lists</h2>
+        <div class="flex flex-wrap gap-2">
+          {#each surveyRecord.pickLists as pickList, index}
+            <Button
+              onclick={() => {
+                openDialog(EditPickListDialog, {
+                  expressions,
+                  pickList,
+                  onupdate(pickList) {
+                    surveyRecord.pickLists[index] = pickList;
+                    surveyRecord.modified = new Date();
+                    idb.put("surveys", $state.snapshot(surveyRecord));
+                  },
+                  ondelete() {
+                    surveyRecord.pickLists.splice(index, 1);
+                    surveyRecord.modified = new Date();
+                    idb.put("surveys", $state.snapshot(surveyRecord));
+                  },
+                });
+              }}
+              class="text-sm"
+            >
+              {pickList.name}
+            </Button>
+          {/each}
         </div>
+      </div>
+    {/if}
 
-        {#if analysisData}
+    {#if sortedExpressions.some((e) => e.scope == "survey")}
+      <div class="flex flex-col gap-3">
+        <h2 class="font-bold">Survey Expressions</h2>
+
+        {#if expressions.surveyDerived.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From expressions</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.surveyDerived as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if expressions.surveyTba.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From TBA</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.surveyTba as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if expressions.surveyPrimitive.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From fields</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.surveyPrimitive as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    {#if sortedExpressions.some((e) => e.scope == "entry")}
+      <div class="flex flex-col gap-3">
+        <h2 class="font-bold">Entry Expressions</h2>
+
+        {#if expressions.entryDerived.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From expressions</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.entryDerived as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if expressions.entryTba.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From TBA</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.entryTba as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if expressions.entryPrimitive.length}
+          <div class="flex flex-col">
+            <span class="text-xs">From fields</span>
+            <div class="flex flex-wrap gap-2">
+              {#each expressions.entryPrimitive as expression}
+                {@render expressionButton(expression)}
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <div
+      class="sticky bottom-3 z-20 flex w-80 max-w-full flex-col gap-2 self-start border border-neutral-500 bg-neutral-900 p-2 text-xs shadow-2xl"
+    >
+      <div class="flex flex-wrap justify-stretch gap-2">
+        <Button onclick={() => ($newTab = "entry")} class={tabClass("entry")}>Entry</Button>
+        <Button onclick={() => ($newTab = "survey")} class={tabClass("survey")}>Survey</Button>
+        <Button onclick={() => ($newTab = "picklist")} class={tabClass("picklist")}>Pick List</Button>
+      </div>
+
+      <div class="flex flex-col">
+        {#if $newTab == "entry"}
+          <span>Entry Expression</span>
+
           <div class="flex flex-wrap gap-2">
-            {#if "canShare" in navigator}
-              <Button onclick={() => navigator.share({ text: analysisData.text })}>
-                <Share2Icon class="text-theme size-5" />
-                <span class="text-sm">Share</span>
-              </Button>
-            {/if}
+            <Button onclick={() => newExpression({ scope: "entry", input: "fields" })}>
+              <PlusIcon class="text-theme size-5" />
+              Fields
+            </Button>
+            <Button
+              onclick={() => newExpression({ scope: "entry", input: "tba" })}
+              disabled={!surveyRecord.tbaMetrics?.length}
+              class="text-xs"
+            >
+              <PlusIcon class="text-theme size-5" />
+              TBA
+            </Button>
+            <Button
+              onclick={() => newExpression({ scope: "entry", input: "expressions" })}
+              disabled={!sortedExpressions.some((e) => e.scope == "entry")}
+            >
+              <PlusIcon class="text-theme size-5" />
+              Expressions
+            </Button>
+          </div>
+        {:else if $newTab == "survey"}
+          <span>Survey Expression</span>
 
-            {#if "clipboard" in navigator}
-              <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
-                <ClipboardCopy class="text-theme size-5" />
-                <span class="text-sm">Copy</span>
-              </Button>
-            {/if}
+          <div class="flex flex-wrap gap-2">
+            <Button onclick={() => newExpression({ scope: "survey", input: "fields" })}>
+              <PlusIcon class="text-theme size-5" />
+              Fields
+            </Button>
+            <Button
+              onclick={() => newExpression({ scope: "survey", input: "tba" })}
+              disabled={!surveyRecord.tbaMetrics?.length}
+            >
+              <PlusIcon class="text-theme size-5" />
+              TBA
+            </Button>
+            <Button
+              onclick={() => newExpression({ scope: "survey", input: "expressions" })}
+              disabled={!sortedExpressions.length}
+            >
+              <PlusIcon class="text-theme size-5" />
+              Expressions
+            </Button>
+          </div>
+        {:else if $newTab == "picklist"}
+          <span>New</span>
+
+          <div class="flex flex-wrap gap-2">
+            <Button
+              onclick={() => {
+                openDialog(NewPickListDialog, {
+                  expressions,
+                  oncreate(pickList) {
+                    surveyRecord.pickLists.push(pickList);
+                    surveyRecord.modified = new Date();
+                    idb.put("surveys", $state.snapshot(surveyRecord));
+                  },
+                });
+              }}
+              disabled={!sortedExpressions.length}
+            >
+              <PlusIcon class="text-theme size-5" />
+              Pick list
+            </Button>
           </div>
         {/if}
       </div>
     </div>
-
-    {#if analysisData}
-      {#if $chartType == "bar"}
-        <BarChart pageData={data} {analysisData} />
-      {:else if $chartType == "race"}
-        {#key analysisData}
-          <RaceChart pageData={data} entriesByTeam={data.entriesByTeam} {analysisData} />
-        {/key}
-      {:else if $chartType == "stacked"}
-        <StackedChart pageData={data} {analysisData} />
-      {/if}
-    {/if}
   {/if}
 </div>
+
+{#snippet expressionButton(expression: Expression)}
+  {@const index = surveyRecord.expressions.findIndex((e) => e.name == expression.name)}
+
+  <Button
+    onclick={() => {
+      openDialog(EditExpressionDialog, {
+        surveyRecord,
+        orderedSingleFields: data.fieldsWithDetails.orderedSingle,
+        expressions: getExpressionsAvailableTo(expression),
+        expression,
+        index,
+        usedExpressionNames,
+        onupdate(expression) {
+          let pickLists = structuredClone($state.snapshot(surveyRecord.pickLists));
+          let expressions = structuredClone($state.snapshot(surveyRecord.expressions));
+
+          const previousName = expressions[index].name;
+          if (expression.name != previousName) {
+            pickLists = pickLists.map((pickList) => {
+              pickList.weights = pickList.weights.map((weight) => {
+                if (weight.expressionName == previousName) {
+                  weight.expressionName = expression.name;
+                }
+                return weight;
+              });
+              return pickList;
+            });
+
+            expressions = expressions.map((e) => {
+              if (e.input.from == "expressions") {
+                e.input.expressionNames = e.input.expressionNames.map((expressionName) => {
+                  if (expressionName == previousName) {
+                    return expression.name;
+                  }
+                  return expressionName;
+                });
+              }
+              return e;
+            });
+          }
+
+          expressions[index] = expression;
+          surveyRecord.pickLists = pickLists;
+          surveyRecord.expressions = expressions;
+          surveyRecord.modified = new Date();
+          idb.put("surveys", $state.snapshot(surveyRecord));
+        },
+        ondelete() {
+          surveyRecord.expressions.splice(index, 1);
+          surveyRecord.modified = new Date();
+          idb.put("surveys", $state.snapshot(surveyRecord));
+        },
+      });
+    }}
+    class="text-sm"
+  >
+    {expression.name}
+  </Button>
+{/snippet}

@@ -63,7 +63,7 @@
       };
 
       addRequest.onsuccess = () => {
-        goto(`#/survey/${survey.id}/admin`);
+        goto(`#/survey/${survey.id}`);
       };
     },
   };

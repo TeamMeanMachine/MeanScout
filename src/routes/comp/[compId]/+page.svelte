@@ -573,7 +573,7 @@
 
     {#if data.surveyRecords.length}
       {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
-        <Anchor route="survey/{survey.id}/admin">
+        <Anchor route="survey/{survey.id}">
           <div class="flex grow flex-col">
             <span>{survey.name}</span>
             <span class="text-xs font-light">{survey.id}</span>
