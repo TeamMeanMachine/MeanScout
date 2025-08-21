@@ -14,15 +14,15 @@
 
   let {
     pageData,
-    prefilledMatch,
-    prefilledTeam,
-    prefilledScout,
+    prefills,
     onnewscout,
   }: {
     pageData: SurveyPageData;
-    prefilledMatch: number;
-    prefilledTeam: string;
-    prefilledScout: string | undefined;
+    prefills: {
+      match: number;
+      team: string;
+      scout: string | undefined;
+    };
     onnewscout: (scout: string) => void;
   } = $props();
 
@@ -38,10 +38,10 @@
       .toSorted((a, b) => a.localeCompare(b)),
   );
 
-  let match = $state(prefilledMatch);
-  let team = $state(prefilledTeam);
+  let match = $state(prefills.match);
+  let team = $state(prefills.team);
 
-  let scout = $state(prefilledScout);
+  let scout = $state(prefills.scout);
 
   let prediction = $state<"red" | "blue" | undefined>();
   let predictionReason = $state<string | undefined>();
@@ -191,7 +191,10 @@
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  <h2 class="font-bold">New entry</h2>
+  <div class="flex flex-col">
+    <h2 class="font-bold">New entry</h2>
+    <span class="text-xs font-light">{pageData.compRecord.name} - {pageData.surveyRecord.name}</span>
+  </div>
   <span class="text-xs font-light">{id}</span>
 </div>
 

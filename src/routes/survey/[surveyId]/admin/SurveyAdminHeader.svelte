@@ -32,7 +32,7 @@
       { type: "sm", text: `${compRecord.name} - ${surveyRecord.name}` },
       { type: "h1", text: "Admin" },
     ]}
-    backLink="survey/{surveyRecord.id}"
+    backLink="comp/{compRecord.id}"
   />
 
   <div
