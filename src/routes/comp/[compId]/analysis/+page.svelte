@@ -173,7 +173,7 @@
   }
 </script>
 
-<CompPageHeader compRecord={data.compRecord} surveyRecords={data.surveyRecords} page="analysis" pageTitle="Analysis" />
+<CompPageHeader pageData={data} page="analysis" pageTitle="Analysis" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || !showAnalysisWidget}

@@ -35,7 +35,7 @@
   }
 </script>
 
-<CompPageHeader compRecord={data.compRecord} surveyRecords={data.surveyRecords} page="matches" pageTitle="Matches" />
+<CompPageHeader pageData={data} page="matches" pageTitle="Matches" />
 
 <div class="flex flex-col gap-3" style="view-transition-name:matches">
   {#if $teamStore}

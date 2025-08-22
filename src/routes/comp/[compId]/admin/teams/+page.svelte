@@ -11,7 +11,7 @@
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin">
+<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
   <CompAdminHeader compRecord={data.compRecord} page="teams" />
 
   <div class="flex flex-col gap-3">

@@ -18,12 +18,7 @@
   }
 </script>
 
-<CompPageHeader
-  compRecord={data.compRecord}
-  surveyRecords={data.surveyRecords}
-  page="predictions"
-  pageTitle="Predictions"
-/>
+<CompPageHeader pageData={data} page="predictions" pageTitle="Predictions" />
 
 <div class="flex flex-col gap-6" style="view-transition-name:predictions">
   <div class="flex flex-wrap gap-2 text-sm">

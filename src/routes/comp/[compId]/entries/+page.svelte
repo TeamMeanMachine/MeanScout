@@ -157,7 +157,7 @@
   }
 </script>
 
-<CompPageHeader compRecord={data.compRecord} surveyRecords={data.surveyRecords} page="entries" pageTitle="Entries" />
+<CompPageHeader pageData={data} page="entries" pageTitle="Entries" />
 
 <div class="mb-16 flex flex-col gap-6" style="view-transition-name:entries">
   {#if !data.entryRecords.length}

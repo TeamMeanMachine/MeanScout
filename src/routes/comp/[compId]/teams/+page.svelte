@@ -32,7 +32,7 @@
   }
 </script>
 
-<CompPageHeader compRecord={data.compRecord} surveyRecords={data.surveyRecords} page="teams" pageTitle="Teams" />
+<CompPageHeader pageData={data} page="teams" pageTitle="Teams" />
 
 <div class="flex flex-col gap-4" style="view-transition-name:teams">
   {#if data.teams.length}

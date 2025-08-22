@@ -7,7 +7,7 @@
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin">
+<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
   <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="preview" />
 
   {#if data.fieldRecords.length}

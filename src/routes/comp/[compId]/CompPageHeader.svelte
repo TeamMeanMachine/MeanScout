@@ -1,32 +1,33 @@
 <script lang="ts">
-  import type { Comp } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import type { Survey } from "$lib/survey";
+  import { openDialog } from "$lib/dialog";
+  import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
+  import type { CompPageData } from "$lib/loaders/loadCompPageData";
 
   let {
-    compRecord,
-    surveyRecords,
+    pageData,
     page,
     pageTitle,
   }: {
-    compRecord: Comp;
-    surveyRecords: Survey[];
+    pageData: CompPageData;
     page: string;
     pageTitle?: string;
   } = $props();
 
-  const routeBase = $derived(`comp/${compRecord.id}`);
+  const routeBase = $derived(`comp/${pageData.compRecord.id}`);
 
-  const title = $derived(pageTitle ? `${pageTitle} - ${compRecord.name}` : `${compRecord.name}`);
+  const title = $derived(pageTitle ? `${pageTitle} - ${pageData.compRecord.name}` : `${pageData.compRecord.name}`);
 
   const showAnalysisLink = $derived(
-    surveyRecords.some((survey) => survey.type == "match" && (survey.pickLists.length || survey.expressions.length)),
+    pageData.surveyRecords.some(
+      (survey) => survey.type == "match" && (survey.pickLists.length || survey.expressions.length),
+    ),
   );
 
   const teamCount = $derived(
     new Set([
-      ...compRecord.matches.flatMap((match) => [
+      ...pageData.compRecord.matches.flatMap((match) => [
         match.red1,
         match.red2,
         match.red3,
@@ -34,7 +35,7 @@
         match.blue2,
         match.blue3,
       ]),
-      ...compRecord.teams.map((team) => team.number),
+      ...pageData.compRecord.teams.map((team) => team.number),
     ]).size,
   );
 
@@ -48,7 +49,13 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <Header title="{title} - MeanScout" heading={compRecord.name} />
+  <Header
+    title="{title} - MeanScout"
+    heading={pageData.compRecord.name}
+    onmenupressed={() => {
+      openDialog(CompMenuDialog, { pageData });
+    }}
+  />
 
   <div
     use:navBar
@@ -60,13 +67,13 @@
     {#if showAnalysisLink}
       <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
     {/if}
-    {#if compRecord.matches.length}
+    {#if pageData.compRecord.matches.length}
       <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
     {/if}
     {#if teamCount}
       <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
     {/if}
-    {#if compRecord.scouts}
+    {#if pageData.compRecord.scouts}
       <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>Predictions</Anchor>
     {/if}
   </div>
