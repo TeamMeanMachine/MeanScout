@@ -14,6 +14,8 @@ export const load: PageLoad = async (event) => {
     data.entryRecords.filter((e) => e.type == "match"),
   );
 
+  localStorage.setItem("home", event.url.hash);
+
   return {
     ...data,
     ...predictionsPerScout,

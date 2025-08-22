@@ -28,11 +28,9 @@
 <div class="flex flex-col gap-4">
   <Header
     title="Admin - {compRecord.name} - {surveyRecord.name} - MeanScout"
-    heading={[
-      { type: "sm", text: `${compRecord.name} - ${surveyRecord.name}` },
-      { type: "h1", text: "Admin" },
-    ]}
-    backLink="comp/{compRecord.id}"
+    heading="Admin"
+    subheading="{compRecord.name} - {surveyRecord.name}"
+    backLink={localStorage.getItem("home") || `comp/${compRecord.id}`}
   />
 
   <div

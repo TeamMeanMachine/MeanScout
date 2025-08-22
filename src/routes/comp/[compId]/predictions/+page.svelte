@@ -20,10 +20,14 @@
 
 <CompPageHeader pageData={data} page="predictions" pageTitle="Predictions" />
 
-<div class="flex flex-col gap-6 max-md:mt-11 max-md:mb-20" style="view-transition-name:predictions">
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "scouts")} class={$tab == "scouts" ? "font-bold" : "font-light"}>Scouts</Button>
-    <Button onclick={() => ($tab = "matches")} class={$tab == "matches" ? "font-bold" : "font-light"}>Matches</Button>
+<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:predictions">
+  <div class="flex flex-wrap items-center justify-between">
+    <h2 class="font-bold md:hidden">Predictions</h2>
+
+    <div class="flex flex-wrap gap-2 text-sm">
+      <Button onclick={() => ($tab = "scouts")} class={$tab == "scouts" ? "font-bold" : "font-light"}>Scouts</Button>
+      <Button onclick={() => ($tab = "matches")} class={$tab == "matches" ? "font-bold" : "font-light"}>Matches</Button>
+    </div>
   </div>
 
   {#if $tab == "scouts" && data.predictionsPerScout.length}

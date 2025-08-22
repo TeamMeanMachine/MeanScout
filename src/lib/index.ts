@@ -5,8 +5,6 @@ import { browser } from "$app/environment";
 
 export const schemaVersion = 16;
 
-export type Heading = { type: "h1" | "sm"; text: string }[] | string;
-
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
 export type Value = z.infer<typeof valueSchema>;
 

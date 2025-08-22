@@ -26,8 +26,6 @@ export async function loadCompPageData(compId: string): Promise<CompPageData> {
   const fieldRecords = all.fields.filter((field) => surveyIds.includes(field.surveyId));
   const entryRecords = all.entries.filter((entry) => surveyIds.includes(entry.surveyId));
 
-  localStorage.setItem("home", `comp/${compId}`);
-
   return {
     all,
     compRecord,

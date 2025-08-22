@@ -24,5 +24,7 @@ export const load: PageLoad = async (event) => {
     .filter((team) => data.entryRecords.some((e) => e.team == team.number))
     .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
+  localStorage.setItem("home", event.url.hash);
+
   return { ...data, teams };
 };

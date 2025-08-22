@@ -1,18 +1,19 @@
 <script lang="ts">
-  import type { Heading } from "$lib";
   import { targetStore } from "$lib/settings";
-  import { MenuIcon, XIcon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
   import Button from "./Button.svelte";
 
   let {
     title = "MeanScout",
     heading = "MeanScout",
+    subheading,
     backLink,
     onmenupressed,
   }: {
     title?: string;
-    heading?: Heading;
+    heading?: string;
+    subheading?: string;
     backLink?: string;
     onmenupressed?: () => void;
   } = $props();
@@ -27,17 +28,10 @@
     <img src="./logo.svg" alt="" width="25" height="25" />
 
     <div class="flex flex-col">
-      {#if typeof heading == "string"}
-        <h1 class="font-bold">{heading}</h1>
-      {:else}
-        {#each heading as { type, text }}
-          {#if type == "h1"}
-            <h1 class="font-bold">{text}</h1>
-          {:else if type == "sm"}
-            <span class="text-xs font-light">{text}</span>
-          {/if}
-        {/each}
+      {#if subheading}
+        <span class="text-xs font-light">{subheading}</span>
       {/if}
+      <h1 class="font-bold">{heading}</h1>
     </div>
   </div>
 
@@ -45,7 +39,7 @@
 
   {#if onmenupressed}
     <Button onclick={onmenupressed}>
-      <MenuIcon class="text-theme" />
+      <EllipsisVerticalIcon class="text-theme" />
     </Button>
   {:else if backLink !== undefined}
     <Anchor route={backLink} class="active:top-0.5 active:left-0!">

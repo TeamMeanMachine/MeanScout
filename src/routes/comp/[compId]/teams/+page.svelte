@@ -34,7 +34,9 @@
 
 <CompPageHeader pageData={data} page="teams" pageTitle="Teams" />
 
-<div class="flex flex-col gap-4 max-md:mt-11 max-md:mb-20" style="view-transition-name:teams">
+<div class="flex flex-col gap-3 max-md:mt-9 max-md:mb-20" style="view-transition-name:teams">
+  <h2 class="font-bold md:hidden">Teams</h2>
+
   {#if data.teams.length}
     <div class="flex flex-wrap gap-4">
       <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
@@ -44,8 +46,8 @@
       </select>
     </div>
 
-    {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
-      <div class="flex flex-col gap-2">
+    {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord (surveyRecord.id)}
+      <div class="flex flex-col gap-1">
         <h2 class="font-bold">{surveyRecord.name}</h2>
 
         {#if selected}

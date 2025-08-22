@@ -48,11 +48,9 @@
 
 <Header
   title="Draft - {data.compRecord.name} - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: `${data.compRecord.name} - ${data.surveyRecord.name}` },
-    { type: "h1", text: `Draft` },
-  ]}
-  backLink="comp/{data.compRecord.id}"
+  heading="Draft"
+  subheading="{data.compRecord.name} - {data.surveyRecord.name}"
+  backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
 <div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
@@ -181,7 +179,7 @@
         openDialog(SubmitEntryDialog, {
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: data.entryRecord,
-          onexport: () => {
+          onsubmit() {
             idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
             idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
             goto(`#/comp/${data.compRecord.id}`);

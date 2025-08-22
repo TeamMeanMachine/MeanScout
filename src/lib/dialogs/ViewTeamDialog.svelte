@@ -20,7 +20,7 @@
 </div>
 
 <div class="@container flex max-h-[500px] flex-col overflow-auto">
-  {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+  {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord (surveyRecord.id)}
     <h2 class="sticky left-0 font-bold not-first-of-type:mt-4">{surveyRecord.name}</h2>
     <TeamEntryTable {pageData} {surveyRecord} {team} />
   {/each}

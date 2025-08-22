@@ -37,25 +37,29 @@
 
 <CompPageHeader pageData={data} page="matches" pageTitle="Matches" />
 
-<div class="flex flex-col gap-3 max-md:mt-11 max-md:mb-20" style="view-transition-name:matches">
-  {#if $teamStore}
-    <div class="flex flex-wrap gap-2 text-sm">
-      <Button
-        onclick={() => ($filterMatches = "")}
-        class={$filterMatches ? "font-light" : "font-bold"}
-        style="view-transition-name:match-filter-all"
-      >
-        All
-      </Button>
-      <Button
-        onclick={() => ($filterMatches = "true")}
-        class={$filterMatches ? "font-bold" : "font-light"}
-        style="view-transition-name:match-filter-team"
-      >
-        {$teamStore}
-      </Button>
-    </div>
-  {/if}
+<div class="flex flex-col gap-3 max-md:mt-9 max-md:mb-20" style="view-transition-name:matches">
+  <div class="flex items-center justify-between">
+    <h2 class="font-bold md:hidden">Matches</h2>
+
+    {#if $teamStore}
+      <div class="flex flex-wrap gap-2 text-sm">
+        <Button
+          onclick={() => ($filterMatches = "")}
+          class={$filterMatches ? "font-light" : "font-bold"}
+          style="view-transition-name:match-filter-all"
+        >
+          All
+        </Button>
+        <Button
+          onclick={() => ($filterMatches = "true")}
+          class={$filterMatches ? "font-bold" : "font-light"}
+          style="view-transition-name:match-filter-team"
+        >
+          {$teamStore}
+        </Button>
+      </div>
+    {/if}
+  </div>
 
   {#if upcomingMatches.length || previousMatches.length}
     {#snippet matchRow(match: Match)}

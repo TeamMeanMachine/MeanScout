@@ -182,6 +182,7 @@
       };
 
       addRequest.onsuccess = () => {
+        idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
         goto(`#/entry/${entry.id}`);
       };
     },

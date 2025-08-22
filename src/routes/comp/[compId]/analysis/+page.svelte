@@ -17,9 +17,7 @@
   const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
   const matchSurveys = $derived(
-    data.surveyRecords
-      .filter((survey) => survey.type == "match")
-      .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
+    data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
   const showAnalysisWidget = $derived(
@@ -175,100 +173,106 @@
 
 <CompPageHeader pageData={data} page="analysis" pageTitle="Analysis" />
 
-<div class="flex flex-col gap-6 max-md:mt-11 max-md:mb-20" style="view-transition-name:analysis">
+<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || !showAnalysisWidget}
     <span class="text-sm">No analysis available.</span>
   {:else}
-    <div class="flex flex-wrap gap-4">
-      {#if matchSurveys.length > 1}
-        <select bind:value={selectedSurveyId} class="text-theme bg-neutral-800 p-2">
-          {#each matchSurveys as survey (survey.id)}
-            <option value={survey.id}>{survey.name}</option>
-          {/each}
-        </select>
-      {/if}
-      <select bind:value={selectedAnalysisString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
-        {#if selectedSurvey?.pickLists.length}
-          <optgroup label="Pick Lists">
-            {#each selectedSurvey.pickLists as pickList}
-              <option value="picklist-{pickList.name}">{pickList.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.surveyDerived?.length}
-          <optgroup label="Survey Expressions from expressions">
-            {#each expressions.surveyDerived as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.surveyTba?.length}
-          <optgroup label="Survey Expressions from TBA">
-            {#each expressions.surveyTba as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.surveyPrimitive?.length}
-          <optgroup label="Survey Expressions from fields">
-            {#each expressions.surveyPrimitive as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.entryDerived?.length}
-          <optgroup label="Entry Expressions from expressions">
-            {#each expressions.entryDerived as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.entryTba?.length}
-          <optgroup label="Entry Expressions from TBA">
-            {#each expressions.entryTba as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-        {#if expressions?.entryPrimitive?.length}
-          <optgroup label="Entry Expressions from fields">
-            {#each expressions.entryPrimitive as expression}
-              <option value="expression-{expression.name}">{expression.name}</option>
-            {/each}
-          </optgroup>
-        {/if}
-      </select>
-
+    <div class="flex flex-col gap-3">
+      <h2 class="font-bold md:hidden">Analysis</h2>
       <div class="flex flex-wrap gap-4">
-        <div class="flex flex-wrap gap-2 text-sm">
-          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
-            Bar
-          </Button>
-          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
-            Race
-          </Button>
-          <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
-            Stacked
-          </Button>
-        </div>
-
-        {#if analysisData}
-          <div class="flex flex-wrap gap-2">
-            {#if "canShare" in navigator}
-              <Button onclick={() => navigator.share({ text: analysisData.text })}>
-                <Share2Icon class="text-theme size-5" />
-                <span class="text-sm">Share</span>
-              </Button>
-            {/if}
-
-            {#if "clipboard" in navigator}
-              <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
-                <ClipboardCopy class="text-theme size-5" />
-                <span class="text-sm">Copy</span>
-              </Button>
-            {/if}
-          </div>
+        {#if matchSurveys.length > 1}
+          <select bind:value={selectedSurveyId} class="text-theme bg-neutral-800 p-2">
+            {#each matchSurveys as survey (survey.id)}
+              <option value={survey.id}>{survey.name}</option>
+            {/each}
+          </select>
         {/if}
+        <select bind:value={selectedAnalysisString} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+          {#if selectedSurvey?.pickLists.length}
+            <optgroup label="Pick Lists">
+              {#each selectedSurvey.pickLists as pickList}
+                <option value="picklist-{pickList.name}">{pickList.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.surveyDerived?.length}
+            <optgroup label="Survey Expressions from expressions">
+              {#each expressions.surveyDerived as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.surveyTba?.length}
+            <optgroup label="Survey Expressions from TBA">
+              {#each expressions.surveyTba as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.surveyPrimitive?.length}
+            <optgroup label="Survey Expressions from fields">
+              {#each expressions.surveyPrimitive as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.entryDerived?.length}
+            <optgroup label="Entry Expressions from expressions">
+              {#each expressions.entryDerived as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.entryTba?.length}
+            <optgroup label="Entry Expressions from TBA">
+              {#each expressions.entryTba as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+          {#if expressions?.entryPrimitive?.length}
+            <optgroup label="Entry Expressions from fields">
+              {#each expressions.entryPrimitive as expression}
+                <option value="expression-{expression.name}">{expression.name}</option>
+              {/each}
+            </optgroup>
+          {/if}
+        </select>
+
+        <div class="flex flex-wrap gap-4">
+          <div class="flex flex-wrap gap-2 text-sm">
+            <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
+              Bar
+            </Button>
+            <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
+              Race
+            </Button>
+            <Button
+              onclick={() => ($chartType = "stacked")}
+              class={$chartType == "stacked" ? "font-bold" : "font-light"}
+            >
+              Stacked
+            </Button>
+          </div>
+
+          {#if analysisData}
+            <div class="flex flex-wrap gap-2">
+              {#if "canShare" in navigator}
+                <Button onclick={() => navigator.share({ text: analysisData.text })}>
+                  <Share2Icon class="text-theme size-5" />
+                  <span class="text-sm">Share</span>
+                </Button>
+              {/if}
+
+              {#if "clipboard" in navigator}
+                <Button onclick={() => navigator.clipboard.writeText(analysisData.text)}>
+                  <ClipboardCopy class="text-theme size-5" />
+                  <span class="text-sm">Copy</span>
+                </Button>
+              {/if}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
 

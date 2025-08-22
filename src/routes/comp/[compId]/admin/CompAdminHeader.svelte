@@ -25,11 +25,9 @@
 <div class="flex flex-col gap-4">
   <Header
     title="Admin - {compRecord.name} - MeanScout"
-    heading={[
-      { type: "sm", text: compRecord.name },
-      { type: "h1", text: "Admin" },
-    ]}
-    backLink="comp/{compRecord.id}"
+    heading="Admin"
+    subheading={compRecord.name}
+    backLink={localStorage.getItem("home") || `comp/${compRecord.id}`}
   />
 
   <div
@@ -39,8 +37,8 @@
   >
     <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
     <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
-    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
     <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
+    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
     <Anchor route="{routeBase}/danger" class={getAnchorClass("danger")}>Danger Zone</Anchor>
   </div>
 </div>

@@ -18,9 +18,7 @@
   } = $props();
 
   const matchSurveys = $derived(
-    pageData.surveyRecords
-      .filter((survey) => survey.type == "match")
-      .toSorted((a, b) => b.modified.getTime() - a.modified.getTime()),
+    pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
   const showAnalysis = $derived(matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length));

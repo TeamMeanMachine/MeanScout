@@ -54,7 +54,7 @@
 
 <div class="flex flex-col gap-1">
   {#if pageData.surveyRecords.length}
-    {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as survey (survey.id)}
+    {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
         <div class="flex grow flex-wrap items-center justify-between">
           <span>{survey.name}</span>

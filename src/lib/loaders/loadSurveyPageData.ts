@@ -32,8 +32,6 @@ export async function loadSurveyPageData(surveyId: string): Promise<SurveyPageDa
 
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
-  localStorage.setItem("home", `comp/${compRecord.id}`);
-
   return {
     all,
     compRecord,
