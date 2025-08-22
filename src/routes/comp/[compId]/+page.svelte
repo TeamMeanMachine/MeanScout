@@ -206,7 +206,7 @@
 
 <CompPageHeader pageData={data} page="overview" />
 
-<div class="flex flex-col gap-6" style="view-transition-name:comp-{data.compRecord.id}">
+<div class="flex flex-col gap-6 max-md:mt-11 max-md:mb-20" style="view-transition-name:comp-{data.compRecord.id}">
   {@render entriesWidget()}
 
   {#if showAnalysisWidget}

@@ -37,7 +37,7 @@
 
 <CompPageHeader pageData={data} page="matches" pageTitle="Matches" />
 
-<div class="flex flex-col gap-3" style="view-transition-name:matches">
+<div class="flex flex-col gap-3 max-md:mt-11 max-md:mb-20" style="view-transition-name:matches">
   {#if $teamStore}
     <div class="flex flex-wrap gap-2 text-sm">
       <Button

@@ -4,6 +4,7 @@
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
   import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import { ChartBarBigIcon, DicesIcon, HomeIcon, ListOrderedIcon, NotepadTextIcon, UsersIcon } from "@lucide/svelte";
 
   let {
     pageData,
@@ -40,7 +41,10 @@
   );
 
   function getAnchorClass(matching: string) {
-    return "active:left-0! active:top-0.5 " + (page == matching ? "font-bold underline" : "font-light");
+    return (
+      "items-center justify-center max-md:py-1 max-md:flex-col max-md:grow active:left-0! active:top-0.5 " +
+      (page == matching ? "font-bold underline" : "font-light")
+    );
   }
 
   function navBar(div: HTMLElement) {
@@ -48,33 +52,58 @@
   }
 </script>
 
-<div class="flex flex-col gap-4">
-  <Header
-    title="{title} - MeanScout"
-    heading={pageData.compRecord.name}
-    onmenupressed={() => {
-      openDialog(CompMenuDialog, { pageData });
-    }}
-  />
+<div class="flex flex-col gap-2">
+  <div
+    class="border-neutral-600 max-md:fixed max-md:top-0 max-md:left-0 max-md:z-20 max-md:w-full max-md:gap-0 max-md:overflow-x-auto max-md:border-b max-md:bg-neutral-900 max-md:px-3 max-md:py-2"
+  >
+    <Header
+      title="{title} - MeanScout"
+      heading={pageData.compRecord.name}
+      onmenupressed={() => {
+        openDialog(CompMenuDialog, { pageData });
+      }}
+    />
+  </div>
 
   <div
     use:navBar
-    class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap"
-    style="view-transition-name:comp-header"
+    class={[
+      "flex gap-2 border-neutral-600 text-sm text-nowrap",
+      "max-md:fixed max-md:bottom-0 max-md:left-0 max-md:z-20 max-md:w-full max-md:gap-0 max-md:overflow-x-auto max-md:border-t max-md:bg-neutral-800 max-md:p-1",
+    ]}
+    style="view-transition-name:comp-header;scrollbar-width:none"
   >
-    <Anchor route={routeBase} class={getAnchorClass("overview")}>Overview</Anchor>
-    <Anchor route="{routeBase}/entries" class={getAnchorClass("entries")}>Entries</Anchor>
+    <Anchor route={routeBase} class={getAnchorClass("overview")}>
+      <HomeIcon class="text-theme md:hidden" />
+      Overview
+    </Anchor>
+    <Anchor route="{routeBase}/entries" class={getAnchorClass("entries")}>
+      <NotepadTextIcon class="text-theme md:hidden" />
+      Entries
+    </Anchor>
     {#if showAnalysisLink}
-      <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
+      <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
+        <ChartBarBigIcon class="text-theme md:hidden" />
+        Analysis
+      </Anchor>
     {/if}
     {#if pageData.compRecord.matches.length}
-      <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
+      <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
+        <ListOrderedIcon class="text-theme md:hidden" />
+        Matches
+      </Anchor>
     {/if}
     {#if teamCount}
-      <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
+      <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>
+        <UsersIcon class="text-theme md:hidden" />
+        Teams
+      </Anchor>
     {/if}
     {#if pageData.compRecord.scouts}
-      <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>Predictions</Anchor>
+      <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
+        <DicesIcon class="text-theme md:hidden" />
+        Predictions
+      </Anchor>
     {/if}
   </div>
 </div>

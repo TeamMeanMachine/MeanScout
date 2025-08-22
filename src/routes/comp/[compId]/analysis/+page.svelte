@@ -175,7 +175,7 @@
 
 <CompPageHeader pageData={data} page="analysis" pageTitle="Analysis" />
 
-<div class="flex flex-col gap-6" style="view-transition-name:analysis">
+<div class="flex flex-col gap-6 max-md:mt-11 max-md:mb-20" style="view-transition-name:analysis">
   {#if !data.fieldRecords.length || !data.entryRecords.length || !showAnalysisWidget}
     <span class="text-sm">No analysis available.</span>
   {:else}

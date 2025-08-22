@@ -34,7 +34,7 @@
 
 <CompPageHeader pageData={data} page="teams" pageTitle="Teams" />
 
-<div class="flex flex-col gap-4" style="view-transition-name:teams">
+<div class="flex flex-col gap-4 max-md:mt-11 max-md:mb-20" style="view-transition-name:teams">
   {#if data.teams.length}
     <div class="flex flex-wrap gap-4">
       <select bind:value={selectedString} class="text-theme min-w-0 grow bg-neutral-800 p-2">

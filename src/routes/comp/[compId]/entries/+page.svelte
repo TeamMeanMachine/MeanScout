@@ -159,7 +159,7 @@
 
 <CompPageHeader pageData={data} page="entries" pageTitle="Entries" />
 
-<div class="mb-16 flex flex-col gap-6" style="view-transition-name:entries">
+<div class="flex flex-col gap-6 max-md:mt-11 max-md:mb-20" style="view-transition-name:entries">
   {#if !data.entryRecords.length}
     <span class="text-sm">No entries.</span>
   {:else}
@@ -253,7 +253,7 @@
           {@const surveyName = data.surveyRecords.find((s) => s.id == surveyId)?.name}
 
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (surveyToggleStates.has(surveyId)) {
@@ -300,7 +300,7 @@
       {:else if $groupBy == "match"}
         {#each data.entriesPerMatch as { match, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (matchToggleStates.has(match)) {
@@ -347,7 +347,7 @@
       {:else if $groupBy == "scout"}
         {#each data.entriesPerScout as { scout, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (scoutToggleStates.has(scout)) {
@@ -394,7 +394,7 @@
       {:else if $groupBy == "target"}
         {#each data.entriesPerTarget as { target, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (targetToggleStates.has(target)) {
@@ -441,7 +441,7 @@
       {:else if $groupBy == "team"}
         {#each data.entriesPerTeam as { team, teamName, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (teamToggleStates.has(team)) {
@@ -493,7 +493,7 @@
       {:else if $groupBy == "absent"}
         {#each data.entriesPerAbsent as { absent, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (absentToggleStates.has(absent)) {
@@ -540,7 +540,7 @@
       {:else}
         {#each data.entriesPerStatus as { status, entries }}
           <div class="flex flex-col gap-2">
-            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1">
+            <div class="sticky top-0 z-20 -m-1 flex bg-neutral-900 p-1 max-md:top-14">
               <Button
                 onclick={() => {
                   if (statusToggleStates.has(status)) {
