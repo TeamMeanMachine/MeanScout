@@ -1,14 +1,14 @@
 <script lang="ts">
   import { type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog, type DialogExports } from "$lib/dialog";
+  import { openDialog } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
-  import { EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import NewScoutDialog from "./NewScoutDialog.svelte";
-  import ViewMatchDialog from "./ViewMatchDialog.svelte";
+  import { CheckIcon, EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
+  import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
+  import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { goto } from "$app/navigation";
   import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import type { Survey } from "$lib/survey";
@@ -18,6 +18,7 @@
     surveyRecord,
     prefills,
     onnewscout,
+    oncancel,
   }: {
     pageData: CompPageData;
     surveyRecord: Survey;
@@ -27,6 +28,7 @@
       scout: string | undefined;
     };
     onnewscout: (scout: string) => void;
+    oncancel: () => void;
   } = $props();
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
@@ -107,86 +109,84 @@
       .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
   });
 
-  export const { onconfirm }: DialogExports = {
-    onconfirm() {
-      team = team.trim();
-      scout = scout?.trim();
-      predictionReason = predictionReason?.trim();
+  function onconfirm() {
+    team = team.trim();
+    scout = scout?.trim();
+    predictionReason = predictionReason?.trim();
 
-      if (!/^\d{1,5}[A-Z]?$/.test(team)) {
-        error = "invalid value for team";
-        return;
-      }
+    if (!/^\d{1,5}[A-Z]?$/.test(team)) {
+      error = "invalid value for team";
+      return;
+    }
 
-      if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == team)) {
-        error = "team is not listed";
-        return;
-      }
+    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == team)) {
+      error = "team is not listed";
+      return;
+    }
 
-      if (pageData.compRecord.scouts && !scout) {
-        error = "scout name missing";
-        return;
-      }
+    if (pageData.compRecord.scouts && !scout) {
+      error = "scout name missing";
+      return;
+    }
 
-      if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${match}`)) {
-        error = "invalid value for match";
-        return;
-      }
+    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${match}`)) {
+      error = "invalid value for match";
+      return;
+    }
 
-      const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
+    const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
-      let entry: Entry;
-      if (surveyRecord.type == "match") {
-        entry = {
-          id,
-          surveyId: surveyRecord.id,
-          type: surveyRecord.type,
-          status: "draft",
-          team,
-          match,
-          absent: false,
-          values: defaultValues,
-          created: new Date(),
-          modified: new Date(),
-        };
+    let entry: Entry;
+    if (surveyRecord.type == "match") {
+      entry = {
+        id,
+        surveyId: surveyRecord.id,
+        type: surveyRecord.type,
+        status: "draft",
+        team,
+        match,
+        absent: false,
+        values: defaultValues,
+        created: new Date(),
+        modified: new Date(),
+      };
 
-        if (scout) {
-          entry.scout = scout;
-          if (prediction) {
-            entry.prediction = prediction;
-            if (predictionReason) {
-              entry.predictionReason = predictionReason;
-            }
+      if (scout) {
+        entry.scout = scout;
+        if (prediction) {
+          entry.prediction = prediction;
+          if (predictionReason) {
+            entry.predictionReason = predictionReason;
           }
         }
-      } else {
-        entry = {
-          id,
-          surveyId: surveyRecord.id,
-          type: surveyRecord.type,
-          status: "draft",
-          team,
-          values: defaultValues,
-          created: new Date(),
-          modified: new Date(),
-        };
-
-        if (scout) {
-          entry.scout = scout;
-        }
       }
-
-      const addRequest = idb.add("entries", $state.snapshot(entry));
-      addRequest.onerror = () => {
-        error = "Could not create new entry";
+    } else {
+      entry = {
+        id,
+        surveyId: surveyRecord.id,
+        type: surveyRecord.type,
+        status: "draft",
+        team,
+        values: defaultValues,
+        created: new Date(),
+        modified: new Date(),
       };
 
-      addRequest.onsuccess = () => {
-        idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
-        goto(`#/entry/${entry.id}`);
-      };
-    },
-  };
+      if (scout) {
+        entry.scout = scout;
+      }
+    }
+
+    const addRequest = idb.add("entries", $state.snapshot(entry));
+    addRequest.onerror = () => {
+      error = "Could not create new entry";
+    };
+
+    addRequest.onsuccess = () => {
+      idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
+      goto(`#/entry/${entry.id}`);
+    };
+  }
 
   function teamUnderline(teamNumber?: string) {
     return teamNumber == team ? "underline" : "";
@@ -370,7 +370,7 @@
 {/if}
 
 {#if surveyRecord.type == "match" && pageData.compRecord.scouts}
-  <h2 class="mt-4 font-bold">Prediction</h2>
+  <h2 class="mt-3 font-bold">Prediction</h2>
 
   <Button
     onclick={() => {
@@ -414,7 +414,7 @@
     </div>
   </div>
 
-  <label class="mb-4 flex flex-col">
+  <label class="flex flex-col">
     Reason
     <input bind:value={predictionReason} class="text-theme bg-neutral-800 p-2" />
   </label>
@@ -423,3 +423,14 @@
 {#if error}
   <span>Error: {error}</span>
 {/if}
+
+<div class="mt-3 flex flex-wrap gap-3">
+  <Button onclick={oncancel}>
+    <XIcon class="text-theme" />
+    Cancel
+  </Button>
+  <Button onclick={onconfirm}>
+    <CheckIcon class="text-theme" />
+    Confirm
+  </Button>
+</div>
