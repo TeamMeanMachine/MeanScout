@@ -39,8 +39,18 @@
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
   {#each analysisData.data as teamData, rank}
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div onclick={() => ($teamView = teamData.team)} class="col-span-full grid grid-cols-subgrid">
-      <Button onclick={() => goto(`#/comp/${pageData.compRecord.id}/teams`)} class="justify-center text-sm">
+    <div
+      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
+      class="col-span-full grid grid-cols-subgrid"
+    >
+      <Button
+        onclick={(e) => {
+          e.stopPropagation();
+          $teamView = teamData.team;
+          goto(`#/comp/${pageData.compRecord.id}/teams`);
+        }}
+        class="justify-center text-sm"
+      >
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>

@@ -56,6 +56,22 @@ export type ExpressionAnalysisData = z.infer<typeof expressionAnalysisData>;
 const analysisData = z.discriminatedUnion("type", [pickListAnalysisData, expressionAnalysisData]);
 export type AnalysisData = z.infer<typeof analysisData>;
 
+export type SelectedAnalysis =
+  | {
+      survey: MatchSurvey;
+      pickList: PickList;
+      entriesByTeam: Record<string, MatchEntry[]>;
+      output: PickListAnalysisData | undefined;
+      uniqueString: string;
+    }
+  | {
+      survey: MatchSurvey;
+      expression: Expression;
+      entriesByTeam: Record<string, MatchEntry[]>;
+      output: ExpressionAnalysisData | undefined;
+      uniqueString: string;
+    };
+
 export function getPickListData(
   compRecord: Comp,
   pickListName: string,
