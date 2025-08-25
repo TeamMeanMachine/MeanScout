@@ -19,8 +19,8 @@
   {/if}
 </div>
 
-<div class="@container flex max-h-[500px] flex-col overflow-auto">
-  {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord (surveyRecord.id)}
+<div class="flex max-h-[500px] flex-col overflow-auto">
+  {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
     <h2 class="sticky left-0 font-bold not-first-of-type:mt-4">{surveyRecord.name}</h2>
     <TeamEntryTable {pageData} {surveyRecord} {team} />
   {/each}

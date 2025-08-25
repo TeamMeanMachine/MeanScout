@@ -15,11 +15,13 @@
     team: Team;
   } = $props();
 
+  const leftStickColumnName = surveyRecord.type == "match" ? "left-11" : "left-2";
+
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
-  const entries = $derived(pageData.entryRecords.filter(filterEntries).toSorted(sortEntries));
-  const someAbsent = $derived(entries.some((entry) => entry.type == "match" && entry.absent));
+  const entries = pageData.entryRecords.filter(filterEntries).toSorted(sortEntries);
+  const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
 
   function getValues(entry: Entry) {
     return fieldsWithDetails.topLevel.map((topLevelField) => {
@@ -59,7 +61,7 @@
               rowspan="2"
               class="sticky left-0 z-10 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center align-bottom"
             >
-              <span class="hidden @md:block">Match</span><span class="block @md:hidden">#</span>
+              #
             </th>
           {/if}
 
@@ -68,14 +70,16 @@
           {/if}
 
           {#if surveyRecord.type == "match" && surveyRecord.tbaMetrics?.length}
-            <td colspan={surveyRecord.tbaMetrics.length} class="px-1 pt-1 pb-0 text-center font-light"> TBA </td>
+            <td colspan={surveyRecord.tbaMetrics.length} class="px-2 pt-1 pb-0 text-center font-light">
+              <div class="sticky right-2 {leftStickColumnName} inline">TBA</div>
+            </td>
             <td class="border-r border-neutral-700"></td>
           {/if}
 
           {#each fieldsWithDetails.topLevel as topLevelField}
             {#if topLevelField.type == "group"}
               <th colspan={topLevelField.field.fieldIds.length} class="px-2 pt-1 pb-0 font-light">
-                {topLevelField.field.name}
+                <div class="sticky right-2 {leftStickColumnName} inline">{topLevelField.field.name}</div>
               </th>
             {/if}
             <td class="border-r border-neutral-700"></td>
@@ -85,22 +89,16 @@
 
       <tr>
         {#if surveyRecord.type == "match" && !fieldsWithDetails.nested.length}
-          <th class="sticky left-0 z-10 border-b border-neutral-700 bg-neutral-800 p-2 text-center">
-            <span class="hidden @md:block">Match</span><span class="block @md:hidden">#</span>
-          </th>
+          <th class="sticky left-0 z-10 border-b border-neutral-700 bg-neutral-800 p-2 text-center">#</th>
         {/if}
 
         {#if someAbsent}
-          <th class={["border-r border-b border-neutral-700 p-2", fieldsWithDetails.nested.length && "pt-0"]}>
-            Absent
-          </th>
+          <th class="border-r border-b border-neutral-700 p-2">Absent</th>
         {/if}
 
         {#if surveyRecord.type == "match" && surveyRecord.tbaMetrics?.length}
           {#each surveyRecord.tbaMetrics as tbaMetric}
-            <th class={["border-b border-neutral-700 p-2", fieldsWithDetails.nested.length && "pt-0"]}>
-              {tbaMetric}
-            </th>
+            <th class="border-b border-neutral-700 p-2">{tbaMetric}</th>
           {/each}
           <td class="border-r border-b border-neutral-700"></td>
         {/if}
@@ -108,30 +106,25 @@
         {#each fieldsWithDetails.topLevel as topLevelField}
           {#if topLevelField.type == "group"}
             {@const nestedFields = topLevelField.field.fieldIds
-              .map((id) => pageData.fieldRecords.find((f) => f.id == id && f.type != "group"))
+              .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
               .filter((f) => f !== undefined)}
 
             {#each nestedFields as { name, type }}
-              <th
-                class={[
-                  "border-b border-neutral-700 p-2",
-                  fieldsWithDetails.nested.length && "pt-0",
-                  type == "text" && "text-left",
-                ]}
-              >
-                {name}
+              <th class={["border-b border-neutral-700 p-2 text-nowrap", type == "text" && "text-left"]}>
+                <div class={[type == "text" && `sticky ${leftStickColumnName} inline`]}>{name}</div>
               </th>
             {/each}
             <td class="border-r border-b border-neutral-700"></td>
           {:else}
             <th
               class={[
-                "border-r border-b border-neutral-700 p-2",
-                fieldsWithDetails.nested.length && "pt-0",
+                "border-r border-b border-neutral-700 p-2 text-nowrap",
                 topLevelField.field.type == "text" && "text-left",
               ]}
             >
-              {topLevelField.field.name}
+              <div class={[topLevelField.field.type == "text" && `sticky ${leftStickColumnName} inline`]}>
+                {topLevelField.field.name}
+              </div>
             </th>
           {/if}
         {/each}
@@ -139,7 +132,7 @@
     </thead>
 
     <tbody>
-      {#each entries as entry (entry.id)}
+      {#each entries as entry}
         <tr>
           {#if entry.type == "match"}
             <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center">

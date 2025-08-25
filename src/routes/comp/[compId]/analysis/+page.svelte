@@ -17,24 +17,17 @@
 
   const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
-  const matchSurveys = $derived(
-    data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
-  );
+  const matchSurveys = data.surveyRecords
+    .filter((survey) => survey.type == "match")
+    .toSorted((a, b) => a.name.localeCompare(b.name));
 
-  const showAnalysis = $derived(
+  const showAnalysis =
     data.fieldRecords.length &&
-      data.entryRecords.length &&
-      matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
-  );
+    data.entryRecords.length &&
+    matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length);
 
   let selecting = $state(false);
   let selectedAnalysis = $state(initialAnalysis());
-
-  $effect(() => {
-    if (selectedAnalysis) {
-      sessionStorage.setItem("analysis-view", selectedAnalysis.uniqueString);
-    }
-  });
 
   function initialAnalysis(): SelectedAnalysis | undefined {
     const uniqueString = sessionStorage.getItem("analysis-view");
@@ -59,7 +52,11 @@
   function switchAnalysis(params: Parameters<typeof getAnalysis>[0]) {
     selecting = false;
     scrollTo(0, 0);
-    return getAnalysis(params);
+    const value = getAnalysis(params);
+    if (value) {
+      sessionStorage.setItem("analysis-view", value?.uniqueString);
+    }
+    return value;
   }
 
   function getAnalysis(
@@ -132,7 +129,8 @@
       <div class="flex flex-col gap-4">
         <Button onclick={() => (selecting = !selecting)} class="grow">
           <ChartBarBigIcon class="text-theme" />
-          {#if !selecting && selectedAnalysis}
+
+          {#if selectedAnalysis}
             <span class="grow">
               {#if "pickList" in selectedAnalysis}
                 {selectedAnalysis.pickList.name}
@@ -140,9 +138,13 @@
                 {selectedAnalysis.expression.name}
               {/if}
             </span>
-            <ChevronDownIcon class="text-theme" />
           {:else}
             <span class="grow">Select</span>
+          {/if}
+
+          {#if !selecting && selectedAnalysis}
+            <ChevronDownIcon class="text-theme" />
+          {:else}
             <ChevronUpIcon class="text-theme" />
           {/if}
         </Button>
@@ -191,19 +193,17 @@
       {#if $chartType == "bar"}
         <BarChart pageData={data} analysisData={selectedAnalysis.output} />
       {:else if $chartType == "race"}
-        {#key selectedAnalysis}
-          <RaceChart
-            pageData={data}
-            surveyRecord={selectedAnalysis.survey}
-            entriesByTeam={selectedAnalysis.entriesByTeam}
-            analysisData={selectedAnalysis.output}
-          />
-        {/key}
+        <RaceChart
+          pageData={data}
+          surveyRecord={selectedAnalysis.survey}
+          entriesByTeam={selectedAnalysis.entriesByTeam}
+          analysisData={selectedAnalysis.output}
+        />
       {:else if $chartType == "stacked"}
         <StackedChart pageData={data} analysisData={selectedAnalysis.output} />
       {/if}
     {:else}
-      {#each matchSurveys as survey (survey.id)}
+      {#each matchSurveys as survey}
         {@const sortedExpressions = survey.expressions.toSorted(sortExpressions)}
 
         {@const expressions = Object.groupBy(sortedExpressions, (e) => {
