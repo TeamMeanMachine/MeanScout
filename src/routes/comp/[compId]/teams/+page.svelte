@@ -1,11 +1,16 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
-  import TeamEntryTable from "$lib/components/TeamEntryTable.svelte";
+  import TeamDerivedDataTable from "$lib/components/TeamDerivedDataTable.svelte";
+  import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
   import CompPageHeader from "../CompPageHeader.svelte";
   import Button from "$lib/components/Button.svelte";
   import { ChevronDownIcon, ChevronUpIcon, UsersIcon } from "@lucide/svelte";
+  import { sessionStorageStore } from "$lib";
 
   let { data }: PageProps = $props();
+
+  const hasDerived = data.surveyRecords.some((s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"));
+  const whichData = sessionStorageStore<"derived" | "raw">("team-view-which-data", "derived");
 
   const debounceTimeMillis = 500;
 
@@ -53,33 +58,54 @@
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Teams</h2>
 
-      <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
-        <UsersIcon class="text-theme shrink-0" />
+      <div class="flex flex-col gap-4">
+        <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
+          <UsersIcon class="text-theme shrink-0" />
 
-        {#if selectedTeam}
-          <div class="flex grow flex-col">
-            <span class="font-bold">{selectedTeam.number}</span>
-            {#if selectedTeam.name}
-              <span class="text-xs font-light">{selectedTeam.name}</span>
-            {/if}
+          {#if selectedTeam}
+            <div class="flex grow flex-col">
+              <span class="font-bold">{selectedTeam.number}</span>
+              {#if selectedTeam.name}
+                <span class="text-xs font-light">{selectedTeam.name}</span>
+              {/if}
+            </div>
+          {:else}
+            <span class="grow">Select</span>
+          {/if}
+
+          {#if !selecting && selectedTeam}
+            <ChevronDownIcon class="text-theme shrink-0" />
+          {:else}
+            <ChevronUpIcon class="text-theme shrink-0" />
+          {/if}
+        </Button>
+
+        {#if !selecting && selectedTeam && hasDerived}
+          <div class="flex gap-2 text-sm">
+            <Button
+              onclick={() => ($whichData = "derived")}
+              class={$whichData == "derived" ? "font-bold" : "font-light"}
+            >
+              Derived
+            </Button>
+            <Button onclick={() => ($whichData = "raw")} class={$whichData == "raw" ? "font-bold" : "font-light"}>
+              Raw
+            </Button>
           </div>
-        {:else}
-          <span class="grow">Select</span>
         {/if}
-
-        {#if !selecting && selectedTeam}
-          <ChevronDownIcon class="text-theme shrink-0" />
-        {:else}
-          <ChevronUpIcon class="text-theme shrink-0" />
-        {/if}
-      </Button>
+      </div>
     </div>
 
     {#if !selecting && selectedTeam}
       {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
         <div class="flex flex-col gap-1 overflow-x-auto">
           <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
-          <TeamEntryTable pageData={data} {surveyRecord} team={selectedTeam} />
+
+          {#if $whichData == "derived" && surveyRecord.type == "match"}
+            <TeamDerivedDataTable pageData={data} {surveyRecord} team={selectedTeam} />
+          {:else}
+            <TeamRawDataTable pageData={data} {surveyRecord} team={selectedTeam} />
+          {/if}
         </div>
       {/each}
     {:else}

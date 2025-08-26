@@ -21,6 +21,9 @@
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const entries = pageData.entryRecords.filter(filterEntries).toSorted(sortEntries);
+
+  const someScout = entries.some((entry) => entry.scout);
+  const someDraft = entries.some((entry) => entry.status == "draft");
   const someAbsent = entries.some((entry) => entry.type == "match" && entry.absent);
 
   function getValues(entry: Entry) {
@@ -37,7 +40,7 @@
   }
 
   function filterEntries(entry: Entry) {
-    return entry.status != "draft" && entry.team == team.number && entry.surveyId == surveyRecord.id;
+    return entry.team == team.number && entry.surveyId == surveyRecord.id;
   }
 
   function sortEntries(a: Entry, b: Entry) {
@@ -52,8 +55,8 @@
 {#if !entries.length}
   <span class="sticky left-0 text-sm">No data available.</span>
 {:else}
-  <table class="border-separate border-spacing-0 text-center text-sm">
-    <thead class="sticky top-0 z-10 w-full bg-neutral-800 align-bottom">
+  <table class="border-separate border-spacing-0 text-center max-md:text-sm">
+    <thead class="sticky top-0 z-10 w-full bg-neutral-800 align-bottom text-sm">
       {#if fieldsWithDetails.nested.length}
         <tr>
           {#if surveyRecord.type == "match"}
@@ -65,14 +68,22 @@
             </th>
           {/if}
 
+          {#if someScout}
+            <td class="border-r border-neutral-700"></td>
+          {/if}
+
+          {#if someDraft}
+            <td class="border-r border-neutral-700"></td>
+          {/if}
+
           {#if someAbsent}
             <td class="border-r border-neutral-700"></td>
           {/if}
 
           {#if surveyRecord.type == "match" && surveyRecord.tbaMetrics?.length}
-            <td colspan={surveyRecord.tbaMetrics.length} class="px-2 pt-1 pb-0 text-center font-light">
+            <th colspan={surveyRecord.tbaMetrics.length} class="px-2 pt-1 pb-0 text-center font-light">
               <div class="sticky right-2 {leftStickColumnName} inline">TBA</div>
-            </td>
+            </th>
             <td class="border-r border-neutral-700"></td>
           {/if}
 
@@ -90,6 +101,14 @@
       <tr>
         {#if surveyRecord.type == "match" && !fieldsWithDetails.nested.length}
           <th class="sticky left-0 z-10 border-b border-neutral-700 bg-neutral-800 p-2 text-center">#</th>
+        {/if}
+
+        {#if someScout}
+          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
+        {/if}
+
+        {#if someDraft}
+          <th class="border-r border-b border-neutral-700 p-2">Draft</th>
         {/if}
 
         {#if someAbsent}
@@ -135,29 +154,39 @@
       {#each entries as entry}
         <tr>
           {#if entry.type == "match"}
-            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center">
+            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center text-sm">
               {entry.match}
             </th>
+          {/if}
 
-            {#if someAbsent}
-              <td
-                colspan={entry.absent ? 1000 : 1}
-                class={["border-r border-b border-neutral-800 p-2", entry.absent && "text-left"]}
-              >
-                {entry.absent || ""}
-              </td>
-            {/if}
+          {#if someScout}
+            <td class="max-w-24 truncate border-r border-b border-neutral-800 p-2 text-left">{entry.scout}</td>
+          {/if}
 
-            {#if surveyRecord.type == "match" && surveyRecord.tbaMetrics?.length && !entry.absent}
-              {@const tbaMetrics = surveyRecord.tbaMetrics
-                .map((metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value)
-                .filter((m) => m !== undefined)}
+          {#if someDraft}
+            <td class="border-r border-b border-neutral-800 p-2 capitalize">
+              {entry.status == "draft" ? "true" : ""}
+            </td>
+          {/if}
 
-              {#each tbaMetrics as value}
-                <td class="border-b border-neutral-800 p-2">{value}</td>
-              {/each}
-              <td class="border-r border-b border-neutral-800"></td>
-            {/if}
+          {#if entry.type == "match" && someAbsent}
+            <td
+              colspan={entry.absent ? 1000 : 1}
+              class={["border-r border-b border-neutral-800 p-2", entry.absent && "text-left"]}
+            >
+              {entry.absent || ""}
+            </td>
+          {/if}
+
+          {#if entry.type == "match" && !entry.absent && surveyRecord.type == "match" && surveyRecord.tbaMetrics?.length}
+            {@const tbaMetrics = surveyRecord.tbaMetrics.map(
+              (metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value,
+            )}
+
+            {#each tbaMetrics as value}
+              <td class="border-b border-neutral-800 p-2">{value}</td>
+            {/each}
+            <td class="border-r border-b border-neutral-800"></td>
           {/if}
 
           {#if entry.type != "match" || !entry.absent}
