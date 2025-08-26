@@ -22,30 +22,32 @@ export type AllData = {
 
 let db: IDBDatabase | undefined = undefined;
 
-function init(callback: (error?: string) => void) {
-  const request = indexedDB.open("MeanScout", schemaVersion);
+function initAsync() {
+  return new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open("MeanScout", schemaVersion);
 
-  request.onerror = () => {
-    callback(`${request.error?.message}`);
-  };
+    request.onerror = () => {
+      reject(request.error?.message);
+    };
 
-  request.onupgradeneeded = (e) => {
-    updateObjectStores(request);
+    request.onupgradeneeded = (e) => {
+      updateObjectStores(request);
 
-    if (e.oldVersion < schemaVersion && request.transaction) {
-      migrateData(request.transaction);
-    }
-  };
+      if (e.oldVersion < schemaVersion && request.transaction) {
+        migrateData(request.transaction);
+      }
+    };
 
-  request.onsuccess = () => {
-    if (!request.result) {
-      callback("Could not open IDB");
-      return;
-    }
+    request.onsuccess = () => {
+      if (!request.result) {
+        reject("Could not open IDB");
+        return;
+      }
 
-    db = request.result;
-    callback();
-  };
+      db = request.result;
+      resolve();
+    };
+  });
 }
 
 function transaction(storeNames: IDBStoreName | IDBStoreName[], mode?: IDBTransactionMode) {
@@ -126,7 +128,7 @@ function generateId(options: { randomChars: number } = { randomChars: 4 }) {
 }
 
 export const idb = {
-  init,
+  initAsync,
   transaction,
   objectStore,
   add,

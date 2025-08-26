@@ -4,17 +4,17 @@ import type { ClientInit } from "@sveltejs/kit";
 export const init: ClientInit = async () => {
   if (!localStorage.getItem("init") && !location.hash.includes("about")) {
     location.hash = `/settings`;
-  } else if (localStorage.getItem("home") && location.hash.replaceAll("/", "") == "") {
-    location.hash = localStorage.getItem("home") || "";
+  } else if (location.hash.replaceAll("/", "") == "") {
+    let home = localStorage.getItem("home");
+
+    if (home && !home.startsWith("#/")) {
+      home = "#/" + home;
+    }
+
+    if (home) {
+      location.hash = home;
+    }
   }
 
-  await new Promise<void>((resolve, reject) => {
-    idb.init((error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
+  await idb.initAsync();
 };
