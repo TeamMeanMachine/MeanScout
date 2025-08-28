@@ -9,8 +9,7 @@
 
   let { data }: PageProps = $props();
 
-  const hasDerived = data.surveyRecords.some((s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"));
-  const whichData = sessionStorageStore<"derived" | "raw">("team-view-which-data", "derived");
+  const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 
   const debounceTimeMillis = 500;
 
@@ -80,15 +79,15 @@
           {/if}
         </Button>
 
-        {#if !selecting && selectedTeam && hasDerived}
+        {#if !selecting && selectedTeam && data.hasExpressions}
           <div class="flex gap-2 text-sm">
             <Button
-              onclick={() => ($whichData = "derived")}
-              class={$whichData == "derived" ? "font-bold" : "font-light"}
+              onclick={() => ($showData = "expressions")}
+              class={$showData == "expressions" ? "font-bold" : "font-light"}
             >
               Derived
             </Button>
-            <Button onclick={() => ($whichData = "raw")} class={$whichData == "raw" ? "font-bold" : "font-light"}>
+            <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>
               Raw
             </Button>
           </div>
@@ -101,7 +100,7 @@
         <div class="flex flex-col gap-1 overflow-x-auto">
           <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
 
-          {#if $whichData == "derived" && surveyRecord.type == "match"}
+          {#if $showData == "expressions" && surveyRecord.type == "match"}
             <TeamDerivedDataTable pageData={data} {surveyRecord} team={selectedTeam} />
           {:else}
             <TeamRawDataTable pageData={data} {surveyRecord} team={selectedTeam} />

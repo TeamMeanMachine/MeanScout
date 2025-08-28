@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type { Team } from "$lib";
+  import { goto } from "$app/navigation";
+  import { type Team } from "$lib";
   import type { Entry } from "$lib/entry";
   import { getFieldsWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import type { Survey } from "$lib/survey";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -154,8 +156,16 @@
       {#each entries as entry}
         <tr>
           {#if entry.type == "match"}
-            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center text-sm">
-              {entry.match}
+            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
+              <Button
+                onclick={() => {
+                  sessionStorage.setItem("match-view", entry.match.toString());
+                  goto(`#/comp/${pageData.compRecord.id}/matches`);
+                }}
+                class="w-full justify-center py-1.5"
+              >
+                {entry.match}
+              </Button>
             </th>
           {/if}
 

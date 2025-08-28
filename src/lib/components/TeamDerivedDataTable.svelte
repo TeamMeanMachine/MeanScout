@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import type { Team, Value } from "$lib";
   import { getExpressionData } from "$lib/analysis";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -6,6 +7,7 @@
   import { getFieldsWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import type { MatchSurvey } from "$lib/survey";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -131,8 +133,16 @@
     <tbody>
       {#each entries as entry}
         <tr>
-          <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center text-sm">
-            {entry.match}
+          <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
+            <Button
+              onclick={() => {
+                sessionStorage.setItem("match-view", entry.match.toString());
+                goto(`#/comp/${pageData.compRecord.id}/matches`);
+              }}
+              class="w-full justify-center py-1.5"
+            >
+              {entry.match}
+            </Button>
           </th>
 
           {#if someDraft}
