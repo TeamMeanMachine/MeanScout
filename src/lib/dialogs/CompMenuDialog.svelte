@@ -8,16 +8,14 @@
     ImportIcon,
     InfoIcon,
     PlusIcon,
-    ReplaceIcon,
     Settings2Icon,
     SettingsIcon,
     ShareIcon,
   } from "@lucide/svelte";
   import BulkExportDialog from "./BulkExportDialog.svelte";
-  import BulkImportDialog from "./BulkImportDialog.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import NewSurveyDialog from "./NewSurveyDialog.svelte";
-  import OverwriteCompDialog from "./OverwriteCompDialog.svelte";
+  import ImportConfigsDialog from "./ImportConfigsDialog.svelte";
 
   let {
     pageData,
@@ -45,18 +43,39 @@
     <ShareIcon class="text-theme" />
     <div class="flex flex-col">Export</div>
   </Button>
+</div>
 
-  <Button onclick={() => openDialog(BulkImportDialog, {})}>
+<div class="flex flex-col gap-1">
+  <Button
+    onclick={() => {
+      openDialog(BulkExportDialog, {
+        comps: [pageData.compRecord],
+        surveys: pageData.surveyRecords,
+        fields: pageData.fieldRecords,
+      });
+    }}
+  >
+    <ShareIcon class="text-theme" />
+    <div class="flex flex-col">Export configs</div>
+  </Button>
+
+  <Button onclick={() => openDialog(ImportConfigsDialog, { ...pageData })}>
     <ImportIcon class="text-theme" />
-    <div class="flex flex-col">Import</div>
+    <div class="flex flex-col">Import configs</div>
   </Button>
 </div>
 
 <div class="flex flex-col gap-1">
+  <Anchor route="comp/{pageData.compRecord.id}/admin">
+    <Settings2Icon class="text-theme" />
+    <div class="flex grow flex-col">Config</div>
+    <ArrowRightIcon class="text-theme" />
+  </Anchor>
+
   {#if pageData.surveyRecords.length}
     {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
-      <Anchor route="survey/{survey.id}">
-        <div class="flex grow flex-wrap items-center justify-between">
+      <Anchor route="survey/{survey.id}" class="flex-nowrap!">
+        <div class="flex grow flex-wrap items-center justify-between gap-x-2">
           <span>{survey.name}</span>
           <span class="text-xs font-light">{survey.id}</span>
         </div>
@@ -69,25 +88,6 @@
     <PlusIcon class="text-theme" />
     <div class="flex flex-col">New survey</div>
   </Button>
-</div>
-
-<div class="flex flex-col gap-1">
-  <Button
-    onclick={() => {
-      openDialog(OverwriteCompDialog, {
-        compRecord: pageData.compRecord,
-      });
-    }}
-  >
-    <ReplaceIcon class="text-theme" />
-    <div class="flex flex-col">Overwrite</div>
-  </Button>
-
-  <Anchor route="comp/{pageData.compRecord.id}/admin">
-    <Settings2Icon class="text-theme" />
-    <div class="flex grow flex-col">Admin</div>
-    <ArrowRightIcon class="text-theme" />
-  </Anchor>
 </div>
 
 <div class="flex flex-col gap-1">
