@@ -82,7 +82,7 @@
 
 <CompPageHeader pageData={data} page="matches" pageTitle="Matches" />
 
-<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:matches">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:matches">
   {#if !data.compRecord.matches.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Matches</h2>

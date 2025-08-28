@@ -70,11 +70,11 @@
     // because they have fixed positions when `max-md`.
 
     if (currentScrollY == 0 || differenceFromStart < -scrollThreshold) {
-      topNav.classList.remove("max-md:top-[-57px]");
-      bottomNav.classList.remove("max-md:-bottom-20!");
+      topNav.classList.remove("top-[-57px]!");
+      bottomNav.classList.remove("-bottom-20!");
     } else if (differenceFromStart > scrollThreshold) {
-      topNav.classList.add("max-md:top-[-57px]");
-      bottomNav.classList.add("max-md:-bottom-20!");
+      topNav.classList.add("top-[-57px]!");
+      bottomNav.classList.add("-bottom-20!");
     }
 
     lastScrollY = currentScrollY;
@@ -99,8 +99,8 @@
   <div
     bind:this={topNav}
     class={[
-      "grow border-neutral-600 transition-[top]",
-      "max-md:fixed max-md:top-0 max-md:left-0 max-md:z-20 max-md:w-full max-md:overflow-x-auto max-md:border-b max-md:bg-neutral-900 max-md:px-3 max-md:py-2",
+      "fixed top-0 left-0 z-20 w-full grow border-b border-neutral-600 bg-neutral-900 px-3 py-2 transition-[top]",
+      "md:static md:border-none md:p-0",
     ]}
   >
     <Header
@@ -116,38 +116,40 @@
     bind:this={bottomNav}
     use:navBar
     class={[
-      "flex gap-2 border-neutral-600 text-sm text-nowrap transition-[bottom]",
-      "max-md:fixed max-md:bottom-0 max-md:left-0 max-md:z-20 max-md:w-full max-md:gap-0 max-md:overflow-x-auto max-md:border-t max-md:bg-neutral-800 max-md:p-1 max-md:text-xs",
+      "fixed bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom]",
+      "md:static md:overflow-visible md:border-none md:bg-neutral-900  md:text-sm",
     ]}
     style="view-transition-name:comp-header;scrollbar-width:none"
   >
-    <Anchor route={routeBase} class={getAnchorClass("entries")}>
-      <NotepadTextIcon class="text-theme" />
-      Entries
-    </Anchor>
-    {#if showAnalysisLink}
-      <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
-        <ChartBarBigIcon class="text-theme" />
-        Analysis
+    <div class="mx-auto flex max-w-xl gap-0 p-1 md:mx-0 md:max-w-full md:gap-2 md:p-0">
+      <Anchor route={routeBase} class={getAnchorClass("entries")}>
+        <NotepadTextIcon class="text-theme" />
+        Entries
       </Anchor>
-    {/if}
-    {#if teamCount}
-      <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>
-        <UsersIcon class="text-theme" />
-        Teams
-      </Anchor>
-    {/if}
-    {#if pageData.compRecord.matches.length}
-      <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
-        <ListOrderedIcon class="text-theme" />
-        Matches
-      </Anchor>
-    {/if}
-    {#if pageData.compRecord.scouts}
-      <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
-        <DicesIcon class="text-theme" />
-        Predictions
-      </Anchor>
-    {/if}
+      {#if showAnalysisLink}
+        <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
+          <ChartBarBigIcon class="text-theme" />
+          Analysis
+        </Anchor>
+      {/if}
+      {#if teamCount}
+        <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>
+          <UsersIcon class="text-theme" />
+          Teams
+        </Anchor>
+      {/if}
+      {#if pageData.compRecord.matches.length}
+        <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
+          <ListOrderedIcon class="text-theme" />
+          Matches
+        </Anchor>
+      {/if}
+      {#if pageData.compRecord.scouts}
+        <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
+          <DicesIcon class="text-theme" />
+          Predictions
+        </Anchor>
+      {/if}
+    </div>
   </div>
 </div>

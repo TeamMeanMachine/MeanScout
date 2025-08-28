@@ -122,7 +122,17 @@
         {#each ["derived", "tba", "primitive"] as const as input}
           {#if entryExpressions[input]?.length}
             {#each entryExpressions[input] as entryExpression}
-              <th class="border-b border-neutral-700 p-2">{entryExpression.name}</th>
+              <th class="border-b border-neutral-700 p-1">
+                <Button
+                  onclick={() => {
+                    sessionStorage.setItem("analysis-view", `${surveyRecord.id}-expression-${entryExpression.name}`);
+                    goto(`#/comp/${pageData.compRecord.id}/analysis`);
+                  }}
+                  class="justify-center p-1! text-center!"
+                >
+                  {entryExpression.name}
+                </Button>
+              </th>
             {/each}
             <td class="border-r border-b border-neutral-700"></td>
           {/if}

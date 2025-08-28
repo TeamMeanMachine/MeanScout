@@ -47,7 +47,7 @@
 
 <CompPageHeader pageData={data} page="teams" pageTitle="Teams" />
 
-<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:teams">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:teams">
   {#if !data.teams.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Teams</h2>
@@ -63,7 +63,7 @@
 
           {#if selectedTeam}
             <div class="flex grow flex-col">
-              <span class="font-bold">{selectedTeam.number}</span>
+              <span class="font-bold">Team {selectedTeam.number}</span>
               {#if selectedTeam.name}
                 <span class="text-xs font-light">{selectedTeam.name}</span>
               {/if}

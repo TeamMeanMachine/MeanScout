@@ -170,7 +170,9 @@
           {/if}
 
           {#if someScout}
-            <td class="max-w-24 truncate border-r border-b border-neutral-800 p-2 text-left">{entry.scout}</td>
+            <td class="border-r border-b border-neutral-800 p-2 text-left">
+              <div class="w-24 truncate">{entry.scout}</div>
+            </td>
           {/if}
 
           {#if someDraft}

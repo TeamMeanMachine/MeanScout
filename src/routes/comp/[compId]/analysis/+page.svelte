@@ -116,7 +116,7 @@
 
 <CompPageHeader pageData={data} page="analysis" pageTitle="Analysis" />
 
-<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:analysis">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:analysis">
   {#if !showAnalysis}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Analysis</h2>
@@ -131,13 +131,14 @@
           <ChartBarBigIcon class="text-theme" />
 
           {#if selectedAnalysis}
-            <span class="grow">
+            <div class="flex grow flex-col">
               {#if "pickList" in selectedAnalysis}
-                {selectedAnalysis.pickList.name}
+                <span class="font-bold">{selectedAnalysis.pickList.name}</span>
               {:else if "expression" in selectedAnalysis}
-                {selectedAnalysis.expression.name}
+                <span class="font-bold">{selectedAnalysis.expression.name}</span>
               {/if}
-            </span>
+              <span class="text-xs font-light">{selectedAnalysis.survey.name}</span>
+            </div>
           {:else}
             <span class="grow">Select</span>
           {/if}

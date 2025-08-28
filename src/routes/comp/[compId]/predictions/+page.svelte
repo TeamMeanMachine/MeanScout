@@ -20,7 +20,7 @@
 
 <CompPageHeader pageData={data} page="predictions" pageTitle="Predictions" />
 
-<div class="flex flex-col gap-6 max-md:mt-9 max-md:mb-20" style="view-transition-name:predictions">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:predictions">
   <div class="flex flex-wrap items-center justify-between">
     <h2 class="font-bold md:hidden">Predictions</h2>
 
