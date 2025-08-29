@@ -2,7 +2,7 @@
   import { sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { type Entry, type EntryStatus } from "$lib/entry";
+  import { groupEntries, type Entry, type EntryStatus } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { targetStore, type Target } from "$lib/settings";
@@ -26,6 +26,8 @@
     "status",
   );
 
+  const groupedEntries = $derived(groupEntries(data.compRecord, data.surveyRecords, data.entryRecords, $groupBy));
+
   let statusToggleStates = new SvelteSet<EntryStatus>();
   let surveyToggleStates = new SvelteSet<string>();
   let matchToggleStates = new SvelteSet<number>();
@@ -35,21 +37,21 @@
   let absentToggleStates = new SvelteSet<boolean>();
 
   let bulkToggleState = $derived.by(() => {
-    switch ($groupBy) {
+    switch (groupedEntries.by) {
       case "status":
-        return statusToggleStates.size == data.entriesPerStatus.length;
+        return statusToggleStates.size == groupedEntries.groups.length;
       case "survey":
-        return surveyToggleStates.size == data.entriesPerSurvey.length;
+        return surveyToggleStates.size == groupedEntries.groups.length;
       case "match":
-        return matchToggleStates.size == data.entriesPerMatch.length;
+        return matchToggleStates.size == groupedEntries.groups.length;
       case "team":
-        return teamToggleStates.size == data.entriesPerTeam.length;
+        return teamToggleStates.size == groupedEntries.groups.length;
       case "scout":
-        return scoutToggleStates.size == data.entriesPerScout.length;
+        return scoutToggleStates.size == groupedEntries.groups.length;
       case "target":
-        return targetToggleStates.size == data.entriesPerTarget.length;
+        return targetToggleStates.size == groupedEntries.groups.length;
       case "absent":
-        return absentToggleStates.size == data.entriesPerAbsent.length;
+        return absentToggleStates.size == groupedEntries.groups.length;
     }
   });
 
@@ -123,12 +125,12 @@
   }
 
   function toggleAll() {
-    switch ($groupBy) {
+    switch (groupedEntries.by) {
       case "status":
         if (bulkToggleState) {
           statusToggleStates.clear();
         } else {
-          for (const group of data.entriesPerStatus) {
+          for (const group of groupedEntries.groups) {
             statusToggleStates.add(group.status);
           }
         }
@@ -137,7 +139,7 @@
         if (bulkToggleState) {
           surveyToggleStates.clear();
         } else {
-          for (const group of data.entriesPerSurvey) {
+          for (const group of groupedEntries.groups) {
             surveyToggleStates.add(group.surveyId);
           }
         }
@@ -146,7 +148,7 @@
         if (bulkToggleState) {
           matchToggleStates.clear();
         } else {
-          for (const group of data.entriesPerMatch) {
+          for (const group of groupedEntries.groups) {
             matchToggleStates.add(group.match);
           }
         }
@@ -155,7 +157,7 @@
         if (bulkToggleState) {
           teamToggleStates.clear();
         } else {
-          for (const group of data.entriesPerTeam) {
+          for (const group of groupedEntries.groups) {
             teamToggleStates.add(group.team);
           }
         }
@@ -164,7 +166,7 @@
         if (bulkToggleState) {
           scoutToggleStates.clear();
         } else {
-          for (const group of data.entriesPerScout) {
+          for (const group of groupedEntries.groups) {
             scoutToggleStates.add(group.scout);
           }
         }
@@ -173,7 +175,7 @@
         if (bulkToggleState) {
           targetToggleStates.clear();
         } else {
-          for (const group of data.entriesPerTarget) {
+          for (const group of groupedEntries.groups) {
             targetToggleStates.add(group.target);
           }
         }
@@ -182,7 +184,7 @@
         if (bulkToggleState) {
           absentToggleStates.clear();
         } else {
-          for (const group of data.entriesPerAbsent) {
+          for (const group of groupedEntries.groups) {
             absentToggleStates.add(group.absent);
           }
         }
@@ -191,25 +193,14 @@
   }
 
   onMount(() => {
-    if (data.entriesPerStatus.find((group) => group.status == "draft")) {
-      statusToggleStates.add("draft");
-    }
+    const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+    const match = Math.max(...recordedMatches, 1);
 
-    if (data.entriesPerStatus.find((group) => group.status == "submitted")) {
-      statusToggleStates.add("submitted");
-    }
-
-    if (data.entriesPerMatch.length) {
-      matchToggleStates.add(data.entriesPerMatch[0].match);
-    }
-
-    if (data.entriesPerTarget.find((group) => group.target == $targetStore)) {
-      targetToggleStates.add($targetStore);
-    }
-
-    if (data.entriesPerAbsent.find((group) => group.absent)) {
-      absentToggleStates.add(true);
-    }
+    statusToggleStates.add("draft");
+    statusToggleStates.add("submitted");
+    matchToggleStates.add(match);
+    targetToggleStates.add($targetStore);
+    absentToggleStates.add(true);
   });
 
   function refresh() {
@@ -358,17 +349,17 @@
           }}
           class="gap-x-4"
         >
-          {#if entry.type == "match" && $groupBy != "match"}
+          {#if entry.type == "match" && groupedEntries.by != "match"}
             <div class="flex w-9 flex-col">
               <span class="text-xs font-light">Match</span>
               <span>{entry.match}</span>
             </div>
-          {:else if entry.type == "pit" && $groupBy != "survey" && $groupBy != "target"}
+          {:else if entry.type == "pit" && groupedEntries.by != "survey" && groupedEntries.by != "target"}
             <div class="flex w-9 flex-col">
               <span class="text-sm">Pit</span>
             </div>
           {/if}
-          {#if $groupBy != "team"}
+          {#if groupedEntries.by != "team"}
             <div class="flex w-32 max-w-full flex-col">
               <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
                 {data.teamNames.get(entry.team) || "Team"}
@@ -376,25 +367,25 @@
               <span>{entry.team}</span>
             </div>
           {/if}
-          {#if $groupBy != "scout" && entry.scout}
+          {#if groupedEntries.by != "scout" && entry.scout}
             <div class="flex w-24 max-w-full flex-col">
               <span class="text-xs font-light text-wrap">Scout</span>
               <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
             </div>
           {/if}
           <div class="flex flex-col">
-            {#if $groupBy != "absent" && entry.type == "match" && entry.absent}
+            {#if groupedEntries.by != "absent" && entry.type == "match" && entry.absent}
               <span class="text-xs">Absent</span>
             {/if}
-            {#if $groupBy != "status" && entry.status != "submitted"}
+            {#if groupedEntries.by != "status" && entry.status != "submitted"}
               <span class="text-xs capitalize">{entry.status}</span>
             {/if}
           </div>
         </Button>
       {/snippet}
 
-      {#if $groupBy == "survey"}
-        {#each data.entriesPerSurvey as { surveyId, entries }}
+      {#if groupedEntries.by == "survey"}
+        {#each groupedEntries.groups as { surveyId, entries }}
           {@const surveyName = data.surveyRecords.find((s) => s.id == surveyId)?.name}
 
           <div class="flex flex-col gap-2">
@@ -442,8 +433,8 @@
             {/if}
           </div>
         {/each}
-      {:else if $groupBy == "match"}
-        {#each data.entriesPerMatch as { match, entries }}
+      {:else if groupedEntries.by == "match"}
+        {#each groupedEntries.groups as { match, entries }}
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
@@ -487,8 +478,8 @@
             {/if}
           </div>
         {/each}
-      {:else if $groupBy == "scout"}
-        {#each data.entriesPerScout as { scout, entries }}
+      {:else if groupedEntries.by == "scout"}
+        {#each groupedEntries.groups as { scout, entries }}
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
@@ -532,8 +523,8 @@
             {/if}
           </div>
         {/each}
-      {:else if $groupBy == "target"}
-        {#each data.entriesPerTarget as { target, entries }}
+      {:else if groupedEntries.by == "target"}
+        {#each groupedEntries.groups as { target, entries }}
           <div class="flex flex-col gap-2">
             <div class="flex gap-2">
               <Button
@@ -579,8 +570,8 @@
             {/if}
           </div>
         {/each}
-      {:else if $groupBy == "team"}
-        {#each data.entriesPerTeam as { team, teamName, entries }}
+      {:else if groupedEntries.by == "team"}
+        {#each groupedEntries.groups as { team, teamName, entries }}
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
@@ -629,8 +620,8 @@
             {/if}
           </div>
         {/each}
-      {:else if $groupBy == "absent"}
-        {#each data.entriesPerAbsent as { absent, entries }}
+      {:else if groupedEntries.by == "absent"}
+        {#each groupedEntries.groups as { absent, entries }}
           <div class="flex flex-col gap-2">
             <div class="flex gap-2">
               <Button
@@ -677,7 +668,7 @@
           </div>
         {/each}
       {:else}
-        {#each data.entriesPerStatus as { status, entries }}
+        {#each groupedEntries.groups as { status, entries }}
           <div class="flex flex-col gap-2">
             <div class="flex gap-2">
               <Button
