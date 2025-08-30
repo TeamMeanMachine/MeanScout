@@ -2,7 +2,6 @@
   import type { PageProps } from "./$types";
   import TeamDerivedDataTable from "$lib/components/TeamDerivedDataTable.svelte";
   import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
-  import CompPageHeader from "../CompPageHeader.svelte";
   import Button from "$lib/components/Button.svelte";
   import { ChevronDownIcon, ChevronUpIcon, SquareArrowOutUpRightIcon, UsersIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
@@ -45,9 +44,7 @@
   }
 </script>
 
-<CompPageHeader pageData={data} page="teams" pageTitle="Teams" />
-
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:teams">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
   {#if !data.teams.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Teams</h2>

@@ -1,20 +1,22 @@
 import type { Comp } from "$lib/comp";
 import type { MatchEntry, PitEntry } from "$lib/entry";
 import { getFieldsWithDetails, type Field } from "$lib/field";
-import { idb, type AllData } from "$lib/idb";
+import { idb } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import type { LayoutLoad } from "./$types";
 
-export type SurveyPageData = {
-  all: AllData;
+type SurveyPageData = {
   compRecord: Comp;
   fieldRecords: Field[];
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
-} & (
-  | { surveyType: "match"; surveyRecord: MatchSurvey; entryRecords: MatchEntry[] }
-  | { surveyType: "pit"; surveyRecord: PitSurvey; entryRecords: PitEntry[] }
-);
+  survey:
+    | { type: "match"; record: MatchSurvey; entryRecords: MatchEntry[] }
+    | { type: "pit"; record: PitSurvey; entryRecords: PitEntry[] };
+};
 
-export async function loadSurveyPageData(surveyId: string): Promise<SurveyPageData> {
+export const load: LayoutLoad = async (event) => {
+  const surveyId = event.params.surveyId;
+
   const all = await idb.getAllAsync();
 
   const surveyRecord = all.surveys.find((survey) => survey.id == surveyId);
@@ -33,12 +35,9 @@ export async function loadSurveyPageData(surveyId: string): Promise<SurveyPageDa
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   return {
-    all,
     compRecord,
     fieldRecords,
     fieldsWithDetails,
-    surveyType: surveyRecord.type,
-    surveyRecord,
-    entryRecords,
+    survey: { type: surveyRecord.type, record: surveyRecord, entryRecords },
   } as SurveyPageData;
-}
+};

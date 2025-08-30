@@ -9,7 +9,6 @@
   import type { PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ChevronDownIcon, ChevronRightIcon, ImportIcon, NotepadTextIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
-  import CompPageHeader from "./CompPageHeader.svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
   import { SvelteSet } from "svelte/reactivity";
@@ -221,22 +220,13 @@
   }
 </script>
 
-<CompPageHeader pageData={data} page="entries" pageTitle="Entries" />
-
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:entries">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
   {#if newEntry}
     <div class="flex flex-col gap-3">
       <NewEntryWidget
         pageData={data}
         surveyRecord={newEntry.survey}
         prefills={newEntry.prefills}
-        onnewscout={(newScout) => {
-          data = {
-            ...data,
-            compRecord: { ...data.compRecord, scouts: [...(data.compRecord.scouts || []), newScout] },
-          };
-          idb.put("comps", $state.snapshot(data.compRecord));
-        }}
         oncancel={() => (newEntry = undefined)}
       />
     </div>

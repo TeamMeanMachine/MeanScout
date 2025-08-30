@@ -10,7 +10,7 @@
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import type { MatchSurvey } from "$lib/survey";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails } from "$lib/field";
 
   let {

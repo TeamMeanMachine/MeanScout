@@ -6,13 +6,12 @@
   import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
   import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
   import { idb } from "$lib/idb";
-  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageProps } from "./$types";
   import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
-  let surveyRecord = $state($state.snapshot(data.surveyRecord));
+  let surveyRecord = $state($state.snapshot(data.survey.record));
   let fieldRecords = $state($state.snapshot(data.fieldRecords));
 
   let topLevelFields = $derived(
@@ -163,13 +162,11 @@
   }
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  <SurveyAdminHeader compRecord={data.compRecord} {surveyRecord} page="fields" />
-
+<div class="flex flex-col gap-6">
   {#if data.disabled}
     <span class="text-sm">
-      Can't edit fields: {data.entryRecords.length}
-      {data.entryRecords.length == 1 ? "entry" : "entries"} exist.
+      Can't edit fields: {data.survey.entryRecords.length}
+      {data.survey.entryRecords.length == 1 ? "entry" : "entries"} exist.
     </span>
   {:else}
     {#if surveyRecord.fieldIds.length}

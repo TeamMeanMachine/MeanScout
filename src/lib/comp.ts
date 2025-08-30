@@ -1,5 +1,8 @@
 import { matchSchema, teamSchema } from "./";
 import { z } from "zod";
+import type { Survey } from "./survey";
+import type { Field } from "./field";
+import type { Entry } from "./entry";
 
 export const compSchema = z.object({
   id: z.string(),
@@ -13,3 +16,10 @@ export const compSchema = z.object({
 });
 
 export type Comp = z.infer<typeof compSchema>;
+
+export type CompPageData = {
+  compRecord: Comp;
+  surveyRecords: Survey[];
+  fieldRecords: Field[];
+  entryRecords: Entry[];
+};

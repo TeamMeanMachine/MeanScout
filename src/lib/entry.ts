@@ -78,7 +78,7 @@ function getComparisons(a: Entry, b: Entry) {
 }
 
 function compareMatchTeams(a: Entry, b: Entry, matches: Match[]) {
-  if (a.type == "match" && b.type == "match") {
+  if (a.type == "match" && b.type == "match" && a.match == b.match) {
     const match = matches.find((m) => m.number == a.match);
     if (match) {
       const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];

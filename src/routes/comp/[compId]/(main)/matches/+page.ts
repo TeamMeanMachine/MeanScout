@@ -1,11 +1,9 @@
 import type { Match } from "$lib";
 import type { MatchEntry } from "$lib/entry";
-import { loadCompPageData } from "$lib/loaders/loadCompPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
-  const data = await loadCompPageData(event.params.compId);
-  localStorage.setItem("home", event.url.hash);
+  const data = await event.parent();
 
   const matches: (Match & { extraTeams?: string[] })[] = [...data.compRecord.matches];
   for (const entry of data.entryRecords) {
@@ -51,5 +49,5 @@ export const load: PageLoad = async (event) => {
     (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
   );
 
-  return { ...data, matches, lastCompletedMatch, hasExpressions };
+  return { title: "Matches", matches, lastCompletedMatch, hasExpressions };
 };

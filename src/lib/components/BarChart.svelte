@@ -3,7 +3,7 @@
   import type { AnalysisData } from "$lib/analysis";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { goto } from "$app/navigation";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
 
   let {
     pageData,

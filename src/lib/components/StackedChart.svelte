@@ -2,7 +2,7 @@
   import { colors, type AnalysisData } from "$lib/analysis";
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
   import { goto } from "$app/navigation";
 
   let {

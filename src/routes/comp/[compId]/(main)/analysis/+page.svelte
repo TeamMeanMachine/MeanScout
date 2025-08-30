@@ -8,7 +8,6 @@
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon, ClipboardCopy, Share2Icon } from "@lucide/svelte";
   import StackedChart from "$lib/components/StackedChart.svelte";
   import BarChart from "$lib/components/BarChart.svelte";
-  import CompPageHeader from "../CompPageHeader.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import type { MatchEntry } from "$lib/entry";
   import type { MatchSurvey } from "$lib/survey";
@@ -17,14 +16,15 @@
 
   const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
 
-  const matchSurveys = data.surveyRecords
-    .filter((survey) => survey.type == "match")
-    .toSorted((a, b) => a.name.localeCompare(b.name));
+  const matchSurveys = $derived(
+    data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
+  );
 
-  const showAnalysis =
+  const showAnalysis = $derived(
     data.fieldRecords.length &&
-    data.entryRecords.length &&
-    matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length);
+      data.entryRecords.length &&
+      matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
+  );
 
   let selecting = $state(false);
   let selectedAnalysis = $state(initialAnalysis());
@@ -114,9 +114,7 @@
   }
 </script>
 
-<CompPageHeader pageData={data} page="analysis" pageTitle="Analysis" />
-
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:analysis">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
   {#if !showAnalysis}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Analysis</h2>

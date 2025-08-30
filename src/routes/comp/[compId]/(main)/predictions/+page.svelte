@@ -4,7 +4,6 @@
   import { sessionStorageStore } from "$lib";
   import { openDialog } from "$lib/dialog";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import CompPageHeader from "../CompPageHeader.svelte";
 
   let { data }: PageProps = $props();
 
@@ -18,9 +17,7 @@
   }
 </script>
 
-<CompPageHeader pageData={data} page="predictions" pageTitle="Predictions" />
-
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:predictions">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
   <div class="flex flex-wrap items-center justify-between">
     <h2 class="font-bold md:hidden">Predictions</h2>
 

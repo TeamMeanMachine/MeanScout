@@ -8,7 +8,6 @@
   import { idb } from "$lib/idb";
   import type { PageData, PageProps } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
-  import { getDefaultFieldValue } from "$lib/field";
   import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
 
@@ -18,14 +17,9 @@
 
   let error = $state("");
 
-  const thisCompSurveys = data.all.surveys.filter((survey) => survey.compId == data.compRecord.id);
-
   const suggestedScouts = $derived(
     new Set([
-      ...data.all.entries
-        .filter((entry) => thisCompSurveys.some((survey) => survey.id == entry.surveyId))
-        .map((entry) => entry.scout)
-        .filter((scout) => scout !== undefined),
+      ...data.thisCompEntries.map((entry) => entry.scout).filter((scout) => scout !== undefined),
       ...(data.compRecord.scouts || []),
     ])
       .values()
@@ -53,7 +47,7 @@
   backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
-<div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
+<div class="flex flex-col gap-6">
   <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
     {#if data.surveyType == "match"}
       <div class="flex flex-col">
@@ -170,7 +164,7 @@
       onclick={() => {
         for (let i = 0; i < entry.values.length; i++) {
           const value = entry.values[i];
-          if (typeof value !== typeof getDefaultFieldValue(data.fieldsWithDetails.orderedSingle[i].field)) {
+          if (typeof value !== typeof data.defaultValues[i]) {
             error = `Invalid value for ${data.fieldsWithDetails.orderedSingle[i].field.name}`;
             return;
           }

@@ -5,15 +5,13 @@
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
   import type { PageProps } from "./$types";
   import { idb } from "$lib/idb";
-  import CompAdminHeader from "../CompAdminHeader.svelte";
   import { PlusIcon } from "@lucide/svelte";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
-  <CompAdminHeader compRecord={data.compRecord} page="teams" />
-
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-3">
     {#if data.compRecord.teams.length}
       <div class="grid gap-2" style="grid-template-columns: min-content auto">
@@ -30,7 +28,7 @@
                     ...data,
                     compRecord: { ...data.compRecord, teams, modified: new Date() },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
                 },
                 ondelete() {
                   data = {
@@ -41,7 +39,7 @@
                       modified: new Date(),
                     },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
                 },
               });
             }}
@@ -81,7 +79,7 @@
                   modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
             },
           });
         }}

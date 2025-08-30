@@ -9,15 +9,14 @@
   import { CheckIcon, EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
-  import { goto } from "$app/navigation";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import { goto, invalidateAll } from "$app/navigation";
+  import type { CompPageData } from "$lib/comp";
   import type { Survey } from "$lib/survey";
 
   let {
     pageData,
     surveyRecord,
     prefills,
-    onnewscout,
     oncancel,
   }: {
     pageData: CompPageData;
@@ -27,7 +26,6 @@
       team: string;
       scout: string | undefined;
     };
-    onnewscout: (scout: string) => void;
     oncancel: () => void;
   } = $props();
 
@@ -219,18 +217,18 @@
       <Button
         onclick={() => {
           openDialog(NewScoutDialog, {
-            scouts: pageData.compRecord.scouts ?? [],
+            scouts: pageData.compRecord.scouts || [],
             onadd(newScout) {
               pageData = {
                 ...pageData,
                 compRecord: {
                   ...pageData.compRecord,
                   scouts: [...(pageData.compRecord.scouts || []), newScout],
+                  modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(pageData.compRecord));
+              idb.put("comps", $state.snapshot(pageData.compRecord)).onsuccess = invalidateAll;
               scout = newScout;
-              onnewscout(newScout);
             },
           });
         }}

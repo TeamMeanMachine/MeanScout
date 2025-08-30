@@ -5,7 +5,7 @@
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey } from "$lib/survey";
   import Button from "./Button.svelte";
 

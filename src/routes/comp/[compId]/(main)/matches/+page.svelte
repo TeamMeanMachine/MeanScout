@@ -10,7 +10,6 @@
     PlusIcon,
     SquareArrowOutUpRightIcon,
   } from "@lucide/svelte";
-  import CompPageHeader from "../CompPageHeader.svelte";
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
 
@@ -87,9 +86,7 @@
   }
 </script>
 
-<CompPageHeader pageData={data} page="matches" pageTitle="Matches" />
-
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0" style="view-transition-name:matches">
+<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
   {#if !data.compRecord.matches.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold md:hidden">Matches</h2>

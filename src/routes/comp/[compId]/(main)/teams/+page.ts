@@ -1,10 +1,8 @@
 import { type Team } from "$lib";
-import { loadCompPageData } from "$lib/loaders/loadCompPageData";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
-  const data = await loadCompPageData(event.params.compId);
-  localStorage.setItem("home", event.url.hash);
+  const data = await event.parent();
 
   const teamsFromMatches = data.compRecord.matches.flatMap((match) => [
     match.red1,
@@ -29,5 +27,5 @@ export const load: PageLoad = async (event) => {
     (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
   );
 
-  return { ...data, teams, hasExpressions };
+  return { title: "Teams", teams, hasExpressions };
 };

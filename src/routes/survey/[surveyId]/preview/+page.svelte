@@ -1,19 +1,16 @@
 <script lang="ts">
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import { getDefaultFieldValue } from "$lib/field";
-  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="preview" />
-
+<div class="flex flex-col gap-6">
   {#if data.fieldRecords.length}
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap gap-x-6 gap-y-3">
-        {#if data.surveyRecord.type == "match"}
+        {#if data.survey.type == "match"}
           <div class="flex flex-col">
             <span class="text-xs">Match</span>
             <span class="font-bold">##</span>

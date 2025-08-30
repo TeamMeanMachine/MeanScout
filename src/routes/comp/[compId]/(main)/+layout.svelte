@@ -1,34 +1,28 @@
 <script lang="ts">
+  import { afterNavigate } from "$app/navigation";
+  import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
   import { ChartBarBigIcon, DicesIcon, ListOrderedIcon, NotepadTextIcon, UsersIcon } from "@lucide/svelte";
 
-  let {
-    pageData,
-    page,
-    pageTitle,
-  }: {
-    pageData: CompPageData;
-    page: string;
-    pageTitle?: string;
-  } = $props();
+  let { data, children } = $props();
 
-  const routeBase = $derived(`comp/${pageData.compRecord.id}`);
+  const pageTitle = $derived(page.data.title);
+  const title = $derived(pageTitle ? `${pageTitle} - ${data.compRecord.name}` : `${data.compRecord.name}`);
 
-  const title = $derived(pageTitle ? `${pageTitle} - ${pageData.compRecord.name}` : `${pageData.compRecord.name}`);
+  const routeBase = $derived(`comp/${data.compRecord.id}`);
 
   const showAnalysisLink = $derived(
-    pageData.surveyRecords.some(
+    data.surveyRecords.some(
       (survey) => survey.type == "match" && (survey.pickLists.length || survey.expressions.length),
     ),
   );
 
   const teamCount = $derived(
     new Set([
-      ...pageData.compRecord.matches.flatMap((match) => [
+      ...data.compRecord.matches.flatMap((match) => [
         match.red1,
         match.red2,
         match.red3,
@@ -36,7 +30,7 @@
         match.blue2,
         match.blue3,
       ]),
-      ...pageData.compRecord.teams.map((team) => team.number),
+      ...data.compRecord.teams.map((team) => team.number),
     ]).size,
   );
 
@@ -84,13 +78,13 @@
     return (
       "items-center justify-center active:left-0! active:top-0.5 " +
       "max-md:gap-1 max-md:py-1 max-md:flex-col max-md:grow " +
-      (page == matching ? "font-bold underline" : "font-light")
+      (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
 
-  function navBar(div: HTMLElement) {
-    div.getElementsByClassName("font-bold")[0].scrollIntoView({ inline: "center" });
-  }
+  afterNavigate(() => {
+    bottomNav.getElementsByClassName("font-bold")[0].scrollIntoView({ inline: "center", block: "nearest" });
+  });
 </script>
 
 <svelte:window {onscroll} />
@@ -105,21 +99,20 @@
   >
     <Header
       title="{title} - MeanScout"
-      heading={pageData.compRecord.name}
+      heading={data.compRecord.name}
       onmenupressed={() => {
-        openDialog(CompMenuDialog, { pageData });
+        openDialog(CompMenuDialog, { pageData: data });
       }}
     />
   </div>
 
   <div
     bind:this={bottomNav}
-    use:navBar
     class={[
       "fixed bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom]",
       "md:static md:overflow-visible md:border-none md:bg-neutral-900  md:text-sm",
     ]}
-    style="view-transition-name:comp-header;scrollbar-width:none"
+    style="scrollbar-width:none"
   >
     <div class="mx-auto flex max-w-xl gap-0 p-1 md:mx-0 md:max-w-full md:gap-2 md:p-0">
       <Anchor route={routeBase} class={getAnchorClass("entries")}>
@@ -138,13 +131,13 @@
           Teams
         </Anchor>
       {/if}
-      {#if pageData.compRecord.matches.length}
+      {#if data.compRecord.matches.length}
         <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
           <ListOrderedIcon class="text-theme" />
           Matches
         </Anchor>
       {/if}
-      {#if pageData.compRecord.scouts}
+      {#if data.compRecord.scouts}
         <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
           <DicesIcon class="text-theme" />
           Predictions
@@ -153,3 +146,5 @@
     </div>
   </div>
 </div>
+
+{@render children()}

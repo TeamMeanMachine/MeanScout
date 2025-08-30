@@ -3,7 +3,7 @@
   import { type Team } from "$lib";
   import type { Entry } from "$lib/entry";
   import { getFieldsWithDetails } from "$lib/field";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
   import type { Survey } from "$lib/survey";
   import Button from "./Button.svelte";
 

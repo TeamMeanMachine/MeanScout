@@ -6,15 +6,13 @@
   import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import CompAdminHeader from "../CompAdminHeader.svelte";
   import type { PageProps } from "./$types";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
-  <CompAdminHeader compRecord={data.compRecord} page="matches" />
-
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-3">
     {#if data.compRecord.matches.length}
       <div class="flex flex-wrap gap-2">
@@ -32,7 +30,7 @@
                     ...data,
                     compRecord: { ...data.compRecord, matches, modified: new Date() },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
                 },
                 ondelete() {
                   data = {
@@ -43,7 +41,7 @@
                       modified: new Date(),
                     },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord));
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
                 },
               });
             }}
@@ -85,7 +83,7 @@
                   modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
             },
           })}
         class="text-sm"

@@ -3,7 +3,7 @@
   import Button from "$lib/components/Button.svelte";
   import TeamDerivedDataTable from "$lib/components/TeamDerivedDataTable.svelte";
   import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
 
   let {
     pageData,

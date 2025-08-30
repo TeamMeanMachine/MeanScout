@@ -9,8 +9,8 @@
   import { sortExpressions, type Expression } from "$lib/expression";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import SurveyAdminHeader from "../SurveyAdminHeader.svelte";
   import type { PageProps } from "./$types";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -87,15 +87,13 @@
       oncreate(expression) {
         surveyRecord.expressions.push(expression);
         surveyRecord.modified = new Date();
-        idb.put("surveys", $state.snapshot(surveyRecord));
+        idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
       },
     });
   }
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="analysis" />
-
+<div class="flex flex-col gap-6">
   {#if !data.fieldRecords.length}
     <span class="text-sm">To setup analysis, go create some fields.</span>
   {:else}
@@ -112,12 +110,12 @@
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
                   },
                   ondelete() {
                     surveyRecord.pickLists.splice(index, 1);
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
                   },
                 });
               }}
@@ -276,7 +274,7 @@
                   oncreate(pickList) {
                     surveyRecord.pickLists.push(pickList);
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord));
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
                   },
                 });
               }}
@@ -337,12 +335,12 @@
           surveyRecord.pickLists = pickLists;
           surveyRecord.expressions = expressions;
           surveyRecord.modified = new Date();
-          idb.put("surveys", $state.snapshot(surveyRecord));
+          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
         },
         ondelete() {
           surveyRecord.expressions.splice(index, 1);
           surveyRecord.modified = new Date();
-          idb.put("surveys", $state.snapshot(surveyRecord));
+          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
         },
       });
     }}

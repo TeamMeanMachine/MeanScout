@@ -14,7 +14,7 @@
 
 <Header />
 
-<div class="flex flex-col gap-2" style="view-transition-name:comps">
+<div class="flex flex-col gap-2">
   <h2 class="font-bold">Comps</h2>
 
   {#if data.all.comps.length}
@@ -53,7 +53,7 @@
   </div>
 </div>
 
-<div class="flex flex-col gap-2" style="view-transition-name:meanscout">
+<div class="flex flex-col gap-2">
   <div class="flex flex-col">
     <h2 class="font-bold">MeanScout</h2>
     <span class="text-xs font-light">
@@ -62,7 +62,7 @@
     </span>
   </div>
   <div class="flex flex-wrap gap-2">
-    <Anchor route="settings" class="grow basis-48" style="view-transition-name:settings">
+    <Anchor route="settings" class="grow basis-48">
       <SettingsIcon class="text-theme" />
       <div class="flex grow flex-col">
         Settings
@@ -70,7 +70,7 @@
       </div>
       <ArrowRightIcon class="text-theme" />
     </Anchor>
-    <Anchor route="about" class="grow basis-48" style="view-transition-name:about">
+    <Anchor route="about" class="grow basis-48">
       <InfoIcon class="text-theme" />
       <div class="flex grow flex-col">
         About

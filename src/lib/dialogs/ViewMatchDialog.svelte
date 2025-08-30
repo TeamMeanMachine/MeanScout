@@ -12,7 +12,7 @@
   import { type MatchEntry } from "$lib/entry";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
-  import type { CompPageData } from "$lib/loaders/loadCompPageData";
+  import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
   import ViewTeamDialog from "./ViewTeamDialog.svelte";
   import type { MatchSurvey } from "$lib/survey";

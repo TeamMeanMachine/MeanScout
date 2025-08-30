@@ -5,9 +5,9 @@
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CalendarDaysIcon, CloudDownloadIcon, LoaderIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import CompAdminHeader from "./CompAdminHeader.svelte";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -33,6 +33,7 @@
     }
 
     isLoadingTbaData = false;
+    invalidateAll();
   }
 
   async function getMatchesFromTbaEvent() {
@@ -90,9 +91,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
-  <CompAdminHeader compRecord={data.compRecord} page="general" />
-
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-2">
     <Button
       onclick={() =>
@@ -103,7 +102,7 @@
               ...data,
               compRecord: { ...data.compRecord, name, modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           },
         })}
     >
@@ -126,7 +125,7 @@
               ...data,
               compRecord: { ...data.compRecord, tbaEventKey, modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           },
         })}
     >

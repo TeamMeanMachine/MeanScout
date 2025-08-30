@@ -3,9 +3,9 @@
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { Trash2Icon } from "@lucide/svelte";
-  import CompAdminHeader from "../CompAdminHeader.svelte";
   import type { PageProps } from "./$types";
   import DeleteCompDialog from "$lib/dialogs/DeleteCompDialog.svelte";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -14,9 +14,7 @@
   );
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
-  <CompAdminHeader compRecord={data.compRecord} page="danger" />
-
+<div class="flex flex-col gap-6">
   {#if showDangerZone}
     <div class="flex flex-col gap-2">
       {#if data.compRecord.scouts?.length}
@@ -26,7 +24,7 @@
               ...data,
               compRecord: { ...data.compRecord, scouts: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -43,7 +41,7 @@
               ...data,
               compRecord: { ...data.compRecord, teams: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -60,7 +58,7 @@
               ...data,
               compRecord: { ...data.compRecord, matches: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord));
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           }}
         >
           <Trash2Icon class="text-theme" />

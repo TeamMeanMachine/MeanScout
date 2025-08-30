@@ -2,17 +2,15 @@
   import Button from "$lib/components/Button.svelte";
   import { idb } from "$lib/idb";
   import type { PageProps } from "./$types";
-  import CompAdminHeader from "../CompAdminHeader.svelte";
   import { openDialog } from "$lib/dialog";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
   import { PlusIcon } from "@lucide/svelte";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:admin-comp">
-  <CompAdminHeader compRecord={data.compRecord} page="scouts" />
-
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-3">
     {#if !data.compRecord.scouts}
       <Button
@@ -25,7 +23,7 @@
               modified: new Date(),
             },
           };
-          idb.put("comps", $state.snapshot(data.compRecord));
+          idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
         }}
       >
         Enable scout names and prediction
@@ -45,7 +43,7 @@
                   modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(data.compRecord));
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
             }}
           >
             {scout}
@@ -72,7 +70,7 @@
                     modified: new Date(),
                   },
                 };
-                idb.put("comps", $state.snapshot(data.compRecord));
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
               },
             });
           }}

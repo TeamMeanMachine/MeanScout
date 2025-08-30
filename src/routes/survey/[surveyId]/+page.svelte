@@ -6,7 +6,7 @@
   import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import { CloudDownloadIcon, LoaderIcon, PlusIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData, PageProps } from "./$types";
-  import SurveyAdminHeader from "./SurveyAdminHeader.svelte";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -32,6 +32,7 @@
     }
 
     isLoadingTbaData = false;
+    invalidateAll();
   }
 
   async function getMatchesFromTbaEvent() {
@@ -57,14 +58,16 @@
         }
       }
 
-      if (data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length) {
+      if (data.survey.type == "match" && data.survey.record.tbaMetrics?.length) {
         const entryStore = matchesTx.objectStore("entries");
 
         for (const { match, breakdowns } of response) {
           if (!breakdowns) continue;
 
           for (const { team, tbaMetrics } of breakdowns) {
-            const entry = data.entryRecords.find((e) => e.team == team && e.type == "match" && e.match == match.number);
+            const entry = data.survey.entryRecords.find(
+              (e) => e.team == team && e.type == "match" && e.match == match.number,
+            );
             if (!entry) continue;
 
             entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
@@ -75,10 +78,10 @@
       data = {
         ...data,
         compRecord: { ...data.compRecord, matches, modified: new Date() },
-        surveyRecord: { ...data.surveyRecord, modified: new Date() },
+        survey: { ...data.survey, record: { ...data.survey.record, modified: new Date() } },
       } as PageData;
       matchesTx.objectStore("comps").put($state.snapshot(data.compRecord));
-      matchesTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
+      matchesTx.objectStore("surveys").put($state.snapshot(data.survey.record));
     }
   }
 
@@ -100,77 +103,84 @@
       data = {
         ...data,
         compRecord: { ...data.compRecord, teams, modified: new Date() },
-        surveyRecord: { ...data.surveyRecord, modified: new Date() },
+        survey: { ...data.survey, record: { ...data.survey.record, modified: new Date() } },
       } as PageData;
       idb.put("comps", $state.snapshot(data.compRecord));
-      idb.put("surveys", $state.snapshot(data.surveyRecord));
+      idb.put("surveys", $state.snapshot(data.survey.record));
     }
   }
 
   function useTbaMetrics() {
-    if (data.surveyType != "match" || !data.compRecord.tbaEventKey) return;
+    if (data.survey.type != "match" || !data.compRecord.tbaEventKey) return;
 
     data = {
       ...data,
-      surveyRecord: { ...data.surveyRecord, tbaMetrics: [], modified: new Date() },
+      survey: { ...data.survey, record: { ...data.survey.record, tbaMetrics: [], modified: new Date() } },
     };
-    idb.put("surveys", $state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
   }
 
   let tbaMetricInput = $state("");
 
   function addTbaMetric() {
-    if (data.surveyType != "match" || !data.compRecord.tbaEventKey) return;
+    if (data.survey.type != "match" || !data.compRecord.tbaEventKey) return;
 
     tbaMetricInput = tbaMetricInput.trim();
     if (!tbaMetricInput) return;
 
     data = {
       ...data,
-      surveyRecord: {
-        ...data.surveyRecord,
-        tbaMetrics: [...(data.surveyRecord.tbaMetrics || []), tbaMetricInput],
-        modified: new Date(),
+      survey: {
+        ...data.survey,
+        record: {
+          ...data.survey.record,
+          tbaMetrics: [...(data.survey.record.tbaMetrics || []), tbaMetricInput],
+          modified: new Date(),
+        },
       },
     };
-    idb.put("surveys", $state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
 
     tbaMetricInput = "";
   }
 
   function removeTbaMetric(tbaMetric: string) {
-    if (data.surveyType != "match" || !data.compRecord.tbaEventKey || !data.surveyRecord.tbaMetrics?.length) return;
+    if (data.survey.type != "match" || !data.compRecord.tbaEventKey || !data.survey.record.tbaMetrics?.length) return;
     data = {
       ...data,
-      surveyRecord: {
-        ...data.surveyRecord,
-        tbaMetrics: data.surveyRecord.tbaMetrics.filter((m) => m != tbaMetric),
+      survey: {
+        ...data.survey,
+        record: {
+          ...data.survey.record,
+          tbaMetrics: data.survey.record.tbaMetrics.filter((m) => m != tbaMetric),
+        },
       },
     };
-    idb.put("surveys", $state.snapshot(data.surveyRecord));
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
   }
 </script>
 
-<div class="flex flex-col gap-6" style="view-transition-name:survey-{data.surveyRecord.id}">
-  <SurveyAdminHeader compRecord={data.compRecord} surveyRecord={data.surveyRecord} page="general" />
-
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-2">
     <Button
       onclick={() =>
         openDialog(EditSurveyNameDialog, {
-          surveyRecord: data.surveyRecord,
+          surveyRecord: data.survey.record,
           onedit(name) {
             data = {
               ...data,
-              surveyRecord: { ...data.surveyRecord, name, modified: new Date() },
+              survey: {
+                ...data.survey,
+                record: { ...data.survey.record, name, modified: new Date() },
+              },
             } as PageData;
-            idb.put("surveys", $state.snapshot(data.surveyRecord));
+            idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
           },
         })}
     >
       <SquarePenIcon class="text-theme" />
       <div class="flex flex-col">
-        {data.surveyRecord.name}
+        {data.survey.record.name}
         <span class="text-xs font-light">Edit name</span>
       </div>
     </Button>
@@ -193,7 +203,7 @@
           Get data from TBA
           <span class="text-xs font-light">
             Matches,
-            {data.surveyType == "match" && data.surveyRecord.tbaMetrics?.length ? "metrics," : ""}
+            {data.survey.type == "match" && data.survey.record.tbaMetrics?.length ? "metrics," : ""}
             teams
           </span>
         </div>
@@ -203,11 +213,11 @@
       {/if}
     </div>
 
-    {#if data.surveyType == "match"}
+    {#if data.survey.type == "match"}
       <div class="flex flex-col gap-2">
         <h2 class="font-bold">TBA Metrics</h2>
 
-        {#if data.surveyRecord.tbaMetrics}
+        {#if data.survey.record.tbaMetrics}
           <div class="flex flex-wrap gap-2">
             <input bind:value={tbaMetricInput} class="text-theme bg-neutral-800 p-2" />
             <Button onclick={addTbaMetric}>
@@ -215,7 +225,7 @@
             </Button>
           </div>
           <div class="flex flex-wrap gap-2">
-            {#each data.surveyRecord.tbaMetrics as tbaMetric}
+            {#each data.survey.record.tbaMetrics as tbaMetric}
               <Button onclick={() => removeTbaMetric(tbaMetric)}>{tbaMetric}</Button>
             {/each}
           </div>

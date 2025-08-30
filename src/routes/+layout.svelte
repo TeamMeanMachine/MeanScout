@@ -2,7 +2,6 @@
   import { onNavigate } from "$app/navigation";
   import DialogBox from "$lib/components/DialogBox.svelte";
   import { closeAllDialogs, type DialogState, subscribeDialog } from "$lib/dialog";
-  import { animationStore } from "$lib/settings";
   import "../app.css";
 
   let { children } = $props();
@@ -22,18 +21,7 @@
     dialogStack = state;
   });
 
-  onNavigate((navigation) => {
-    closeAllDialogs();
-
-    if (document.startViewTransition && $animationStore == "full") {
-      return new Promise((resolve) => {
-        document.startViewTransition(async () => {
-          resolve();
-          await navigation.complete;
-        });
-      });
-    }
-  });
+  onNavigate(closeAllDialogs);
 </script>
 
 {#each dialogStack as { component, props }}

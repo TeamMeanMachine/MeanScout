@@ -15,7 +15,7 @@
 
 <Header title="About - MeanScout" heading="About MeanScout" {backLink} />
 
-<div class="flex flex-col gap-6" style="view-transition-name:about">
+<div class="flex flex-col gap-6">
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>

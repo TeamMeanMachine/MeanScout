@@ -23,7 +23,7 @@
   <title>{title}</title>
 </svelte:head>
 
-<header class="flex h-10 items-center gap-3" style="view-transition-name:header">
+<header class="flex h-10 items-center gap-3">
   <div class="flex grow gap-2">
     <img src="./logo.svg" alt="" width="25" height="25" />
 
