@@ -4,6 +4,7 @@ import type { Entry, MatchEntry, PitEntry } from "$lib/entry";
 import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
 import { idb } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 type EntryPageData = {
@@ -24,17 +25,17 @@ export const load: PageLoad = async (event) => {
 
   const entryRecord = all.entries.find((entry) => entry.id == entryId);
   if (!entryRecord) {
-    throw new Error(`Entry record not found with id ${entryId}`);
+    error(404, `Entry record not found with id ${entryId}`);
   }
 
   const surveyRecord = all.surveys.find((survey) => survey.id == entryRecord.surveyId);
   if (!surveyRecord) {
-    throw new Error(`Survey record not found with id ${entryRecord.surveyId}`);
+    error(404, `Survey record not found with id ${entryRecord.surveyId}`);
   }
 
   const compRecord = all.comps.find((comp) => comp.id == surveyRecord.compId);
   if (!compRecord) {
-    throw new Error(`Comp record not found with id ${surveyRecord.compId}`);
+    error(404, `Comp record not found with id ${surveyRecord.compId}`);
   }
 
   const fieldRecords = all.fields.filter((field) => field.surveyId == surveyRecord.id);

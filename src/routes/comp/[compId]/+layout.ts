@@ -1,4 +1,5 @@
 import { idb } from "$lib/idb";
+import { error } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {
@@ -8,7 +9,7 @@ export const load: LayoutLoad = async (event) => {
 
   const compRecord = all.comps.find((comp) => comp.id == compId);
   if (!compRecord) {
-    throw new Error(`Comp record not found with id ${compId}`);
+    error(404, `Comp record not found with id ${compId}`);
   }
 
   const surveyRecords = all.surveys.filter((survey) => survey.compId == compId);

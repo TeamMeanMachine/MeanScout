@@ -3,6 +3,7 @@ import type { MatchEntry, PitEntry } from "$lib/entry";
 import { getFieldsWithDetails, type Field } from "$lib/field";
 import { idb } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import { error } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 
 type SurveyPageData = {
@@ -21,12 +22,12 @@ export const load: LayoutLoad = async (event) => {
 
   const surveyRecord = all.surveys.find((survey) => survey.id == surveyId);
   if (!surveyRecord) {
-    throw new Error(`Survey record not found with id ${surveyId}`);
+    error(404, `Survey record not found with id ${surveyId}`);
   }
 
   const compRecord = all.comps.find((comp) => comp.id == surveyRecord.compId);
   if (!compRecord) {
-    throw new Error(`Comp record not found with id ${surveyRecord.compId}`);
+    error(404, `Comp record not found with id ${surveyRecord.compId}`);
   }
 
   const fieldRecords = all.fields.filter((field) => field.surveyId == surveyId);
