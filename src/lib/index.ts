@@ -1,11 +1,9 @@
 import { z } from "zod";
-import { teamStore, type MatchTarget } from "./settings";
+import { teamStore } from "./settings";
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
 
-export const schemaVersion = 14;
-
-export type Heading = { type: "h1" | "sm"; text: string }[] | string;
+export const schemaVersion = 16;
 
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
 export type Value = z.infer<typeof valueSchema>;
@@ -34,15 +32,6 @@ export function getMatchTeamFontWeight(team: string) {
 
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
-
-export type EntryFilters = {
-  team: string | undefined;
-  match: number | undefined;
-  absent: boolean | undefined;
-  target: MatchTarget | undefined;
-  exported: boolean | undefined;
-  scout: string | undefined;
-};
 
 export function parseValueFromString(value: any) {
   if (typeof value !== "string") return value;

@@ -1,12 +1,25 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Button from "$lib/components/Button.svelte";
   import type { DialogExports } from "$lib/dialog";
-  import { objectStore } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
+  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
 
-  let name = $state("");
+  let {
+    compId,
+  }: {
+    compId: string;
+  } = $props();
+
+  let name = $state("Match Survey");
   let type = $state<SurveyType>("match");
+  let id = $state("");
   let error = $state("");
+
+  $effect(() => {
+    id = compId + "-" + type;
+  });
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -19,11 +32,11 @@
       let survey: Survey;
       if (type == "match") {
         survey = {
+          id,
+          compId,
           name,
           type,
           fieldIds: [],
-          matches: [],
-          teams: [],
           expressions: [],
           pickLists: [],
           created: new Date(),
@@ -31,11 +44,11 @@
         };
       } else if (type == "pit") {
         survey = {
+          id,
+          compId,
           name,
           type,
           fieldIds: [],
-          matches: [],
-          teams: [],
           created: new Date(),
           modified: new Date(),
         };
@@ -44,19 +57,13 @@
         return;
       }
 
-      const addRequest = objectStore("surveys", "readwrite").add(survey);
+      const addRequest = idb.add("surveys", survey);
       addRequest.onerror = () => {
         error = `Could not add survey: ${addRequest.error?.message}`;
       };
 
       addRequest.onsuccess = () => {
-        const id = addRequest.result;
-        if (id == undefined) {
-          error = "Could not add survey";
-          return;
-        }
-
-        goto(`#/survey/${id}/admin`);
+        goto(`#/survey/${survey.id}`);
       };
     },
   };
@@ -64,18 +71,46 @@
 
 <span>New survey</span>
 
+<div class="flex flex-col">
+  <div class="flex flex-wrap gap-2">
+    {#each surveyTypes as surveyType}
+      <Button
+        onclick={() => {
+          type = surveyType;
+          if (!name || name == "Match Survey" || name == "Pit Survey") {
+            name = type == "pit" ? "Pit Survey" : "Match Survey";
+          }
+        }}
+      >
+        {#if type == surveyType}
+          <CircleCheckBigIcon class="text-theme" />
+        {:else}
+          <CircleIcon class="text-theme" />
+        {/if}
+        <span class="capitalize {type == surveyType ? 'font-bold' : 'font-light'}">{surveyType}</span>
+      </Button>
+    {/each}
+  </div>
+</div>
 <label class="flex flex-col">
-  Survey name
+  Name
   <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
 </label>
-<label class="flex flex-col">
-  Survey type
-  <select bind:value={type} class="text-theme bg-neutral-800 p-2 capitalize">
-    {#each surveyTypes as surveyType}
-      <option>{surveyType}</option>
-    {/each}
-  </select>
-</label>
+
+<div class="flex flex-wrap items-end gap-2 text-sm">
+  <label class="flex grow flex-col">
+    ID
+    <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
+  </label>
+  <div class="flex gap-2">
+    <Button onclick={() => (id = compId + "-" + type)}>
+      <span class={id == compId + "-" + type ? "font-bold" : "font-light"}>Default</span>
+    </Button>
+    <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
+      <span class={id != compId + "-" + type ? "font-bold" : "font-light"}>Random</span>
+    </Button>
+  </div>
+</div>
 
 {#if error}
   <span>{error}</span>

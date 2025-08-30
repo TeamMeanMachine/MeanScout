@@ -24,20 +24,20 @@
   }
 </script>
 
-<div class="flex flex-col">
-  <span>{field.name}</span>
+<div class="flex flex-col items-center">
+  <span class:font-bold={value}>{field.name}</span>
   {#if field.tip}
     <span class="text-xs font-light">{field.tip}</span>
   {/if}
-  <div class="flex flex-wrap">
-    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1}>
-      <MinusIcon class="text-theme" />
+  <div class="flex w-16 flex-col">
+    <Button onclick={increment} class="justify-center active:-top-0.5!">
+      <PlusIcon class="text-theme size-5" />
     </Button>
-    <span class="w-12 bg-neutral-800 p-2 text-center {value > 0 ? 'font-bold' : 'font-light'}">
+    <div class="flex h-10 items-center justify-center text-center {value > 0 ? 'font-bold' : 'text-xs font-light'}">
       {value}
-    </span>
-    <Button onclick={increment} class="active:-top-0.5!">
-      <PlusIcon class="text-theme" />
+    </div>
+    <Button onclick={decrement} disabled={field.allowNegative !== true && value < 1} class="justify-center">
+      <MinusIcon class="size-5" />
     </Button>
   </div>
 </div>

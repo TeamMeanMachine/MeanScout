@@ -1,28 +1,28 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { DialogExports } from "$lib/dialog";
-  import { transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
     entryCount,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: Survey;
     entryCount: number;
   } = $props();
 
   let error = $state("");
 
-  export const { onopen, onconfirm }: DialogExports = {
+  export const { onconfirm }: DialogExports = {
     onconfirm() {
-      const deleteTransaction = transaction(["surveys", "fields", "entries"], "readwrite");
+      const deleteTransaction = idb.transaction(["surveys", "fields", "entries"], "readwrite");
       deleteTransaction.onabort = () => {
         error ||= `Could not delete survey: ${deleteTransaction.error?.message}`;
       };
 
       deleteTransaction.oncomplete = () => {
-        goto("#/");
+        goto(`#/comp/${surveyRecord.compId}`);
       };
 
       const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);

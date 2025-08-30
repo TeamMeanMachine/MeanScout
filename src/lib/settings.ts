@@ -61,7 +61,3 @@ export const teamStore = localStorageStore<string>("team", "");
 // TBA API key setting
 
 export const tbaAuthKeyStore = localStorageStore<string>("tbaAuthKey", "");
-
-// Animation setting
-
-export const animationStore = localStorageStore<"minimal" | "full">("animation", "minimal");

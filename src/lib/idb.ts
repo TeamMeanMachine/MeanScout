@@ -1,48 +1,148 @@
 import { schemaVersion } from "./";
-import type { Expression } from "./expression";
+import type { Comp } from "./comp";
+import type { Entry } from "./entry";
+import type { Field } from "./field";
+import type { Survey } from "./survey";
 
-let idb: IDBDatabase | undefined = undefined;
+type IDBStoreRecordMap = {
+  comps: Comp;
+  surveys: Survey;
+  fields: Field;
+  entries: Entry;
+};
 
-export function initIDB(callback: (error?: string) => void) {
-  const request = indexedDB.open("MeanScout", schemaVersion);
-  request.onerror = () => {
-    callback(`${request.error?.message}`);
-  };
-  request.onupgradeneeded = (e) => migrate(request, e.oldVersion);
+export type IDBStoreName = keyof IDBStoreRecordMap;
 
-  request.onsuccess = () => {
-    if (!request.result) {
-      callback("Could not open IDB");
-      return;
-    }
+export type AllData = {
+  comps: Comp[];
+  surveys: Survey[];
+  fields: Field[];
+  entries: Entry[];
+};
 
-    idb = request.result;
-    callback();
-  };
+let db: IDBDatabase | undefined = undefined;
+
+function initAsync() {
+  return new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open("MeanScout", schemaVersion);
+
+    request.onerror = () => {
+      reject(request.error?.message);
+    };
+
+    request.onupgradeneeded = (e) => {
+      updateObjectStores(request);
+
+      if (e.oldVersion < schemaVersion && request.transaction) {
+        migrateData(request.transaction);
+      }
+    };
+
+    request.onsuccess = () => {
+      if (!request.result) {
+        reject("Could not open IDB");
+        return;
+      }
+
+      db = request.result;
+      resolve();
+    };
+  });
 }
 
-export function database() {
-  if (!idb) throw new Error("IDB not ready");
-  return idb;
+function transaction(storeNames: IDBStoreName | IDBStoreName[], mode?: IDBTransactionMode) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeNames, mode);
 }
 
-export function transaction(
-  storeNames: "surveys" | "fields" | "entries" | ("surveys" | "fields" | "entries")[],
-  mode?: IDBTransactionMode,
-  options?: IDBTransactionOptions,
-) {
-  return database().transaction(storeNames, mode, options);
+function objectStore(storeName: IDBStoreName, mode?: IDBTransactionMode) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, mode).objectStore(storeName);
 }
 
-export function objectStore(name: "surveys" | "fields" | "entries", mode?: IDBTransactionMode) {
-  return database().transaction(name, mode).objectStore(name);
+function add<T extends IDBStoreName>(storeName: T, record: IDBStoreRecordMap[T]) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).add(record);
 }
 
-function migrate(request: IDBOpenDBRequest, oldVersion: number) {
+function put<T extends IDBStoreName>(storeName: T, record: IDBStoreRecordMap[T]) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).put(record);
+}
+
+function deleteRecord(storeName: IDBStoreName, id: string) {
+  if (!db) throw new Error("IDB not ready");
+  return db.transaction(storeName, "readwrite").objectStore(storeName).delete(id);
+}
+
+function getAllAsync() {
+  return new Promise<AllData>((resolve, reject) => {
+    const all: AllData = {
+      comps: [],
+      surveys: [],
+      fields: [],
+      entries: [],
+    };
+
+    const tx = transaction(["comps", "surveys", "fields", "entries"]);
+
+    const compsReq = tx.objectStore("comps").getAll();
+    compsReq.onsuccess = () => {
+      all.comps = compsReq.result;
+    };
+
+    const surveysReq = tx.objectStore("surveys").getAll();
+    surveysReq.onsuccess = () => {
+      all.surveys = surveysReq.result;
+    };
+
+    const fieldsReq = tx.objectStore("fields").getAll();
+    fieldsReq.onsuccess = () => {
+      all.fields = fieldsReq.result;
+    };
+
+    const entriesReq = tx.objectStore("entries").getAll();
+    entriesReq.onsuccess = () => {
+      all.entries = entriesReq.result;
+    };
+
+    tx.oncomplete = () => resolve(all);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Generates a unique base-36 id using the current timestamp and random characters (0+, default 4). */
+function generateId(options: { randomChars: number } = { randomChars: 4 }) {
+  const datePart = Date.now().toString(36);
+
+  if (options.randomChars > 0) {
+    const randomPart = Math.random()
+      .toString(36)
+      .substring(2, options.randomChars + 2)
+      .padStart(options.randomChars, "0");
+
+    return datePart + randomPart;
+  }
+
+  return datePart;
+}
+
+export const idb = {
+  initAsync,
+  transaction,
+  objectStore,
+  add,
+  put,
+  delete: deleteRecord,
+  getAllAsync,
+  generateId,
+};
+
+function updateObjectStores(request: IDBOpenDBRequest) {
   const storeNames = request.result.objectStoreNames;
 
   if (!storeNames.contains("entries")) {
-    const entryStore = request.result.createObjectStore("entries", { keyPath: "id", autoIncrement: true });
+    const entryStore = request.result.createObjectStore("entries", { keyPath: "id" });
     entryStore.createIndex("surveyId", "surveyId", { unique: false });
   } else if (request.transaction) {
     const entryStore = request.transaction.objectStore("entries");
@@ -52,7 +152,7 @@ function migrate(request: IDBOpenDBRequest, oldVersion: number) {
   }
 
   if (!storeNames.contains("fields")) {
-    const fieldStore = request.result.createObjectStore("fields", { keyPath: "id", autoIncrement: true });
+    const fieldStore = request.result.createObjectStore("fields", { keyPath: "id" });
     fieldStore.createIndex("surveyId", "surveyId", { unique: false });
   } else if (request.transaction) {
     const fieldStore = request.transaction.objectStore("fields");
@@ -62,280 +162,166 @@ function migrate(request: IDBOpenDBRequest, oldVersion: number) {
   }
 
   if (!storeNames.contains("surveys")) {
-    request.result.createObjectStore("surveys", { keyPath: "id", autoIncrement: true });
+    const surveyStore = request.result.createObjectStore("surveys", { keyPath: "id" });
+    surveyStore.createIndex("compId", "compId", { unique: false });
+  } else if (request.transaction) {
+    const surveyStore = request.transaction.objectStore("surveys");
+    if (!surveyStore.indexNames.contains("compId")) {
+      surveyStore.createIndex("compId", "compId", { unique: false });
+    }
   }
 
-  if (oldVersion < schemaVersion && request.transaction) {
-    migrateSurveys(request.transaction);
+  if (!storeNames.contains("comps")) {
+    request.result.createObjectStore("comps", { keyPath: "id" });
   }
 }
 
-function migrateSurveys(transaction: IDBTransaction) {
+function migrateData(transaction: IDBTransaction) {
+  const compStore = transaction.objectStore("comps");
   const surveyStore = transaction.objectStore("surveys");
   const fieldStore = transaction.objectStore("fields");
   const entryStore = transaction.objectStore("entries");
 
-  const surveyCursorRequest = surveyStore.openCursor();
-  surveyCursorRequest.onsuccess = async () => {
-    const surveyCursor = surveyCursorRequest.result;
-    if (!surveyCursor) return;
+  const compIdMap = new Map<number, string>();
+  const surveyIdMap = new Map<number, string>();
+  const fieldIdMap = new Map<number, string>();
+  const entryIdMap = new Map<number, string>();
 
-    const survey = surveyCursor.value as any;
-
-    if (!survey.type) {
-      survey.type = "match";
-    }
-
-    if (!Array.isArray(survey.matches)) {
-      survey.matches = [];
-    }
-
-    if (survey.type == "match") {
-      if (!survey.pickLists) {
-        survey.pickLists = [];
-      }
-
-      if (!survey.expressions) {
-        survey.expressions = [];
+  const compsRequest = compStore.getAll();
+  compsRequest.onsuccess = () => {
+    for (const comp of compsRequest.result) {
+      if (typeof comp.id == "number") {
+        compStore.delete(comp.id);
+        const newId = compIdMap.get(comp.id) || comp.tbaEventKey || generateId() + comp.id;
+        compIdMap.set(comp.id, newId);
+        comp.id = newId;
+        compStore.put(comp);
       }
     }
-
-    if (Array.isArray(survey.teams)) {
-      survey.teams = survey.teams.map((team: any) => {
-        if (typeof team == "string") {
-          return { number: team, name: "" };
-        }
-        return team;
-      });
-    } else {
-      survey.teams = [];
-    }
-
-    if (!Array.isArray(survey.fieldIds)) {
-      survey.fieldIds = [];
-    }
-
-    if (Array.isArray(survey.fields)) {
-      let flattenedIndex = 0;
-
-      for (const field of survey.fields) {
-        try {
-          let migratedFieldId;
-
-          ({ migratedFieldId, flattenedIndex } = await migrateField(
-            fieldStore,
-            field,
-            survey.id,
-            survey.expressions,
-            flattenedIndex,
-          ));
-
-          survey.fieldIds.push(migratedFieldId);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      delete survey.fields;
-    }
-
-    if (Array.isArray(survey.expressions)) {
-      survey.expressions = survey.expressions.map((expression: any): Expression => {
-        if (!expression.scope) {
-          expression.scope = "survey";
-        }
-
-        if (Array.isArray(expression.inputs)) {
-          if (expression.inputs.every((input: any) => input.from == "field")) {
-            expression.input = {
-              from: "fields",
-              fieldIds: expression.inputs.map((input: any) => input.fieldId),
-            };
-          } else if (expression.inputs.every((input: any) => input.from == "expression")) {
-            expression.input = {
-              from: "expressions",
-              expressionNames: expression.inputs.map((input: any) => input.expressionName),
-            };
-          } else {
-            expression.input = {
-              from: "fields",
-              fieldIds: [],
-            };
-          }
-
-          delete expression.inputs;
-        }
-
-        if (!expression.input) {
-          if (expression.from == "fields") {
-            expression.input = {
-              from: expression.from,
-              fieldIds: expression.fieldIds,
-            };
-            delete expression.fieldIds;
-          } else if (expression.from == "expressions") {
-            expression.input = {
-              from: expression.from,
-              expressionNames: expression.expressionNames,
-            };
-            delete expression.expressionNames;
-          }
-          delete expression.from;
-        }
-
-        if (expression.type && !expression.method) {
-          switch (expression.type) {
-            case "average":
-            case "min":
-            case "max":
-            case "sum":
-              expression.method = {
-                type: expression.type,
-              };
-              break;
-            case "count":
-              expression.method = {
-                type: expression.type,
-                valueToCount: expression.valueToCount,
-              };
-              delete expression.valueToCount;
-              break;
-            case "convert":
-              expression.method = {
-                type: expression.type,
-                converters: expression.converters,
-                defaultTo: expression.defaultTo,
-              };
-              delete expression.converters;
-              delete expression.defaultTo;
-              break;
-            case "multiply":
-              expression.method = {
-                type: expression.type,
-                multiplier: expression.multiplier,
-              };
-              delete expression.multiplier;
-              break;
-            case "divide":
-              expression.method = {
-                type: expression.type,
-                divisor: expression.divider,
-              };
-              delete expression.divisor;
-              break;
-          }
-
-          delete expression.type;
-        }
-
-        return expression;
-      });
-    }
-
-    migrateEntries(entryStore, survey.id);
-
-    surveyCursor.update(survey);
-    surveyCursor.continue();
   };
-}
 
-function migrateField(
-  fieldStore: IDBObjectStore,
-  field: any,
-  surveyId: number,
-  expressions: any[] | undefined,
-  flattenedIndex: number,
-) {
-  return new Promise<{ migratedFieldId: IDBValidKey; flattenedIndex: number }>(async (resolve, reject) => {
-    if (field.type == "group") {
-      if (!Array.isArray(field.fieldIds)) {
-        field.fieldIds = [];
+  const surveysRequest = surveyStore.getAll();
+  surveysRequest.onsuccess = () => {
+    let compConversionIdSuffix = 1;
+
+    for (const survey of surveysRequest.result) {
+      if (typeof survey.id == "number") {
+        surveyStore.delete(survey.id);
+        const newId = surveyIdMap.get(survey.id) || generateId() + survey.id;
+        surveyIdMap.set(survey.id, newId);
+        survey.id = newId;
       }
 
-      if (Array.isArray(field.fields)) {
-        for (const nestedField of field.fields) {
-          try {
-            let migratedFieldId;
+      if (!survey.compId) {
+        const compId = survey.tbaEventKey || generateId() + compConversionIdSuffix;
+        compConversionIdSuffix++;
 
-            ({ migratedFieldId, flattenedIndex } = await migrateField(
-              fieldStore,
-              nestedField,
-              surveyId,
-              expressions,
-              flattenedIndex,
-            ));
-
-            field.fieldIds.push(migratedFieldId);
-          } catch (error) {
-            return reject(error);
-          }
+        const comp: Comp = {
+          id: compId,
+          name: survey.name,
+          matches: survey.matches,
+          teams: survey.teams,
+          created: survey.created,
+          modified: survey.modified,
+        };
+        if (survey.tbaEventKey) {
+          comp.tbaEventKey = survey.tbaEventKey;
+        }
+        if (survey.scouts) {
+          comp.scouts = survey.scouts;
         }
 
-        delete field.fields;
+        compStore.put(comp);
+
+        survey.compId = compId;
+        survey.name = survey.type == "pit" ? "Pit Survey" : "Match Survey";
+        delete survey.tbaEventKey;
+        delete survey.matches;
+        delete survey.teams;
+        delete survey.scouts;
+      } else if (typeof survey.compId == "number") {
+        const newId = compIdMap.get(survey.compId) || generateId() + survey.compId;
+        compIdMap.set(survey.compId, newId);
+        survey.compId = newId;
       }
-    }
 
-    const addRequest = fieldStore.add({ ...field, surveyId });
-    addRequest.onerror = () => reject(`Could not migrate field ${field.name} for survey id ${surveyId}`);
+      survey.fieldIds = survey.fieldIds.map((id: any) => {
+        if (typeof id == "number") {
+          const newId = fieldIdMap.get(id) || generateId() + id;
+          fieldIdMap.set(id, newId);
+          return newId;
+        }
+        return id;
+      });
 
-    addRequest.onsuccess = () => {
-      const migratedFieldId = addRequest.result;
-
-      if (field.type != "group") {
-        if (expressions?.length) {
-          for (let expressionIndex = 0; expressionIndex < expressions.length; expressionIndex++) {
-            expressions[expressionIndex].inputs = expressions[expressionIndex].inputs.map((input: any) => {
-              if (input.from == "field" && input.fieldIndex == flattenedIndex) {
-                input.fieldId = migratedFieldId;
-                delete input.fieldIndex;
+      if (survey.type == "match") {
+        survey.expressions = survey.expressions.map((expression: any) => {
+          if (expression.input.from == "fields") {
+            expression.input.fieldIds = expression.input.fieldIds.map((id: any) => {
+              if (typeof id == "number") {
+                const newId = fieldIdMap.get(id) || generateId() + id;
+                fieldIdMap.set(id, newId);
+                return newId;
               }
-
-              return input;
+              return id;
             });
           }
-        }
-
-        flattenedIndex++;
+          return expression;
+        });
       }
 
-      resolve({ migratedFieldId, flattenedIndex });
-    };
-  });
-}
-
-function migrateEntries(entryStore: IDBObjectStore, surveyId: number) {
-  const entryCursorRequest = entryStore.index("surveyId").openCursor(surveyId);
-  entryCursorRequest.onerror = () => {};
-
-  entryCursorRequest.onsuccess = () => {
-    const entryCursor = entryCursorRequest.result;
-    if (!entryCursor) return;
-
-    const entry = entryCursor.value;
-
-    if (!entry.type) {
-      entry.type = "match";
+      surveyStore.put(survey);
     }
+  };
 
-    if (!Array.isArray(entry.values)) {
-      entry.values = [];
-    }
-
-    if (entry.team == undefined) {
-      entry.team = (entry.values as any[]).shift() || "";
-    }
-
-    if (entry.type == "match") {
-      if (entry.match == undefined) {
-        entry.match = (entry.values as any[]).shift() || 1;
+  const fieldsRequest = fieldStore.getAll();
+  fieldsRequest.onsuccess = () => {
+    for (const field of fieldsRequest.result) {
+      if (typeof field.id == "number") {
+        fieldStore.delete(field.id);
+        const newId = fieldIdMap.get(field.id) || generateId() + field.id;
+        fieldIdMap.set(field.id, newId);
+        field.id = newId;
       }
 
-      if (entry.absent == undefined) {
-        entry.absent = (entry.values as any[]).shift() || false;
+      if (typeof field.surveyId == "number") {
+        const newId = surveyIdMap.get(field.surveyId) || generateId() + field.surveyId;
+        surveyIdMap.set(field.surveyId, newId);
+        field.surveyId = newId;
       }
-    }
 
-    entryCursor.update(entry);
-    entryCursor.continue();
+      if (field.type == "group") {
+        field.fieldIds = field.fieldIds.map((id: any) => {
+          if (typeof id == "number") {
+            const newId = fieldIdMap.get(id) || generateId() + id;
+            fieldIdMap.set(id, newId);
+            return newId;
+          }
+          return id;
+        });
+      }
+
+      fieldStore.put(field);
+    }
+  };
+
+  const entriesRequest = entryStore.getAll();
+  entriesRequest.onsuccess = () => {
+    for (const entry of entriesRequest.result) {
+      if (typeof entry.id == "number") {
+        entryStore.delete(entry.id);
+        const newId = entryIdMap.get(entry.id) || generateId() + entry.id;
+        entryIdMap.set(entry.id, newId);
+        entry.id = newId;
+      }
+
+      if (typeof entry.surveyId == "number") {
+        const newId = surveyIdMap.get(entry.surveyId) || generateId() + entry.surveyId;
+        surveyIdMap.set(entry.surveyId, newId);
+        entry.surveyId = newId;
+      }
+
+      entryStore.put(entry);
+    }
   };
 }

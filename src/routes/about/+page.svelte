@@ -4,8 +4,7 @@
   import Header from "$lib/components/Header.svelte";
   import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
 
-  const lastSurvey = localStorage.getItem("survey");
-  const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
+  const backLink = localStorage.getItem("home") || "";
 
   const tab = sessionStorageStore<"info" | "guides" | "prediction" | "qrfcode">("about-tab", "info");
 
@@ -16,7 +15,7 @@
 
 <Header title="About - MeanScout" heading="About MeanScout" {backLink} />
 
-<div class="flex flex-col gap-6" style="view-transition-name:about">
+<div class="flex flex-col gap-6">
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>

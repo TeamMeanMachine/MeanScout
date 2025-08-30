@@ -15,7 +15,7 @@
     constrain,
     oncreate,
   }: {
-    surveyRecord: IDBRecord<MatchSurvey>;
+    surveyRecord: MatchSurvey;
     orderedSingleFields: SingleFieldWithDetails[];
     expressions: {
       entryDerived: Expression[];

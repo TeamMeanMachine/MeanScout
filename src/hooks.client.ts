@@ -1,20 +1,20 @@
-import { initIDB } from "$lib/idb";
+import { idb } from "$lib/idb";
 import type { ClientInit } from "@sveltejs/kit";
 
 export const init: ClientInit = async () => {
   if (!localStorage.getItem("init") && !location.hash.includes("about")) {
     location.hash = `/settings`;
-  } else if (localStorage.getItem("survey") && location.hash.replaceAll("/", "") == "") {
-    location.hash = `/survey/${localStorage.getItem("survey")}`;
+  } else if (location.hash.replaceAll("/", "") == "") {
+    let home = localStorage.getItem("home");
+
+    if (home && !home.startsWith("#/")) {
+      home = "#/" + home;
+    }
+
+    if (home) {
+      location.hash = home;
+    }
   }
 
-  await new Promise<void>((resolve, reject) => {
-    initIDB((error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
+  await idb.initAsync();
 };

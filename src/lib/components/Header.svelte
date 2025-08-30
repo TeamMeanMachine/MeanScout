@@ -1,17 +1,21 @@
 <script lang="ts">
-  import type { Heading } from "$lib";
   import { targetStore } from "$lib/settings";
-  import { XIcon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
+  import Button from "./Button.svelte";
 
   let {
     title = "MeanScout",
     heading = "MeanScout",
+    subheading,
     backLink,
+    onmenupressed,
   }: {
     title?: string;
-    heading?: Heading;
+    heading?: string;
+    subheading?: string;
     backLink?: string;
+    onmenupressed?: () => void;
   } = $props();
 </script>
 
@@ -19,28 +23,27 @@
   <title>{title}</title>
 </svelte:head>
 
-<header class="flex min-h-11 items-center gap-3" style="view-transition-name:header">
-  {#if backLink === undefined}
+<header class="flex h-10 items-center gap-3">
+  <div class="flex grow gap-2">
     <img src="./logo.svg" alt="" width="25" height="25" />
-  {:else}
-    <Anchor route={backLink} class="active:-left-0.5!">
-      <XIcon class="text-theme" />
-    </Anchor>
-  {/if}
 
-  <div class="flex grow flex-col">
-    {#if typeof heading == "string"}
+    <div class="flex flex-col">
+      {#if subheading}
+        <span class="text-xs font-light">{subheading}</span>
+      {/if}
       <h1 class="font-bold">{heading}</h1>
-    {:else}
-      {#each heading as { type, text }}
-        {#if type == "h1"}
-          <h1 class="font-bold">{text}</h1>
-        {:else if type == "sm"}
-          <span class="text-xs font-light">{text}</span>
-        {/if}
-      {/each}
-    {/if}
+    </div>
   </div>
 
   <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
+
+  {#if onmenupressed}
+    <Button onclick={onmenupressed}>
+      <EllipsisVerticalIcon class="text-theme" />
+    </Button>
+  {:else if backLink !== undefined}
+    <Anchor route={backLink} class="active:top-0.5 active:left-0!">
+      <XIcon class="text-theme" />
+    </Anchor>
+  {/if}
 </header>

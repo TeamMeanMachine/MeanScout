@@ -5,44 +5,49 @@
   import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { objectStore } from "$lib/idb";
-  import type { PageData } from "./$types";
+  import { idb } from "$lib/idb";
+  import type { PageData, PageProps } from "./$types";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
-  import { getDefaultFieldValue } from "$lib/field";
   import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
 
-  let {
-    data,
-  }: {
-    data: PageData;
-  } = $props();
+  let { data }: PageProps = $props();
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
   let error = $state("");
+
+  const suggestedScouts = $derived(
+    new Set([
+      ...data.thisCompEntries.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+      ...(data.compRecord.scouts || []),
+    ])
+      .values()
+      .toArray()
+      .toSorted((a, b) => a.localeCompare(b)),
+  );
 
   async function onchange() {
     data = {
       ...data,
       entryRecord: { ...entry, modified: new Date() },
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
+      compRecord: { ...data.compRecord, modified: new Date() },
     } as PageData;
-    objectStore("entries", "readwrite").put($state.snapshot(data.entryRecord));
-    objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+    idb.put("entries", $state.snapshot(data.entryRecord));
+    idb.put("surveys", $state.snapshot(data.surveyRecord));
+    idb.put("comps", $state.snapshot(data.compRecord));
   }
 </script>
 
 <Header
-  title="Draft - {data.surveyRecord.name} - MeanScout"
-  heading={[
-    { type: "sm", text: data.surveyRecord.name },
-    { type: "h1", text: "Draft" },
-  ]}
-  backLink="survey/{data.surveyRecord.id}"
+  title="Draft - {data.compRecord.name} - {data.surveyRecord.name} - MeanScout"
+  heading="Draft"
+  subheading="{data.compRecord.name} - {data.surveyRecord.name}"
+  backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
-<div class="flex flex-col gap-6" style="view-transition-name:draft-{data.entryRecord.id}">
+<div class="flex flex-col gap-6">
   <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
     {#if data.surveyType == "match"}
       <div class="flex flex-col">
@@ -55,7 +60,7 @@
       <span class="font-bold">{data.entryRecord.team}</span>
     </div>
 
-    {#if data.surveyRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
+    {#if data.compRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
       <div class="flex flex-col">
         <span class="text-xs">Prediction</span>
         <span class="font-bold capitalize text-{data.entryRecord.prediction}">
@@ -65,13 +70,13 @@
     {/if}
   </div>
 
-  {#if data.surveyRecord.scouts}
+  {#if data.compRecord.scouts}
     <div class="flex flex-wrap items-end gap-2">
-      {#if data.surveyRecord.scouts.length}
+      {#if suggestedScouts.length}
         <label class="flex flex-col">
           <span class="text-sm">Scout</span>
           <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
-            {#each data.surveyRecord.scouts.toSorted((a, b) => a.localeCompare(b)) as scout}
+            {#each suggestedScouts as scout}
               <option>{scout}</option>
             {/each}
           </select>
@@ -80,16 +85,16 @@
       <Button
         onclick={() => {
           openDialog(NewScoutDialog, {
-            scouts: data.surveyRecord.scouts ?? [],
+            scouts: data.compRecord.scouts ?? [],
             onadd(newScout) {
               data = {
                 ...data,
-                surveyRecord: {
-                  ...data.surveyRecord,
-                  scouts: [...(data.surveyRecord.scouts || []), newScout],
+                compRecord: {
+                  ...data.compRecord,
+                  scouts: [...(data.compRecord.scouts || []), newScout],
                 },
-              } as PageData;
-              objectStore("surveys", "readwrite").put($state.snapshot(data.surveyRecord));
+              };
+              idb.put("comps", $state.snapshot(data.compRecord));
               entry.scout = newScout;
               onchange();
             },
@@ -159,7 +164,7 @@
       onclick={() => {
         for (let i = 0; i < entry.values.length; i++) {
           const value = entry.values[i];
-          if (typeof value !== typeof getDefaultFieldValue(data.fieldsWithDetails.orderedSingle[i].field)) {
+          if (typeof value !== typeof data.defaultValues[i]) {
             error = `Invalid value for ${data.fieldsWithDetails.orderedSingle[i].field.name}`;
             return;
           }
@@ -168,9 +173,10 @@
         openDialog(SubmitEntryDialog, {
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: data.entryRecord,
-          onexport: () => {
-            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            goto(`#/survey/${data.surveyRecord.id}`);
+          onsubmit() {
+            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
+            goto(`#/comp/${data.compRecord.id}`);
           },
         });
       }}
@@ -184,8 +190,9 @@
         openDialog(DeleteEntryDialog, {
           entryRecord: data.entryRecord,
           ondelete: () => {
-            objectStore("surveys", "readwrite").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            goto(`#/survey/${data.surveyRecord.id}`);
+            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
+            goto(`#/comp/${data.compRecord.id}`);
           },
         })}
     >

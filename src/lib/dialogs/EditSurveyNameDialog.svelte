@@ -6,7 +6,7 @@
     surveyRecord,
     onedit,
   }: {
-    surveyRecord: IDBRecord<Survey>;
+    surveyRecord: Survey;
     onedit: (name: string) => void;
   } = $props();
 

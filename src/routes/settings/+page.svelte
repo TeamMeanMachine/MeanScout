@@ -1,29 +1,17 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { animationStore, cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
+  import { cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
-  import {
-    BringToFrontIcon,
-    CameraIcon,
-    CrosshairIcon,
-    KeyIcon,
-    LoaderIcon,
-    SaveIcon,
-    Undo2Icon,
-    UsersIcon,
-  } from "@lucide/svelte";
+  import { CameraIcon, CrosshairIcon, KeyIcon, LoaderIcon, SaveIcon, Undo2Icon, UsersIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { prefersReducedMotion } from "svelte/motion";
 
-  const lastSurvey = localStorage.getItem("survey");
-  const backLink = lastSurvey ? `survey/${lastSurvey}` : "";
+  const backLink = localStorage.getItem("home") || "";
 
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);
   let teamInput = $state($teamStore);
   let tbaAuthKeyInput = $state($tbaAuthKeyStore);
-  let animationInput = $state($animationStore);
 
   let cameras = $state<{ id: string; name: string }[]>([]);
   let noCamera = $state(false);
@@ -35,8 +23,7 @@
       targetInput != $targetStore ||
       cameraInput != $cameraStore ||
       teamInput.trim() != $teamStore ||
-      tbaAuthKeyInput.trim() != $tbaAuthKeyStore ||
-      animationInput != $animationStore
+      tbaAuthKeyInput.trim() != $tbaAuthKeyStore
     );
   });
 
@@ -81,7 +68,6 @@
     $cameraStore = cameraInput;
     $teamStore = teamInput;
     $tbaAuthKeyStore = tbaAuthKeyInput;
-    $animationStore = animationInput;
   }
 
   function revert() {
@@ -91,13 +77,12 @@
     cameraInput = $cameraStore;
     teamInput = $teamStore;
     tbaAuthKeyInput = $tbaAuthKeyStore;
-    animationInput = $animationStore;
   }
 </script>
 
 <Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
-<div class="flex flex-col gap-6" style="view-transition-name:settings">
+<div class="flex flex-col gap-6">
   <hr class="border-neutral-500" />
 
   <label class="flex flex-wrap items-center gap-2">
@@ -150,20 +135,6 @@
     </div>
     <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
   </label>
-
-  {#if "startViewTransition" in document && !prefersReducedMotion.current}
-    <label class="flex flex-wrap items-center gap-2">
-      <BringToFrontIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Animations
-        <span class="text-xs font-light">They're fancy!</span>
-      </div>
-      <select bind:value={animationInput} class="text-theme bg-neutral-800 p-2">
-        <option value="minimal">Minimal</option>
-        <option value="full">Full</option>
-      </select>
-    </label>
-  {/if}
 
   <hr class="border-neutral-500" />
 

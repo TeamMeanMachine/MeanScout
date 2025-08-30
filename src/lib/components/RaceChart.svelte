@@ -8,18 +8,25 @@
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import type { SurveyPageData } from "$lib/survey";
   import { goto } from "$app/navigation";
+  import type { MatchSurvey } from "$lib/survey";
+  import type { CompPageData } from "$lib/comp";
+  import { getFieldsWithDetails } from "$lib/field";
 
   let {
     pageData,
+    surveyRecord,
     entriesByTeam,
     analysisData,
   }: {
-    pageData: Extract<SurveyPageData, { surveyType: "match" }>;
-    entriesByTeam: Record<string, IDBRecord<MatchEntry>[]>;
+    pageData: CompPageData;
+    surveyRecord: MatchSurvey;
+    entriesByTeam: Record<string, MatchEntry[]>;
     analysisData: AnalysisData;
   } = $props();
+
+  const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const teamView = sessionStorageStore<string>("team-view", "");
   const playing = sessionStorageStore<"" | "true">("race-chart-playing", "");
@@ -27,7 +34,7 @@
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
   const tweenOptions = { delay: 0, easing: linear, duration: changeDuration };
-  const maxMatch = Math.max(...pageData.entryRecords.map((e) => e.match));
+  const maxMatch = Math.max(...pageData.entryRecords.map((e) => (e.type == "match" ? e.match : 0)));
 
   const initMatch = getInitMatch();
 
@@ -51,7 +58,7 @@
   let interval = $state<NodeJS.Timeout>();
 
   let matchData = $derived.by(() => {
-    const possibleMatch = pageData.surveyRecord.matches.find((m) => m.number == match);
+    const possibleMatch = pageData.compRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
       return [
         possibleMatch.red1,
@@ -77,7 +84,7 @@
   }
 
   function generateRaceData(toMatch: number) {
-    const subsetEntriesByTeam: Record<string, IDBRecord<MatchEntry>[]> = {};
+    const subsetEntriesByTeam: Record<string, MatchEntry[]> = {};
 
     for (const team in entriesByTeam) {
       subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);
@@ -86,16 +93,18 @@
     let data =
       analysisData.type == "picklist"
         ? getPickListData(
+            pageData.compRecord,
             analysisData.pickList.name,
-            pageData.surveyRecord,
+            surveyRecord,
             subsetEntriesByTeam,
-            pageData.fieldsWithDetails.orderedSingle,
+            fieldsWithDetails.orderedSingle,
           )
         : getExpressionData(
+            pageData.compRecord,
             analysisData.expression.name,
-            pageData.surveyRecord,
+            surveyRecord,
             subsetEntriesByTeam,
-            pageData.fieldsWithDetails.orderedSingle,
+            fieldsWithDetails.orderedSingle,
           );
 
     if (!data) {
@@ -231,11 +240,18 @@
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($teamView = teamData.team)}
+      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button onclick={() => goto(`#/survey/${pageData.surveyRecord.id}/teams`)} class="justify-center text-sm">
+      <Button
+        onclick={(e) => {
+          e.stopPropagation();
+          $teamView = teamData.team;
+          goto(`#/comp/${pageData.compRecord.id}/teams`);
+        }}
+        class="justify-center text-sm"
+      >
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>

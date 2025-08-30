@@ -2,14 +2,14 @@
   import Button from "./Button.svelte";
   import type { AnalysisData } from "$lib/analysis";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import type { SurveyPageData } from "$lib/survey";
   import { goto } from "$app/navigation";
+  import type { CompPageData } from "$lib/comp";
 
   let {
     pageData,
     analysisData,
   }: {
-    pageData: SurveyPageData;
+    pageData: CompPageData;
     analysisData: AnalysisData;
   } = $props();
 
@@ -21,8 +21,18 @@
     {@const color = `rgb(var(--theme-color) / ${teamData.percentage.toFixed(2)}%)`}
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div onclick={() => ($teamView = teamData.team)} class="col-span-full grid grid-cols-subgrid">
-      <Button onclick={() => goto(`#/survey/${pageData.surveyRecord.id}/teams`)} class="justify-center text-sm">
+    <div
+      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
+      class="col-span-full grid grid-cols-subgrid"
+    >
+      <Button
+        onclick={(e) => {
+          e.stopPropagation();
+          $teamView = teamData.team;
+          goto(`#/comp/${pageData.compRecord.id}/teams`);
+        }}
+        class="justify-center text-sm"
+      >
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>

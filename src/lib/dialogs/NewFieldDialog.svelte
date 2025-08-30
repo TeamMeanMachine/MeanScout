@@ -2,39 +2,41 @@
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { type Field, type FieldType, type GroupField } from "$lib/field";
-  import { transaction } from "$lib/idb";
+  import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
   import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
-    type = "toggle",
+    type,
     groups,
     groupSelect,
     oncreate,
   }: {
-    surveyRecord: IDBRecord<Survey>;
-    type?: FieldType;
-    groups?: IDBRecord<GroupField>[];
+    surveyRecord: Survey;
+    type: FieldType;
+    groups?: GroupField[];
     groupSelect: string;
-    oncreate: (id: number, parentId?: number) => void;
+    oncreate: (id: string, parentId?: string) => void;
   } = $props();
 
   let field = $state<Field>(initField());
   let error = $state("");
 
   function initField(): Field {
+    const initId = idb.generateId({ randomChars: 0 });
+
     switch (type) {
       case "toggle":
       case "number":
       case "text":
       case "rating":
       case "timer":
-        return { surveyId: surveyRecord.id, name: "", type };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type };
       case "select":
-        return { surveyId: surveyRecord.id, name: "", type: "select", values: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type, values: [] };
       case "group":
-        return { surveyId: surveyRecord.id, name: "", type: "group", fieldIds: [] };
+        return { id: initId, surveyId: surveyRecord.id, name: "", type, fieldIds: [] };
     }
   }
 
@@ -64,34 +66,30 @@
         }
       }
 
-      const addTransaction = transaction("fields", "readwrite");
+      const addTransaction = idb.transaction("fields", "readwrite");
       const fieldStore = addTransaction.objectStore("fields");
 
       addTransaction.onabort = () => {
         error = "Could not create new field";
       };
 
-      const addRequest = fieldStore.add($state.snapshot(field));
+      fieldStore.add($state.snapshot(field));
 
-      addRequest.onsuccess = () => {
-        const id = addRequest.result as number;
-        const parentField = groups?.find((g) => g.id == Number(groupSelect));
+      const parentField = groups?.find((g) => g.id == groupSelect);
 
-        if (type == "group" || parentField == undefined) {
-          oncreate(id);
+      if (type == "group" || parentField == undefined) {
+        addTransaction.oncomplete = () => {
+          oncreate(field.id);
           closeDialog();
-        } else {
-          const updatedParentField = {
-            ...$state.snapshot(parentField),
-            fieldIds: [...parentField.fieldIds, id],
-          };
+        };
+      } else {
+        fieldStore.put({ ...$state.snapshot(parentField), fieldIds: [...parentField.fieldIds, field.id] });
 
-          fieldStore.put(updatedParentField).onsuccess = () => {
-            oncreate(id, parentField.id);
-            closeDialog();
-          };
-        }
-      };
+        addTransaction.oncomplete = () => {
+          oncreate(field.id, parentField.id);
+          closeDialog();
+        };
+      }
     },
   };
 
@@ -126,7 +124,7 @@
   }
 </script>
 
-<span class="text-sm">New {groups?.find((g) => g.id.toString() == groupSelect)?.name} {type}</span>
+<span class="text-sm">New {groups?.find((g) => g.id == groupSelect)?.name} {type}</span>
 
 {#if field.type != "group" && groups && groups.length > 1}
   <div class="flex flex-col">
@@ -135,8 +133,8 @@
       <div class="flex flex-wrap gap-2">
         {#each groups as group}
           <Button
-            onclick={() => (groupSelect = group.id.toString())}
-            class={groupSelect == group.id.toString() ? "text-theme font-bold" : "font-light"}
+            onclick={() => (groupSelect = group.id)}
+            class={groupSelect == group.id ? "text-theme font-bold" : "font-light"}
           >
             {group.name}
           </Button>
@@ -199,6 +197,16 @@
     <input bind:value={field.tip} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
+
+<div class="flex flex-wrap items-end gap-2 text-sm">
+  <label class="flex grow flex-col">
+    ID
+    <input bind:value={field.id} class="text-theme bg-neutral-800 p-2" />
+  </label>
+  <Button onclick={() => (field.id = idb.generateId({ randomChars: 0 }))}>
+    <span class="font-bold">Random</span>
+  </Button>
+</div>
 
 {#if error}
   <span>Error: {error}</span>
