@@ -4,7 +4,7 @@
   import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
   import CompPageHeader from "../CompPageHeader.svelte";
   import Button from "$lib/components/Button.svelte";
-  import { ChevronDownIcon, ChevronUpIcon, UsersIcon } from "@lucide/svelte";
+  import { ChevronDownIcon, ChevronUpIcon, SquareArrowOutUpRightIcon, UsersIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
 
   let { data }: PageProps = $props();
@@ -107,6 +107,30 @@
           {/if}
         </div>
       {/each}
+
+      <div class="flex flex-wrap gap-x-4">
+        {#if data.compRecord.tbaEventKey}
+          <a
+            href="https://www.thebluealliance.com/team/{parseInt(selectedTeam.number)}/{parseInt(
+              data.compRecord.tbaEventKey,
+            )}#{data.compRecord.tbaEventKey}"
+            target="_blank"
+          >
+            <span class="underline">TBA</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+          </a>
+        {:else}
+          <a href="https://www.thebluealliance.com/team/{parseInt(selectedTeam.number)}" target="_blank">
+            <span class="underline">TBA</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+          </a>
+        {/if}
+
+        <a href="https://www.statbotics.io/team/{parseInt(selectedTeam.number)}" target="_blank">
+          <span class="underline">Statbotics</span>
+          <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+        </a>
+      </div>
     {:else}
       <label class="flex flex-col text-sm">
         Search

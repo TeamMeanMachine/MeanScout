@@ -2,7 +2,14 @@
   import { sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
-  import { ChevronDownIcon, ChevronUpIcon, ListOrderedIcon, MinusIcon, PlusIcon } from "@lucide/svelte";
+  import {
+    ChevronDownIcon,
+    ChevronUpIcon,
+    ListOrderedIcon,
+    MinusIcon,
+    PlusIcon,
+    SquareArrowOutUpRightIcon,
+  } from "@lucide/svelte";
   import CompPageHeader from "../CompPageHeader.svelte";
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
@@ -179,6 +186,26 @@
           {/key}
         </div>
       {/each}
+
+      {#if data.compRecord.tbaEventKey}
+        <div class="flex flex-wrap gap-x-4">
+          <a
+            href="https://www.thebluealliance.com/match/{data.compRecord.tbaEventKey}_qm{selectedMatch.number}"
+            target="_blank"
+          >
+            <span class="underline">TBA</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+          </a>
+
+          <a
+            href="https://www.statbotics.io/match/{data.compRecord.tbaEventKey}_qm{selectedMatch.number}"
+            target="_blank"
+          >
+            <span class="underline">Statbotics</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+          </a>
+        </div>
+      {/if}
     {:else}
       <label class="flex flex-col text-sm">
         Search
