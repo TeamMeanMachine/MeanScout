@@ -15,7 +15,7 @@ export async function compress(data: string) {
   return await getDataFromStream(compressedStream);
 }
 
-export async function decompress(data: Uint8Array) {
+export async function decompress(data: Uint8Array<ArrayBuffer>) {
   if (!supportsCompressionApi) {
     throw new Error("Device does not support Compression Stream API");
   }
@@ -26,11 +26,14 @@ export async function decompress(data: Uint8Array) {
   return new TextDecoder().decode(bytes);
 }
 
-async function getDataFromStream(stream: ReadableStream<Uint8Array>) {
+async function getDataFromStream(stream: ReadableStream<Uint8Array<ArrayBuffer>>) {
   const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: Uint8Array<ArrayBuffer>[] = [];
 
-  async function process({ done, value }: ReadableStreamReadResult<Uint8Array>): Promise<Uint8Array> {
+  async function process({
+    done,
+    value,
+  }: ReadableStreamReadResult<Uint8Array<ArrayBuffer>>): Promise<Uint8Array<ArrayBuffer>> {
     if (done) {
       return new Uint8Array(await new Blob(chunks).arrayBuffer());
     }

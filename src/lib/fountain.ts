@@ -142,7 +142,7 @@ export class FountainDecoder {
   private totalSources: number;
 
   /** Run as soon as all blocks have been decoded. */
-  ondecode: ((message: Uint8Array) => void) | undefined;
+  ondecode: ((message: Uint8Array<ArrayBuffer>) => void) | undefined;
 
   constructor() {
     this.buffer = [];
