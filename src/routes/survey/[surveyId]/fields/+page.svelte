@@ -12,15 +12,14 @@
   let { data }: PageProps = $props();
 
   let surveyRecord = $state($state.snapshot(data.survey.record));
-  let fieldRecords = $state($state.snapshot(data.fieldRecords));
 
   let topLevelFields = $derived(
-    surveyRecord.fieldIds.map((id) => fieldRecords.find((f) => f.id == id)).filter((f) => f !== undefined),
+    surveyRecord.fieldIds.map((id) => data.fieldRecords.find((f) => f.id == id)).filter((f) => f !== undefined),
   );
 
   let groups = $derived(
     surveyRecord.fieldIds
-      .map((id) => fieldRecords.find((f) => f.id == id))
+      .map((id) => data.fieldRecords.find((f) => f.id == id))
       .filter((f) => f !== undefined && f.type == "group"),
   );
   let groupSelect = $state("");
@@ -73,7 +72,7 @@
         set(sortable) {
           const order = sortable.toArray();
           if (groupId) {
-            const group = fieldRecords.find((f) => f.id == groupId);
+            const group = data.fieldRecords.find((f) => f.id == groupId);
             if (!group || group.type != "group") {
               console.error(`group ${groupId} not found`);
               return;
@@ -124,7 +123,7 @@
 
     openDialog(EditFieldDialog, {
       surveyRecord,
-      fieldRecords,
+      fieldRecords: data.fieldRecords,
       field: structuredClone($state.snapshot(field)),
       onedit: updateAndRefresh,
       onmove(index, by) {
@@ -151,7 +150,7 @@
 
     openDialog(EditFieldDialog, {
       surveyRecord,
-      fieldRecords,
+      fieldRecords: data.fieldRecords,
       field: structuredClone($state.snapshot(nestedField)),
       parentField: structuredClone($state.snapshot(field)),
       onedit: updateAndRefresh,
@@ -175,7 +174,7 @@
         This will destroy and recreate instances of sortable objects when anything changes.
         It will also destroy any leftovers that Svelte doesn't act upon (e.g. clones, ghost elements).
       -->
-      {#key [surveyRecord.fieldIds, fieldRecords, topLevelFields]}
+      {#key [surveyRecord.fieldIds, data.fieldRecords, topLevelFields]}
         <div use:createSortable class="top-level flex flex-col gap-6 pb-3">
           {#each topLevelFields as field (field.id)}
             {@const Icon = fieldIcons[field.type]}
@@ -197,7 +196,7 @@
                     -->
                     {#key field.fieldIds}
                       {@const nestedFields = field.fieldIds
-                        .map((id) => fieldRecords.find((f) => f.id == id))
+                        .map((id) => data.fieldRecords.find((f) => f.id == id))
                         .filter((f) => f !== undefined)}
 
                       <div
@@ -246,7 +245,7 @@
                 fieldType == "group"
                   ? undefined
                   : surveyRecord.fieldIds
-                      .map((id) => fieldRecords.find((f) => f.id == id))
+                      .map((id) => data.fieldRecords.find((f) => f.id == id))
                       .filter((f) => f !== undefined && f.type == "group");
 
               const fixedGroupSelect = groups?.length
