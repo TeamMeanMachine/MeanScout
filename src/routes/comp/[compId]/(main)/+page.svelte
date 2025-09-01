@@ -2,19 +2,18 @@
   import { sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { groupEntries, type Entry, type EntryStatus } from "$lib/entry";
+  import { entryStatuses, groupEntries, type Entry, type EntryStatus } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
-  import { targetStore, type Target } from "$lib/settings";
+  import { targets, targetStore } from "$lib/settings";
   import type { PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ChevronDownIcon, ChevronRightIcon, ImportIcon, NotepadTextIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
-  import { SvelteSet } from "svelte/reactivity";
-  import { onMount } from "svelte";
   import type { Survey } from "$lib/survey";
   import NewEntryWidget from "$lib/components/NewEntryWidget.svelte";
+  import { z } from "zod";
 
   let { data }: PageProps = $props();
 
@@ -27,31 +26,39 @@
 
   const groupedEntries = $derived(groupEntries(data.compRecord, data.surveyRecords, data.entryRecords, $groupBy));
 
-  let statusToggleStates = new SvelteSet<EntryStatus>();
-  let surveyToggleStates = new SvelteSet<string>();
-  let matchToggleStates = new SvelteSet<number>();
-  let teamToggleStates = new SvelteSet<string>();
-  let scoutToggleStates = new SvelteSet<string>();
-  let targetToggleStates = new SvelteSet<Target>();
-  let absentToggleStates = new SvelteSet<boolean>();
+  const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
+  const latestMatch = Math.max(...recordedMatches, 1);
 
-  let bulkToggleState = $derived.by(() => {
-    switch (groupedEntries.by) {
-      case "status":
-        return statusToggleStates.size == groupedEntries.groups.length;
-      case "survey":
-        return surveyToggleStates.size == groupedEntries.groups.length;
-      case "match":
-        return matchToggleStates.size == groupedEntries.groups.length;
-      case "team":
-        return teamToggleStates.size == groupedEntries.groups.length;
-      case "scout":
-        return scoutToggleStates.size == groupedEntries.groups.length;
-      case "target":
-        return targetToggleStates.size == groupedEntries.groups.length;
-      case "absent":
-        return absentToggleStates.size == groupedEntries.groups.length;
-    }
+  const toggleStatesSchema = z
+    .object({
+      status: z.array(z.union(entryStatuses.map((status) => z.literal(status)))),
+      survey: z.array(z.string()),
+      match: z.array(z.number()),
+      team: z.array(z.string()),
+      scout: z.array(z.string()),
+      target: z.array(z.union(targets.map((target) => z.literal(target)))),
+      absent: z.array(z.boolean()),
+    })
+    .catch({
+      status: ["draft", "submitted"],
+      survey: [],
+      match: [latestMatch],
+      team: [],
+      scout: [],
+      target: [$targetStore],
+      absent: [true],
+    });
+
+  function getToggleStates() {
+    try {
+      return JSON.parse(sessionStorage.getItem("entries-toggle-states") ?? "null");
+    } catch {}
+  }
+
+  const toggleStates = $state(toggleStatesSchema.parse(getToggleStates()));
+
+  $effect(() => {
+    sessionStorage.setItem("entries-toggle-states", JSON.stringify(toggleStates));
   });
 
   function getNewEntryPrefills(survey: Survey, entries: Entry[]) {
@@ -122,85 +129,6 @@
 
     return prefills;
   }
-
-  function toggleAll() {
-    switch (groupedEntries.by) {
-      case "status":
-        if (bulkToggleState) {
-          statusToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            statusToggleStates.add(group.status);
-          }
-        }
-        break;
-      case "survey":
-        if (bulkToggleState) {
-          surveyToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            surveyToggleStates.add(group.surveyId);
-          }
-        }
-        break;
-      case "match":
-        if (bulkToggleState) {
-          matchToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            matchToggleStates.add(group.match);
-          }
-        }
-        break;
-      case "team":
-        if (bulkToggleState) {
-          teamToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            teamToggleStates.add(group.team);
-          }
-        }
-        break;
-      case "scout":
-        if (bulkToggleState) {
-          scoutToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            scoutToggleStates.add(group.scout);
-          }
-        }
-        break;
-      case "target":
-        if (bulkToggleState) {
-          targetToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            targetToggleStates.add(group.target);
-          }
-        }
-        break;
-      case "absent":
-        if (bulkToggleState) {
-          absentToggleStates.clear();
-        } else {
-          for (const group of groupedEntries.groups) {
-            absentToggleStates.add(group.absent);
-          }
-        }
-        break;
-    }
-  }
-
-  onMount(() => {
-    const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
-    const match = Math.max(...recordedMatches, 1);
-
-    statusToggleStates.add("draft");
-    statusToggleStates.add("submitted");
-    matchToggleStates.add(match);
-    targetToggleStates.add($targetStore);
-    absentToggleStates.add(true);
-  });
 
   function refresh() {
     idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = invalidateAll;
@@ -302,24 +230,15 @@
       {#if !data.entryRecords.length}
         <span class="text-sm">No entries.</span>
       {:else}
-        <div class="flex gap-2">
-          <Button onclick={toggleAll}>
-            {#if bulkToggleState}
-              <ChevronDownIcon class="text-theme" />
-            {:else}
-              <ChevronRightIcon class="text-theme" />
-            {/if}
-          </Button>
-          <select bind:value={$groupBy} class="text-theme min-w-0 grow bg-neutral-800 p-2">
-            <option value="status">Group by Status</option>
-            <option value="survey">Group by Survey</option>
-            <option value="match">Group by Match</option>
-            <option value="team">Group by Team</option>
-            <option value="scout">Group by Scout</option>
-            <option value="target">Group by Target</option>
-            <option value="absent">Group by Absent</option>
-          </select>
-        </div>
+        <select bind:value={$groupBy} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+          <option value="status">Group by Status</option>
+          <option value="survey">Group by Survey</option>
+          <option value="match">Group by Match</option>
+          <option value="team">Group by Team</option>
+          <option value="scout">Group by Scout</option>
+          <option value="target">Group by Target</option>
+          <option value="absent">Group by Absent</option>
+        </select>
       {/if}
     </div>
 
@@ -382,21 +301,21 @@
             <div class="flex gap-2">
               <Button
                 onclick={() => {
-                  if (surveyToggleStates.has(surveyId)) {
-                    surveyToggleStates.delete(surveyId);
+                  if (toggleStates.survey.includes(surveyId)) {
+                    toggleStates.survey = toggleStates.survey.filter((val) => val != surveyId);
                   } else {
-                    surveyToggleStates.add(surveyId);
+                    toggleStates.survey.push(surveyId);
                   }
                 }}
                 class="grow flex-nowrap!"
               >
-                {#if surveyToggleStates.has(surveyId)}
+                {#if toggleStates.survey.includes(surveyId)}
                   <ChevronDownIcon class="text-theme shrink-0" />
                 {:else}
                   <ChevronRightIcon class="text-theme shrink-0" />
                 {/if}
                 <div class="flex grow items-center justify-between">
-                  <span class={surveyToggleStates.has(surveyId) ? "font-bold" : "font-light"}>{surveyName}</span>
+                  <span class={toggleStates.survey.includes(surveyId) ? "font-bold" : "font-light"}>{surveyName}</span>
                   <div class="flex gap-0.5 text-sm">
                     {entries.length}<NotepadTextIcon class="size-4" />
                   </div>
@@ -416,7 +335,7 @@
               </Button>
             </div>
 
-            {#if surveyToggleStates.has(surveyId)}
+            {#if toggleStates.survey.includes(surveyId)}
               {#each entries as entry (entry.id)}
                 {@render entryButton(entry)}
               {/each}
@@ -428,28 +347,28 @@
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
-                if (matchToggleStates.has(match)) {
-                  matchToggleStates.delete(match);
+                if (toggleStates.match.includes(match)) {
+                  toggleStates.match = toggleStates.match.filter((val) => val != match);
                 } else {
-                  matchToggleStates.add(match);
+                  toggleStates.match.push(match);
                 }
               }}
               class="flex-nowrap!"
             >
-              {#if matchToggleStates.has(match)}
+              {#if toggleStates.match.includes(match)}
                 <ChevronDownIcon class="text-theme shrink-0" />
               {:else}
                 <ChevronRightIcon class="text-theme shrink-0" />
               {/if}
               <div class="flex grow items-center justify-between">
-                <span class={matchToggleStates.has(match) ? "font-bold" : "font-light"}>Match {match}</span>
+                <span class={toggleStates.match.includes(match) ? "font-bold" : "font-light"}>Match {match}</span>
                 <div class="flex gap-0.5 text-sm">
                   {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
               </div>
             </Button>
 
-            {#if matchToggleStates.has(match)}
+            {#if toggleStates.match.includes(match)}
               <Button
                 onclick={() => {
                   openDialog(BulkExportDialog, {
@@ -473,28 +392,29 @@
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
-                if (scoutToggleStates.has(scout)) {
-                  scoutToggleStates.delete(scout);
+                if (toggleStates.scout.includes(scout)) {
+                  toggleStates.scout = toggleStates.scout.filter((val) => val != scout);
                 } else {
-                  scoutToggleStates.add(scout);
+                  toggleStates.scout.push(scout);
                 }
               }}
               class="flex-nowrap!"
             >
-              {#if scoutToggleStates.has(scout)}
+              {#if toggleStates.scout.includes(scout)}
                 <ChevronDownIcon class="text-theme shrink-0" />
               {:else}
                 <ChevronRightIcon class="text-theme shrink-0" />
               {/if}
               <div class="flex grow items-center justify-between">
-                <span class={scoutToggleStates.has(scout) ? "font-bold" : "font-light"}>{scout || "No name"}</span>
+                <span class={toggleStates.scout.includes(scout) ? "font-bold" : "font-light"}>{scout || "No name"}</span
+                >
                 <div class="flex gap-0.5 text-sm">
                   {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
               </div>
             </Button>
 
-            {#if scoutToggleStates.has(scout)}
+            {#if toggleStates.scout.includes(scout)}
               <Button
                 onclick={() => {
                   openDialog(BulkExportDialog, {
@@ -519,21 +439,23 @@
             <div class="flex gap-2">
               <Button
                 onclick={() => {
-                  if (targetToggleStates.has(target)) {
-                    targetToggleStates.delete(target);
+                  if (toggleStates.target.includes(target)) {
+                    toggleStates.target = toggleStates.target.filter((val) => val != target);
                   } else {
-                    targetToggleStates.add(target);
+                    toggleStates.target.push(target);
                   }
                 }}
                 class="grow flex-nowrap!"
               >
-                {#if targetToggleStates.has(target)}
+                {#if toggleStates.target.includes(target)}
                   <ChevronDownIcon class="text-theme shrink-0" />
                 {:else}
                   <ChevronRightIcon class="text-theme shrink-0" />
                 {/if}
                 <div class="flex grow items-center justify-between">
-                  <span class="capitalize {targetToggleStates.has(target) ? 'font-bold' : 'font-light'}">{target}</span>
+                  <span class="capitalize {toggleStates.target.includes(target) ? 'font-bold' : 'font-light'}"
+                    >{target}</span
+                  >
                   <div class="flex gap-0.5 text-sm">
                     {entries.length}<NotepadTextIcon class="size-4" />
                   </div>
@@ -553,7 +475,7 @@
               </Button>
             </div>
 
-            {#if targetToggleStates.has(target)}
+            {#if toggleStates.target.includes(target)}
               {#each entries as entry (entry.id)}
                 {@render entryButton(entry)}
               {/each}
@@ -565,15 +487,15 @@
           <div class="flex flex-col gap-2">
             <Button
               onclick={() => {
-                if (teamToggleStates.has(team)) {
-                  teamToggleStates.delete(team);
+                if (toggleStates.team.includes(team)) {
+                  toggleStates.team = toggleStates.team.filter((val) => val != team);
                 } else {
-                  teamToggleStates.add(team);
+                  toggleStates.team.push(team);
                 }
               }}
               class="flex-nowrap!"
             >
-              {#if teamToggleStates.has(team)}
+              {#if toggleStates.team.includes(team)}
                 <ChevronDownIcon class="text-theme shrink-0" />
               {:else}
                 <ChevronRightIcon class="text-theme shrink-0" />
@@ -582,7 +504,9 @@
                 <div class="flex flex-col">
                   <span class="font-bold">{team}</span>
                   {#if teamName}
-                    <span class="text-xs {teamToggleStates.has(team) ? 'font-bold' : 'font-light'}">{teamName}</span>
+                    <span class="text-xs {toggleStates.team.includes(team) ? 'font-bold' : 'font-light'}"
+                      >{teamName}</span
+                    >
                   {/if}
                 </div>
                 <div class="flex gap-0.5 text-sm">
@@ -591,7 +515,7 @@
               </div>
             </Button>
 
-            {#if teamToggleStates.has(team)}
+            {#if toggleStates.team.includes(team)}
               <Button
                 onclick={() => {
                   openDialog(BulkExportDialog, {
@@ -616,21 +540,23 @@
             <div class="flex gap-2">
               <Button
                 onclick={() => {
-                  if (absentToggleStates.has(absent)) {
-                    absentToggleStates.delete(absent);
+                  if (toggleStates.absent.includes(absent)) {
+                    toggleStates.absent = toggleStates.absent.filter((val) => val != absent);
                   } else {
-                    absentToggleStates.add(absent);
+                    toggleStates.absent.push(absent);
                   }
                 }}
                 class="grow flex-nowrap!"
               >
-                {#if absentToggleStates.has(absent)}
+                {#if toggleStates.absent.includes(absent)}
                   <ChevronDownIcon class="text-theme shrink-0" />
                 {:else}
                   <ChevronRightIcon class="text-theme shrink-0" />
                 {/if}
                 <div class="flex grow items-center justify-between">
-                  <span class="capitalize {absentToggleStates.has(absent) ? 'font-bold' : 'font-light'}">{absent}</span>
+                  <span class="capitalize {toggleStates.absent.includes(absent) ? 'font-bold' : 'font-light'}"
+                    >{absent}</span
+                  >
                   <div class="flex gap-0.5 text-sm">
                     {entries.length}<NotepadTextIcon class="size-4" />
                   </div>
@@ -650,7 +576,7 @@
               </Button>
             </div>
 
-            {#if absentToggleStates.has(absent)}
+            {#if toggleStates.absent.includes(absent)}
               {#each entries as entry (entry.id)}
                 {@render entryButton(entry)}
               {/each}
@@ -663,21 +589,23 @@
             <div class="flex gap-2">
               <Button
                 onclick={() => {
-                  if (statusToggleStates.has(status)) {
-                    statusToggleStates.delete(status);
+                  if (toggleStates.status.includes(status)) {
+                    toggleStates.status = toggleStates.status.filter((val) => val != status);
                   } else {
-                    statusToggleStates.add(status);
+                    toggleStates.status.push(status);
                   }
                 }}
                 class="grow flex-nowrap!"
               >
-                {#if statusToggleStates.has(status)}
+                {#if toggleStates.status.includes(status)}
                   <ChevronDownIcon class="text-theme shrink-0" />
                 {:else}
                   <ChevronRightIcon class="text-theme shrink-0" />
                 {/if}
                 <div class="flex grow items-center justify-between">
-                  <span class="capitalize {statusToggleStates.has(status) ? 'font-bold' : 'font-light'}">{status}</span>
+                  <span class="capitalize {toggleStates.status.includes(status) ? 'font-bold' : 'font-light'}"
+                    >{status}</span
+                  >
                   <div class="flex gap-0.5 text-sm">
                     {entries.length}<NotepadTextIcon class="size-4" />
                   </div>
@@ -697,7 +625,7 @@
               </Button>
             </div>
 
-            {#if statusToggleStates.has(status)}
+            {#if toggleStates.status.includes(status)}
               {#each entries as entry (entry.id)}
                 {@render entryButton(entry)}
               {/each}

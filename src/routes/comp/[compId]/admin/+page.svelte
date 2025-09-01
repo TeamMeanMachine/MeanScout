@@ -42,7 +42,7 @@
     const response = await tbaGetEventMatches(data.compRecord.tbaEventKey);
 
     if (response) {
-      const matchesTx = idb.transaction("comps", "readwrite");
+      const matchesTx = idb.transaction(["comps", "entries"], "readwrite");
       matchesTx.onabort = () => {
         getTbaDataError = "Error while trying to get matches";
       };
@@ -56,6 +56,20 @@
           matches.push(match);
         } else {
           matches[matchIndex] = match;
+        }
+      }
+
+      const entryStore = matchesTx.objectStore("entries");
+      for (const { match, breakdowns } of response) {
+        if (!breakdowns) continue;
+
+        for (const { team, tbaMetrics } of breakdowns) {
+          const entries = data.entryRecords.filter(
+            (e) => e.team == team && e.type == "match" && e.match == match.number,
+          );
+          for (const entry of entries) {
+            entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
+          }
         }
       }
 

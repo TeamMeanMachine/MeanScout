@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
   import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -81,10 +80,6 @@
       (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
-
-  afterNavigate(() => {
-    bottomNav.getElementsByClassName("font-bold")[0].scrollIntoView({ inline: "center", block: "nearest" });
-  });
 </script>
 
 <svelte:window {onscroll} />

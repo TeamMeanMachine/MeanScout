@@ -14,10 +14,6 @@
       "active:left-0! active:top-0.5 " + (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
-
-  function navBar(div: HTMLElement) {
-    div.getElementsByClassName("font-bold")[0].scrollIntoView({ inline: "center" });
-  }
 </script>
 
 <div class="flex flex-col gap-4">
@@ -28,7 +24,7 @@
     backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
   />
 
-  <div use:navBar class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap">
+  <div class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap">
     <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
     <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
     <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
