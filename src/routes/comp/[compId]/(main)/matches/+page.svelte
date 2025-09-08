@@ -4,6 +4,7 @@
   import { teamStore } from "$lib/settings";
   import {
     ChevronDownIcon,
+    ChevronRightIcon,
     ChevronUpIcon,
     ListOrderedIcon,
     MinusIcon,
@@ -12,6 +13,7 @@
   } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
+  import { z } from "zod";
 
   let { data }: PageProps = $props();
 
@@ -23,7 +25,30 @@
   let selecting = $state(false);
   let selectedMatch = $state(initialMatch());
   let debouncedSearch = $state(sessionStorage.getItem("match-search") || "");
+
+  let debouncedSearchParts = $derived(
+    debouncedSearch
+      .split(" ")
+      .map((part) => part.trim())
+      .filter((part) => part)
+      .map((part) => parseInt(part).toString()),
+  );
+
   let filteredMatches = $state(data.matches.toSorted(sortMatches).filter(filterMatch));
+
+  const matchToggleStateSchema = z.array(z.union([z.literal("upcoming"), z.literal("previous")])).catch(["upcoming"]);
+
+  function getToggleState() {
+    try {
+      return JSON.parse(sessionStorage.getItem("matches-toggle-state") ?? "null");
+    } catch {}
+  }
+
+  let matchToggleState = $state(matchToggleStateSchema.parse(getToggleState()));
+
+  $effect(() => {
+    sessionStorage.setItem("matches-toggle-state", JSON.stringify(matchToggleState));
+  });
 
   const upcomingMatches = $derived(
     filteredMatches.filter((match) => match.number > data.lastCompletedMatch).toSorted((a, b) => a.number - b.number),
@@ -43,7 +68,7 @@
     window.clearTimeout(debounceTimer);
 
     debounceTimer = window.setTimeout(() => {
-      debouncedSearch = value.trim().toLowerCase().replaceAll(" ", "");
+      debouncedSearch = value;
       sessionStorage.setItem("match-search", debouncedSearch);
       filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
     }, debounceTimeMillis);
@@ -56,21 +81,24 @@
   function filterMatch(match: Match & { extraTeams?: string[] }) {
     if (!debouncedSearch) return true;
 
-    return [
-      match.red1,
-      match.red2,
-      match.red3,
-      match.blue1,
-      match.blue2,
-      match.blue3,
-      ...(match.extraTeams || []),
-    ].some((team) => {
-      return parseInt(team).toString() == parseInt(debouncedSearch).toString();
+    return debouncedSearchParts.every((part) => {
+      return [
+        match.number.toString(),
+        match.red1,
+        match.red2,
+        match.red3,
+        match.blue1,
+        match.blue2,
+        match.blue3,
+        ...(match.extraTeams || []),
+      ].some((team) => {
+        return parseInt(team).toString() == part;
+      });
     });
   }
 
   function teamFontWeight(team: string) {
-    if (debouncedSearch && parseInt(team).toString() == parseInt(debouncedSearch).toString()) {
+    if (debouncedSearch && debouncedSearchParts.includes(parseInt(team).toString())) {
       return "font-bold underline";
     }
 
@@ -211,99 +239,152 @@
           oninput={(e) => onsearchinput(e.currentTarget.value)}
           class="text-theme bg-neutral-800 p-2"
         />
+        <span class="pt-1 text-xs font-light">Tip: you can input multiple teams via spaces</span>
       </label>
 
       {#if !debouncedSearch || filteredMatches.length}
-        <div
-          class={["flex flex-wrap gap-x-3 gap-y-6", (!upcomingMatches.length || !previousMatches.length) && "flex-col"]}
-        >
-          <div class={["flex grow flex-col", upcomingMatches.length && "basis-60"]}>
-            <span class="text-xs">Upcoming</span>
-            <div class="flex flex-col gap-3">
-              {#each upcomingMatches as match}
-                <Button
-                  onclick={() => {
-                    selecting = false;
-                    scrollTo(0, 0);
-                    selectedMatch = match;
-                    filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
-                    sessionStorage.setItem("match-view", match.number.toString());
-                  }}
-                  class="flex-nowrap! text-center!"
-                >
-                  {@render matchRow(match)}
-                </Button>
-              {:else}
-                <span class="text-sm">No upcoming matches.</span>
-              {/each}
-            </div>
-          </div>
+        {#if upcomingMatches.length}
+          {@const isToggled = matchToggleState.includes("upcoming") || debouncedSearch}
 
-          <div class={["flex grow flex-col", previousMatches.length && "basis-60"]}>
-            <span class="text-xs">Previous</span>
-            <div class="flex flex-col gap-3">
-              {#each previousMatches as match}
-                <Button
-                  onclick={() => {
-                    selecting = false;
-                    scrollTo(0, 0);
-                    selectedMatch = match;
-                    filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
-                    sessionStorage.setItem("match-view", match.number.toString());
-                  }}
-                  class="flex-nowrap! text-center!"
-                >
-                  {@render matchRow(match)}
-                </Button>
+          <div class="@container flex flex-col gap-2">
+            <Button
+              onclick={() => {
+                if (debouncedSearch) return;
+                if (matchToggleState.includes("upcoming")) {
+                  matchToggleState = matchToggleState.filter((val) => val != "upcoming");
+                } else {
+                  matchToggleState.push("upcoming");
+                }
+              }}
+              class="flex-nowrap!"
+            >
+              {#if isToggled}
+                <ChevronDownIcon class="text-theme shrink-0" />
               {:else}
-                <span class="text-sm">No previous matches.</span>
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class={matchToggleState.includes("upcoming") ? "font-bold" : "font-light"}>Upcoming</span>
+                <div class="flex gap-0.5 text-sm">
+                  {upcomingMatches.length}<ListOrderedIcon class="size-4" />
+                </div>
+              </div>
+            </Button>
+
+            {#if isToggled}
+              {#each upcomingMatches as match}
+                {@render matchRow(match)}
               {/each}
-            </div>
+            {/if}
           </div>
-        </div>
+        {/if}
+
+        {#if previousMatches.length}
+          {@const isToggled = matchToggleState.includes("previous") || debouncedSearch}
+
+          <div class="@container flex flex-col gap-2">
+            <Button
+              onclick={() => {
+                if (debouncedSearch) return;
+                if (matchToggleState.includes("previous")) {
+                  matchToggleState = matchToggleState.filter((val) => val != "previous");
+                } else {
+                  matchToggleState.push("previous");
+                }
+              }}
+              class="flex-nowrap!"
+            >
+              {#if isToggled}
+                <ChevronDownIcon class="text-theme shrink-0" />
+              {:else}
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class={matchToggleState.includes("previous") ? "font-bold" : "font-light"}>Previous</span>
+                <div class="flex gap-0.5 text-sm">
+                  {previousMatches.length}<ListOrderedIcon class="size-4" />
+                </div>
+              </div>
+            </Button>
+
+            {#if isToggled}
+              {#each previousMatches as match}
+                {@render matchRow(match)}
+              {/each}
+            {/if}
+          </div>
+        {/if}
       {/if}
     {/if}
   {/if}
 </div>
 
 {#snippet matchRow(match: Match & { extraTeams?: string[] })}
-  <div class="min-w-8">{match.number}</div>
+  <Button
+    onclick={() => {
+      selecting = false;
+      scrollTo(0, 0);
+      selectedMatch = match;
+      filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
+      sessionStorage.setItem("match-view", match.number.toString());
+    }}
+    class="flex-nowrap! text-center!"
+  >
+    <div class="flex flex-wrap items-center gap-x-4">
+      {#if match.red1 || match.red2 || match.red3}
+        <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+          {#if match.red1}
+            <div class="min-w-13 {teamFontWeight(match.red1)}">{match.red1}</div>
+          {/if}
+          {#if match.red2}
+            <div class="min-w-13 {teamFontWeight(match.red2)}">{match.red2}</div>
+          {/if}
+          {#if match.red3}
+            <div class="min-w-13 {teamFontWeight(match.red3)}">{match.red3}</div>
+          {/if}
+        </div>
+      {/if}
 
-  <div class="flex flex-wrap gap-x-2">
-    {#if match.red1 || match.red2 || match.red3}
-      <div class="text-red flex flex-wrap gap-x-2">
-        {#if match.red1}
-          <div class="min-w-13 {teamFontWeight(match.red1)}">{match.red1}</div>
-        {/if}
-        {#if match.red2}
-          <div class="min-w-13 {teamFontWeight(match.red2)}">{match.red2}</div>
-        {/if}
-        {#if match.red3}
-          <div class="min-w-13 {teamFontWeight(match.red3)}">{match.red3}</div>
-        {/if}
-      </div>
-    {/if}
+      {#if match.redScore !== undefined && match.blueScore !== undefined}
+        {@const redWon = match.redScore > match.blueScore}
+        {@const blueWon = match.blueScore > match.redScore}
 
-    {#if match.blue1 || match.blue2 || match.blue3}
-      <div class="text-blue flex flex-wrap gap-x-2">
-        {#if match.blue1}
-          <div class="min-w-13 {teamFontWeight(match.blue1)}">{match.blue1}</div>
-        {/if}
-        {#if match.blue2}
-          <div class="min-w-13 {teamFontWeight(match.blue2)}">{match.blue2}</div>
-        {/if}
-        {#if match.blue3}
-          <div class="min-w-13 {teamFontWeight(match.blue3)}">{match.blue3}</div>
-        {/if}
-      </div>
-    {/if}
+        <div class="flex flex-col flex-wrap items-center gap-x-2 self-center">
+          <div class="min-w-8">{match.number}</div>
+          <div class="flex items-center gap-x-2">
+            <div class="text-red min-w-8 {redWon ? 'font-bold' : 'text-sm font-light'}">
+              {match.redScore}
+            </div>
+            <div class="text-blue min-w-8 {blueWon ? 'font-bold' : 'text-sm font-light'}">
+              {match.blueScore}
+            </div>
+          </div>
+        </div>
+      {:else}
+        <div class="min-w-8">{match.number}</div>
+      {/if}
 
-    {#if match.extraTeams?.length}
-      <div class="flex flex-wrap gap-x-2">
-        {#each match.extraTeams as extraTeam}
-          <div class="min-w-13 {teamFontWeight(extraTeam)}">{extraTeam}</div>
-        {/each}
-      </div>
-    {/if}
-  </div>
+      {#if match.blue1 || match.blue2 || match.blue3}
+        <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+          {#if match.blue1}
+            <div class="min-w-13 {teamFontWeight(match.blue1)}">{match.blue1}</div>
+          {/if}
+          {#if match.blue2}
+            <div class="min-w-13 {teamFontWeight(match.blue2)}">{match.blue2}</div>
+          {/if}
+          {#if match.blue3}
+            <div class="min-w-13 {teamFontWeight(match.blue3)}">{match.blue3}</div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if match.extraTeams?.length}
+        <div class="flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+          {#each match.extraTeams as extraTeam}
+            <div class="min-w-13 {teamFontWeight(extraTeam)}">{extraTeam}</div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </Button>
 {/snippet}
