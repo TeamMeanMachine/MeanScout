@@ -30,7 +30,7 @@
     "vite": "^7.0.6"
   },
   "dependencies": {
-    "@lucide/svelte": "^0.542.0",
+    "@lucide/svelte": "^0.544.0",
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
     "sortablejs": "^1.15.6",
