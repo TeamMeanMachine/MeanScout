@@ -136,7 +136,7 @@ export class FountainDecoder {
   private readonly buffer: EncodedBlock[];
 
   /** Fully decoded blocks at their original source indexes. */
-  private readonly decoded: Map<number, Uint8Array>;
+  readonly decoded: Map<number, Uint8Array>;
 
   private lastHeader: string;
   private totalSources: number;
@@ -150,6 +150,10 @@ export class FountainDecoder {
     this.lastHeader = "";
     this.totalSources = 0;
     this.ondecode = undefined;
+  }
+
+  getTotalSources() {
+    return this.totalSources;
   }
 
   decode(bytes: number[]) {

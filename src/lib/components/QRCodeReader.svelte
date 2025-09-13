@@ -17,6 +17,8 @@
 
   let reading = $state(false);
   let scanned = $state<number[] | string>("--");
+  let decodedCount = $state(0);
+  let totalCount = $state(0);
 
   let video: HTMLVideoElement | undefined = undefined;
   let stream: MediaStream;
@@ -77,6 +79,8 @@
         const code = jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
         if (code) {
           scanned = fountainDecoder.decode(code.binaryData) ?? "skip";
+          decodedCount = fountainDecoder.decoded.size;
+          if (!totalCount) totalCount = fountainDecoder.getTotalSources();
         }
       }
     }
@@ -98,4 +102,10 @@
 </script>
 
 <video bind:this={video} autoplay playsinline muted class={reading ? "block" : "hidden"}></video>
-<span class="overflow-hidden text-nowrap text-ellipsis whitespace-nowrap">scanned: {scanned}</span>
+
+<div class="flex flex-wrap gap-x-4 gap-y-2 truncate text-sm text-nowrap">
+  <div class="flex grow basis-0 flex-col text-sm">
+    <span>scanned: {scanned}</span>
+    <span>decoded: {decodedCount}/{totalCount}</span>
+  </div>
+</div>

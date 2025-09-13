@@ -389,14 +389,18 @@
   }
 </script>
 
-<span>Merge configs for "{compRecord.name}"</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>Merge configs for "{compRecord.name}"</span>
 
-{#if $cameraStore}
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
-    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
-  </div>
-{/if}
+  {#if $cameraStore}
+    <div class="flex flex-wrap gap-2 text-sm">
+      <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>
+        QRF code
+      </Button>
+      <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+    </div>
+  {/if}
+</div>
 
 {#if $tab == "qrfcode" && $cameraStore}
   {#if importedComp}

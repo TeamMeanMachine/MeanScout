@@ -115,11 +115,13 @@
   }
 </script>
 
-<span>Export data</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>Export data</span>
 
-<div class="flex flex-wrap gap-2 text-sm">
-  <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
-  <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+  <div class="flex flex-wrap gap-2 text-sm">
+    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
+    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+  </div>
 </div>
 
 {#if $tab == "qrfcode"}
@@ -130,7 +132,7 @@
       <Share2Icon class="text-theme" />
       <div class="flex flex-col">
         Share
-        <span class="text-xs font-light">As JSON</span>
+        <span class="text-xs font-light">As raw text</span>
       </div>
     </Button>
   {/if}
