@@ -13,6 +13,7 @@ Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for f
 - [jsQR](https://github.com/cozmo/jsQR)
 - [node-qrcode](https://github.com/soldair/node-qrcode)
 - [Zod](https://zod.dev/)
+- [SortableJS](https://sortablejs.github.io/Sortable/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide](https://lucide.dev/)
 - [Fira Code](https://github.com/tonsky/FiraCode)

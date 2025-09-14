@@ -15,7 +15,7 @@
 
 <Header title="About - MeanScout" heading="About MeanScout" {backLink} />
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 text-pretty">
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
     <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
@@ -82,6 +82,12 @@
           </a>
         </li>
         <li>
+          <a href="https://sortablejs.github.io/Sortable/" target="_blank">
+            <span class="underline">SortableJS</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+          </a>
+        </li>
+        <li>
           <a href="https://tailwindcss.com/" target="_blank">
             <span class="underline">Tailwind CSS</span>
             <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
@@ -110,27 +116,23 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Your API key - MeanScout supplies its own auth key, but you may want to use your own</li>
         <li>Your team number - To get events your team participates in</li>
-        <li>FRC event keys - To get match schedules and participating teams for those events</li>
+        <li>Event keys - To get match schedules and participating teams for those events</li>
       </ul>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Additional notes</h2>
-      <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>You don't have to use The Blue Alliance to use MeanScout</li>
-        <li>
-          Survey configuration and scouting data are stored as, and can be exported as, plaintext, so try not to put any
-          sensitive data in those places
-        </li>
-        <li>
-          This applies only to the version of the app deployed at
-          <a href="https://meanscout.team2471.org" target="_blank">
-            <span class="underline">https://meanscout.team2471.org</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
-          </a>
-        </li>
-        <li>Other versions/forks may have more or different online features</li>
-      </ul>
+      <span>MeanScout itself is completely free of telemetry or any other form of usage analytics.</span>
+      <span>
+        However, you should read sections regarding end users in the
+        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">
+          <span class="underline">privacy policy for Cloudflare</span>
+          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+        </a>, which is used to host MeanScout.
+      </span>
+      <span>
+        This applies only to the version of MeanScout deployed at
+        <a href="https://meanscout.team2471.org" target="_blank">
+          <span class="underline">https://meanscout.team2471.org</span>
+          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+        </a>. Other versions/forks may have more or different online features.
+      </span>
     </div>
 
     <div class="flex flex-col gap-2">
@@ -157,11 +159,19 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Preparing for an event</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
-        <li>Create a new survey and give it a good name (e.g. PNW Champs 2024)</li>
-        <li>Set up fields you need to scout</li>
-        <li>Add match schedule data in the matches page</li>
-        <li>If you don't have a match schedule, add teams in the teams page</li>
+        <li>Create a new comp and give it a good name (e.g. PNW Champs 2024)</li>
+        <li>If you hook it to a TBA event, matches and teams are fetched for you</li>
+        <li>You can manually add matches and teams at any time</li>
         <li>Choose whether to enable scout names and match prediction game (only works with a match schedule)</li>
+      </ol>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Creating surveys</h2>
+      <ol class="ml-8 list-outside list-decimal space-y-1">
+        <li>Create match or pit (no match) surveys</li>
+        <li>You can make as many surveys as you need for various purposes</li>
+        <li>Set up fields you need to scout</li>
       </ol>
     </div>
 
@@ -171,7 +181,7 @@
         <li>Give each field a short, descriptive, and unique name</li>
         <li>Use groups to organize your fields (they don't have to just be "Auto" and "Teleop" either)</li>
         <li>Duplicate fields (and groups!) to quickly set up your survey</li>
-        <li>Drag-and-drop organization is supported, but experimental</li>
+        <li>Drag-and-drop organization is supported</li>
       </ul>
     </div>
 
@@ -182,7 +192,7 @@
         <li>Entry expressions (aka computed fields) produce per-entry values</li>
         <li>Survey expressions combine those values across entries</li>
         <li>Create pick lists that pull from survey expressions with given weights</li>
-        <li>View team rankings for each pick list (and expressions)</li>
+        <li>Once you have data, you can view team rankings for pick lists and expressions</li>
       </ol>
     </div>
 
@@ -199,7 +209,7 @@
         <li>
           Enter that API key, and your team number, in the <a href="#/settings" class="underline">settings page</a>
         </li>
-        <li>In your survey's admin page, select one of your team's events (or manually enter any TBA event key)</li>
+        <li>In your comp's config, select one of your team's events (or manually enter any TBA event key)</li>
         <li>Pull match schedules and/or team info from the TBA event</li>
       </ol>
     </div>
@@ -209,7 +219,7 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Export or copy analysis ranking results to other apps (e.g. Google Keep)</li>
         <li>Export survey configs and scouting data via QRF codes or files</li>
-        <li>Scouting data can be exported from the survey's entries page (use filters if needed!)</li>
+        <li>Scouting data can be easily exported from entries page</li>
         <li>If you can't use QRF codes, you'll have to manually share data as files between devices</li>
         <li>
           In that case, you can use Quick Share (Android + Windows), AirDrop (Apple), USB, email, messaging, smoke
@@ -221,9 +231,9 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Multiple devices</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
-        <li>Once you've fully set up your survey on one device, export it to the rest</li>
+        <li>Once you've fully set up your comp and surveys on one device, export it to the rest</li>
         <li>Fill in the team setting on each device (highlights your team in match lists)</li>
-        <li>Set a unique target on each device (definitely do this one!)</li>
+        <li>Set a unique target on each device</li>
         <li>If you can use QRF codes, make sure to pick a rear-facing camera</li>
       </ol>
     </div>
@@ -299,5 +309,10 @@
         <li>You just need enough water to fill it up</li>
       </ul>
     </div>
+
+    <a href="https://aidunlin.com/qrfcodes" target="_blank" class="self-start">
+      <span class="underline">Learn more</span>
+      <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+    </a>
   {/if}
 </div>
