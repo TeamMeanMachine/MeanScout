@@ -114,15 +114,42 @@
   }
 </script>
 
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
+<div class="flex flex-col gap-6">
   {#if !data.compRecord.matches.length}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold md:hidden">Matches</h2>
+      <h2 class="font-bold">Matches</h2>
       <span class="text-sm">No matches.</span>
     </div>
   {:else}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold md:hidden">Matches</h2>
+      <div class="flex flex-wrap items-center justify-between">
+        <h2 class="font-bold">Matches</h2>
+
+        <div class="flex gap-2">
+          <Button
+            disabled={!selectedMatch || selecting}
+            onclick={() => {
+              const match = data.matches.find((match) => match.number == selectedMatch!.number - 1);
+              if (!match) return;
+              selectedMatch = match;
+              sessionStorage.setItem("match-view", match.number.toString());
+            }}
+          >
+            <MinusIcon class="text-theme size-5" />
+          </Button>
+          <Button
+            disabled={!selectedMatch || selecting}
+            onclick={() => {
+              const match = data.matches.find((match) => match.number == selectedMatch!.number + 1);
+              if (!match) return;
+              selectedMatch = match;
+              sessionStorage.setItem("match-view", match.number.toString());
+            }}
+          >
+            <PlusIcon class="text-theme size-5" />
+          </Button>
+        </div>
+      </div>
 
       <div class="flex flex-col gap-4">
         <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
@@ -171,29 +198,6 @@
                 </Button>
               </div>
             {/if}
-
-            <div class="flex gap-2">
-              <Button
-                onclick={() => {
-                  const match = data.matches.find((match) => match.number == selectedMatch!.number - 1);
-                  if (!match) return;
-                  selectedMatch = match;
-                  sessionStorage.setItem("match-view", match.number.toString());
-                }}
-              >
-                <MinusIcon class="text-theme size-5" />
-              </Button>
-              <Button
-                onclick={() => {
-                  const match = data.matches.find((match) => match.number == selectedMatch!.number + 1);
-                  if (!match) return;
-                  selectedMatch = match;
-                  sessionStorage.setItem("match-view", match.number.toString());
-                }}
-              >
-                <PlusIcon class="text-theme size-5" />
-              </Button>
-            </div>
           </div>
         {/if}
       </div>

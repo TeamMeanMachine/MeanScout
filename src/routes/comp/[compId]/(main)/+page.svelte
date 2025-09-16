@@ -2,7 +2,7 @@
   import { sessionStorageStore, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, groupEntries, type Entry, type EntryStatus } from "$lib/entry";
+  import { entryStatuses, groupEntries, type Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { targets, targetStore } from "$lib/settings";
@@ -148,7 +148,7 @@
   }
 </script>
 
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
+<div class="flex flex-col gap-6">
   {#if newEntry}
     <div class="flex flex-col gap-3">
       <NewEntryWidget

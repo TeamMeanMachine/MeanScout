@@ -1,10 +1,18 @@
 <script lang="ts">
   import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
-  import Header from "$lib/components/Header.svelte";
+  import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
-  import { ChartBarBigIcon, DicesIcon, ListOrderedIcon, NotepadTextIcon, UsersIcon } from "@lucide/svelte";
+  import { targetStore } from "$lib/settings.js";
+  import {
+    ChartBarBigIcon,
+    DicesIcon,
+    EllipsisVerticalIcon,
+    ListOrderedIcon,
+    NotepadTextIcon,
+    UsersIcon,
+  } from "@lucide/svelte";
 
   let { data, children } = $props();
 
@@ -33,9 +41,6 @@
     ]).size,
   );
 
-  // Distance we have to scroll in one direction to hide/show navs on mobile.
-  const scrollThreshold = 100;
-
   let topNav: HTMLElement;
   let bottomNav: HTMLElement;
 
@@ -60,13 +65,13 @@
 
     // And yes, we're actually moving them outside the viewport.
     // This does not cause a content overflow,
-    // because they have fixed positions when `max-md`.
+    // because they have fixed positions when `max-lg`.
 
-    if (currentScrollY == 0 || differenceFromStart < -scrollThreshold) {
-      topNav.classList.remove("top-[-57px]!");
+    if (currentScrollY == 0 || differenceFromStart < -100) {
+      topNav.classList.remove("-top-20!");
       bottomNav.classList.remove("-bottom-20!");
-    } else if (differenceFromStart > scrollThreshold) {
-      topNav.classList.add("top-[-57px]!");
+    } else if (differenceFromStart > 0) {
+      topNav.classList.add("-top-20!");
       bottomNav.classList.add("-bottom-20!");
     }
 
@@ -75,8 +80,8 @@
 
   function getAnchorClass(matching: string) {
     return (
-      "items-center justify-center active:left-0! active:top-0.5 " +
-      "max-md:gap-1 max-md:py-1 max-md:flex-col max-md:grow " +
+      "items-center flex-nowrap! justify-center active:left-0! active:top-0.5 " +
+      "max-lg:gap-1 max-lg:py-1 max-lg:flex-col grow " +
       (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
@@ -84,62 +89,84 @@
 
 <svelte:window {onscroll} />
 
-<div class="flex flex-col gap-2">
-  <div
-    bind:this={topNav}
-    class={[
-      "fixed top-0 left-0 z-20 w-full grow border-b border-neutral-600 bg-neutral-900 px-3 py-2 transition-[top]",
-      "md:static md:border-none md:p-0",
-    ]}
-  >
-    <Header
-      title="{title} - MeanScout"
-      heading={data.compRecord.name}
-      onmenupressed={() => {
-        openDialog(CompMenuDialog, { pageData: data });
-      }}
-    />
-  </div>
+<svelte:head>
+  <title>{title} - MeanScout</title>
+</svelte:head>
 
-  <div
-    bind:this={bottomNav}
-    class={[
-      "fixed bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom]",
-      "md:static md:overflow-visible md:border-none md:bg-neutral-900  md:text-sm",
-    ]}
-    style="scrollbar-width:none"
-  >
-    <div class="mx-auto flex max-w-xl gap-0 p-1 md:mx-0 md:max-w-full md:gap-2 md:p-0">
-      <Anchor route={routeBase} class={getAnchorClass("entries")}>
-        <NotepadTextIcon class="text-theme" />
-        Entries
-      </Anchor>
-      {#if showAnalysisLink}
-        <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
-          <ChartBarBigIcon class="text-theme" />
-          Analysis
-        </Anchor>
-      {/if}
-      {#if teamCount}
-        <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>
-          <UsersIcon class="text-theme" />
-          Teams
-        </Anchor>
-      {/if}
-      {#if data.compRecord.matches.length}
-        <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
-          <ListOrderedIcon class="text-theme" />
-          Matches
-        </Anchor>
-      {/if}
-      {#if data.compRecord.scouts}
-        <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
-          <DicesIcon class="text-theme" />
-          Predictions
-        </Anchor>
-      {/if}
-    </div>
+<div
+  bind:this={topNav}
+  class="sticky top-0 left-0 z-20 flex flex-col border-b border-neutral-600 bg-neutral-900 py-3 transition-[top]"
+>
+  <div class="mx-auto w-full px-3">
+    <header class="flex items-center justify-between gap-3">
+      <div class="flex grow basis-60 gap-2">
+        <img src="./logo.svg" alt="" width="25" height="25" />
+        <h1 class="grow truncate font-bold">{data.compRecord.name}</h1>
+      </div>
+
+      <div
+        class="mx-auto hidden max-w-(--breakpoint-lg) border-neutral-600 text-sm text-nowrap transition-[bottom] lg:block"
+        style="scrollbar-width:none"
+      >
+        <div class="mx-auto flex gap-2">
+          {@render links()}
+        </div>
+      </div>
+
+      <div class="flex shrink grow basis-60 items-center gap-2">
+        <span class="text-theme grow truncate text-right text-sm font-bold capitalize">{$targetStore}</span>
+
+        <Button onclick={() => openDialog(CompMenuDialog, { pageData: data })}>
+          <EllipsisVerticalIcon class="text-theme" />
+        </Button>
+      </div>
+    </header>
   </div>
 </div>
 
-{@render children()}
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
+  {@render children()}
+</div>
+
+<div
+  bind:this={bottomNav}
+  class={[
+    "sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom] lg:hidden",
+  ]}
+  style="scrollbar-width:none"
+>
+  <div class="mx-auto flex max-w-xl gap-0 p-1">
+    {@render links()}
+  </div>
+</div>
+
+{#snippet links()}
+  <Anchor route={routeBase} class={getAnchorClass("entries")}>
+    <NotepadTextIcon class="text-theme" />
+    Entries
+  </Anchor>
+  {#if showAnalysisLink}
+    <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
+      <ChartBarBigIcon class="text-theme" />
+      Analysis
+    </Anchor>
+  {/if}
+  {#if teamCount}
+    <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>
+      <UsersIcon class="text-theme" />
+      Teams
+    </Anchor>
+  {/if}
+  {#if data.compRecord.matches.length}
+    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
+      <ListOrderedIcon class="text-theme" />
+      Matches
+    </Anchor>
+  {/if}
+  {#if data.compRecord.scouts}
+    <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
+      <DicesIcon class="text-theme" />
+      Predictions
+    </Anchor>
+  {/if}
+{/snippet}

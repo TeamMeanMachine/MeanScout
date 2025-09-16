@@ -114,15 +114,15 @@
   }
 </script>
 
-<div class="mt-9 mb-20 flex flex-col gap-6 md:mt-0">
+<div class="flex flex-col gap-6">
   {#if !showAnalysis}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold md:hidden">Analysis</h2>
+      <h2 class="font-bold">Analysis</h2>
       <span class="text-sm">No analysis available.</span>
     </div>
   {:else}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold md:hidden">Analysis</h2>
+      <h2 class="font-bold">Analysis</h2>
 
       <div class="flex flex-col gap-4">
         <Button onclick={() => (selecting = !selecting)} class="grow">
