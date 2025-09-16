@@ -47,7 +47,7 @@
   backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
-<div class="flex flex-col gap-6">
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
   <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
     {#if data.surveyType == "match"}
       <div class="flex flex-col">

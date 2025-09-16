@@ -13,14 +13,22 @@
   }
 </script>
 
-<Header title="About - MeanScout" heading="About MeanScout" {backLink} />
+<Header title="About - MeanScout" heading="About MeanScout" {backLink}>
+  <div class="hidden flex-wrap gap-2 text-sm lg:flex">
+    {@render links()}
+  </div>
+</Header>
 
-<div class="flex flex-col gap-6 text-pretty">
-  <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
-    <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
-    <Button onclick={() => ($tab = "prediction")} class={getTabClass("prediction")}>Predictions</Button>
-    <Button onclick={() => ($tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
+{#snippet links()}
+  <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
+  <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
+  <Button onclick={() => ($tab = "prediction")} class={getTabClass("prediction")}>Predictions</Button>
+  <Button onclick={() => ($tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
+{/snippet}
+
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3 text-pretty">
+  <div class="flex flex-wrap gap-2 text-sm lg:hidden">
+    {@render links()}
   </div>
 
   {#if $tab == "info"}

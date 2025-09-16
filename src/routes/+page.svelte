@@ -14,69 +14,71 @@
 
 <Header />
 
-<div class="flex flex-col gap-2">
-  <h2 class="font-bold">Comps</h2>
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Comps</h2>
 
-  {#if data.all.comps.length}
-    {#each data.all.comps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
-      <Anchor route="comp/{comp.id}">
+    {#if data.all.comps.length}
+      {#each data.all.comps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
+        <Anchor route="comp/{comp.id}">
+          <div class="flex grow flex-col">
+            <span>{comp.name}</span>
+            <span class="text-xs font-light">{comp.id}</span>
+          </div>
+          <ArrowRightIcon class="text-theme" />
+        </Anchor>
+      {/each}
+    {/if}
+
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-48">
+        <ImportIcon class="text-theme" />
+        <div class="flex flex-col">
+          Import
+          <span class="text-xs font-light">
+            {#if $cameraStore}
+              QRF code, File
+            {:else}
+              File
+            {/if}
+          </span>
+        </div>
+      </Button>
+      <Button onclick={() => openDialog(NewCompDialog, {})} class="grow basis-48">
+        <PlusIcon class="text-theme" />
+        <div class="flex flex-col">
+          Create
+          <span class="text-xs font-light">New</span>
+        </div>
+      </Button>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-col">
+      <h2 class="font-bold">MeanScout</h2>
+      <span class="text-xs font-light">
+        {import.meta.env.VITE_GIT_COMMIT_HASH}
+        ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
+      </span>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <Anchor route="settings" class="grow basis-48">
+        <SettingsIcon class="text-theme" />
         <div class="flex grow flex-col">
-          <span>{comp.name}</span>
-          <span class="text-xs font-light">{comp.id}</span>
+          Settings
+          <span class="text-xs font-light">App config</span>
         </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>
-    {/each}
-  {/if}
-
-  <div class="flex flex-wrap gap-2">
-    <Button onclick={() => openDialog(BulkImportDialog, {})} class="grow basis-48">
-      <ImportIcon class="text-theme" />
-      <div class="flex flex-col">
-        Import
-        <span class="text-xs font-light">
-          {#if $cameraStore}
-            QRF code, File
-          {:else}
-            File
-          {/if}
-        </span>
-      </div>
-    </Button>
-    <Button onclick={() => openDialog(NewCompDialog, {})} class="grow basis-48">
-      <PlusIcon class="text-theme" />
-      <div class="flex flex-col">
-        Create
-        <span class="text-xs font-light">New</span>
-      </div>
-    </Button>
-  </div>
-</div>
-
-<div class="flex flex-col gap-2">
-  <div class="flex flex-col">
-    <h2 class="font-bold">MeanScout</h2>
-    <span class="text-xs font-light">
-      {import.meta.env.VITE_GIT_COMMIT_HASH}
-      ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
-    </span>
-  </div>
-  <div class="flex flex-wrap gap-2">
-    <Anchor route="settings" class="grow basis-48">
-      <SettingsIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Settings
-        <span class="text-xs font-light">App config</span>
-      </div>
-      <ArrowRightIcon class="text-theme" />
-    </Anchor>
-    <Anchor route="about" class="grow basis-48">
-      <InfoIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        About
-        <span class="text-xs font-light">Info, Guides</span>
-      </div>
-      <ArrowRightIcon class="text-theme" />
-    </Anchor>
+      <Anchor route="about" class="grow basis-48">
+        <InfoIcon class="text-theme" />
+        <div class="flex grow flex-col">
+          About
+          <span class="text-xs font-light">Info, Guides</span>
+        </div>
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    </div>
   </div>
 </div>

@@ -82,9 +82,7 @@
 
 <Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
-<div class="flex flex-col gap-6">
-  <hr class="border-neutral-500" />
-
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
   <label class="flex flex-wrap items-center gap-2">
     <CrosshairIcon class="text-theme" />
     <div class="flex grow flex-col">
@@ -135,8 +133,6 @@
     </div>
     <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
   </label>
-
-  <hr class="border-neutral-500" />
 
   <div class="flex flex-wrap gap-3">
     <Button onclick={save} disabled={!unsavedChanges}>

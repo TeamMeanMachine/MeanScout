@@ -1,18 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
+  import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
-  import { targetStore } from "$lib/settings.js";
-  import {
-    ChartBarBigIcon,
-    DicesIcon,
-    EllipsisVerticalIcon,
-    ListOrderedIcon,
-    NotepadTextIcon,
-    UsersIcon,
-  } from "@lucide/svelte";
+  import { ChartBarBigIcon, DicesIcon, ListOrderedIcon, NotepadTextIcon, UsersIcon } from "@lucide/svelte";
 
   let { data, children } = $props();
 
@@ -41,7 +33,6 @@
     ]).size,
   );
 
-  let topNav: HTMLElement;
   let bottomNav: HTMLElement;
 
   let lastScrollY = $state(0);
@@ -68,10 +59,8 @@
     // because they have fixed positions when `max-lg`.
 
     if (currentScrollY == 0 || differenceFromStart < -100) {
-      topNav.classList.remove("-top-20!");
       bottomNav.classList.remove("-bottom-20!");
     } else if (differenceFromStart > 0) {
-      topNav.classList.add("-top-20!");
       bottomNav.classList.add("-bottom-20!");
     }
 
@@ -80,8 +69,8 @@
 
   function getAnchorClass(matching: string) {
     return (
-      "items-center flex-nowrap! justify-center active:left-0! active:top-0.5 " +
-      "max-lg:gap-1 max-lg:py-1 max-lg:flex-col grow " +
+      "grow items-center flex-nowrap! justify-center active:left-0! active:top-0.5 " +
+      "max-lg:gap-1 max-lg:py-1 max-lg:flex-col " +
       (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
@@ -93,36 +82,17 @@
   <title>{title} - MeanScout</title>
 </svelte:head>
 
-<div
-  bind:this={topNav}
-  class="sticky top-0 left-0 z-20 flex flex-col border-b border-neutral-600 bg-neutral-900 py-3 transition-[top]"
+<Header
+  title="{title} - MeanScout"
+  heading={data.compRecord.name}
+  onmenupressed={() => {
+    openDialog(CompMenuDialog, { pageData: data });
+  }}
 >
-  <div class="mx-auto w-full px-3">
-    <header class="flex items-center justify-between gap-3">
-      <div class="flex grow basis-60 gap-2">
-        <img src="./logo.svg" alt="" width="25" height="25" />
-        <h1 class="grow truncate font-bold">{data.compRecord.name}</h1>
-      </div>
-
-      <div
-        class="mx-auto hidden max-w-(--breakpoint-lg) border-neutral-600 text-sm text-nowrap transition-[bottom] lg:block"
-        style="scrollbar-width:none"
-      >
-        <div class="mx-auto flex gap-2">
-          {@render links()}
-        </div>
-      </div>
-
-      <div class="flex shrink grow basis-60 items-center gap-2">
-        <span class="text-theme grow truncate text-right text-sm font-bold capitalize">{$targetStore}</span>
-
-        <Button onclick={() => openDialog(CompMenuDialog, { pageData: data })}>
-          <EllipsisVerticalIcon class="text-theme" />
-        </Button>
-      </div>
-    </header>
+  <div class="hidden max-w-(--breakpoint-lg) gap-2 text-sm text-nowrap lg:flex">
+    {@render links()}
   </div>
-</div>
+</Header>
 
 <div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
   {@render children()}
@@ -130,9 +100,7 @@
 
 <div
   bind:this={bottomNav}
-  class={[
-    "sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom] lg:hidden",
-  ]}
+  class="sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom] md:text-sm lg:hidden"
   style="scrollbar-width:none"
 >
   <div class="mx-auto flex max-w-xl gap-0 p-1">
