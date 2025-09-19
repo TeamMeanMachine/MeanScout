@@ -14,10 +14,12 @@
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import { z } from "zod";
+  import MatchRankingsWidget from "$lib/components/MatchRankingsWidget.svelte";
 
   let { data }: PageProps = $props();
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
+  const showWhich = sessionStorageStore<"rankings" | "data">("match-view-show-which", "rankings");
 
   const debounceTimeMillis = 500;
   let debounceTimer: number | undefined = undefined;
@@ -188,12 +190,27 @@
             {#if data.hasExpressions}
               <div class="flex gap-2 text-sm">
                 <Button
-                  onclick={() => ($showData = "expressions")}
-                  class={$showData == "expressions" ? "font-bold" : "font-light"}
+                  onclick={() => ($showWhich = "rankings")}
+                  class={$showWhich == "rankings" ? "font-bold" : "font-light"}
+                >
+                  Rankings
+                </Button>
+                <Button
+                  onclick={() => {
+                    $showData = "expressions";
+                    $showWhich = "data";
+                  }}
+                  class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
                 >
                   Derived
                 </Button>
-                <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>
+                <Button
+                  onclick={() => {
+                    $showData = "raw";
+                    $showWhich = "data";
+                  }}
+                  class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
+                >
                   Raw
                 </Button>
               </div>
@@ -204,17 +221,21 @@
     </div>
 
     {#if !selecting && selectedMatch}
-      {#each data.surveyRecords
-        .filter((survey) => survey.type == "match")
-        .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-        <div class="flex flex-col gap-1 overflow-x-auto">
-          <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
+      {#if $showWhich == "rankings"}
+        <MatchRankingsWidget pageData={data} match={selectedMatch} />
+      {:else}
+        {#each data.surveyRecords
+          .filter((survey) => survey.type == "match")
+          .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+          <div class="flex flex-col gap-1 overflow-x-auto">
+            <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
 
-          {#key selectedMatch}
-            <MatchDataTable pageData={data} {surveyRecord} match={selectedMatch} show={$showData} />
-          {/key}
-        </div>
-      {/each}
+            {#key selectedMatch}
+              <MatchDataTable pageData={data} {surveyRecord} match={selectedMatch} show={$showData} />
+            {/key}
+          </div>
+        {/each}
+      {/if}
 
       {#if data.compRecord.tbaEventKey}
         <div class="flex flex-wrap gap-x-4">

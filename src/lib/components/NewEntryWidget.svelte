@@ -6,12 +6,21 @@
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
-  import { CheckIcon, EyeIcon, MinusIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
+  import {
+    ArrowRightIcon,
+    CheckIcon,
+    ListOrderedIcon,
+    MinusIcon,
+    PlusIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
-  import ViewMatchDialog from "$lib/dialogs/ViewMatchDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
   import type { Survey } from "$lib/survey";
+  import { z } from "zod";
 
   let {
     pageData,
@@ -29,6 +38,11 @@
     oncancel: () => void;
   } = $props();
 
+  const teamNumberNameMap = new Map<string, string>();
+  for (const team of pageData.compRecord.teams) {
+    teamNumberNameMap.set(team.number, team.name);
+  }
+
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
@@ -44,25 +58,60 @@
       .toSorted((a, b) => a.localeCompare(b)),
   );
 
-  let match = $state(prefills.match);
-  let team = $state(prefills.team);
+  const newEntryStateSchema = z
+    .object({
+      match: z.number(),
+      team: z.string(),
+      scout: z.string().optional(),
+      prediction: z.union([z.literal("red"), z.literal("blue"), z.undefined()]),
+      predictionReason: z.string().optional(),
+    })
+    .catch({
+      match: prefills.match,
+      team: prefills.team,
+      scout: prefills.scout,
+      prediction: undefined,
+      predictionReason: undefined,
+    });
 
-  let scout = $state(prefills.scout);
+  function getNewEntryState() {
+    try {
+      return JSON.parse(sessionStorage.getItem(`${surveyRecord.id}-new-entry-state`) ?? "null");
+    } catch {}
+  }
 
-  let prediction = $state<"red" | "blue" | undefined>();
-  let predictionReason = $state<string | undefined>();
+  const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
+
+  function selectTargetTeamFromMatch(matchNumber: number) {
+    const match = pageData.compRecord.matches.find((m) => m.number == matchNumber);
+    if (!match) return "";
+    switch ($targetStore) {
+      case "red 1":
+        return match.red1;
+      case "red 2":
+        return match.red2;
+      case "red 3":
+        return match.red3;
+      case "blue 1":
+        return match.blue1;
+      case "blue 2":
+        return match.blue2;
+      case "blue 3":
+        return match.blue3;
+    }
+    return "";
+  }
+
+  $effect(() => {
+    sessionStorage.setItem(`${surveyRecord.id}-new-entry-state`, JSON.stringify(newEntryState));
+  });
 
   let error = $state("");
 
-  let matchData = $derived(pageData.compRecord.matches.find((m) => m.number == match));
+  const matchData = $derived(pageData.compRecord.matches.find((m) => m.number == newEntryState.match));
 
-  let teamNumberNameMap = new Map<string, string>();
-  for (const team of pageData.compRecord.teams) {
-    teamNumberNameMap.set(team.number, team.name);
-  }
-
-  let suggestedTeams = $derived.by(() => {
-    match;
+  const suggestedTeams = $derived.by(() => {
+    newEntryState.match;
     const teamSet = new Set<string>();
 
     if (matchData && surveyRecord.type == "match") {
@@ -108,26 +157,26 @@
   });
 
   function onconfirm() {
-    team = team.trim();
-    scout = scout?.trim();
-    predictionReason = predictionReason?.trim();
+    newEntryState.team = newEntryState.team.trim();
+    newEntryState.scout = newEntryState.scout?.trim();
+    newEntryState.predictionReason = newEntryState.predictionReason?.trim();
 
-    if (!/^\d{1,5}[A-Z]?$/.test(team)) {
+    if (!/^\d{1,5}[A-Z]?$/.test(newEntryState.team)) {
       error = "invalid value for team";
       return;
     }
 
-    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == team)) {
+    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == newEntryState.team)) {
       error = "team is not listed";
       return;
     }
 
-    if (pageData.compRecord.scouts && !scout) {
+    if (pageData.compRecord.scouts && !newEntryState.scout) {
       error = "scout name missing";
       return;
     }
 
-    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${match}`)) {
+    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${newEntryState.match}`)) {
       error = "invalid value for match";
       return;
     }
@@ -141,20 +190,20 @@
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "draft",
-        team,
-        match,
+        team: newEntryState.team,
+        match: newEntryState.match,
         absent: false,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
 
-      if (scout) {
-        entry.scout = scout;
-        if (prediction) {
-          entry.prediction = prediction;
-          if (predictionReason) {
-            entry.predictionReason = predictionReason;
+      if (newEntryState.scout) {
+        entry.scout = newEntryState.scout;
+        if (newEntryState.prediction) {
+          entry.prediction = newEntryState.prediction;
+          if (newEntryState.predictionReason) {
+            entry.predictionReason = newEntryState.predictionReason;
           }
         }
       }
@@ -164,14 +213,14 @@
         surveyId: surveyRecord.id,
         type: surveyRecord.type,
         status: "draft",
-        team,
+        team: newEntryState.team,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
 
-      if (scout) {
-        entry.scout = scout;
+      if (newEntryState.scout) {
+        entry.scout = newEntryState.scout;
       }
     }
 
@@ -181,17 +230,19 @@
     };
 
     addRequest.onsuccess = () => {
+      sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
+      sessionStorage.removeItem("new-entry");
       idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
       goto(`#/entry/${entry.id}`);
     };
   }
 
   function teamUnderline(teamNumber?: string) {
-    return teamNumber == team ? "underline" : "";
+    return teamNumber == newEntryState.team ? "underline" : "";
   }
 
   function teamBold(teamNumber?: string) {
-    return teamNumber == team ? "font-bold" : "font-light";
+    return teamNumber == newEntryState.team ? "font-bold" : "font-light";
   }
 </script>
 
@@ -208,7 +259,7 @@
     Your name
     <div class="flex flex-wrap gap-2">
       {#if suggestedScouts.length}
-        <select bind:value={scout} class="text-theme grow bg-neutral-800 p-2">
+        <select bind:value={newEntryState.scout} class="text-theme grow bg-neutral-800 p-2">
           {#each suggestedScouts as scout}
             <option>{scout}</option>
           {/each}
@@ -228,7 +279,7 @@
                 },
               };
               idb.put("comps", $state.snapshot(pageData.compRecord)).onsuccess = invalidateAll;
-              scout = newScout;
+              newEntryState.scout = newScout;
             },
           });
         }}
@@ -249,16 +300,29 @@
       Match
       <input
         type="number"
-        bind:value={match}
-        oninput={() => (team = suggestedTeams[0].number)}
+        bind:value={newEntryState.match}
+        oninput={() => {
+          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+        }}
         min="1"
         class="text-theme w-full bg-neutral-800 p-2"
       />
     </label>
-    <Button disabled={match <= 1} onclick={() => match--}>
+    <Button
+      disabled={newEntryState.match <= 1}
+      onclick={() => {
+        newEntryState.match--;
+        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+      }}
+    >
       <MinusIcon class="text-theme" />
     </Button>
-    <Button onclick={() => match++}>
+    <Button
+      onclick={() => {
+        newEntryState.match++;
+        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+      }}
+    >
       <PlusIcon class="text-theme" />
     </Button>
   </div>
@@ -275,13 +339,13 @@
       {/if}
     </div>
 
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
       <Button
         onclick={() => {
-          team = red1;
+          newEntryState.team = red1;
           $targetStore = "red 1";
         }}
-        class="w-full"
+        class="w-full max-sm:order-1"
       >
         <div class="flex flex-col truncate {teamBold(red1)}">
           <span class="text-red {teamUnderline(red1)}">{red1}</span>
@@ -290,10 +354,10 @@
       </Button>
       <Button
         onclick={() => {
-          team = red2;
+          newEntryState.team = red2;
           $targetStore = "red 2";
         }}
-        class="w-full"
+        class="w-full max-sm:order-3"
       >
         <div class="flex flex-col truncate {teamBold(red2)}">
           <span class="text-red {teamUnderline(red2)}">{red2}</span>
@@ -302,10 +366,10 @@
       </Button>
       <Button
         onclick={() => {
-          team = red3;
+          newEntryState.team = red3;
           $targetStore = "red 3";
         }}
-        class="w-full"
+        class="w-full max-sm:order-5"
       >
         <div class="flex flex-col truncate {teamBold(red3)}">
           <span class="text-red {teamUnderline(red3)}">{red3}</span>
@@ -315,10 +379,10 @@
 
       <Button
         onclick={() => {
-          team = blue1;
+          newEntryState.team = blue1;
           $targetStore = "blue 1";
         }}
-        class="w-full"
+        class="w-full max-sm:order-2"
       >
         <div class="flex flex-col truncate {teamBold(blue1)}">
           <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
@@ -327,10 +391,10 @@
       </Button>
       <Button
         onclick={() => {
-          team = blue2;
+          newEntryState.team = blue2;
           $targetStore = "blue 2";
         }}
-        class="w-full"
+        class="w-full max-sm:order-4"
       >
         <div class="flex flex-col truncate {teamBold(blue2)}">
           <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
@@ -339,10 +403,10 @@
       </Button>
       <Button
         onclick={() => {
-          team = blue3;
+          newEntryState.team = blue3;
           $targetStore = "blue 3";
         }}
-        class="w-full"
+        class="w-full max-sm:order-6"
       >
         <div class="flex flex-col truncate {teamBold(blue3)}">
           <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
@@ -354,7 +418,7 @@
 {:else if suggestedTeams.length}
   <label class="flex flex-col">
     Team
-    <select bind:value={team} class="text-theme bg-neutral-800 p-2">
+    <select bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2">
       {#each suggestedTeams as team}
         <option value={team.number}>{team.number} {team.name}</option>
       {/each}
@@ -363,35 +427,38 @@
 {:else}
   <label class="flex flex-col">
     Team
-    <input bind:value={team} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 
 {#if surveyRecord.type == "match" && pageData.compRecord.scouts}
   <h2 class="mt-3 font-bold">Prediction</h2>
 
-  <Button
-    onclick={() => {
-      if (!matchData) return;
-      openDialog(ViewMatchDialog, { pageData, match: matchData });
-    }}
-    disabled={!matchData}
-  >
-    <EyeIcon class="text-theme" />
-    <div class="flex flex-col">
-      View data
-      <span class="text-xs font-light">Info, analysis</span>
-    </div>
-  </Button>
+  {#if matchData}
+    <Button
+      onclick={() => {
+        sessionStorage.setItem("match-view-show-which", "rankings");
+        sessionStorage.setItem("match-view", newEntryState.match.toString());
+        goto(`#/comp/${pageData.compRecord.id}/matches`);
+      }}
+    >
+      <ListOrderedIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        Match {newEntryState.match}
+        <span class="text-xs font-light">Analyze existing data</span>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Button>
+  {/if}
 
   <div class="flex flex-col">
     <span>Your prediction</span>
     <div class="flex flex-wrap gap-2">
       <Button
-        onclick={() => (prediction = prediction == "red" ? undefined : "red")}
-        class="text-red grow basis-[150px] {prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
+        onclick={() => (newEntryState.prediction = newEntryState.prediction == "red" ? undefined : "red")}
+        class="text-red grow basis-[150px] {newEntryState.prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
       >
-        {#if prediction == "red"}
+        {#if newEntryState.prediction == "red"}
           <SquareCheckBigIcon />
         {:else}
           <SquareIcon />
@@ -399,10 +466,10 @@
         Red wins
       </Button>
       <Button
-        onclick={() => (prediction = prediction == "blue" ? undefined : "blue")}
-        class="text-blue grow basis-[150px] {prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
+        onclick={() => (newEntryState.prediction = newEntryState.prediction == "blue" ? undefined : "blue")}
+        class="text-blue grow basis-[150px] {newEntryState.prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
       >
-        {#if prediction == "blue"}
+        {#if newEntryState.prediction == "blue"}
           <SquareCheckBigIcon />
         {:else}
           <SquareIcon />
@@ -412,10 +479,12 @@
     </div>
   </div>
 
-  <label class="flex flex-col">
-    Reason
-    <input bind:value={predictionReason} class="text-theme bg-neutral-800 p-2" />
-  </label>
+  {#if newEntryState.prediction}
+    <label class="flex flex-col">
+      Reason
+      <input bind:value={newEntryState.predictionReason} class="text-theme bg-neutral-800 p-2" />
+    </label>
+  {/if}
 {/if}
 
 {#if error}

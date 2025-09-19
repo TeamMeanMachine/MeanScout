@@ -8,14 +8,13 @@
     type SelectedAnalysis,
   } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
   import { type MatchEntry } from "$lib/entry";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
-  import ViewTeamDialog from "./ViewTeamDialog.svelte";
   import type { MatchSurvey } from "$lib/survey";
+  import { goto } from "$app/navigation";
 
   let {
     pageData,
@@ -119,30 +118,28 @@
   }
 </script>
 
-<span>Match {match.number}</span>
+<div class="flex flex-col gap-3">
+  <Button onclick={() => (selecting = !selecting)} class="text-sm">
+    <ChartBarBigIcon class="text-theme size-5" />
+    {#if !selecting}
+      <span class="grow">
+        {#if !selectedAnalysis}
+          Team Info
+        {:else if "pickList" in selectedAnalysis}
+          {selectedAnalysis.pickList.name}
+        {:else if "expression" in selectedAnalysis}
+          {selectedAnalysis.expression.name}
+        {/if}
+      </span>
+      <ChevronDownIcon class="text-theme size-5" />
+    {:else}
+      <span class="grow">Select</span>
+      <ChevronUpIcon class="text-theme size-5" />
+    {/if}
+  </Button>
 
-<Button onclick={() => (selecting = !selecting)} class="text-sm">
-  <ChartBarBigIcon class="text-theme size-5" />
   {#if !selecting}
-    <span class="grow">
-      {#if !selectedAnalysis}
-        Team Info
-      {:else if "pickList" in selectedAnalysis}
-        {selectedAnalysis.pickList.name}
-      {:else if "expression" in selectedAnalysis}
-        {selectedAnalysis.expression.name}
-      {/if}
-    </span>
-    <ChevronDownIcon class="text-theme size-5" />
-  {:else}
-    <span class="grow">Select</span>
-    <ChevronUpIcon class="text-theme size-5" />
-  {/if}
-</Button>
-
-<div class="-m-1 flex h-[384px] flex-col gap-3 overflow-auto p-1">
-  {#if !selecting}
-    <div class="grid gap-x-3 {selectedAnalysis ? 'gap-y-4' : 'gap-y-2'}" style="grid-template-columns:min-content auto">
+    <div class="grid gap-x-3 {selectedAnalysis ? 'gap-y-3' : 'gap-y-2'}" style="grid-template-columns:min-content auto">
       {#each [match.red1, match.red2, match.red3] as team}
         {@const teamData = selectedAnalysis?.output?.data.find((teamData) => teamData.team == team) ?? team}
         {@render teamRow("red", teamData)}
@@ -160,7 +157,8 @@
 
         <Button
           onclick={() => {
-            openDialog(ViewTeamDialog, { team: { number: team, name: teamName }, pageData });
+            sessionStorage.setItem("team-view", team);
+            goto(`#/comp/${pageData.compRecord.id}/teams`);
           }}
           class="col-span-full"
         >
@@ -176,7 +174,8 @@
 
         <Button
           onclick={() => {
-            openDialog(ViewTeamDialog, { pageData, team: { number: team.team, name: team.teamName } });
+            sessionStorage.setItem("team-view", team.team);
+            goto(`#/comp/${pageData.compRecord.id}/teams`);
           }}
           class="justify-center text-sm"
         >

@@ -14,10 +14,22 @@
   import type { Survey } from "$lib/survey";
   import NewEntryWidget from "$lib/components/NewEntryWidget.svelte";
   import { z } from "zod";
+  import { onMount } from "svelte";
 
   let { data }: PageProps = $props();
 
   let newEntry = $state<{ survey: Survey; prefills: { match: number; team: string; scout: string | undefined } }>();
+
+  onMount(() => {
+    const newEntrySurvey = sessionStorage.getItem("new-entry");
+    if (newEntrySurvey) {
+      const survey = data.surveyRecords.find((s) => s.id == newEntrySurvey);
+      const entries = data.entryRecords.filter((e) => e.surveyId == newEntrySurvey);
+      if (survey) {
+        newEntry = { survey, prefills: getNewEntryPrefills(survey, entries) };
+      }
+    }
+  });
 
   const groupBy = sessionStorageStore<"status" | "survey" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
@@ -155,7 +167,11 @@
         pageData={data}
         surveyRecord={newEntry.survey}
         prefills={newEntry.prefills}
-        oncancel={() => (newEntry = undefined)}
+        oncancel={() => {
+          sessionStorage.removeItem(`${newEntry?.survey.id}-new-entry-state`);
+          sessionStorage.removeItem("new-entry");
+          newEntry = undefined;
+        }}
       />
     </div>
   {:else}
@@ -171,7 +187,13 @@
           {@const prefills = getNewEntryPrefills(surveyRecord, entryRecords)}
 
           <div class="flex min-w-64 grow basis-64 flex-col gap-3">
-            <Button onclick={() => (newEntry = { survey: surveyRecord, prefills })} class="flex-col items-stretch">
+            <Button
+              onclick={() => {
+                newEntry = { survey: surveyRecord, prefills };
+                sessionStorage.setItem("new-entry", newEntry.survey.id);
+              }}
+              class="flex-col items-stretch"
+            >
               <div class="flex items-center gap-2">
                 <PlusIcon class="text-theme shrink-0" />
                 <div class="flex flex-col">
