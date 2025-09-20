@@ -100,10 +100,10 @@
 
 <div
   bind:this={bottomNav}
-  class="sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-xs text-nowrap transition-[bottom] md:text-sm lg:hidden"
+  class="sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-nowrap transition-[bottom] lg:hidden"
   style="scrollbar-width:none"
 >
-  <div class="mx-auto flex max-w-xl gap-0 p-1">
+  <div class="mx-auto flex max-w-xl gap-0 p-1 text-sm">
     {@render links()}
   </div>
 </div>
@@ -132,9 +132,9 @@
     </Anchor>
   {/if}
   {#if data.compRecord.scouts}
-    <Anchor route="{routeBase}/predictions" class={getAnchorClass("predictions")}>
+    <Anchor route="{routeBase}/guesses" class={getAnchorClass("guesses")}>
       <DicesIcon class="text-theme" />
-      Predictions
+      Guesses
     </Anchor>
   {/if}
 {/snippet}

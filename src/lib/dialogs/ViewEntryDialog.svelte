@@ -147,7 +147,7 @@
     </div>
 
     {#if entryRecord.type == "match" && entryRecord.prediction}
-      <div class="text-sm">Prediction</div>
+      <div class="text-sm">Guess</div>
       <div>
         <span class="font-bold capitalize text-{entryRecord.prediction}">{entryRecord.prediction} wins</span>
         {#if entryRecord.predictionReason}

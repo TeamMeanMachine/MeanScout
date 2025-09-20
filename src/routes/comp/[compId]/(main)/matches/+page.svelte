@@ -219,45 +219,47 @@
     </Button>
 
     {#if !selecting && selectedMatch}
-      <div class="flex flex-wrap gap-2 text-sm">
-        <Button onclick={() => ($showWhich = "info")} class={$showWhich == "info" ? "font-bold" : "font-light"}>
-          Info
-        </Button>
-        {#if showRanks}
-          <Button onclick={() => ($showWhich = "ranks")} class={$showWhich == "ranks" ? "font-bold" : "font-light"}>
-            Ranks
-          </Button>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        {#if selectedMatch.redScore !== undefined && selectedMatch.blueScore !== undefined}
+          <div class="flex items-center gap-2">
+            <h2>Score:</h2>
+            <span class="text-red {redWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.redScore}</span>
+            <span class="text-sm font-light">to</span>
+            <span class="text-blue {blueWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.blueScore}</span>
+          </div>
         {/if}
-        {#if data.hasExpressions}
+
+        <div class="flex flex-wrap gap-2 text-sm">
+          <Button onclick={() => ($showWhich = "info")} class={$showWhich == "info" ? "font-bold" : "font-light"}>
+            Info
+          </Button>
+          {#if showRanks}
+            <Button onclick={() => ($showWhich = "ranks")} class={$showWhich == "ranks" ? "font-bold" : "font-light"}>
+              Ranks
+            </Button>
+          {/if}
+          {#if data.hasExpressions}
+            <Button
+              onclick={() => {
+                $showData = "expressions";
+                $showWhich = "data";
+              }}
+              class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
+            >
+              Derived
+            </Button>
+          {/if}
           <Button
             onclick={() => {
-              $showData = "expressions";
+              $showData = "raw";
               $showWhich = "data";
             }}
-            class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
+            class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
           >
-            Derived
+            Raw
           </Button>
-        {/if}
-        <Button
-          onclick={() => {
-            $showData = "raw";
-            $showWhich = "data";
-          }}
-          class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
-        >
-          Raw
-        </Button>
-      </div>
-
-      {#if selectedMatch.redScore !== undefined && selectedMatch.blueScore !== undefined}
-        <div class="flex items-center gap-2">
-          <h2>Score:</h2>
-          <span class="text-red {redWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.redScore}</span>
-          <span class="text-sm font-light">to</span>
-          <span class="text-blue {blueWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.blueScore}</span>
         </div>
-      {/if}
+      </div>
 
       {#if $showWhich == "ranks" && showRanks}
         <MatchRanksChart pageData={data} match={selectedMatch} />

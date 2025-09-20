@@ -19,7 +19,7 @@
 
 <div class="flex flex-col gap-6">
   <div class="flex flex-wrap items-center justify-between">
-    <h2 class="font-bold">Predictions</h2>
+    <h2 class="font-bold">Guesses</h2>
 
     <div class="flex flex-wrap gap-2 text-sm">
       <Button onclick={() => ($tab = "scouts")} class={$tab == "scouts" ? "font-bold" : "font-light"}>Scouts</Button>
@@ -109,7 +109,7 @@
       <div class="col-span-full grid grid-cols-subgrid text-center text-sm">
         <div>#</div>
         <div>Red</div>
-        <div class="col-span-6">Predictions</div>
+        <div class="col-span-6">Guesses</div>
         <div>Blue</div>
       </div>
 
@@ -179,6 +179,6 @@
       {/each}
     </div>
   {:else}
-    <span>No predictions.</span>
+    <span>No guesses.</span>
   {/if}
 </div>

@@ -132,9 +132,9 @@
     {/if}
 
     {#if !selecting && selectedRanking}
-      <ChevronDownIcon class="text-theme" />
+      <ChevronDownIcon class="text-theme size-5" />
     {:else}
-      <ChevronUpIcon class="text-theme" />
+      <ChevronUpIcon class="text-theme size-5" />
     {/if}
   </Button>
 

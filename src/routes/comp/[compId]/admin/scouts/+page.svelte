@@ -26,7 +26,7 @@
           idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
         }}
       >
-        Enable scout names and prediction
+        Enable scout names and guessing game
       </Button>
     {/if}
 

@@ -62,7 +62,7 @@
 
     {#if data.compRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
       <div class="flex flex-col">
-        <span class="text-xs">Prediction</span>
+        <span class="text-xs">Guess</span>
         <span class="font-bold capitalize text-{data.entryRecord.prediction}">
           {data.entryRecord.prediction} wins
         </span>

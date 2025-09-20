@@ -431,28 +431,27 @@
   </label>
 {/if}
 
+{#if matchData}
+  <Button
+    onclick={() => {
+      sessionStorage.setItem("match-view-show-which", "ranks");
+      sessionStorage.setItem("match-view", newEntryState.match.toString());
+      goto(`#/comp/${pageData.compRecord.id}/matches`);
+    }}
+    class="mt-3"
+  >
+    <ListOrderedIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Match {newEntryState.match}
+      <span class="text-xs font-light">Analyze existing data</span>
+    </div>
+    <ArrowRightIcon class="text-theme" />
+  </Button>
+{/if}
+
 {#if surveyRecord.type == "match" && pageData.compRecord.scouts}
-  <h2 class="mt-3 font-bold">Prediction</h2>
-
-  {#if matchData}
-    <Button
-      onclick={() => {
-        sessionStorage.setItem("match-view-show-which", "rankings");
-        sessionStorage.setItem("match-view", newEntryState.match.toString());
-        goto(`#/comp/${pageData.compRecord.id}/matches`);
-      }}
-    >
-      <ListOrderedIcon class="text-theme" />
-      <div class="flex grow flex-col">
-        Match {newEntryState.match}
-        <span class="text-xs font-light">Analyze existing data</span>
-      </div>
-      <ArrowRightIcon class="text-theme" />
-    </Button>
-  {/if}
-
   <div class="flex flex-col">
-    <span>Your prediction</span>
+    <span>Your guess</span>
     <div class="flex flex-wrap gap-2">
       <Button
         onclick={() => (newEntryState.prediction = newEntryState.prediction == "red" ? undefined : "red")}

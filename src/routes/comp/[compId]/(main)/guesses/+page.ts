@@ -13,5 +13,5 @@ export const load: PageLoad = async (event) => {
     data.entryRecords.filter((e) => e.type == "match"),
   );
 
-  return { title: "Predictions", ...predictionsPerScout, predictionsPerMatch };
+  return { title: "Guesses", ...predictionsPerScout, predictionsPerMatch };
 };
