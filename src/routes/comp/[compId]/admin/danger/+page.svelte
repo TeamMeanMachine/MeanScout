@@ -34,23 +34,6 @@
         </Button>
       {/if}
 
-      {#if data.compRecord.teams.length}
-        <Button
-          onclick={() => {
-            data = {
-              ...data,
-              compRecord: { ...data.compRecord, teams: [], modified: new Date() },
-            };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
-          }}
-        >
-          <Trash2Icon class="text-theme" />
-          Delete
-          {data.compRecord.teams.length}
-          {data.compRecord.teams.length > 1 ? "teams" : "team"}
-        </Button>
-      {/if}
-
       {#if data.compRecord.matches.length}
         <Button
           onclick={() => {
@@ -65,6 +48,23 @@
           Delete
           {data.compRecord.matches.length}
           {data.compRecord.matches.length > 1 ? "matches" : "match"}
+        </Button>
+      {/if}
+
+      {#if data.compRecord.teams.length}
+        <Button
+          onclick={() => {
+            data = {
+              ...data,
+              compRecord: { ...data.compRecord, teams: [], modified: new Date() },
+            };
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+          }}
+        >
+          <Trash2Icon class="text-theme" />
+          Delete
+          {data.compRecord.teams.length}
+          {data.compRecord.teams.length > 1 ? "teams" : "team"}
         </Button>
       {/if}
     </div>

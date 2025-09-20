@@ -49,7 +49,7 @@
             <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
-        <li>Customizable data analysis (pick lists and expressions)</li>
+        <li>Customizable rankings (pick lists and expressions)</li>
         <li>Optional scout names and match prediction game</li>
         <li>Stores data locally, in the browser</li>
         <li>Export/share survey configs and scouting data via QRF codes or files</li>
@@ -194,7 +194,7 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Data analysis</h2>
+      <h2 class="font-bold">Data-driven rankings</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>Create expressions that transform (multiply, convert) and summarize (average, sum) your data</li>
         <li>Entry expressions (aka computed fields) produce per-entry values</li>
@@ -225,7 +225,7 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Exporting</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Export or copy analysis ranking results to other apps (e.g. Google Keep)</li>
+        <li>Export or copy rankings to other apps (e.g. Google Keep)</li>
         <li>Export survey configs and scouting data via QRF codes or files</li>
         <li>Scouting data can be easily exported from entries page</li>
         <li>If you can't use QRF codes, you'll have to manually share data as files between devices</li>
@@ -251,7 +251,7 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Enabled if scout names are enabled, requires match schedule & scores from TBA</li>
         <li>Before each match, scouts can predict which alliance will win</li>
-        <li>When setting up a new entry, scouts can easily view analysis for data on their device</li>
+        <li>Scouts can easily view rankings for teams playing that match on their device</li>
       </ul>
     </div>
 

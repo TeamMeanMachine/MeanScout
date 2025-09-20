@@ -7,7 +7,7 @@ export const load: PageLoad = async (event) => {
     error(400, `Survey type of ${data.survey.record.id} is not a match!`);
   }
   return {
-    title: "Analysis",
+    title: "Ranks",
     surveyRecord: data.survey.record,
     entryRecords: data.survey.entryRecords,
   };

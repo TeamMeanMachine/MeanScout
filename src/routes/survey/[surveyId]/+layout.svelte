@@ -40,7 +40,7 @@
   <Anchor route="{routeBase}/fields" class={getAnchorClass("fields")}>Fields</Anchor>
   <Anchor route="{routeBase}/preview" class={getAnchorClass("preview")}>Preview</Anchor>
   {#if data.survey.type == "match"}
-    <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>Analysis</Anchor>
+    <Anchor route="{routeBase}/ranks" class={getAnchorClass("ranks")}>Ranks</Anchor>
   {/if}
   <Anchor route="{routeBase}/danger" class={getAnchorClass("danger zone")}>Danger Zone</Anchor>
 {/snippet}

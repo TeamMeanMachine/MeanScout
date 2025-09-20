@@ -38,7 +38,7 @@
 {#snippet links()}
   <Anchor route={routeBase} class={getAnchorClass("general")}>General</Anchor>
   <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
-  <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
   <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
+  <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
   <Anchor route="{routeBase}/danger" class={getAnchorClass("danger zone")}>Danger Zone</Anchor>
 {/snippet}

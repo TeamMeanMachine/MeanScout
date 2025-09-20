@@ -14,7 +14,7 @@
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import { z } from "zod";
-  import MatchRankingsWidget from "$lib/components/MatchRankingsWidget.svelte";
+  import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
   import { goto } from "$app/navigation";
 
   let { data }: PageProps = $props();
@@ -23,14 +23,14 @@
     data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
-  const showAnalysis = $derived(
+  const showRanks = $derived(
     data.fieldRecords.length &&
       data.entryRecords.length &&
       matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
   );
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
-  const showWhich = sessionStorageStore<"info" | "rankings" | "data">("match-view-show-which", "info");
+  const showWhich = sessionStorageStore<"info" | "ranks" | "data">("match-view-show-which", "info");
 
   const debounceTimeMillis = 500;
   let debounceTimer: number | undefined = undefined;
@@ -223,12 +223,9 @@
         <Button onclick={() => ($showWhich = "info")} class={$showWhich == "info" ? "font-bold" : "font-light"}>
           Info
         </Button>
-        {#if showAnalysis}
-          <Button
-            onclick={() => ($showWhich = "rankings")}
-            class={$showWhich == "rankings" ? "font-bold" : "font-light"}
-          >
-            Rankings
+        {#if showRanks}
+          <Button onclick={() => ($showWhich = "ranks")} class={$showWhich == "ranks" ? "font-bold" : "font-light"}>
+            Ranks
           </Button>
         {/if}
         {#if data.hasExpressions}
@@ -262,8 +259,8 @@
         </div>
       {/if}
 
-      {#if $showWhich == "rankings" && showAnalysis}
-        <MatchRankingsWidget pageData={data} match={selectedMatch} />
+      {#if $showWhich == "ranks" && showRanks}
+        <MatchRanksChart pageData={data} match={selectedMatch} />
       {:else if $showWhich == "data"}
         {#each data.surveyRecords
           .filter((survey) => survey.type == "match")

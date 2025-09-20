@@ -20,16 +20,16 @@
     data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
-  const showAnalysis = $derived(
+  const showRanking = $derived(
     data.fieldRecords.length &&
       data.entryRecords.length &&
       matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
   );
 
   let selecting = $state(false);
-  let selectedAnalysis = $state(initialAnalysis());
+  let selectedRanking = $state(initialRanking());
 
-  function initialAnalysis(): SelectedAnalysis | undefined {
+  function initialRanking(): SelectedAnalysis | undefined {
     const uniqueString = sessionStorage.getItem("analysis-view");
     if (!uniqueString) return;
 
@@ -40,26 +40,26 @@
 
     if (type == "picklist") {
       const pickList = survey.pickLists.find((pl) => pl.name == name);
-      if (pickList) return getAnalysis({ survey, pickList });
+      if (pickList) return getRanking({ survey, pickList });
     }
 
     if (type == "expression") {
       const expression = survey.expressions.find((e) => e.name == name);
-      if (expression) return getAnalysis({ survey, expression });
+      if (expression) return getRanking({ survey, expression });
     }
   }
 
-  function switchAnalysis(params: Parameters<typeof getAnalysis>[0]) {
+  function switchRanking(params: Parameters<typeof getRanking>[0]) {
     selecting = false;
     scrollTo(0, 0);
-    const value = getAnalysis(params);
+    const value = getRanking(params);
     if (value) {
       sessionStorage.setItem("analysis-view", value?.uniqueString);
     }
     return value;
   }
 
-  function getAnalysis(
+  function getRanking(
     params: { survey: MatchSurvey; pickList: PickList } | { survey: MatchSurvey; expression: Expression },
   ): SelectedAnalysis | undefined {
     const entriesByTeam: Record<string, MatchEntry[]> = {};
@@ -115,40 +115,40 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  {#if !showAnalysis}
+  {#if !showRanking}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold">Analysis</h2>
-      <span class="text-sm">No analysis available.</span>
+      <h2 class="font-bold">Ranks</h2>
+      <span class="text-sm">No rankings available.</span>
     </div>
   {:else}
     <div class="flex flex-col gap-3">
-      <h2 class="font-bold">Analysis</h2>
+      <h2 class="font-bold">Ranks</h2>
 
       <div class="flex flex-col gap-4">
         <Button onclick={() => (selecting = !selecting)} class="grow">
           <ChartBarBigIcon class="text-theme" />
 
-          {#if selectedAnalysis}
+          {#if selectedRanking}
             <div class="flex grow flex-col">
-              {#if "pickList" in selectedAnalysis}
-                <span class="font-bold">{selectedAnalysis.pickList.name}</span>
-              {:else if "expression" in selectedAnalysis}
-                <span class="font-bold">{selectedAnalysis.expression.name}</span>
+              {#if "pickList" in selectedRanking}
+                <span class="font-bold">{selectedRanking.pickList.name}</span>
+              {:else if "expression" in selectedRanking}
+                <span class="font-bold">{selectedRanking.expression.name}</span>
               {/if}
-              <span class="text-xs font-light">{selectedAnalysis.survey.name}</span>
+              <span class="text-xs font-light">{selectedRanking.survey.name}</span>
             </div>
           {:else}
             <span class="grow">Select</span>
           {/if}
 
-          {#if !selecting && selectedAnalysis}
+          {#if !selecting && selectedRanking}
             <ChevronDownIcon class="text-theme" />
           {:else}
             <ChevronUpIcon class="text-theme" />
           {/if}
         </Button>
 
-        {#if !selecting && selectedAnalysis?.output?.text}
+        {#if !selecting && selectedRanking?.output?.text}
           <div class="flex flex-wrap justify-between gap-4 text-sm">
             <div class="flex gap-2">
               <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
@@ -167,7 +167,7 @@
 
             <div class="flex gap-2">
               {#if "canShare" in navigator}
-                <Button onclick={() => navigator.share({ text: selectedAnalysis!.output!.text })} class="flex-nowrap!">
+                <Button onclick={() => navigator.share({ text: selectedRanking!.output!.text })} class="flex-nowrap!">
                   <Share2Icon class="text-theme size-5" />
                   <span>Share</span>
                 </Button>
@@ -175,7 +175,7 @@
 
               {#if "clipboard" in navigator}
                 <Button
-                  onclick={() => navigator.clipboard.writeText(selectedAnalysis!.output!.text)}
+                  onclick={() => navigator.clipboard.writeText(selectedRanking!.output!.text)}
                   class="flex-nowrap!"
                 >
                   <ClipboardCopy class="text-theme size-5" />
@@ -188,18 +188,18 @@
       </div>
     </div>
 
-    {#if !selecting && selectedAnalysis?.output}
+    {#if !selecting && selectedRanking?.output}
       {#if $chartType == "bar"}
-        <BarChart pageData={data} analysisData={selectedAnalysis.output} />
+        <BarChart pageData={data} analysisData={selectedRanking.output} />
       {:else if $chartType == "race"}
         <RaceChart
           pageData={data}
-          surveyRecord={selectedAnalysis.survey}
-          entriesByTeam={selectedAnalysis.entriesByTeam}
-          analysisData={selectedAnalysis.output}
+          surveyRecord={selectedRanking.survey}
+          entriesByTeam={selectedRanking.entriesByTeam}
+          analysisData={selectedRanking.output}
         />
       {:else if $chartType == "stacked"}
-        <StackedChart pageData={data} analysisData={selectedAnalysis.output} />
+        <StackedChart pageData={data} analysisData={selectedRanking.output} />
       {/if}
     {:else}
       {#each matchSurveys as survey}
@@ -226,8 +226,8 @@
               {#each survey.pickLists as pickList}
                 {@const string = `${survey.id}-pickList-${pickList.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, pickList }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, pickList }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {pickList.name}
                 </Button>
@@ -247,8 +247,8 @@
               {#each expressions.surveyDerived as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>
@@ -268,8 +268,8 @@
               {#each expressions.surveyTba as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>
@@ -289,8 +289,8 @@
               {#each expressions.surveyPrimitive as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>
@@ -310,8 +310,8 @@
               {#each expressions.entryDerived as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>
@@ -331,8 +331,8 @@
               {#each expressions.entryTba as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>
@@ -352,8 +352,8 @@
               {#each expressions.entryPrimitive as expression}
                 {@const string = `${survey.id}-expression-${expression.name}`}
                 <Button
-                  onclick={() => (selectedAnalysis = switchAnalysis({ survey, expression }))}
-                  class={selectedAnalysis?.uniqueString == string ? "font-bold underline" : ""}
+                  onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                  class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
                 >
                   {expression.name}
                 </Button>

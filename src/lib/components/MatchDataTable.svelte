@@ -180,7 +180,7 @@
                   <Button
                     onclick={() => {
                       sessionStorage.setItem("analysis-view", `${surveyRecord.id}-expression-${entryExpression.name}`);
-                      goto(`#/comp/${pageData.compRecord.id}/analysis`);
+                      goto(`#/comp/${pageData.compRecord.id}/ranks`);
                     }}
                     class="justify-center p-1! text-center!"
                   >

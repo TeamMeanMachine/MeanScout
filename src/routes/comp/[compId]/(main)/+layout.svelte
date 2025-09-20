@@ -13,7 +13,7 @@
 
   const routeBase = $derived(`comp/${data.compRecord.id}`);
 
-  const showAnalysisLink = $derived(
+  const showRanksLink = $derived(
     data.surveyRecords.some(
       (survey) => survey.type == "match" && (survey.pickLists.length || survey.expressions.length),
     ),
@@ -113,10 +113,10 @@
     <NotepadTextIcon class="text-theme" />
     Entries
   </Anchor>
-  {#if showAnalysisLink}
-    <Anchor route="{routeBase}/analysis" class={getAnchorClass("analysis")}>
-      <ChartBarBigIcon class="text-theme" />
-      Analysis
+  {#if data.compRecord.matches.length}
+    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
+      <ListOrderedIcon class="text-theme" />
+      Matches
     </Anchor>
   {/if}
   {#if teamCount}
@@ -125,10 +125,10 @@
       Teams
     </Anchor>
   {/if}
-  {#if data.compRecord.matches.length}
-    <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>
-      <ListOrderedIcon class="text-theme" />
-      Matches
+  {#if showRanksLink}
+    <Anchor route="{routeBase}/ranks" class={getAnchorClass("ranks")}>
+      <ChartBarBigIcon class="text-theme" />
+      Ranks
     </Anchor>
   {/if}
   {#if data.compRecord.scouts}

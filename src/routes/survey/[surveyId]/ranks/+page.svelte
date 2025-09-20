@@ -95,7 +95,7 @@
 
 <div class="flex flex-col gap-6">
   {#if !data.fieldRecords.length}
-    <span class="text-sm">To setup analysis, go create some fields.</span>
+    <span class="text-sm">To setup rankings, go create some fields.</span>
   {:else}
     {#if surveyRecord.pickLists.length}
       <div class="flex flex-col gap-3">
