@@ -15,17 +15,49 @@
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import { z } from "zod";
   import MatchRankingsWidget from "$lib/components/MatchRankingsWidget.svelte";
+  import { goto } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
+  const matchSurveys = $derived(
+    data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
+  );
+
+  const showAnalysis = $derived(
+    data.fieldRecords.length &&
+      data.entryRecords.length &&
+      matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
+  );
+
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
-  const showWhich = sessionStorageStore<"rankings" | "data">("match-view-show-which", "rankings");
+  const showWhich = sessionStorageStore<"info" | "rankings" | "data">("match-view-show-which", "info");
 
   const debounceTimeMillis = 500;
   let debounceTimer: number | undefined = undefined;
 
   let selecting = $state(false);
   let selectedMatch = $state(initialMatch());
+
+  const nextMatch = $derived.by(() => {
+    if (!selectedMatch) return;
+    return data.matches.find((match) => match.number == selectedMatch!.number + 1);
+  });
+  const previousMatch = $derived.by(() => {
+    if (!selectedMatch) return;
+    return data.matches.find((match) => match.number == selectedMatch!.number - 1);
+  });
+
+  const redWon = $derived(
+    selectedMatch?.redScore !== undefined &&
+      selectedMatch.blueScore !== undefined &&
+      selectedMatch.redScore > selectedMatch.blueScore,
+  );
+  const blueWon = $derived(
+    selectedMatch?.redScore !== undefined &&
+      selectedMatch.blueScore !== undefined &&
+      selectedMatch.redScore < selectedMatch.blueScore,
+  );
+
   let debouncedSearch = $state(sessionStorage.getItem("match-search") || "");
 
   let debouncedSearchParts = $derived(
@@ -99,7 +131,7 @@
     });
   }
 
-  function teamFontWeight(team: string) {
+  function teamSearchFontWeight(team: string) {
     if (debouncedSearch && debouncedSearchParts.includes(parseInt(team).toString())) {
       return "font-bold underline";
     }
@@ -114,116 +146,125 @@
 
     return "font-light";
   }
+
+  function teamWonFontWeight(team: string) {
+    if (selectedMatch && selectedMatch.redScore !== undefined && selectedMatch.blueScore !== undefined) {
+      if (redWon && [selectedMatch.red1, selectedMatch.red2, selectedMatch.red3].includes(team)) {
+        return "font-bold";
+      }
+
+      if (blueWon && [selectedMatch.blue1, selectedMatch.blue2, selectedMatch.blue3].includes(team)) {
+        return "font-bold";
+      }
+
+      return "font-light";
+    }
+
+    return "";
+  }
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-3">
   {#if !data.compRecord.matches.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold">Matches</h2>
       <span class="text-sm">No matches.</span>
     </div>
   {:else}
-    <div class="flex flex-col gap-3">
-      <div class="flex flex-wrap items-center justify-between">
-        <h2 class="font-bold">Matches</h2>
+    <div class="flex flex-wrap items-center justify-between">
+      <h2 class="font-bold">Matches</h2>
 
-        <div class="flex gap-2">
-          <Button
-            disabled={!selectedMatch || selecting}
-            onclick={() => {
-              const match = data.matches.find((match) => match.number == selectedMatch!.number - 1);
-              if (!match) return;
-              selectedMatch = match;
-              sessionStorage.setItem("match-view", match.number.toString());
-            }}
-          >
-            <MinusIcon class="text-theme size-5" />
-          </Button>
-          <Button
-            disabled={!selectedMatch || selecting}
-            onclick={() => {
-              const match = data.matches.find((match) => match.number == selectedMatch!.number + 1);
-              if (!match) return;
-              selectedMatch = match;
-              sessionStorage.setItem("match-view", match.number.toString());
-            }}
-          >
-            <PlusIcon class="text-theme size-5" />
-          </Button>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-4">
-        <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
-          <ListOrderedIcon class="text-theme shrink-0" />
-
-          {#if selectedMatch}
-            <div class="flex grow flex-col">
-              <span class="font-bold">Match {selectedMatch.number}</span>
-              <span class="text-xs font-light">
-                {[
-                  selectedMatch.red1,
-                  selectedMatch.red2,
-                  selectedMatch.red3,
-                  selectedMatch.blue1,
-                  selectedMatch.blue2,
-                  selectedMatch.blue3,
-                  ...(selectedMatch.extraTeams || []),
-                ]
-                  .filter((team) => team)
-                  .join(", ")}
-              </span>
-            </div>
-          {:else}
-            <span class="grow">Select</span>
-          {/if}
-
-          {#if !selecting && selectedMatch}
-            <ChevronDownIcon class="text-theme shrink-0" />
-          {:else}
-            <ChevronUpIcon class="text-theme shrink-0" />
-          {/if}
+      <div class="flex gap-2">
+        <Button
+          disabled={!selectedMatch || selecting || !previousMatch}
+          onclick={() => {
+            if (!previousMatch) return;
+            selectedMatch = previousMatch;
+            sessionStorage.setItem("match-view", selectedMatch.number.toString());
+          }}
+          class="active:top-0! active:right-0.5!"
+        >
+          <MinusIcon class="text-theme size-5" />
         </Button>
-
-        {#if !selecting && selectedMatch}
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            {#if data.hasExpressions}
-              <div class="flex gap-2 text-sm">
-                <Button
-                  onclick={() => ($showWhich = "rankings")}
-                  class={$showWhich == "rankings" ? "font-bold" : "font-light"}
-                >
-                  Rankings
-                </Button>
-                <Button
-                  onclick={() => {
-                    $showData = "expressions";
-                    $showWhich = "data";
-                  }}
-                  class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
-                >
-                  Derived
-                </Button>
-                <Button
-                  onclick={() => {
-                    $showData = "raw";
-                    $showWhich = "data";
-                  }}
-                  class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
-                >
-                  Raw
-                </Button>
-              </div>
-            {/if}
-          </div>
-        {/if}
+        <Button
+          disabled={!selectedMatch || selecting || !nextMatch}
+          onclick={() => {
+            if (!nextMatch) return;
+            selectedMatch = nextMatch;
+            sessionStorage.setItem("match-view", selectedMatch.number.toString());
+          }}
+          class="active:top-0! active:left-0.5!"
+        >
+          <PlusIcon class="text-theme size-5" />
+        </Button>
       </div>
     </div>
 
-    {#if !selecting && selectedMatch}
-      {#if $showWhich == "rankings"}
-        <MatchRankingsWidget pageData={data} match={selectedMatch} />
+    <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
+      <ListOrderedIcon class="text-theme shrink-0" />
+
+      {#if selectedMatch}
+        <div class="flex grow flex-col">
+          <span class="font-bold">Match {selectedMatch.number}</span>
+        </div>
       {:else}
+        <span class="grow">Select</span>
+      {/if}
+
+      {#if !selecting && selectedMatch}
+        <ChevronDownIcon class="text-theme shrink-0" />
+      {:else}
+        <ChevronUpIcon class="text-theme shrink-0" />
+      {/if}
+    </Button>
+
+    {#if !selecting && selectedMatch}
+      <div class="flex flex-wrap gap-2 text-sm">
+        <Button onclick={() => ($showWhich = "info")} class={$showWhich == "info" ? "font-bold" : "font-light"}>
+          Info
+        </Button>
+        {#if showAnalysis}
+          <Button
+            onclick={() => ($showWhich = "rankings")}
+            class={$showWhich == "rankings" ? "font-bold" : "font-light"}
+          >
+            Rankings
+          </Button>
+        {/if}
+        {#if data.hasExpressions}
+          <Button
+            onclick={() => {
+              $showData = "expressions";
+              $showWhich = "data";
+            }}
+            class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
+          >
+            Derived
+          </Button>
+        {/if}
+        <Button
+          onclick={() => {
+            $showData = "raw";
+            $showWhich = "data";
+          }}
+          class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
+        >
+          Raw
+        </Button>
+      </div>
+
+      {#if selectedMatch.redScore !== undefined && selectedMatch.blueScore !== undefined}
+        <div class="flex items-center gap-2">
+          <h2>Score:</h2>
+          <span class="text-red {redWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.redScore}</span>
+          <span class="text-sm font-light">to</span>
+          <span class="text-blue {blueWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.blueScore}</span>
+        </div>
+      {/if}
+
+      {#if $showWhich == "rankings" && showAnalysis}
+        <MatchRankingsWidget pageData={data} match={selectedMatch} />
+      {:else if $showWhich == "data"}
         {#each data.surveyRecords
           .filter((survey) => survey.type == "match")
           .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
@@ -235,6 +276,48 @@
             {/key}
           </div>
         {/each}
+      {:else}
+        <div class="flex flex-col gap-2 sm:grid sm:grid-cols-2">
+          {#each [selectedMatch.red1, selectedMatch.red2, selectedMatch.red3] as team, index}
+            {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
+            {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+
+            <Button
+              onclick={() => {
+                sessionStorage.setItem("team-view", team);
+                goto(`#/comp/${data.compRecord.id}/teams`);
+              }}
+              class={order[index]}
+            >
+              <div class="flex flex-col truncate {teamWonFontWeight(team)}">
+                <span class="text-red">{team}</span>
+                {#if teamName}
+                  <span class="truncate text-xs">{teamName}</span>
+                {/if}
+              </div>
+            </Button>
+          {/each}
+
+          {#each [selectedMatch.blue1, selectedMatch.blue2, selectedMatch.blue3] as team, index}
+            {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
+            {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+
+            <Button
+              onclick={() => {
+                sessionStorage.setItem("team-view", team);
+                goto(`#/comp/${data.compRecord.id}/teams`);
+              }}
+              class={order[index]}
+            >
+              <div class="flex flex-col truncate {teamWonFontWeight(team)}">
+                <span class="text-blue">{team}</span>
+                {#if teamName}
+                  <span class="truncate text-xs">{teamName}</span>
+                {/if}
+              </div>
+            </Button>
+          {/each}
+        </div>
       {/if}
 
       {#if data.compRecord.tbaEventKey}
@@ -359,13 +442,13 @@
       {#if match.red1 || match.red2 || match.red3}
         <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
           {#if match.red1}
-            <div class="min-w-13 {teamFontWeight(match.red1)}">{match.red1}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.red1)}">{match.red1}</div>
           {/if}
           {#if match.red2}
-            <div class="min-w-13 {teamFontWeight(match.red2)}">{match.red2}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.red2)}">{match.red2}</div>
           {/if}
           {#if match.red3}
-            <div class="min-w-13 {teamFontWeight(match.red3)}">{match.red3}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.red3)}">{match.red3}</div>
           {/if}
         </div>
       {/if}
@@ -392,13 +475,13 @@
       {#if match.blue1 || match.blue2 || match.blue3}
         <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
           {#if match.blue1}
-            <div class="min-w-13 {teamFontWeight(match.blue1)}">{match.blue1}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.blue1)}">{match.blue1}</div>
           {/if}
           {#if match.blue2}
-            <div class="min-w-13 {teamFontWeight(match.blue2)}">{match.blue2}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.blue2)}">{match.blue2}</div>
           {/if}
           {#if match.blue3}
-            <div class="min-w-13 {teamFontWeight(match.blue3)}">{match.blue3}</div>
+            <div class="min-w-13 {teamSearchFontWeight(match.blue3)}">{match.blue3}</div>
           {/if}
         </div>
       {/if}
@@ -406,7 +489,7 @@
       {#if match.extraTeams?.length}
         <div class="flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
           {#each match.extraTeams as extraTeam}
-            <div class="min-w-13 {teamFontWeight(extraTeam)}">{extraTeam}</div>
+            <div class="min-w-13 {teamSearchFontWeight(extraTeam)}">{extraTeam}</div>
           {/each}
         </div>
       {/if}

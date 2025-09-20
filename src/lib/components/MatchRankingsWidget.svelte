@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, getOrdinal, type Match } from "$lib";
+  import { getOrdinal, type Match } from "$lib";
   import {
     getExpressionData,
     getPickListData,
@@ -31,12 +31,6 @@
   let selecting = $state(false);
   let selectedAnalysis = $state(initialAnalysis());
 
-  $effect(() => {
-    if (selectedAnalysis) {
-      sessionStorage.setItem("analysis-view", selectedAnalysis.uniqueString);
-    }
-  });
-
   function initialAnalysis(): SelectedAnalysis | undefined {
     const uniqueString = sessionStorage.getItem("analysis-view");
     if (!uniqueString) return;
@@ -60,7 +54,11 @@
   function switchAnalysis(params: Parameters<typeof getAnalysis>[0]) {
     selecting = false;
     scrollTo(0, 0);
-    return getAnalysis(params);
+    const value = getAnalysis(params);
+    if (value) {
+      sessionStorage.setItem("analysis-view", value?.uniqueString);
+    }
+    return value;
   }
 
   function getAnalysis(
@@ -121,60 +119,45 @@
 <div class="flex flex-col gap-3">
   <Button onclick={() => (selecting = !selecting)} class="text-sm">
     <ChartBarBigIcon class="text-theme size-5" />
-    {#if !selecting}
+    {#if selectedAnalysis}
       <span class="grow">
-        {#if !selectedAnalysis}
-          Team Info
-        {:else if "pickList" in selectedAnalysis}
+        {#if "pickList" in selectedAnalysis}
           {selectedAnalysis.pickList.name}
         {:else if "expression" in selectedAnalysis}
           {selectedAnalysis.expression.name}
         {/if}
       </span>
-      <ChevronDownIcon class="text-theme size-5" />
     {:else}
       <span class="grow">Select</span>
-      <ChevronUpIcon class="text-theme size-5" />
+    {/if}
+
+    {#if !selecting && selectedAnalysis}
+      <ChevronDownIcon class="text-theme" />
+    {:else}
+      <ChevronUpIcon class="text-theme" />
     {/if}
   </Button>
 
-  {#if !selecting}
+  {#if !selecting && selectedAnalysis?.output}
     <div class="grid gap-x-3 {selectedAnalysis ? 'gap-y-3' : 'gap-y-2'}" style="grid-template-columns:min-content auto">
       {#each [match.red1, match.red2, match.red3] as team}
-        {@const teamData = selectedAnalysis?.output?.data.find((teamData) => teamData.team == team) ?? team}
+        {@const teamData = selectedAnalysis?.output?.data.find((teamData) => teamData.team == team)}
         {@render teamRow("red", teamData)}
       {/each}
 
       {#each [match.blue1, match.blue2, match.blue3] as team}
-        {@const teamData = selectedAnalysis?.output?.data.find((teamData) => teamData.team == team) ?? team}
+        {@const teamData = selectedAnalysis?.output?.data.find((teamData) => teamData.team == team)}
         {@render teamRow("blue", teamData)}
       {/each}
     </div>
 
-    {#snippet teamRow(alliance: "red" | "blue", team: string | AnalysisTeamData)}
-      {#if typeof team == "string"}
-        {@const teamName = pageData.compRecord.teams.find((t) => t.number == team)?.name || ""}
+    {#snippet teamRow(alliance: "red" | "blue", teamData?: AnalysisTeamData | undefined)}
+      {#if teamData}
+        {@const rank = selectedAnalysis?.output?.data.findIndex((td) => td.team == teamData.team)}
 
         <Button
           onclick={() => {
-            sessionStorage.setItem("team-view", team);
-            goto(`#/comp/${pageData.compRecord.id}/teams`);
-          }}
-          class="col-span-full"
-        >
-          <div class="flex flex-col">
-            {#if teamName}
-              <span class="text-xs no-underline! {getMatchTeamFontWeight(team)}">{teamName}</span>
-            {/if}
-            <span class="{alliance == 'red' ? 'text-red' : 'text-blue'} {getMatchTeamFontWeight(team)}">{team}</span>
-          </div>
-        </Button>
-      {:else}
-        {@const rank = selectedAnalysis?.output?.data.findIndex((td) => td.team == team.team)}
-
-        <Button
-          onclick={() => {
-            sessionStorage.setItem("team-view", team.team);
+            sessionStorage.setItem("team-view", teamData.team);
             goto(`#/comp/${pageData.compRecord.id}/teams`);
           }}
           class="justify-center text-sm"
@@ -192,37 +175,27 @@
         <div>
           <div class="flex items-end justify-between gap-3">
             <div class="flex flex-col">
-              <span class="font-bold">{team.team}</span>
-              {#if team?.teamName}
-                <span class="text-xs font-light">{team?.teamName}</span>
+              <span class="font-bold">{teamData.team}</span>
+              {#if teamData?.teamName}
+                <span class="text-xs font-light">{teamData?.teamName}</span>
               {/if}
             </div>
-            {#if team && "value" in team}
-              {team.value.toFixed(2) || 0}
+            {#if teamData && "value" in teamData}
+              {teamData.value.toFixed(2) || 0}
             {:else}
-              <span>{team?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+              <span>{teamData?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
             {/if}
           </div>
           <div class="bg-neutral-800">
             <div
               class={alliance == "red" ? "bg-red" : "bg-blue"}
-              style="width:{team?.percentage.toFixed(2) || 0}%;height:6px"
+              style="width:{teamData?.percentage.toFixed(2) || 0}%;height:6px"
             ></div>
           </div>
         </div>
       {/if}
     {/snippet}
   {:else}
-    <Button
-      onclick={() => {
-        selectedAnalysis = undefined;
-        selecting = false;
-      }}
-      class="self-start text-sm {selectedAnalysis ? '' : 'font-bold underline'}"
-    >
-      Team Info
-    </Button>
-
     {#each matchSurveys as survey (survey.id)}
       {@const sortedExpressions = survey.expressions.toSorted(sortExpressions)}
 
