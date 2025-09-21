@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
-  import { CameraIcon, CrosshairIcon, KeyIcon, LoaderIcon, SaveIcon, Undo2Icon, UsersIcon } from "@lucide/svelte";
+  import { CameraIcon, CheckIcon, CrosshairIcon, KeyIcon, LoaderIcon, UsersIcon, XIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   const backLink = localStorage.getItem("home") || "";
@@ -47,7 +48,7 @@
     }
   }
 
-  async function save() {
+  async function confirm() {
     error = "";
 
     teamInput = teamInput.trim();
@@ -68,28 +69,21 @@
     $cameraStore = cameraInput;
     $teamStore = teamInput;
     $tbaAuthKeyStore = tbaAuthKeyInput;
-  }
 
-  function revert() {
-    error = "";
-
-    targetInput = $targetStore;
-    cameraInput = $cameraStore;
-    teamInput = $teamStore;
-    tbaAuthKeyInput = $tbaAuthKeyStore;
+    goto(backLink);
   }
 </script>
 
 <Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <label class="flex flex-wrap items-center gap-2">
     <CrosshairIcon class="text-theme" />
     <div class="flex grow flex-col">
       Target
       <span class="text-xs font-light">Which robot you're scouting</span>
     </div>
-    <select bind:value={targetInput} class="text-theme bg-neutral-800 p-2 capitalize">
+    <select bind:value={targetInput} class="text-theme w-full bg-neutral-800 p-2 capitalize sm:w-auto">
       {#each targets as target}
         <option>{target}</option>
       {/each}
@@ -103,7 +97,7 @@
       <span class="text-xs font-light">Used to scan QRF codes</span>
     </div>
     {#if cameras.length}
-      <select bind:value={cameraInput} class="text-theme bg-neutral-800 p-2 capitalize">
+      <select bind:value={cameraInput} class="text-theme w-full bg-neutral-800 p-2 capitalize sm:w-auto">
         <option value="">Select</option>
         {#each cameras as { id, name }}
           <option value={id}>{name}</option>
@@ -122,7 +116,7 @@
       Your team
       <span class="text-xs font-light">Used w/ TBA data, upcoming match views</span>
     </div>
-    <input bind:value={teamInput} class="text-theme w-32 bg-neutral-800 p-2" />
+    <input bind:value={teamInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-32" />
   </label>
 
   <label class="flex flex-wrap items-center gap-2">
@@ -131,17 +125,17 @@
       Custom TBA auth key
       <span class="text-xs font-light">You may want to use your own</span>
     </div>
-    <input bind:value={tbaAuthKeyInput} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={tbaAuthKeyInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-auto" />
   </label>
 
   <div class="flex flex-wrap gap-3">
-    <Button onclick={save} disabled={!unsavedChanges}>
-      <SaveIcon class="text-theme" />
-      Save
+    <Button onclick={() => goto(backLink)} disabled={!unsavedChanges}>
+      <XIcon class="text-theme" />
+      Cancel
     </Button>
-    <Button onclick={revert} disabled={!unsavedChanges}>
-      <Undo2Icon class="text-theme" />
-      Revert
+    <Button onclick={confirm} disabled={!unsavedChanges}>
+      <CheckIcon class="text-theme" />
+      Confirm
     </Button>
   </div>
 

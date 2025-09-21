@@ -7,32 +7,36 @@
   const backLink = localStorage.getItem("home") || "";
 
   const tab = sessionStorageStore<"info" | "guides" | "guesses" | "qrfcode">("about-tab", "info");
+  tab.subscribe(() => window.scrollTo(0, 0));
 
   function getTabClass(matching: string) {
     return $tab == matching ? "font-bold" : "font-light";
   }
 </script>
 
-<Header title="About - MeanScout" heading="About MeanScout" {backLink}>
-  <div class="hidden flex-wrap gap-2 text-sm lg:flex">
+<Header title="About - MeanScout" heading="About" {backLink}>
+  <div class="hidden gap-2 text-sm md:flex">
     {@render links()}
   </div>
 </Header>
 
 {#snippet links()}
-  <Button onclick={() => ($tab = "info")} class={getTabClass("info")}>Info</Button>
-  <Button onclick={() => ($tab = "guides")} class={getTabClass("guides")}>Guides</Button>
-  <Button onclick={() => ($tab = "guesses")} class={getTabClass("guesses")}>Guesses</Button>
-  <Button onclick={() => ($tab = "qrfcode")} class={getTabClass("qrfcode")}>QRF Codes</Button>
+  <Button onclick={() => ($tab = "info")} class="text-nowrap {getTabClass('info')}">Info</Button>
+  <Button onclick={() => ($tab = "guides")} class="text-nowrap {getTabClass('guides')}">Guides</Button>
+  <Button onclick={() => ($tab = "guesses")} class="text-nowrap {getTabClass('guesses')}">Guesses</Button>
+  <Button onclick={() => ($tab = "qrfcode")} class="text-nowrap {getTabClass('qrfcode')}">QRF Codes</Button>
 {/snippet}
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3 text-pretty">
-  <div class="flex flex-wrap gap-2 text-sm lg:hidden">
+<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 text-pretty">
+  <div class="flex flex-wrap gap-2 text-sm md:hidden">
     {@render links()}
   </div>
 
   {#if $tab == "info"}
-    <span>A highly configurable peer-to-peer FRC scouting web app.</span>
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">MeanScout</h2>
+      <span>A highly configurable peer-to-peer FRC scouting web app.</span>
+    </div>
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Features</h2>
