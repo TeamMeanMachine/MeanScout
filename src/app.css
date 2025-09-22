@@ -34,7 +34,7 @@
   }
 
   :disabled {
-    @apply static! cursor-default! opacity-50 outline-none!;
+    @apply cursor-default! opacity-50 outline-none!;
   }
 
   select {
@@ -42,17 +42,32 @@
     @apply border-y border-neutral-800;
   }
 
-  :is(input, select, textarea, a, button, .button, summary):focus,
-  :is(input, select, textarea, a, button, .button, summary):hover {
+  :is(input, select, textarea, a, button):focus-visible {
+    /* Using :focus-visible is better than :focus, only showing outline on inputs/keyboard navigation */
     @apply z-10 outline-2 outline-neutral-300;
   }
 
-  :is(button, .button, summary):active {
-    @apply relative top-0.5;
+  @media (hover: hover) {
+    /*
+      Using :hover on mobile devices results in a similar affect to :focus on desktop.
+      (hover: hover) prevents that from happening.
+    */
+    :is(input, select, textarea, a, button):hover {
+      @apply z-10 outline-2 outline-neutral-300;
+    }
+  }
+
+  button:enabled,
+  a {
+    @apply transition-transform;
+  }
+
+  button:enabled:active {
+    @apply translate-y-0.5;
   }
 
   a:active {
-    @apply relative left-0.5;
+    @apply translate-x-0.5;
   }
 
   ::marker {

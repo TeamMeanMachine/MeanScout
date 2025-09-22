@@ -200,6 +200,7 @@
         update();
       }}
       disabled={match <= 1}
+      class="active:translate-y-0! enabled:active:-translate-x-0.5!"
     >
       <ArrowLeftIcon class="text-theme" />
     </Button>
@@ -211,6 +212,7 @@
         update();
       }}
       disabled={match >= maxMatch}
+      class="active:translate-y-0! enabled:active:translate-x-0.5!"
     >
       <ArrowRightIcon class="text-theme" />
     </Button>

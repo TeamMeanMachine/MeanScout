@@ -7,10 +7,10 @@
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
   import {
+    ArrowLeftIcon,
     ArrowRightIcon,
     CheckIcon,
     ListOrderedIcon,
-    MinusIcon,
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
@@ -314,16 +314,18 @@
         newEntryState.match--;
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
+      class="active:translate-y-0! enabled:active:-translate-x-0.5!"
     >
-      <MinusIcon class="text-theme" />
+      <ArrowLeftIcon class="text-theme" />
     </Button>
     <Button
       onclick={() => {
         newEntryState.match++;
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
+      class="active:translate-y-0! enabled:active:translate-x-0.5!"
     >
-      <PlusIcon class="text-theme" />
+      <ArrowRightIcon class="text-theme" />
     </Button>
   </div>
 {/if}
@@ -438,7 +440,7 @@
       sessionStorage.setItem("match-view", newEntryState.match.toString());
       goto(`#/comp/${pageData.compRecord.id}/matches`);
     }}
-    class="mt-3"
+    class="mt-3 active:translate-x-0.5 active:translate-y-0!"
   >
     <ListOrderedIcon class="text-theme" />
     <div class="flex grow flex-col">

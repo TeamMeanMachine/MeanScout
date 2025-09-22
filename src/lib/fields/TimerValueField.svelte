@@ -57,7 +57,7 @@
     <span class="text-xs font-light">{field.tip}</span>
   {/if}
   <div class="flex flex-wrap">
-    <Button onclick={running ? pause : start} class="active:top-0! active:left-0.5">
+    <Button onclick={running ? pause : start} class="active:translate-x-0.5 active:translate-y-0!">
       {#if running}
         <PauseIcon class="text-theme" />
       {:else}

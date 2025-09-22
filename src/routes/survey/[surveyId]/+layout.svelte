@@ -11,7 +11,8 @@
 
   function getAnchorClass(matching: string) {
     return (
-      "active:left-0! active:top-0.5 " + (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
+      "active:translate-x-0! active:translate-y-0.5 " +
+      (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );
   }
 </script>

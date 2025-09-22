@@ -30,7 +30,7 @@
     <span class="text-xs font-light">{field.tip}</span>
   {/if}
   <div class="flex w-16 flex-col">
-    <Button onclick={increment} class="justify-center active:-top-0.5!">
+    <Button onclick={increment} class="justify-center active:-translate-y-0.5!">
       <PlusIcon class="text-theme size-5" />
     </Button>
     <div class="flex h-10 items-center justify-center text-center {value > 0 ? 'font-bold' : 'text-xs font-light'}">

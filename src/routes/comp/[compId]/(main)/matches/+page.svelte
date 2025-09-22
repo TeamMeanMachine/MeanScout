@@ -3,12 +3,12 @@
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
   import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
     ChevronDownIcon,
     ChevronRightIcon,
     ChevronUpIcon,
     ListOrderedIcon,
-    MinusIcon,
-    PlusIcon,
     SquareArrowOutUpRightIcon,
   } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -202,9 +202,9 @@
             selectedMatch = previousMatch;
             sessionStorage.setItem("match-view", selectedMatch.number.toString());
           }}
-          class="active:top-0! active:right-0.5!"
+          class="active:translate-y-0! enabled:active:-translate-x-0.5!"
         >
-          <MinusIcon class="text-theme size-5" />
+          <ArrowLeftIcon class="text-theme size-5" />
         </Button>
         <Button
           disabled={!selectedMatch || selecting || !nextMatch}
@@ -213,9 +213,9 @@
             selectedMatch = nextMatch;
             sessionStorage.setItem("match-view", selectedMatch.number.toString());
           }}
-          class="active:top-0! active:left-0.5!"
+          class="active:translate-y-0! enabled:active:translate-x-0.5!"
         >
-          <PlusIcon class="text-theme size-5" />
+          <ArrowRightIcon class="text-theme size-5" />
         </Button>
       </div>
     </div>

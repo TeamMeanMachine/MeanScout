@@ -69,7 +69,7 @@
 
   function getAnchorClass(matching: string) {
     return (
-      "grow items-center flex-nowrap! justify-center active:left-0! active:top-0.5 " +
+      "grow items-center flex-nowrap! justify-center active:translate-x-0! active:translate-y-0.5 " +
       "max-lg:gap-1 max-lg:py-1 max-lg:flex-col " +
       (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
     );

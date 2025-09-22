@@ -99,7 +99,7 @@
     </span>
   </div>
 
-  <Anchor route="" class="active:-left-0.5!">
+  <Anchor route="" class="active:-translate-x-0.5!">
     <ArrowLeftIcon class="text-theme" />
     <div class="flex grow flex-col">Main page</div>
   </Anchor>
