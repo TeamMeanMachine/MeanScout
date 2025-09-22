@@ -108,6 +108,26 @@
     }, debounceTimeMillis);
   }
 
+  function onsearchenter() {
+    if (upcomingMatches.length) {
+      selectedMatch = upcomingMatches[0];
+    } else if (previousMatches.length) {
+      selectedMatch = previousMatches[0];
+    } else {
+      return;
+    }
+
+    selecting = false;
+    scrollTo(0, 0);
+    filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
+    sessionStorage.setItem("match-view", selectedMatch.number.toString());
+
+    const btn = document.querySelector(".regain-focus-after-search");
+    if (btn instanceof HTMLButtonElement) {
+      btn.focus();
+    }
+  }
+
   function sortMatches(a: Match & { extraTeams?: string[] }, b: Match & { extraTeams?: string[] }) {
     return b.number - a.number;
   }
@@ -200,7 +220,7 @@
       </div>
     </div>
 
-    <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
+    <Button onclick={() => (selecting = !selecting)} class="regain-focus-after-search flex-nowrap!">
       <ListOrderedIcon class="text-theme shrink-0" />
 
       {#if selectedMatch}
@@ -221,11 +241,19 @@
     {#if !selecting && selectedMatch}
       <div class="flex flex-wrap items-center justify-between gap-2">
         {#if selectedMatch.redScore !== undefined && selectedMatch.blueScore !== undefined}
-          <div class="flex items-center gap-2">
-            <h2>Score:</h2>
-            <span class="text-red {redWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.redScore}</span>
-            <span class="text-sm font-light">to</span>
-            <span class="text-blue {blueWon ? 'font-bold' : 'text-sm font-light'}">{selectedMatch.blueScore}</span>
+          <div class="">
+            {#if redWon}
+              <span class="text-red font-bold">Red</span>
+              won:
+            {:else if blueWon}
+              <span class="text-blue font-bold">Blue</span>
+              won:
+            {:else}
+              <span class="font-bold">Tied:</span>
+            {/if}
+            <span class="text-red {redWon ? 'font-bold' : 'font-light'}">{selectedMatch.redScore}</span>
+            <span class="text-sm">to</span>
+            <span class="text-blue {blueWon ? 'font-bold' : 'font-light'}">{selectedMatch.blueScore}</span>
           </div>
         {/if}
 
@@ -342,8 +370,15 @@
       <label class="flex flex-col text-sm">
         Search
         <input
+          {@attach (input) => {
+            if (selectedMatch) {
+              input.focus();
+              input.select();
+            }
+          }}
           value={debouncedSearch}
           oninput={(e) => onsearchinput(e.currentTarget.value)}
+          onkeypress={(e) => e.key == "Enter" && onsearchenter()}
           class="text-theme bg-neutral-800 p-2"
         />
         <span class="pt-1 text-xs font-light">Tip: you can input multiple teams via spaces</span>

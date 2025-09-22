@@ -11,7 +11,6 @@
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 
   const debounceTimeMillis = 500;
-
   let debounceTimer: number | undefined = undefined;
 
   let selecting = $state(false);
@@ -35,12 +34,26 @@
       } else {
         filteredTeams = data.teams.filter((team) => {
           return (
-            team.number.includes(parseInt(search).toString()) ||
-            team.name.toLowerCase().replaceAll(" ", "").includes(search)
+            team.number == parseInt(search).toString() || team.name.toLowerCase().replaceAll(" ", "").includes(search)
           );
         });
       }
     }, debounceTimeMillis);
+  }
+
+  function onsearchenter() {
+    if (!filteredTeams.length) return;
+
+    selectedTeam = filteredTeams[0];
+    selecting = false;
+    scrollTo(0, 0);
+    filteredTeams = data.teams;
+    sessionStorage.setItem("team-view", selectedTeam.number);
+
+    const btn = document.querySelector(".regain-focus-after-search");
+    if (btn instanceof HTMLButtonElement) {
+      btn.focus();
+    }
   }
 </script>
 
@@ -55,7 +68,7 @@
       <h2 class="font-bold">Teams</h2>
 
       <div class="flex flex-col gap-4">
-        <Button onclick={() => (selecting = !selecting)} class="flex-nowrap!">
+        <Button onclick={() => (selecting = !selecting)} class="regain-focus-after-search flex-nowrap!">
           <UsersIcon class="text-theme shrink-0" />
 
           {#if selectedTeam}
@@ -131,7 +144,17 @@
     {:else}
       <label class="flex flex-col text-sm">
         Search
-        <input oninput={(e) => onsearchinput(e.currentTarget.value)} class="text-theme bg-neutral-800 p-2" />
+        <input
+          {@attach (input) => {
+            if (selectedTeam) {
+              input.focus();
+              input.select();
+            }
+          }}
+          oninput={(e) => onsearchinput(e.currentTarget.value)}
+          onkeypress={(e) => e.key == "Enter" && onsearchenter()}
+          class="text-theme bg-neutral-800 p-2"
+        />
       </label>
 
       <div class="flex flex-col gap-3">
