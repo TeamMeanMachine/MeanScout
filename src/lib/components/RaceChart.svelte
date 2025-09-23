@@ -8,10 +8,10 @@
   import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
   import type { MatchSurvey } from "$lib/survey";
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails } from "$lib/field";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -28,7 +28,7 @@
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
-  const teamView = sessionStorageStore<string>("team-view", "");
+  const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
   const playing = sessionStorageStore<"" | "true">("race-chart-playing", "");
 
   const changeDuration = 700;
@@ -242,29 +242,22 @@
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
+      onclick={() => ($highlightedTeam = $highlightedTeam == teamData.team ? "" : teamData.team)}
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button
-        onclick={(e) => {
-          e.stopPropagation();
-          $teamView = teamData.team;
-          goto(`#/comp/${pageData.compRecord.id}/teams`);
-        }}
-        class="justify-center text-sm"
-      >
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
         </div>
-      </Button>
+      </Anchor>
 
       <div>
         <div
           class={[
             "flex items-end justify-between gap-3",
-            $teamView == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
+            $highlightedTeam == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
           <div class="flex flex-col">
@@ -281,7 +274,7 @@
             <span>{teamData.percentage.current.toFixed(1)}<span class="text-xs font-light">%</span></span>
           {/if}
         </div>
-        <div class={$teamView == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
+        <div class={$highlightedTeam == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
           <div style="background-color:{color};width:{teamData.percentage.current.toFixed(2)}%;height:6px"></div>
         </div>
       </div>

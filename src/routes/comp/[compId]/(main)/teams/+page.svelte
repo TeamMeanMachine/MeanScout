@@ -1,59 +1,40 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
-  import TeamDerivedDataTable from "$lib/components/TeamDerivedDataTable.svelte";
-  import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { ChevronDownIcon, ChevronUpIcon, SquareArrowOutUpRightIcon, UsersIcon } from "@lucide/svelte";
-  import { sessionStorageStore } from "$lib";
+  import { goto } from "$app/navigation";
+  import Anchor from "$lib/components/Anchor.svelte";
+  import type { Team } from "$lib";
 
   let { data }: PageProps = $props();
-
-  const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 
   const debounceTimeMillis = 500;
   let debounceTimer: number | undefined = undefined;
 
-  let selecting = $state(false);
-  let selectedTeam = $state(initialTeam());
-  let filteredTeams = $state(data.teams);
+  let debouncedSearch = $state(sessionStorage.getItem("team-search") || "");
 
-  function initialTeam() {
-    const teamNumber = sessionStorage.getItem("team-view");
-    if (!teamNumber) return;
-    return data.teams.find((team) => team.number == teamNumber);
-  }
+  let filteredTeams = $state(data.teams.filter(filterTeam));
 
   function onsearchinput(value: string) {
     window.clearTimeout(debounceTimer);
 
     debounceTimer = window.setTimeout(() => {
-      const search = value.trim().toLowerCase().replaceAll(" ", "");
-
-      if (!search) {
-        filteredTeams = data.teams;
-      } else {
-        filteredTeams = data.teams.filter((team) => {
-          return (
-            team.number == parseInt(search).toString() || team.name.toLowerCase().replaceAll(" ", "").includes(search)
-          );
-        });
-      }
+      debouncedSearch = value.trim().toLowerCase().replaceAll(" ", "");
+      sessionStorage.setItem("team-search", debouncedSearch);
+      filteredTeams = data.teams.filter(filterTeam);
     }, debounceTimeMillis);
   }
 
   function onsearchenter() {
     if (!filteredTeams.length) return;
+    goto(`#/comp/${data.compRecord.id}/team/${filteredTeams[0].number}`);
+  }
 
-    selectedTeam = filteredTeams[0];
-    selecting = false;
-    scrollTo(0, 0);
-    filteredTeams = data.teams;
-    sessionStorage.setItem("team-view", selectedTeam.number);
+  function filterTeam(team: Team) {
+    if (!debouncedSearch) return true;
 
-    const btn = document.querySelector(".regain-focus-after-search");
-    if (btn instanceof HTMLButtonElement) {
-      btn.focus();
-    }
+    return (
+      team.number == parseInt(debouncedSearch).toString() ||
+      team.name.toLowerCase().replaceAll(" ", "").includes(debouncedSearch)
+    );
   }
 </script>
 
@@ -64,120 +45,30 @@
       <span class="text-sm">No data on any teams.</span>
     </div>
   {:else}
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-2">
       <h2 class="font-bold">Teams</h2>
-
-      <div class="flex flex-col gap-4">
-        <Button onclick={() => (selecting = !selecting)} class="regain-focus-after-search flex-nowrap!">
-          <UsersIcon class="text-theme shrink-0" />
-
-          {#if selectedTeam}
-            <div class="flex grow flex-col">
-              <span class="font-bold">Team {selectedTeam.number}</span>
-              {#if selectedTeam.name}
-                <span class="text-xs font-light">{selectedTeam.name}</span>
-              {/if}
-            </div>
-          {:else}
-            <span class="grow">Select</span>
-          {/if}
-
-          {#if !selecting && selectedTeam}
-            <ChevronDownIcon class="text-theme shrink-0" />
-          {:else}
-            <ChevronUpIcon class="text-theme shrink-0" />
-          {/if}
-        </Button>
-
-        {#if !selecting && selectedTeam && data.hasExpressions}
-          <div class="flex gap-2 text-sm">
-            <Button
-              onclick={() => ($showData = "expressions")}
-              class={$showData == "expressions" ? "font-bold" : "font-light"}
-            >
-              Derived
-            </Button>
-            <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>
-              Raw
-            </Button>
-          </div>
-        {/if}
-      </div>
-    </div>
-
-    {#if !selecting && selectedTeam}
-      {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-        <div class="flex flex-col gap-1 overflow-x-auto">
-          <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
-
-          {#if $showData == "expressions" && surveyRecord.type == "match"}
-            <TeamDerivedDataTable pageData={data} {surveyRecord} team={selectedTeam} />
-          {:else}
-            <TeamRawDataTable pageData={data} {surveyRecord} team={selectedTeam} />
-          {/if}
-        </div>
-      {/each}
-
-      <div class="flex flex-wrap gap-x-4">
-        {#if data.compRecord.tbaEventKey}
-          <a
-            href="https://www.thebluealliance.com/team/{parseInt(selectedTeam.number)}/{parseInt(
-              data.compRecord.tbaEventKey,
-            )}#{data.compRecord.tbaEventKey}"
-            target="_blank"
-          >
-            <span class="underline">TBA</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
-          </a>
-        {:else}
-          <a href="https://www.thebluealliance.com/team/{parseInt(selectedTeam.number)}" target="_blank">
-            <span class="underline">TBA</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
-          </a>
-        {/if}
-
-        <a href="https://www.statbotics.io/team/{parseInt(selectedTeam.number)}" target="_blank">
-          <span class="underline">Statbotics</span>
-          <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
-        </a>
-      </div>
-    {:else}
       <label class="flex flex-col text-sm">
         Search
         <input
-          {@attach (input) => {
-            if (selectedTeam) {
-              input.focus();
-              input.select();
-            }
-          }}
+          value={debouncedSearch}
           oninput={(e) => onsearchinput(e.currentTarget.value)}
           onkeypress={(e) => e.key == "Enter" && onsearchenter()}
           class="text-theme bg-neutral-800 p-2"
         />
       </label>
+    </div>
 
-      <div class="flex flex-col gap-3">
-        {#each filteredTeams as team}
-          <Button
-            onclick={() => {
-              selecting = false;
-              scrollTo(0, 0);
-              selectedTeam = team;
-              filteredTeams = data.teams;
-              sessionStorage.setItem("team-view", team.number);
-            }}
-            class="flex-nowrap!"
-          >
-            <div class="flex flex-col">
-              <span class="font-bold">{team.number}</span>
-              {#if team.name}
-                <span class="text-xs font-light">{team.name}</span>
-              {/if}
-            </div>
-          </Button>
-        {/each}
-      </div>
-    {/if}
+    <div class="flex flex-col gap-3">
+      {#each filteredTeams as team}
+        <Anchor route="comp/{data.compRecord.id}/team/{team.number}">
+          <div class="flex flex-col">
+            <span class="font-bold">{team.number}</span>
+            {#if team.name}
+              <span class="text-xs font-light">{team.name}</span>
+            {/if}
+          </div>
+        </Anchor>
+      {/each}
+    </div>
   {/if}
 </div>

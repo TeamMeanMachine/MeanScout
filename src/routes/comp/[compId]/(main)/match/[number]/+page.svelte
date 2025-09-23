@@ -5,7 +5,6 @@
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
-  import { goto } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
 
   let { data }: PageProps = $props();
@@ -59,7 +58,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
     <div class="flex flex-col">
       <h2 class="font-bold">Match {data.match.number}</h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
@@ -159,40 +158,28 @@
         {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
         {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
 
-        <Button
-          onclick={() => {
-            sessionStorage.setItem("team-view", team);
-            goto(`#/comp/${data.compRecord.id}/teams`);
-          }}
-          class={order[index]}
-        >
+        <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
           <div class="flex flex-col truncate {teamWonFontWeight(team)}">
             <span class="text-red">{team}</span>
             {#if teamName}
               <span class="truncate text-xs">{teamName}</span>
             {/if}
           </div>
-        </Button>
+        </Anchor>
       {/each}
 
       {#each [data.match.blue1, data.match.blue2, data.match.blue3] as team, index}
         {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
         {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
 
-        <Button
-          onclick={() => {
-            sessionStorage.setItem("team-view", team);
-            goto(`#/comp/${data.compRecord.id}/teams`);
-          }}
-          class={order[index]}
-        >
+        <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
           <div class="flex flex-col truncate {teamWonFontWeight(team)}">
             <span class="text-blue">{team}</span>
             {#if teamName}
               <span class="truncate text-xs">{teamName}</span>
             {/if}
           </div>
-        </Button>
+        </Anchor>
       {/each}
     </div>
   {/if}

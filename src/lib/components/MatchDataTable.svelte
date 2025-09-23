@@ -8,6 +8,7 @@
   import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey } from "$lib/survey";
   import Button from "./Button.svelte";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -248,15 +249,9 @@
 
   <tr>
     <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-      <Button
-        onclick={() => {
-          sessionStorage.setItem("team-view", team);
-          goto(`#/comp/${pageData.compRecord.id}/teams`);
-        }}
-        class="w-13 {color} justify-center py-1.5"
-      >
+      <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
         {team}
-      </Button>
+      </Anchor>
     </th>
 
     {#if show == "raw" && someScout}

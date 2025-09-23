@@ -1,9 +1,8 @@
 <script lang="ts">
-  import Button from "./Button.svelte";
   import type { AnalysisData } from "$lib/analysis";
   import { getOrdinal, sessionStorageStore } from "$lib";
-  import { goto } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -13,7 +12,7 @@
     analysisData: AnalysisData;
   } = $props();
 
-  const teamView = sessionStorageStore<string>("team-view", "");
+  const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
 </script>
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
@@ -22,34 +21,27 @@
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
+      onclick={() => ($highlightedTeam = $highlightedTeam == teamData.team ? "" : teamData.team)}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button
-        onclick={(e) => {
-          e.stopPropagation();
-          $teamView = teamData.team;
-          goto(`#/comp/${pageData.compRecord.id}/teams`);
-        }}
-        class="justify-center text-sm"
-      >
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
         </div>
-      </Button>
+      </Anchor>
 
       <div>
         <div
           class={[
             "flex items-end justify-between gap-3",
-            $teamView == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
+            $highlightedTeam == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
           <div class="flex flex-col">
             <span class="font-bold">{teamData.team}</span>
             {#if teamData.teamName}
-              <span class={["text-xs", $teamView == teamData.team || "font-light"]}>{teamData.teamName}</span>
+              <span class={["text-xs", $highlightedTeam == teamData.team || "font-light"]}>{teamData.teamName}</span>
             {/if}
           </div>
           {#if "value" in teamData}
@@ -58,7 +50,7 @@
             <span>{teamData.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
           {/if}
         </div>
-        <div class={$teamView == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
+        <div class={$highlightedTeam == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
           <div style="background-color:{color};width:{teamData.percentage.toFixed(2)}%;height:6px"></div>
         </div>
       </div>

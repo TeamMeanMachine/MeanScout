@@ -14,7 +14,7 @@
   import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
   import type { MatchSurvey } from "$lib/survey";
-  import { goto } from "$app/navigation";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -155,13 +155,7 @@
       {#if teamData}
         {@const rank = selectedRanking?.output?.data.findIndex((td) => td.team == teamData.team)}
 
-        <Button
-          onclick={() => {
-            sessionStorage.setItem("team-view", teamData.team);
-            goto(`#/comp/${pageData.compRecord.id}/teams`);
-          }}
-          class="justify-center text-sm"
-        >
+        <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
           <div class="flex items-baseline">
             {#if rank !== undefined}
               <span class="font-bold">{rank + 1}</span>
@@ -170,7 +164,7 @@
               -
             {/if}
           </div>
-        </Button>
+        </Anchor>
 
         <div>
           <div class="flex items-end justify-between gap-3">

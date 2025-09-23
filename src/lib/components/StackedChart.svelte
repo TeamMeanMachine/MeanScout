@@ -1,9 +1,8 @@
 <script lang="ts">
   import { colors, type AnalysisData } from "$lib/analysis";
-  import Button from "./Button.svelte";
   import { getOrdinal, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
-  import { goto } from "$app/navigation";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -13,7 +12,7 @@
     analysisData: AnalysisData;
   } = $props();
 
-  const teamView = sessionStorageStore<string>("team-view", "");
+  const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
 </script>
 
 <div class="flex flex-wrap gap-x-4 text-xs">
@@ -40,34 +39,27 @@
   {#each analysisData.data as teamData, rank}
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($teamView = $teamView == teamData.team ? "" : teamData.team)}
+      onclick={() => ($highlightedTeam = $highlightedTeam == teamData.team ? "" : teamData.team)}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button
-        onclick={(e) => {
-          e.stopPropagation();
-          $teamView = teamData.team;
-          goto(`#/comp/${pageData.compRecord.id}/teams`);
-        }}
-        class="justify-center text-sm"
-      >
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
           <span class="font-bold">{rank + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
         </div>
-      </Button>
+      </Anchor>
 
       <div>
         <div
           class={[
             "flex items-end justify-between gap-3",
-            $teamView == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
+            $highlightedTeam == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
           <div class="flex flex-col">
             <span class="font-bold">{teamData.team}</span>
             {#if teamData.teamName}
-              <span class={["text-xs", $teamView == teamData.team || "font-light"]}>{teamData.teamName}</span>
+              <span class={["text-xs", $highlightedTeam == teamData.team || "font-light"]}>{teamData.teamName}</span>
             {/if}
           </div>
           {#if "value" in teamData}
@@ -77,7 +69,7 @@
           {/if}
         </div>
 
-        <div class={$teamView == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
+        <div class={$highlightedTeam == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
           <div class="flex gap-1" style="width:{teamData.percentage.toFixed(2)}%">
             {#if "value" in teamData && analysisData.type == "expression"}
               {#each teamData.inputs as input, i}
