@@ -159,8 +159,9 @@
             <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
               <Button
                 onclick={() => {
-                  sessionStorage.setItem("match-view", entry.match.toString());
-                  goto(`#/comp/${pageData.compRecord.id}/matches`);
+                  sessionStorage.setItem("match-view-show-which", "data");
+                  sessionStorage.setItem("match-view-show-data", "raw");
+                  goto(`#/comp/${pageData.compRecord.id}/match/${entry.match}`);
                 }}
                 class="w-full justify-center py-1.5"
               >

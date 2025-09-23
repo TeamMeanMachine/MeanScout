@@ -437,8 +437,7 @@
   <Button
     onclick={() => {
       sessionStorage.setItem("match-view-show-which", "ranks");
-      sessionStorage.setItem("match-view", newEntryState.match.toString());
-      goto(`#/comp/${pageData.compRecord.id}/matches`);
+      goto(`#/comp/${pageData.compRecord.id}/match/${newEntryState.match}`);
     }}
     class="mt-3 active:translate-x-0.5 active:translate-y-0!"
   >

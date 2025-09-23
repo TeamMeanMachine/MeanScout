@@ -1,5 +1,5 @@
 import type { Match } from "$lib";
-import type { MatchEntry } from "$lib/entry";
+import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
@@ -40,10 +40,15 @@ export const load: PageLoad = async (event) => {
     }
   }
 
-  const lastCompletedMatch = Math.max(
-    ...data.entryRecords.filter((e): e is MatchEntry => e.type == "match" && e.status != "draft").map((e) => e.match),
-    0,
+  const match = matches.find((m) => m.number.toString() == event.params.number);
+
+  if (!match) {
+    error(404, `Match not found with number ${event.params.number}`);
+  }
+
+  const hasExpressions = data.surveyRecords.some(
+    (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
   );
 
-  return { title: "Matches", matches, lastCompletedMatch };
+  return { title: `Match ${match.number}`, matches, match, hasExpressions };
 };
