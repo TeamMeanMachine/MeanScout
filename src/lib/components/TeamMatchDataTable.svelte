@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { type Match, type Value } from "$lib";
+  import type { Team, Value } from "$lib";
   import { getExpressionData } from "$lib/analysis";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
@@ -8,23 +8,18 @@
   import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey } from "$lib/survey";
   import Button from "./Button.svelte";
-  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
     surveyRecord,
-    match,
+    team,
     show,
   }: {
     pageData: CompPageData;
     surveyRecord: MatchSurvey;
-    match: Match & { extraTeams?: string[] };
+    team: Team;
     show: "expressions" | "raw";
   } = $props();
-
-  const redAlliance = [match.red1, match.red2, match.red3].filter((team) => team);
-  const blueAlliance = [match.blue1, match.blue2, match.blue3].filter((team) => team);
-  const teams = [...redAlliance, ...blueAlliance, ...(match.extraTeams || [])];
 
   const sortedEntryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
   const entryExpressions = Object.groupBy(sortedEntryExpressions, (e) => {
@@ -34,20 +29,23 @@
     return "";
   });
 
-  const leftStickColumnName = "left-16";
+  const leftStickColumnName = "left-13";
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const entries = pageData.entryRecords.filter(filterEntries);
 
-  const entriesPerTeam = [...new Set([...entries.map((e) => e.team), ...teams])]
-    .toSorted((a, b) => teams.findIndex((t) => t == a) - teams.findIndex((t) => t == b) || a.localeCompare(b))
-    .map((team) => ({
-      team,
-      color: redAlliance.includes(team) ? "text-red" : blueAlliance.includes(team) ? "text-blue" : "",
+  const matches = pageData.compRecord.matches.filter((m) =>
+    [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
+  );
+
+  const entriesPerMatch = [...new Set([...entries.map((e) => e.match), ...matches.map((m) => m.number)])]
+    .toSorted((a, b) => b - a)
+    .map((number) => ({
+      number,
       entries: entries
-        .filter((entry) => entry.team == team)
+        .filter((e) => e.match == number)
         .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
     }));
 
@@ -89,11 +87,11 @@
   }
 
   function filterEntries(entry: Entry): entry is MatchEntry {
-    return entry.type == "match" && entry.match == match.number && entry.surveyId == surveyRecord.id;
+    return entry.type == "match" && entry.team == team.number && entry.surveyId == surveyRecord.id;
   }
 </script>
 
-{#if !entriesPerTeam.length}
+{#if !entriesPerMatch.length}
   <span class="sticky left-0 text-sm">No data available.</span>
 {:else}
   <table class="border-separate border-spacing-0 text-center max-md:text-sm">
@@ -103,7 +101,7 @@
           rowspan="2"
           class="sticky left-0 z-10 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center align-bottom"
         >
-          Team
+          #
         </th>
 
         {#if show == "raw" && someScout}
@@ -225,34 +223,37 @@
     </thead>
 
     <tbody>
-      {#each entriesPerTeam as { team, color, entries }}
-        {@const emptySpace = entries.length > 1 ? "-" : ""}
-
+      {#each entriesPerMatch as { number, entries }}
         {#each entries as entry}
           <tr>
             <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
-                {team}
-              </Anchor>
+              <Button
+                onclick={() => {
+                  sessionStorage.setItem("match-view-show-which", "data");
+                  sessionStorage.setItem("match-view-show-data", "derived");
+                  goto(`#/comp/${pageData.compRecord.id}/match/${number}`);
+                }}
+                class="w-13 justify-center py-1.5"
+              >
+                {number}
+              </Button>
             </th>
 
             {#if show == "raw" && someScout}
               <td class="border-r border-b border-neutral-800 p-2 text-left">
-                <div class="w-24">
-                  <div class="truncate">{entry.scout}</div>
-                </div>
+                <div class="w-24 truncate">{entry.scout}</div>
               </td>
             {/if}
 
             {#if someDraft}
               <td class="border-r border-b border-neutral-800 p-2">
-                <div>{entry.status == "draft" ? "true" : emptySpace}</div>
+                {entry.status == "draft" ? "true" : ""}
               </td>
             {/if}
 
             {#if someAbsent}
               <td class="border-r border-b border-neutral-800 p-2 text-left">
-                <div>{entry.absent ? "true" : emptySpace}</div>
+                {entry.absent || ""}
               </td>
             {/if}
 
@@ -305,9 +306,16 @@
         {:else}
           <tr>
             <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
-                {team}
-              </Anchor>
+              <Button
+                onclick={() => {
+                  sessionStorage.setItem("match-view-show-which", "data");
+                  sessionStorage.setItem("match-view-show-data", "derived");
+                  goto(`#/comp/${pageData.compRecord.id}/match/${number}`);
+                }}
+                class="w-13 justify-center py-1.5"
+              >
+                {number}
+              </Button>
             </th>
 
             {#if show == "raw" && someScout}

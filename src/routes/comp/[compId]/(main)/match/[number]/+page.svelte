@@ -145,7 +145,7 @@
       .filter((survey) => survey.type == "match")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
       <div class="flex flex-col gap-1 overflow-x-auto">
-        <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
+        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
         {#key data.match}
           <MatchDataTable pageData={data} {surveyRecord} match={data.match} show={$showData} />

@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
-  import TeamDerivedDataTable from "$lib/components/TeamDerivedDataTable.svelte";
-  import TeamRawDataTable from "$lib/components/TeamRawDataTable.svelte";
   import Button from "$lib/components/Button.svelte";
   import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
+  import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
+  import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
 
   let { data }: PageProps = $props();
 
@@ -35,12 +35,12 @@
 
   {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
     <div class="flex flex-col gap-1 overflow-x-auto">
-      <h2 class="sticky left-0 font-bold">{surveyRecord.name}</h2>
+      <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
-      {#if $showData == "expressions" && surveyRecord.type == "match"}
-        <TeamDerivedDataTable pageData={data} {surveyRecord} team={data.team} />
+      {#if surveyRecord.type == "match"}
+        <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
       {:else}
-        <TeamRawDataTable pageData={data} {surveyRecord} team={data.team} />
+        <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
       {/if}
     </div>
   {/each}
