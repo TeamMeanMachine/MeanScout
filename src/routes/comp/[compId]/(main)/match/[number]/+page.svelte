@@ -80,7 +80,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <div class="flex gap-2">
+      <div class="flex gap-2" data-sveltekit-replacestate>
         {#if previousMatch}
           <Anchor
             route="comp/{data.compRecord.id}/match/{previousMatch.number}"

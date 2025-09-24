@@ -21,8 +21,11 @@
     match,
   }: {
     pageData: CompPageData;
-    match: Match;
+    match: Match & { extraTeams?: string[] };
   } = $props();
+
+  const redAlliance = $derived([match.red1, match.red2, match.red3].filter((team) => team));
+  const blueAlliance = $derived([match.blue1, match.blue2, match.blue3].filter((team) => team));
 
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
@@ -140,54 +143,60 @@
 
   {#if !selecting && selectedRanking?.output}
     <div class="grid gap-x-3 {selectedRanking ? 'gap-y-3' : 'gap-y-2'}" style="grid-template-columns:min-content auto">
-      {#each [match.red1, match.red2, match.red3] as team}
-        {@const teamData = selectedRanking?.output?.data.find((teamData) => teamData.team == team)}
-        {@render teamRow("red", teamData)}
+      {#each redAlliance as team}
+        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
+        {#if teamData}
+          {@render teamRow(teamData, "bg-red")}
+        {/if}
       {/each}
 
-      {#each [match.blue1, match.blue2, match.blue3] as team}
-        {@const teamData = selectedRanking?.output?.data.find((teamData) => teamData.team == team)}
-        {@render teamRow("blue", teamData)}
+      {#each blueAlliance as team}
+        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
+        {#if teamData}
+          {@render teamRow(teamData, "bg-blue")}
+        {/if}
+      {/each}
+
+      {#each match.extraTeams || [] as team}
+        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
+        {#if teamData}
+          {@render teamRow(teamData, "bg-neutral-400")}
+        {/if}
       {/each}
     </div>
 
-    {#snippet teamRow(alliance: "red" | "blue", teamData?: AnalysisTeamData | undefined)}
-      {#if teamData}
-        {@const rank = selectedRanking?.output?.data.findIndex((td) => td.team == teamData.team)}
+    {#snippet teamRow(teamData: AnalysisTeamData, bgColor: string)}
+      {@const rank = selectedRanking?.output?.data.findIndex((td) => td.team == teamData.team)}
 
-        <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
-          <div class="flex items-baseline">
-            {#if rank !== undefined}
-              <span class="font-bold">{rank + 1}</span>
-              <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
-            {:else}
-              -
-            {/if}
-          </div>
-        </Anchor>
-
-        <div>
-          <div class="flex items-end justify-between gap-3">
-            <div class="flex flex-col">
-              <span class="font-bold">{teamData.team}</span>
-              {#if teamData?.teamName}
-                <span class="text-xs font-light">{teamData?.teamName}</span>
-              {/if}
-            </div>
-            {#if teamData && "value" in teamData}
-              {teamData.value.toFixed(2) || 0}
-            {:else}
-              <span>{teamData?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
-            {/if}
-          </div>
-          <div class="bg-neutral-800">
-            <div
-              class={alliance == "red" ? "bg-red" : "bg-blue"}
-              style="width:{teamData?.percentage.toFixed(2) || 0}%;height:6px"
-            ></div>
-          </div>
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
+        <div class="flex items-baseline">
+          {#if rank !== undefined}
+            <span class="font-bold">{rank + 1}</span>
+            <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
+          {:else}
+            -
+          {/if}
         </div>
-      {/if}
+      </Anchor>
+
+      <div>
+        <div class="flex items-end justify-between gap-3">
+          <div class="flex flex-col">
+            <span class="font-bold">{teamData.team}</span>
+            {#if teamData?.teamName}
+              <span class="text-xs font-light">{teamData?.teamName}</span>
+            {/if}
+          </div>
+          {#if teamData && "value" in teamData}
+            {teamData.value.toFixed(2) || 0}
+          {:else}
+            <span>{teamData?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+          {/if}
+        </div>
+        <div class="bg-neutral-800">
+          <div class={bgColor} style="width:{teamData?.percentage.toFixed(2) || 0}%;height:6px"></div>
+        </div>
+      </div>
     {/snippet}
   {:else}
     {#each matchSurveys as survey (survey.id)}

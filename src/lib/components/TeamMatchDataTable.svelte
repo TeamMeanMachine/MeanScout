@@ -29,7 +29,7 @@
     return "";
   });
 
-  const leftStickColumnName = "left-13";
+  const leftStickColumnName = "left-16";
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
