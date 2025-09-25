@@ -8,6 +8,7 @@
   import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey } from "$lib/survey";
   import Button from "./Button.svelte";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -171,15 +172,14 @@
             {#if entryExpressions[input]?.length}
               {#each entryExpressions[input] as entryExpression}
                 <th class="border-b border-neutral-700 p-1">
-                  <Button
-                    onclick={() => {
-                      sessionStorage.setItem("analysis-view", `${surveyRecord.id}-expression-${entryExpression.name}`);
-                      goto(`#/comp/${pageData.compRecord.id}/ranks`);
-                    }}
+                  <Anchor
+                    route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
+                      surveyRecord.id,
+                    )}&expression={encodeURIComponent(entryExpression.name)}"
                     class="justify-center p-1! text-center!"
                   >
                     {entryExpression.name}
-                  </Button>
+                  </Anchor>
                 </th>
               {/each}
               <td class="border-r border-b border-neutral-700"></td>

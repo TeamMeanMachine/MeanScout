@@ -9,11 +9,11 @@
   } from "$lib/analysis";
   import Button from "$lib/components/Button.svelte";
   import { type MatchEntry } from "$lib/entry";
-  import { sortExpressions, type Expression } from "$lib/expression";
+  import { type Expression } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
-  import type { MatchSurvey } from "$lib/survey";
+  import { groupRanks, type MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
 
   let {
@@ -30,6 +30,8 @@
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
+
+  const groupedRanks = $derived(matchSurveys.flatMap(groupRanks));
 
   let selecting = $state(false);
   let selectedRanking = $state(initialRanking());
@@ -119,7 +121,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-3">
+<div class="flex flex-col gap-4">
   <Button onclick={() => (selecting = !selecting)} class="text-sm">
     <ChartBarBigIcon class="text-theme size-5" />
     {#if selectedRanking}
@@ -142,7 +144,15 @@
   </Button>
 
   {#if !selecting && selectedRanking?.output}
-    <div class="grid gap-x-3 {selectedRanking ? 'gap-y-3' : 'gap-y-2'}" style="grid-template-columns:min-content auto">
+    {@const pickListParam =
+      selectedRanking.output.type == "picklist" &&
+      "picklist=" + encodeURIComponent(selectedRanking.output.pickList.name)}
+    {@const expressionParam =
+      selectedRanking.output.type == "expression" &&
+      "expression=" + encodeURIComponent(selectedRanking.output.expression.name)}
+    {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${pickListParam || expressionParam || ""}`}
+
+    <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
       {#each redAlliance as team}
         {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
         {#if teamData}
@@ -164,6 +174,11 @@
         {/if}
       {/each}
     </div>
+
+    <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
+      <ChartBarBigIcon class="text-theme size-5" />
+      View rank
+    </Anchor>
 
     {#snippet teamRow(teamData: AnalysisTeamData, bgColor: string)}
       {@const rank = selectedRanking?.output?.data.findIndex((td) => td.team == teamData.team)}
@@ -199,165 +214,34 @@
       </div>
     {/snippet}
   {:else}
-    {#each matchSurveys as survey (survey.id)}
-      {@const sortedExpressions = survey.expressions.toSorted(sortExpressions)}
-
-      {@const expressions = Object.groupBy(sortedExpressions, (e) => {
-        if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
-        if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
-        if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
-        if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
-        if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
-        if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
-        return "";
-      })}
-
-      {#if survey.pickLists.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Pick Lists</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each survey.pickLists as pickList}
-              {@const string = `${survey.id}-pickList-${pickList.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, pickList }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {pickList.name}
-              </Button>
-            {/each}
-          </div>
+    {#each groupedRanks as group}
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-col">
+          <h2 class="text-sm">{group.survey.name}</h2>
+          <span class="text-xs font-light">{group.category}</span>
         </div>
-      {/if}
 
-      {#if expressions.surveyDerived?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Survey Expressions from expressions</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.surveyDerived as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          {#each group.pickLists || [] as pickList}
+            {@const string = `${group.survey.id}-pickList-${pickList.name}`}
+            <Button
+              onclick={() => (selectedRanking = switchRanking({ survey: group.survey, pickList }))}
+              class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
+            >
+              {pickList.name}
+            </Button>
+          {/each}
+          {#each group.expressions || [] as expression}
+            {@const string = `${group.survey.id}-expression-${expression.name}`}
+            <Button
+              onclick={() => (selectedRanking = switchRanking({ survey: group.survey, expression }))}
+              class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
+            >
+              {expression.name}
+            </Button>
+          {/each}
         </div>
-      {/if}
-
-      {#if expressions.surveyTba?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Survey Expressions from TBA</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.surveyTba as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if expressions.surveyPrimitive?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Survey Expressions from fields</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.surveyPrimitive as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if expressions.entryDerived?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Entry Expressions from expressions</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.entryDerived as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if expressions.entryTba?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Entry Expressions from TBA</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.entryTba as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      {#if expressions.entryPrimitive?.length}
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col">
-            <h2 class="font-bold">{survey.name}</h2>
-            <span class="text-xs font-light">Entry Expressions from fields</span>
-          </div>
-
-          <div class="flex flex-wrap gap-2 text-sm">
-            {#each expressions.entryPrimitive as expression}
-              {@const string = `${survey.id}-expression-${expression.name}`}
-              <Button
-                onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
-                class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-              >
-                {expression.name}
-              </Button>
-            {/each}
-          </div>
-        </div>
-      {/if}
+      </div>
     {/each}
   {/if}
 </div>
