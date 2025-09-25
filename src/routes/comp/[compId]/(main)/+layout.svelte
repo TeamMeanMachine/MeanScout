@@ -4,7 +4,7 @@
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
-  import { ChartBarBigIcon, DicesIcon, ListOrderedIcon, NotepadTextIcon, UsersIcon } from "@lucide/svelte";
+  import { ChartBarBigIcon, ListOrderedIcon, NotepadTextIcon, UserSearchIcon, UsersIcon } from "@lucide/svelte";
 
   let { data, children } = $props();
 
@@ -132,9 +132,9 @@
     </Anchor>
   {/if}
   {#if data.compRecord.scouts}
-    <Anchor route="{routeBase}/guesses" class={getAnchorClass("guesses")}>
-      <DicesIcon class="text-theme" />
-      Guesses
+    <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>
+      <UserSearchIcon class="text-theme" />
+      Scouts
     </Anchor>
   {/if}
 {/snippet}
