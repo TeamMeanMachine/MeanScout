@@ -20,52 +20,13 @@
     onmenupressed?: () => void;
     children?: Snippet;
   } = $props();
-
-  let topNav: HTMLElement;
-
-  let lastScrollY = $state(0);
-  let scrollStart = $state(0);
-  let lastScrollDir = $state(0);
-
-  function onscroll() {
-    const currentScrollY = window.scrollY;
-    const currentScrollDir = Math.sign(currentScrollY - lastScrollY);
-
-    if (currentScrollDir !== lastScrollDir) {
-      scrollStart = currentScrollY;
-      lastScrollDir = currentScrollDir;
-    }
-
-    const differenceFromStart = currentScrollY - scrollStart;
-
-    // We always want to see the nav at the very top of the page.
-    // Otherwise, if the tracked scroll difference reaches the threshold,
-    // then toggle navs based on the direction.
-
-    // And yes, we're actually moving them outside the viewport.
-    // This does not cause a content overflow,
-    // because they have fixed positions when `max-lg`.
-
-    if (currentScrollY == 0 || differenceFromStart < -100) {
-      topNav.classList.remove("-top-20!");
-    } else if (differenceFromStart > 0) {
-      topNav.classList.add("-top-20!");
-    }
-
-    lastScrollY = currentScrollY;
-  }
 </script>
-
-<svelte:window {onscroll} />
 
 <svelte:head>
   <title>{title}</title>
 </svelte:head>
 
-<header
-  bind:this={topNav}
-  class="sticky top-0 left-0 z-20 flex flex-col border-b border-neutral-600 bg-neutral-900 py-3 transition-[top]"
->
+<header class="sticky top-0 left-0 z-20 flex flex-col border-b border-neutral-600 bg-neutral-900 py-2 transition-[top]">
   <div class="mx-auto flex min-h-10 w-full items-center justify-between gap-3 px-3">
     <div class="flex grow basis-60 gap-2">
       <img src="./logo.svg" alt="" width="25" height="25" />
