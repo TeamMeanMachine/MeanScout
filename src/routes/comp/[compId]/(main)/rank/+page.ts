@@ -57,7 +57,7 @@ export const load: PageLoad = async (event) => {
       error(500, `Something went wrong generating an output for pick list ${pickList.name}`);
     }
 
-    sessionStorage.setItem("analysis-view", `${surveyRecord.id}-picklist-${pickList.name}`);
+    sessionStorage.setItem("analysis-view", JSON.stringify({ surveyId: surveyRecord.id, pickList: pickList.name }));
 
     return { title: pickList.name, surveyRecord, entriesByTeam, output };
   }
@@ -79,7 +79,7 @@ export const load: PageLoad = async (event) => {
       error(500, `Something went wrong generating an output for expression ${expression.name}`);
     }
 
-    sessionStorage.setItem("analysis-view", `${surveyRecord.id}-expression-${expression.name}`);
+    sessionStorage.setItem("analysis-view", JSON.stringify({ surveyId: surveyRecord.id, expression: expression.name }));
 
     return { title: expression.name, surveyRecord, entriesByTeam, output };
   }

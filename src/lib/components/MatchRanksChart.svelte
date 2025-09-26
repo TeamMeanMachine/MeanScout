@@ -15,6 +15,7 @@
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
+  import { z } from "zod";
 
   let {
     pageData,
@@ -33,24 +34,38 @@
 
   const groupedRanks = $derived(matchSurveys.flatMap(groupRanks));
 
+  const analysisViewSchema = z
+    .union([
+      z.object({ surveyId: z.string(), pickList: z.string() }),
+      z.object({ surveyId: z.string(), expression: z.string() }),
+      z.undefined(),
+    ])
+    .catch(undefined);
+
+  function getAnalysisView() {
+    try {
+      return JSON.parse(sessionStorage.getItem("analysis-view") ?? "null");
+    } catch {}
+  }
+
   let selecting = $state(false);
   let selectedRanking = $state(initialRanking());
 
   function initialRanking(): SelectedAnalysis | undefined {
-    const uniqueString = sessionStorage.getItem("analysis-view");
-    if (!uniqueString) return;
+    const analysisView = analysisViewSchema.parse(getAnalysisView());
+    if (!analysisView) return;
 
-    const [surveyId, type, name] = uniqueString.split("-", 3);
-    const survey = matchSurveys.find((survey) => survey.id == surveyId);
-
+    const survey = matchSurveys.find((survey) => survey.id == analysisView?.surveyId);
     if (!survey) return;
 
-    if (type == "picklist") {
+    if ("pickList" in analysisView) {
+      const name = analysisView.pickList;
       const pickList = survey.pickLists.find((pl) => pl.name == name);
       if (pickList) return getRanking({ survey, pickList });
     }
 
-    if (type == "expression") {
+    if ("expression" in analysisView) {
+      const name = analysisView.expression;
       const expression = survey.expressions.find((e) => e.name == name);
       if (expression) return getRanking({ survey, expression });
     }
@@ -61,7 +76,13 @@
     scrollTo(0, 0);
     const value = getRanking(params);
     if (value) {
-      sessionStorage.setItem("analysis-view", value?.uniqueString);
+      if (value.output?.type == "picklist") {
+        const analysisView = { surveyId: params.survey.id, pickList: value.output.pickList.name };
+        sessionStorage.setItem("analysis-view", JSON.stringify(analysisView));
+      } else if (value.output?.type == "expression") {
+        const analysisView = { surveyId: params.survey.id, expression: value.output.expression.name };
+        sessionStorage.setItem("analysis-view", JSON.stringify(analysisView));
+      }
     }
     return value;
   }
@@ -94,12 +115,7 @@
         fieldsWithDetails.orderedSingle,
       );
 
-      return {
-        ...params,
-        entriesByTeam,
-        output,
-        uniqueString: `${params.survey.id}-picklist-${params.pickList.name}`,
-      };
+      return { ...params, entriesByTeam, output };
     }
 
     if ("expression" in params) {
@@ -111,12 +127,7 @@
         fieldsWithDetails.orderedSingle,
       );
 
-      return {
-        ...params,
-        entriesByTeam,
-        output,
-        uniqueString: `${params.survey.id}-expression-${params.expression.name}`,
-      };
+      return { ...params, entriesByTeam, output };
     }
   }
 </script>
@@ -223,20 +234,12 @@
 
         <div class="flex flex-wrap gap-2 text-sm">
           {#each group.pickLists || [] as pickList}
-            {@const string = `${group.survey.id}-pickList-${pickList.name}`}
-            <Button
-              onclick={() => (selectedRanking = switchRanking({ survey: group.survey, pickList }))}
-              class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-            >
+            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, pickList }))}>
               {pickList.name}
             </Button>
           {/each}
           {#each group.expressions || [] as expression}
-            {@const string = `${group.survey.id}-expression-${expression.name}`}
-            <Button
-              onclick={() => (selectedRanking = switchRanking({ survey: group.survey, expression }))}
-              class={selectedRanking?.uniqueString == string ? "font-bold underline" : ""}
-            >
+            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, expression }))}>
               {expression.name}
             </Button>
           {/each}

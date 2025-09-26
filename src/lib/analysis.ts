@@ -62,14 +62,12 @@ export type SelectedAnalysis =
       pickList: PickList;
       entriesByTeam: Record<string, MatchEntry[]>;
       output: PickListAnalysisData | undefined;
-      uniqueString: string;
     }
   | {
       survey: MatchSurvey;
       expression: Expression;
       entriesByTeam: Record<string, MatchEntry[]>;
       output: ExpressionAnalysisData | undefined;
-      uniqueString: string;
     };
 
 export function getPickListData(
