@@ -45,7 +45,7 @@
 
       const eventNotFound = events.every((e) => e.key != event);
 
-      if (eventNotFound || !(await tbaEventExists(event))) {
+      if (eventNotFound && !(await tbaEventExists(event))) {
         error = "could not find event";
         return;
       }

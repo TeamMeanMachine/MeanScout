@@ -37,7 +37,7 @@ export const load: PageLoad = async (event) => {
     data.fieldRecords.filter((field) => field.surveyId == surveyRecord.id),
   );
 
-  const pickListName = searchParams.get("pickList");
+  const pickListName = searchParams.get("picklist");
   const expressionName = searchParams.get("expression");
   const fieldId = searchParams.get("field");
 

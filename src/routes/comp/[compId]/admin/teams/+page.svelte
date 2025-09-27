@@ -35,7 +35,7 @@
                     ...data,
                     compRecord: {
                       ...data.compRecord,
-                      teams: data.compRecord.teams.filter((team) => team.number != team.number),
+                      teams: data.compRecord.teams.filter((t) => t.number != team.number),
                       modified: new Date(),
                     },
                   };
