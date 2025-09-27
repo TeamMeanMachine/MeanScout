@@ -10,10 +10,7 @@
   const routeBase = $derived(`survey/${data.survey.record.id}`);
 
   function getAnchorClass(matching: string) {
-    return (
-      "active:translate-x-0! active:translate-y-0.5 " +
-      (pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light")
-    );
+    return pageTitle.toLowerCase() == matching ? "font-bold underline" : "font-light";
   }
 </script>
 

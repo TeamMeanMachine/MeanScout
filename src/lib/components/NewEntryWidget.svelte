@@ -439,7 +439,7 @@
       sessionStorage.setItem("match-view-show-which", "ranks");
       goto(`#/comp/${pageData.compRecord.id}/match/${newEntryState.match}`);
     }}
-    class="mt-3 active:translate-x-0.5 active:translate-y-0!"
+    class="mt-3"
   >
     <ListOrderedIcon class="text-theme" />
     <div class="flex grow flex-col">

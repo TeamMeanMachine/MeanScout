@@ -49,7 +49,7 @@
           <EllipsisVerticalIcon class="text-theme" />
         </Button>
       {:else if backLink !== undefined}
-        <Anchor route={backLink} class="active:translate-x-0! active:translate-y-0.5">
+        <Anchor route={backLink}>
           <XIcon class="text-theme" />
         </Anchor>
       {/if}

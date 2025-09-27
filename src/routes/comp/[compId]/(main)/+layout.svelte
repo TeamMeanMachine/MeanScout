@@ -64,7 +64,7 @@
 >
   <div class="hidden max-w-(--breakpoint-lg) gap-2 text-sm text-nowrap lg:flex">
     {#each linkData as { route, label, Icon, css }}
-      <Anchor {route} class="min-w-28 justify-center active:translate-x-0! active:translate-y-0.5">
+      <Anchor {route} class="min-w-28 justify-center">
         <Icon class="text-theme" />
         <span class={css}>{label}</span>
       </Anchor>
@@ -82,10 +82,7 @@
 >
   <div class="mx-auto flex max-w-lg gap-0 p-1 text-xs md:text-sm">
     {#each linkData as { route, label, Icon, css }}
-      <Anchor
-        {route}
-        class="min-w-16 shrink grow basis-0 flex-col gap-1! py-1 active:translate-x-0! active:translate-y-0.5"
-      >
+      <Anchor {route} class="min-w-16 shrink grow basis-0 flex-col gap-1! py-1">
         <Icon class="text-theme" />
         <span class={css}>{label}</span>
       </Anchor>

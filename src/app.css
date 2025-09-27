@@ -67,7 +67,7 @@
   }
 
   a:active {
-    @apply translate-x-0.5;
+    @apply translate-y-0.5;
   }
 
   ::marker {

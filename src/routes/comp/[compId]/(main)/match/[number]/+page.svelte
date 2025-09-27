@@ -87,7 +87,10 @@
         {/if}
 
         {#if nextMatch}
-          <Anchor route="comp/{data.compRecord.id}/match/{nextMatch.number}">
+          <Anchor
+            route="comp/{data.compRecord.id}/match/{nextMatch.number}"
+            class="active:translate-x-0.5! active:translate-y-0!"
+          >
             <ArrowRightIcon class="text-theme size-5" />
           </Anchor>
         {:else}
