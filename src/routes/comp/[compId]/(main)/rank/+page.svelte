@@ -9,7 +9,7 @@
 
   let { data }: PageProps = $props();
 
-  const chartType = sessionStorageStore<"bar" | "race" | "stacked">("analysis-chart-type", "bar");
+  const chartType = sessionStorageStore<"bar" | "race" | "stacked">("rank-chart-type", "bar");
 </script>
 
 <div class="flex flex-col gap-6">
@@ -49,15 +49,15 @@
   </div>
 
   {#if $chartType == "bar"}
-    <BarChart pageData={data} analysisData={data.output} />
+    <BarChart pageData={data} rankData={data.output} />
   {:else if $chartType == "race"}
     <RaceChart
       pageData={data}
       surveyRecord={data.surveyRecord}
       entriesByTeam={data.entriesByTeam}
-      analysisData={data.output}
+      rankData={data.output}
     />
   {:else if $chartType == "stacked"}
-    <StackedChart pageData={data} analysisData={data.output} />
+    <StackedChart pageData={data} rankData={data.output} />
   {/if}
 </div>

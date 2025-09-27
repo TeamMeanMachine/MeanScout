@@ -16,7 +16,7 @@
 
   let surveyRecord = $state($state.snapshot(data.surveyRecord));
 
-  const newTab = sessionStorageStore<"entry" | "survey" | "picklist">("admin-analysis-new-tab", "entry");
+  const newTab = sessionStorageStore<"entry" | "survey" | "picklist">("admin-rank-new-tab", "entry");
 
   const sortedExpressions = $derived(surveyRecord.expressions.toSorted(sortExpressions));
 

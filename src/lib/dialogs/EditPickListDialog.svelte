@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PickList } from "$lib/analysis";
+  import type { PickList } from "$lib/rank";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { Expression } from "$lib/expression";

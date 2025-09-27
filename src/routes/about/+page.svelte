@@ -184,6 +184,7 @@
         <li>Create match or pit (no match) surveys</li>
         <li>You can make as many surveys as you need for various purposes</li>
         <li>Set up fields you need to scout</li>
+        <li>Create data-driven rankings</li>
       </ol>
     </div>
 
@@ -199,13 +200,14 @@
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Data-driven rankings</h2>
-      <ol class="ml-8 list-outside list-decimal space-y-1">
+      <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Create expressions that transform (multiply, convert) and summarize (average, sum) your data</li>
         <li>Entry expressions (aka computed fields) produce per-entry values</li>
         <li>Survey expressions combine those values across entries</li>
         <li>Create pick lists that pull from survey expressions with given weights</li>
         <li>Once you have data, you can view team rankings for pick lists and expressions</li>
-      </ol>
+        <li>Rankings are also available for your numeric (number, toggle, rating, timer) fields</li>
+      </ul>
     </div>
 
     <div class="flex flex-col gap-2">

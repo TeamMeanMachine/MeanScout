@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getExpressionData, getPickListData, type AnalysisData } from "$lib/analysis";
+  import { getExpressionData, getFieldData, getPickListData, type RankData } from "$lib/rank";
   import type { MatchEntry } from "$lib/entry";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -17,12 +17,12 @@
     pageData,
     surveyRecord,
     entriesByTeam,
-    analysisData,
+    rankData,
   }: {
     pageData: CompPageData;
     surveyRecord: MatchSurvey;
     entriesByTeam: Record<string, MatchEntry[]>;
-    analysisData: AnalysisData;
+    rankData: RankData;
   } = $props();
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
@@ -38,26 +38,26 @@
 
   const initMatch = getInitMatch();
 
-  const initData = generateRaceData(initMatch).data.map((data) => {
-    if ("value" in data) {
+  const initRankData = generateRaceRankData(initMatch).teams.map((teamRank) => {
+    if ("value" in teamRank) {
       return {
-        ...data,
-        percentage: new Tween(data.percentage, tweenOptions),
-        value: new Tween(data.value, tweenOptions),
+        ...teamRank,
+        percentage: new Tween(teamRank.percentage, tweenOptions),
+        value: new Tween(teamRank.value, tweenOptions),
       };
     } else {
       return {
-        ...data,
-        percentage: new Tween(data.percentage, tweenOptions),
+        ...teamRank,
+        percentage: new Tween(teamRank.percentage, tweenOptions),
       };
     }
   });
 
   let match = $state(initMatch);
-  let data = $state(initData);
+  let currentRankData = $state(initRankData);
   let interval = $state<NodeJS.Timeout>();
 
-  let matchData = $derived.by(() => {
+  let matchTeams = $derived.by(() => {
     const possibleMatch = pageData.compRecord.matches.find((m) => m.number == match);
     if (possibleMatch) {
       return [
@@ -83,35 +83,43 @@
     return 1;
   }
 
-  function generateRaceData(toMatch: number) {
+  function generateRaceRankData(toMatch: number) {
     const subsetEntriesByTeam: Record<string, MatchEntry[]> = {};
 
     for (const team in entriesByTeam) {
       subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);
     }
 
-    let data =
-      analysisData.type == "picklist"
+    let newRankData =
+      rankData.type == "picklist"
         ? getPickListData(
             pageData.compRecord,
-            analysisData.pickList.name,
+            rankData.pickList,
             surveyRecord,
             subsetEntriesByTeam,
             fieldsWithDetails.orderedSingle,
           )
-        : getExpressionData(
-            pageData.compRecord,
-            analysisData.expression.name,
-            surveyRecord,
-            subsetEntriesByTeam,
-            fieldsWithDetails.orderedSingle,
-          );
+        : rankData.type == "expression"
+          ? getExpressionData(
+              pageData.compRecord,
+              rankData.expression,
+              surveyRecord,
+              subsetEntriesByTeam,
+              fieldsWithDetails.orderedSingle,
+            )
+          : getFieldData(
+              pageData.compRecord,
+              rankData.field,
+              surveyRecord,
+              subsetEntriesByTeam,
+              fieldsWithDetails.orderedSingle,
+            );
 
-    if (!data) {
+    if (!newRankData) {
       throw new Error("AAAAA");
     }
 
-    return data;
+    return newRankData;
   }
 
   onMount(() => {
@@ -131,37 +139,37 @@
   }
 
   function update() {
-    const newData = generateRaceData(match);
+    const newRankData = generateRaceRankData(match);
 
-    if (newData.type == "expression") {
-      data = data.map((team) => {
-        const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+    if (newRankData.type != "picklist") {
+      currentRankData = currentRankData.map((teamRank) => {
+        const newPercentage = newRankData.teams.find((d) => d.team == teamRank.team)?.percentage;
         if (newPercentage !== undefined) {
-          team.percentage.target = newPercentage;
+          teamRank.percentage.target = newPercentage;
         }
 
-        if (!("value" in team)) {
-          return team;
+        if (!("value" in teamRank)) {
+          return teamRank;
         }
 
-        const newValue = newData.data.find((d) => d.team == team.team)?.value;
+        const newValue = newRankData.teams.find((d) => d.team == teamRank.team)?.value;
         if (newValue !== undefined) {
-          team.value.target = newValue;
+          teamRank.value.target = newValue;
         }
 
-        return team;
+        return teamRank;
       });
     } else {
-      data = data.map((team) => {
-        const newPercentage = newData.data.find((d) => d.team == team.team)?.percentage;
+      currentRankData = currentRankData.map((teamRank) => {
+        const newPercentage = newRankData.teams.find((d) => d.team == teamRank.team)?.percentage;
         if (newPercentage !== undefined) {
-          team.percentage.target = newPercentage;
+          teamRank.percentage.target = newPercentage;
         }
-        return team;
+        return teamRank;
       });
     }
 
-    data.sort((a, b) => b.percentage.target - a.percentage.target);
+    currentRankData.sort((a, b) => b.percentage.target - a.percentage.target);
   }
 
   onDestroy(() => {
@@ -237,19 +245,19 @@
 </div>
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
-  {#each data as teamData, rank (teamData.team)}
-    {@const color = `rgb(var(--theme-color) / ${teamData.percentage.current.toFixed(2)}%)`}
+  {#each currentRankData as teamRank (teamRank.team)}
+    {@const color = `rgb(var(--theme-color) / ${teamRank.percentage.current.toFixed(2)}%)`}
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($highlightedTeam = $highlightedTeam == teamData.team ? "" : teamData.team)}
+      onclick={() => ($highlightedTeam = $highlightedTeam == teamRank.team ? "" : teamRank.team)}
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
-          <span class="font-bold">{rank + 1}</span>
-          <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
+          <span class="font-bold">{teamRank.rank}</span>
+          <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
         </div>
       </Anchor>
 
@@ -257,25 +265,25 @@
         <div
           class={[
             "flex items-end justify-between gap-3",
-            $highlightedTeam == teamData.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
+            $highlightedTeam == teamRank.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
           <div class="flex flex-col">
-            <span class="font-bold" class:underline={matchData?.includes(teamData.team)}>{teamData.team}</span>
-            {#if teamData.teamName}
-              <span class={["text-xs", matchData?.includes(teamData.team) ? "font-bold" : "font-light"]}>
-                {teamData.teamName}
+            <span class="font-bold" class:underline={matchTeams?.includes(teamRank.team)}>{teamRank.team}</span>
+            {#if teamRank.teamName}
+              <span class={["text-xs", matchTeams?.includes(teamRank.team) ? "font-bold" : "font-light"]}>
+                {teamRank.teamName}
               </span>
             {/if}
           </div>
-          {#if "value" in teamData}
-            {teamData.value.current.toFixed(2)}
+          {#if "value" in teamRank}
+            {teamRank.value.current.toFixed(2)}
           {:else}
-            <span>{teamData.percentage.current.toFixed(1)}<span class="text-xs font-light">%</span></span>
+            <span>{teamRank.percentage.current.toFixed(1)}<span class="text-xs font-light">%</span></span>
           {/if}
         </div>
-        <div class={$highlightedTeam == teamData.team ? "bg-neutral-700" : "bg-neutral-800"}>
-          <div style="background-color:{color};width:{teamData.percentage.current.toFixed(2)}%;height:6px"></div>
+        <div class={$highlightedTeam == teamRank.team ? "bg-neutral-700" : "bg-neutral-800"}>
+          <div style="background-color:{color};width:{teamRank.percentage.current.toFixed(2)}%;height:6px"></div>
         </div>
       </div>
     </div>

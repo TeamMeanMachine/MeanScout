@@ -1,16 +1,10 @@
 <script lang="ts">
   import { getOrdinal, type Match } from "$lib";
-  import {
-    getExpressionData,
-    getPickListData,
-    type AnalysisTeamData,
-    type PickList,
-    type SelectedAnalysis,
-  } from "$lib/analysis";
+  import { getExpressionData, getPickListData, type TeamRank, type PickList, getFieldData } from "$lib/rank";
   import Button from "$lib/components/Button.svelte";
   import { type MatchEntry } from "$lib/entry";
   import { type Expression } from "$lib/expression";
-  import { getFieldsWithDetails } from "$lib/field";
+  import { getFieldsWithDetails, type Field, type SingleFieldWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
@@ -32,64 +26,88 @@
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
-  const groupedRanks = $derived(matchSurveys.flatMap(groupRanks));
+  const groupedRanks = $derived(
+    matchSurveys.flatMap((survey) => {
+      const fieldsWithDetails = getFieldsWithDetails(
+        survey,
+        pageData.fieldRecords.filter((f) => f.surveyId == survey.id),
+      );
+      return groupRanks(survey, fieldsWithDetails.orderedSingle);
+    }),
+  );
 
-  const analysisViewSchema = z
+  const rankViewSchema = z
     .union([
       z.object({ surveyId: z.string(), pickList: z.string() }),
       z.object({ surveyId: z.string(), expression: z.string() }),
+      z.object({ surveyId: z.string(), field: z.string() }),
       z.undefined(),
     ])
     .catch(undefined);
 
-  function getAnalysisView() {
+  function getRankView() {
     try {
-      return JSON.parse(sessionStorage.getItem("analysis-view") ?? "null");
+      return JSON.parse(sessionStorage.getItem("rank-view") ?? "null");
     } catch {}
   }
 
   let selecting = $state(false);
   let selectedRanking = $state(initialRanking());
 
-  function initialRanking(): SelectedAnalysis | undefined {
-    const analysisView = analysisViewSchema.parse(getAnalysisView());
-    if (!analysisView) return;
+  function initialRanking() {
+    const rankView = rankViewSchema.parse(getRankView());
+    if (!rankView) return;
 
-    const survey = matchSurveys.find((survey) => survey.id == analysisView?.surveyId);
+    const survey = matchSurveys.find((survey) => survey.id == rankView?.surveyId);
     if (!survey) return;
 
-    if ("pickList" in analysisView) {
-      const name = analysisView.pickList;
+    if ("pickList" in rankView) {
+      const name = rankView.pickList;
       const pickList = survey.pickLists.find((pl) => pl.name == name);
       if (pickList) return getRanking({ survey, pickList });
     }
 
-    if ("expression" in analysisView) {
-      const name = analysisView.expression;
+    if ("expression" in rankView) {
+      const name = rankView.expression;
       const expression = survey.expressions.find((e) => e.name == name);
       if (expression) return getRanking({ survey, expression });
+    }
+
+    if ("field" in rankView) {
+      const id = rankView.field;
+      const field = getFieldsWithDetails(
+        survey,
+        pageData.fieldRecords.filter((f) => f.surveyId == survey.id),
+      ).orderedSingle.find((f) => f.field.id == id);
+      if (field) return getRanking({ survey, field });
     }
   }
 
   function switchRanking(params: Parameters<typeof getRanking>[0]) {
     selecting = false;
     scrollTo(0, 0);
-    const value = getRanking(params);
-    if (value) {
-      if (value.output?.type == "picklist") {
-        const analysisView = { surveyId: params.survey.id, pickList: value.output.pickList.name };
-        sessionStorage.setItem("analysis-view", JSON.stringify(analysisView));
-      } else if (value.output?.type == "expression") {
-        const analysisView = { surveyId: params.survey.id, expression: value.output.expression.name };
-        sessionStorage.setItem("analysis-view", JSON.stringify(analysisView));
+    const ranking = getRanking(params);
+    if (ranking) {
+      if (ranking.rankData?.type == "picklist") {
+        const rankView = { surveyId: params.survey.id, pickList: ranking.rankData.pickList.name };
+        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
+      } else if (ranking.rankData?.type == "expression") {
+        const rankView = { surveyId: params.survey.id, expression: ranking.rankData.expression.name };
+        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
+      } else if (ranking.rankData.type == "field") {
+        const rankView = { surveyId: params.survey.id, field: ranking.rankData.field.field.id };
+        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
       }
     }
-    return value;
+    return ranking;
   }
 
   function getRanking(
-    params: { survey: MatchSurvey; pickList: PickList } | { survey: MatchSurvey; expression: Expression },
-  ): SelectedAnalysis | undefined {
+    params:
+      | { survey: MatchSurvey; pickList: PickList }
+      | { survey: MatchSurvey; expression: Expression }
+      | { survey: MatchSurvey; field: SingleFieldWithDetails },
+  ) {
     const entriesByTeam: Record<string, MatchEntry[]> = {};
     for (const entry of pageData.entryRecords.filter(
       (e): e is MatchEntry => e.surveyId == params.survey.id && e.type == "match",
@@ -107,27 +125,42 @@
     );
 
     if ("pickList" in params) {
-      const output = getPickListData(
+      const rankData = getPickListData(
         pageData.compRecord,
-        params.pickList.name,
+        params.pickList,
         params.survey,
         entriesByTeam,
         fieldsWithDetails.orderedSingle,
       );
+      if (!rankData) return;
 
-      return { ...params, entriesByTeam, output };
+      return { ...params, entriesByTeam, rankData };
     }
 
     if ("expression" in params) {
-      const output = getExpressionData(
+      const rankData = getExpressionData(
         pageData.compRecord,
-        params.expression.name,
+        params.expression,
         params.survey,
         entriesByTeam,
         fieldsWithDetails.orderedSingle,
       );
+      if (!rankData) return;
 
-      return { ...params, entriesByTeam, output };
+      return { ...params, entriesByTeam, rankData };
+    }
+
+    if ("field" in params) {
+      const rankData = getFieldData(
+        pageData.compRecord,
+        params.field,
+        params.survey,
+        entriesByTeam,
+        fieldsWithDetails.orderedSingle,
+      );
+      if (!rankData) return;
+
+      return { ...params, entriesByTeam, rankData };
     }
   }
 </script>
@@ -141,6 +174,8 @@
           {selectedRanking.pickList.name}
         {:else if "expression" in selectedRanking}
           {selectedRanking.expression.name}
+        {:else if "field" in selectedRanking}
+          {selectedRanking.field.detailedName}
         {/if}
       </span>
     {:else}
@@ -154,34 +189,38 @@
     {/if}
   </Button>
 
-  {#if !selecting && selectedRanking?.output}
+  {#if !selecting && selectedRanking}
     {@const pickListParam =
-      selectedRanking.output.type == "picklist" &&
-      "picklist=" + encodeURIComponent(selectedRanking.output.pickList.name)}
+      selectedRanking.rankData.type == "picklist" &&
+      "picklist=" + encodeURIComponent(selectedRanking.rankData.pickList.name)}
     {@const expressionParam =
-      selectedRanking.output.type == "expression" &&
-      "expression=" + encodeURIComponent(selectedRanking.output.expression.name)}
-    {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${pickListParam || expressionParam || ""}`}
+      selectedRanking.rankData.type == "expression" &&
+      "expression=" + encodeURIComponent(selectedRanking.rankData.expression.name)}
+    {@const fieldParam =
+      selectedRanking.rankData.type == "field" &&
+      "field=" + encodeURIComponent(selectedRanking.rankData.field.field.id)}
+    {@const objectParam = pickListParam || expressionParam || fieldParam || ""}
+    {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${objectParam}`}
 
     <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
       {#each redAlliance as team}
-        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
-        {#if teamData}
-          {@render teamRow(teamData, "bg-red")}
+        {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
+        {#if teamRank}
+          {@render teamRow(teamRank, "bg-red")}
         {/if}
       {/each}
 
       {#each blueAlliance as team}
-        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
-        {#if teamData}
-          {@render teamRow(teamData, "bg-blue")}
+        {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
+        {#if teamRank}
+          {@render teamRow(teamRank, "bg-blue")}
         {/if}
       {/each}
 
       {#each match.extraTeams || [] as team}
-        {@const teamData = selectedRanking.output.data.find((teamData) => teamData.team == team)}
-        {#if teamData}
-          {@render teamRow(teamData, "bg-neutral-400")}
+        {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
+        {#if teamRank}
+          {@render teamRow(teamRank, "bg-neutral-400")}
         {/if}
       {/each}
     </div>
@@ -191,14 +230,12 @@
       View rank
     </Anchor>
 
-    {#snippet teamRow(teamData: AnalysisTeamData, bgColor: string)}
-      {@const rank = selectedRanking?.output?.data.findIndex((td) => td.team == teamData.team)}
-
-      <Anchor route="comp/{pageData.compRecord.id}/team/{teamData.team}" class="justify-center text-sm">
+    {#snippet teamRow(teamRank: TeamRank, bgColor: string)}
+      <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
-          {#if rank !== undefined}
-            <span class="font-bold">{rank + 1}</span>
-            <span class="hidden text-xs font-light sm:inline">{getOrdinal(rank + 1)}</span>
+          {#if teamRank.rank}
+            <span class="font-bold">{teamRank.rank}</span>
+            <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
           {:else}
             -
           {/if}
@@ -208,19 +245,19 @@
       <div>
         <div class="flex items-end justify-between gap-3">
           <div class="flex flex-col">
-            <span class="font-bold">{teamData.team}</span>
-            {#if teamData?.teamName}
-              <span class="text-xs font-light">{teamData?.teamName}</span>
+            <span class="font-bold">{teamRank.team}</span>
+            {#if teamRank?.teamName}
+              <span class="text-xs font-light">{teamRank?.teamName}</span>
             {/if}
           </div>
-          {#if teamData && "value" in teamData}
-            {teamData.value.toFixed(2) || 0}
+          {#if "value" in teamRank}
+            {teamRank.value.toFixed(2) || 0}
           {:else}
-            <span>{teamData?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+            <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
           {/if}
         </div>
         <div class="bg-neutral-800">
-          <div class={bgColor} style="width:{teamData?.percentage.toFixed(2) || 0}%;height:6px"></div>
+          <div class={bgColor} style="width:{teamRank?.percentage.toFixed(2) || 0}%;height:6px"></div>
         </div>
       </div>
     {/snippet}
@@ -241,6 +278,11 @@
           {#each group.expressions || [] as expression}
             <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, expression }))}>
               {expression.name}
+            </Button>
+          {/each}
+          {#each group.fields || [] as field}
+            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, field }))}>
+              {field.detailedName}
             </Button>
           {/each}
         </div>

@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { pickListSchema } from "./analysis";
+import { pickListSchema } from "./rank";
 import { expressionSchema, sortExpressions } from "./expression";
+import type { SingleFieldWithDetails } from "./field";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
@@ -32,7 +33,7 @@ export type PitSurvey = z.infer<typeof pitSurveySchema>;
 export const surveySchema = z.discriminatedUnion("type", [matchSurveySchema, pitSurveySchema]);
 export type Survey = z.infer<typeof surveySchema>;
 
-export function groupRanks(survey: MatchSurvey) {
+export function groupRanks(survey: MatchSurvey, orderedSingleFields: SingleFieldWithDetails[]) {
   const sortedExpressions = survey.expressions.toSorted(sortExpressions);
   const expressions = Object.groupBy(sortedExpressions, (e) => {
     if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
@@ -80,5 +81,10 @@ export function groupRanks(survey: MatchSurvey) {
       category: "Entry Expressions from fields",
       expressions: expressions.entryPrimitive,
     },
-  ].filter((group) => group.pickLists?.length || group.expressions?.length);
+    {
+      survey,
+      category: "Fields",
+      fields: orderedSingleFields.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type)),
+    },
+  ].filter((group) => group.pickLists?.length || group.expressions?.length || group.fields?.length);
 }

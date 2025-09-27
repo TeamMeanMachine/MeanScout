@@ -1,22 +1,14 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
-  import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
+  import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
-  import Anchor from "$lib/components/Anchor.svelte";
 
   let { data }: PageProps = $props();
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
-
-  const nextTeam = $derived.by(() => {
-    return data.teams.find((t) => data.team.number.localeCompare(t.number, "en", { numeric: true }) == -1);
-  });
-  const previousTeam = $derived.by(() => {
-    return data.teams.findLast((t) => data.team.number.localeCompare(t.number, "en", { numeric: true }) == 1);
-  });
 </script>
 
 <div class="flex flex-col gap-6">
@@ -28,46 +20,17 @@
       {/if}
     </div>
 
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <div class="flex gap-2" data-sveltekit-replacestate>
-        {#if previousTeam}
-          <Anchor
-            route="comp/{data.compRecord.id}/team/{previousTeam.number}"
-            class="active:-translate-x-0.5! active:translate-y-0!"
-          >
-            <ArrowLeftIcon class="text-theme size-5" />
-          </Anchor>
-        {:else}
-          <Button disabled>
-            <ArrowLeftIcon class="text-theme size-5" />
-          </Button>
-        {/if}
-
-        {#if nextTeam}
-          <Anchor route="comp/{data.compRecord.id}/team/{nextTeam.number}">
-            <ArrowRightIcon class="text-theme size-5" />
-          </Anchor>
-        {:else}
-          <Button disabled>
-            <ArrowRightIcon class="text-theme size-5" />
-          </Button>
-        {/if}
+    {#if data.hasExpressions}
+      <div class="flex gap-2 text-sm">
+        <Button
+          onclick={() => ($showData = "expressions")}
+          class={$showData == "expressions" ? "font-bold" : "font-light"}
+        >
+          Derived
+        </Button>
+        <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>Raw</Button>
       </div>
-
-      {#if data.hasExpressions}
-        <div class="flex gap-2 text-sm">
-          <Button
-            onclick={() => ($showData = "expressions")}
-            class={$showData == "expressions" ? "font-bold" : "font-light"}
-          >
-            Derived
-          </Button>
-          <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>
-            Raw
-          </Button>
-        </div>
-      {/if}
-    </div>
+    {/if}
   </div>
 
   {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}

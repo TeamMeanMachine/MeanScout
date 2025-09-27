@@ -9,15 +9,7 @@
 
   let { data }: PageProps = $props();
 
-  const matchSurveys = $derived(
-    data.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
-  );
-
-  const showRanks = $derived(
-    data.fieldRecords.length &&
-      data.entryRecords.length &&
-      matchSurveys.some((survey) => survey.pickLists.length || survey.expressions.length),
-  );
+  const showRanks = $derived(data.fieldRecords.length && data.entryRecords.length);
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
   const showWhich = sessionStorageStore<"info" | "ranks" | "data">("match-view-show-which", "info");
@@ -80,7 +72,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <div class="flex gap-2" data-sveltekit-replacestate>
+      <div class="flex gap-2">
         {#if previousMatch}
           <Anchor
             route="comp/{data.compRecord.id}/match/{previousMatch.number}"

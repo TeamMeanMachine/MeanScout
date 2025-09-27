@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import type { Team, Value } from "$lib";
-  import { getExpressionData } from "$lib/analysis";
+  import { getExpressionData } from "$lib/rank";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
@@ -60,11 +60,11 @@
     for (const expression of sortedEntryExpressions) {
       const value = getExpressionData(
         pageData.compRecord,
-        expression.name,
+        expression,
         surveyRecord,
         { [entry.team]: [entry] },
         fieldsWithDetails.orderedSingle,
-      )?.data[0].value;
+      )?.teams[0].value;
 
       if (value) {
         values[expression.name] = value;
@@ -199,22 +199,44 @@
                 .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
                 .filter((f) => f !== undefined)}
 
-              {#each nestedFields as { name, type }}
-                <th class={["border-b border-neutral-700 p-2 text-nowrap", type == "text" && "text-left"]}>
-                  <div class={[type == "text" && `sticky ${leftStickColumnName} inline`]}>{name}</div>
+              {#each nestedFields as { name, id, type }}
+                <th class={["border-b border-neutral-700 p-1 text-nowrap", type == "text" && "p-2 text-left"]}>
+                  {#if type == "text"}
+                    <div class="sticky {leftStickColumnName} inline">{name}</div>
+                  {:else}
+                    <Anchor
+                      route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
+                        surveyRecord.id,
+                      )}&field={encodeURIComponent(id)}"
+                      class="justify-center p-1! text-center!"
+                    >
+                      {name}
+                    </Anchor>
+                  {/if}
                 </th>
               {/each}
               <td class="border-r border-b border-neutral-700"></td>
             {:else}
               <th
                 class={[
-                  "border-r border-b border-neutral-700 p-2 text-nowrap",
-                  topLevelField.field.type == "text" && "text-left",
+                  "border-r border-b border-neutral-700 p-1 text-nowrap",
+                  topLevelField.field.type == "text" && "p-2 text-left",
                 ]}
               >
-                <div class={[topLevelField.field.type == "text" && `sticky ${leftStickColumnName} inline`]}>
-                  {topLevelField.field.name}
-                </div>
+                {#if topLevelField.field.type == "text"}
+                  <div class="sticky ${leftStickColumnName} inline">
+                    {topLevelField.field.name}
+                  </div>
+                {:else}
+                  <Anchor
+                    route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
+                      surveyRecord.id,
+                    )}&field={encodeURIComponent(topLevelField.field.id)}"
+                    class="justify-center p-1! text-center!"
+                  >
+                    {topLevelField.field.name}
+                  </Anchor>
+                {/if}
               </th>
             {/if}
           {/each}

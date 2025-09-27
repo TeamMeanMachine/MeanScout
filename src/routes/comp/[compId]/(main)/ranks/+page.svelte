@@ -42,6 +42,15 @@
               {expression.name}
             </Anchor>
           {/each}
+          {#each group.fields || [] as field}
+            <Anchor
+              route="comp/{data.compRecord.id}/rank?surveyId={encodeURIComponent(
+                group.survey.id,
+              )}&field={encodeURIComponent(field.field.id)}"
+            >
+              {field.detailedName}
+            </Anchor>
+          {/each}
         </div>
       </div>
     {/each}
