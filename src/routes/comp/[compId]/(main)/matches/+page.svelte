@@ -117,12 +117,17 @@
       <label class="flex flex-col text-sm">
         Search
         <input
+          {@attach (input) => {
+            if (sessionStorage.getItem("match-search")) {
+              input.focus();
+              input.select();
+            }
+          }}
           value={debouncedSearch}
           oninput={(e) => onsearchinput(e.currentTarget.value)}
           onkeypress={(e) => e.key == "Enter" && onsearchenter()}
           class="text-theme bg-neutral-800 p-2"
         />
-        <span class="pt-1 text-xs font-light">Tip: you can input multiple teams via spaces</span>
       </label>
     </div>
 

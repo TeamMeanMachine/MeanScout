@@ -50,6 +50,12 @@
       <label class="flex flex-col text-sm">
         Search
         <input
+          {@attach (input) => {
+            if (sessionStorage.getItem("team-search")) {
+              input.focus();
+              input.select();
+            }
+          }}
           value={debouncedSearch}
           oninput={(e) => onsearchinput(e.currentTarget.value)}
           onkeypress={(e) => e.key == "Enter" && onsearchenter()}
@@ -58,7 +64,7 @@
       </label>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-2">
       {#each filteredTeams as team}
         <Anchor route="comp/{data.compRecord.id}/team/{team.number}">
           <div class="flex flex-col">
