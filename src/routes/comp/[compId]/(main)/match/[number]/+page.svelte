@@ -6,6 +6,7 @@
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
+  import MatchPitDataTable from "$lib/components/MatchPitDataTable.svelte";
 
   let { data }: PageProps = $props();
 
@@ -139,7 +140,7 @@
     {#each data.surveyRecords
       .filter((survey) => survey.type == "match")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col gap-1 overflow-x-auto">
+      <div class="flex flex-col items-start gap-1 overflow-x-auto">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
         {#key data.match}
@@ -178,6 +179,18 @@
       {/each}
     </div>
   {/if}
+
+  {#each data.surveyRecords
+    .filter((survey) => survey.type == "pit")
+    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+    <div class="flex flex-col items-start gap-1 overflow-x-auto">
+      <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+
+      {#key data.match}
+        <MatchPitDataTable pageData={data} {surveyRecord} match={data.match} />
+      {/key}
+    </div>
+  {/each}
 
   {#if data.compRecord.tbaEventKey}
     <div class="flex flex-wrap gap-x-4">

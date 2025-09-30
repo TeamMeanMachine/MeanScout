@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import type { Team, Value } from "$lib";
   import { getExpressionData } from "$lib/rank";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -7,7 +6,6 @@
   import { getFieldsWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey } from "$lib/survey";
-  import Button from "./Button.svelte";
   import Anchor from "./Anchor.svelte";
 
   let {
@@ -100,27 +98,30 @@
       <tr>
         <th
           rowspan="2"
-          class="sticky left-0 z-10 border-r border-b border-neutral-700 bg-neutral-800 p-2 text-center align-bottom"
+          class="sticky left-0 z-10 border border-neutral-700 bg-neutral-800 p-2 text-center align-bottom"
         >
           #
         </th>
 
         {#if show == "raw" && someScout}
-          <td class="border-r border-neutral-700"></td>
+          <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
         {#if someDraft}
-          <td class="border-r border-neutral-700"></td>
+          <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
         {#if someAbsent}
-          <td class="border-r border-neutral-700"></td>
+          <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
         {#if show == "expressions"}
           {#each ["derived", "tba", "primitive"] as const as input}
             {#if entryExpressions[input]?.length}
-              <th colspan={entryExpressions[input]?.length} class="px-2 pt-1 pb-0 text-center font-light">
+              <th
+                colspan={entryExpressions[input]?.length}
+                class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
+              >
                 <div class="sticky right-2 {leftStickColumnName} inline">
                   From
                   {#if input == "derived"}
@@ -132,24 +133,30 @@
                   {/if}
                 </div>
               </th>
-              <td class="border-r border-neutral-700"></td>
+              <td class="border-t border-r border-neutral-700"></td>
             {/if}
           {/each}
         {:else}
           {#if surveyRecord.tbaMetrics?.length}
-            <th colspan={surveyRecord.tbaMetrics.length} class="px-2 pt-1 pb-0 text-center font-light">
+            <th
+              colspan={surveyRecord.tbaMetrics.length}
+              class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
+            >
               <div class="sticky right-2 {leftStickColumnName} inline">TBA</div>
             </th>
-            <td class="border-r border-neutral-700"></td>
+            <td class="border-t border-r border-neutral-700"></td>
           {/if}
 
           {#each fieldsWithDetails.topLevel as topLevelField}
             {#if topLevelField.type == "group"}
-              <th colspan={topLevelField.field.fieldIds.length} class="px-2 pt-1 pb-0 font-light">
+              <th
+                colspan={topLevelField.field.fieldIds.length}
+                class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
+              >
                 <div class="sticky right-2 {leftStickColumnName} inline">{topLevelField.field.name}</div>
               </th>
             {/if}
-            <td class="border-r border-neutral-700"></td>
+            <td class="border-t border-r border-neutral-700"></td>
           {/each}
         {/if}
       </tr>
@@ -248,7 +255,7 @@
       {#each entriesPerMatch as { number, entries }}
         {#each entries as entry}
           <tr>
-            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
+            <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
               <Anchor route="comp/{pageData.compRecord.id}/match/{number}" class="w-13 justify-center py-1.5">
                 {number}
               </Anchor>
@@ -320,7 +327,7 @@
           </tr>
         {:else}
           <tr>
-            <th class="sticky left-0 border-r border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
+            <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
               <Anchor route="comp/{pageData.compRecord.id}/match/{number}" class="w-13 justify-center py-1.5">
                 {number}
               </Anchor>

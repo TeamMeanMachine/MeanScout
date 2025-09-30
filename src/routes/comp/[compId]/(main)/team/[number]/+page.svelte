@@ -34,7 +34,7 @@
   </div>
 
   {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col gap-1 overflow-x-auto">
+    <div class="flex flex-col items-start gap-1 overflow-x-auto">
       <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
       {#key data.team}
