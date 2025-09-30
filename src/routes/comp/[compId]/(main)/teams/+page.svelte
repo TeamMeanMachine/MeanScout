@@ -10,16 +10,16 @@
   let debounceTimer: number | undefined = undefined;
 
   let debouncedSearch = $state(sessionStorage.getItem("team-search") || "");
+  const cleanedSearch = $derived(debouncedSearch.trim().toLowerCase().replaceAll(" ", ""));
 
-  let filteredTeams = $state(data.teams.filter(filterTeam));
+  const filteredTeams = $derived(data.teams.filter(filterTeam));
 
   function onsearchinput(value: string) {
     window.clearTimeout(debounceTimer);
 
     debounceTimer = window.setTimeout(() => {
-      debouncedSearch = value.trim().toLowerCase().replaceAll(" ", "");
+      debouncedSearch = value;
       sessionStorage.setItem("team-search", debouncedSearch);
-      filteredTeams = data.teams.filter(filterTeam);
     }, debounceTimeMillis);
   }
 
@@ -29,11 +29,11 @@
   }
 
   function filterTeam(team: Team) {
-    if (!debouncedSearch) return true;
+    if (!cleanedSearch) return true;
 
     return (
-      team.number == parseInt(debouncedSearch).toString() ||
-      team.name.toLowerCase().replaceAll(" ", "").includes(debouncedSearch)
+      team.number == parseInt(cleanedSearch).toString() ||
+      team.name.toLowerCase().replaceAll(" ", "").includes(cleanedSearch)
     );
   }
 </script>

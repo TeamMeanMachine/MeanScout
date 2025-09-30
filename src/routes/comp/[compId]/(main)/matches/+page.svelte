@@ -15,7 +15,7 @@
 
   let debouncedSearch = $state(sessionStorage.getItem("match-search") || "");
 
-  let debouncedSearchParts = $derived(
+  const debouncedSearchParts = $derived(
     debouncedSearch
       .split(" ")
       .map((part) => part.trim())
@@ -23,7 +23,7 @@
       .map((part) => parseInt(part).toString()),
   );
 
-  let filteredMatches = $state(data.matches.toSorted(sortMatches).filter(filterMatch));
+  const filteredMatches = $derived(data.matches.toSorted(sortMatches).filter(filterMatch));
 
   const matchToggleStateSchema = z.array(z.union([z.literal("upcoming"), z.literal("previous")])).catch(["upcoming"]);
 
@@ -53,7 +53,6 @@
     debounceTimer = window.setTimeout(() => {
       debouncedSearch = value;
       sessionStorage.setItem("match-search", debouncedSearch);
-      filteredMatches = data.matches.toSorted(sortMatches).filter(filterMatch);
     }, debounceTimeMillis);
   }
 

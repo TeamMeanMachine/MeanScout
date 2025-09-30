@@ -9,10 +9,11 @@
   let debounceTimer: number | undefined = undefined;
 
   let debouncedSearch = $state(sessionStorage.getItem("rank-search") || "");
+  const cleanedSearch = $derived(debouncedSearch.trim().toLowerCase().replaceAll(" ", ""));
 
-  let filteredGroupedRanks = $derived.by(() => {
+  const filteredGroupedRanks = $derived.by(() => {
     data.groupedRanks;
-    return filterGroupedRanks(debouncedSearch);
+    return filterGroupedRanks(cleanedSearch);
   });
 
   function filterGroupedRanks(search: string) {
@@ -44,7 +45,7 @@
     window.clearTimeout(debounceTimer);
 
     debounceTimer = window.setTimeout(() => {
-      debouncedSearch = value.trim().toLowerCase().replaceAll(" ", "");
+      debouncedSearch = value;
       sessionStorage.setItem("rank-search", debouncedSearch);
     }, debounceTimeMillis);
   }
