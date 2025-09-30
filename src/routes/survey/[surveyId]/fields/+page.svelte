@@ -44,9 +44,6 @@
           return true;
         },
         put(to, _, dragEl) {
-          if (groups.length && !dragEl.classList.contains("group") && to.el.classList.contains("top-level")) {
-            return false;
-          }
           if (dragEl.classList.contains("group")) {
             return to.el.classList.contains("top-level");
           }
@@ -248,22 +245,15 @@
                       .map((id) => data.fieldRecords.find((f) => f.id == id))
                       .filter((f) => f !== undefined && f.type == "group");
 
-              const fixedGroupSelect = groups?.length
-                ? groups.some((g) => g.id == groupSelect)
-                  ? groupSelect
-                  : groups[0].id
-                : "";
-
               openDialog(NewFieldDialog, {
                 surveyRecord,
                 type: fieldType,
                 groups,
-                groupSelect: fixedGroupSelect,
+                groupSelect,
                 oncreate(id, parentId) {
                   if (!parentId) {
                     surveyRecord.fieldIds = [...surveyRecord.fieldIds, id];
                   }
-                  updateAndRefresh();
                   if (fieldType == "group") {
                     groupSelect = id;
                   } else if (parentId) {
@@ -271,6 +261,7 @@
                   } else {
                     groupSelect = "";
                   }
+                  updateAndRefresh();
                 },
               });
             }}

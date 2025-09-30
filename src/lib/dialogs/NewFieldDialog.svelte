@@ -44,11 +44,6 @@
     onconfirm() {
       field.name = field.name.trim();
 
-      if (groups?.length && !groupSelect) {
-        error = "Select a group";
-        return;
-      }
-
       if (!field.name) {
         error = "Name can't be empty";
         return;
@@ -126,11 +121,14 @@
 
 <span class="text-sm">New {groups?.find((g) => g.id == groupSelect)?.name} {type}</span>
 
-{#if field.type != "group" && groups && groups.length > 1}
+{#if field.type != "group" && groups && groups.length}
   <div class="flex flex-col">
     Group
     <div class="flex gap-3 text-sm">
       <div class="flex flex-wrap gap-2">
+        <Button onclick={() => (groupSelect = "")} class={groupSelect == "" ? "text-theme font-bold" : "font-light"}>
+          --
+        </Button>
         {#each groups as group}
           <Button
             onclick={() => (groupSelect = group.id)}
