@@ -5,10 +5,12 @@
   import { sessionStorageStore } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
+  import TimeChart from "$lib/components/TimeChart.svelte";
 
   let { data }: PageProps = $props();
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
+  const showWhich = sessionStorageStore<"chart" | "data">("team-view-show-which", "chart");
 </script>
 
 <div class="flex flex-col gap-6">
@@ -20,32 +22,59 @@
       {/if}
     </div>
 
-    {#if data.hasExpressions}
-      <div class="flex gap-2 text-sm">
+    <div class="flex flex-wrap gap-2 text-sm">
+      <Button onclick={() => ($showWhich = "chart")} class={$showWhich == "chart" ? "font-bold" : "font-light"}>
+        Chart
+      </Button>
+      {#if data.hasExpressions}
         <Button
-          onclick={() => ($showData = "expressions")}
-          class={$showData == "expressions" ? "font-bold" : "font-light"}
+          onclick={() => {
+            $showData = "expressions";
+            $showWhich = "data";
+          }}
+          class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
         >
           Derived
         </Button>
-        <Button onclick={() => ($showData = "raw")} class={$showData == "raw" ? "font-bold" : "font-light"}>Raw</Button>
-      </div>
-    {/if}
+      {/if}
+      <Button
+        onclick={() => {
+          $showData = "raw";
+          $showWhich = "data";
+        }}
+        class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}>Raw</Button
+      >
+    </div>
   </div>
 
-  {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col items-start gap-1 overflow-x-auto">
-      <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+  {#if $showWhich == "chart"}
+    <TimeChart pageData={data} team={data.team} />
+    {#each data.surveyRecords
+      .filter((s) => s.type == "pit")
+      .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+      <div class="flex flex-col items-start gap-1 overflow-x-auto">
+        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
-      {#key data.team}
-        {#if surveyRecord.type == "match"}
-          <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
-        {:else}
+        {#key data.team}
           <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
-        {/if}
-      {/key}
-    </div>
-  {/each}
+        {/key}
+      </div>
+    {/each}
+  {:else}
+    {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+      <div class="flex flex-col items-start gap-1 overflow-x-auto">
+        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+
+        {#key data.team}
+          {#if surveyRecord.type == "match"}
+            <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
+          {:else}
+            <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
+          {/if}
+        {/key}
+      </div>
+    {/each}
+  {/if}
 
   <div class="flex flex-wrap gap-x-4">
     {#if data.compRecord.tbaEventKey}
