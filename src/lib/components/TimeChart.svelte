@@ -2,17 +2,19 @@
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import type { Expression } from "$lib/expression";
-  import type { Team } from "$lib";
+  import { sessionStorageStore, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import type { Entry, MatchEntry } from "$lib/entry";
-  import { getExpressionData, getFieldData } from "$lib/rank";
+  import { colors, getExpressionData, getFieldData } from "$lib/rank";
   import Button from "./Button.svelte";
   import {
     ChartBarBigIcon,
     ChartColumnBigIcon,
     ChevronDownIcon,
     ChevronUpIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
@@ -26,6 +28,8 @@
     pageData: CompPageData;
     team: Team;
   } = $props();
+
+  const showInputs = sessionStorageStore<"" | "true">("metric-show-inputs", "");
 
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
@@ -112,39 +116,41 @@
 
     if ("expression" in params) {
       const data = entriesPerMatch.map(({ number, entries }) => {
+        const rankData = getExpressionData(
+          pageData.compRecord,
+          params.expression,
+          params.survey,
+          { [team.number]: entries },
+          fieldsWithDetails.orderedSingle,
+        )?.teams[0];
+
         return {
           match: number,
-          value: entries.length
-            ? getExpressionData(
-                pageData.compRecord,
-                params.expression,
-                params.survey,
-                { [team.number]: entries },
-                fieldsWithDetails.orderedSingle,
-              )?.teams[0].value
-            : undefined,
+          value: entries.length ? rankData?.value : undefined,
+          inputs: entries.length ? rankData?.inputs : undefined,
         };
       });
 
-      return createMetric(data, params);
+      return createMetric(data, params, fieldsWithDetails.orderedSingle);
     }
 
     if ("field" in params) {
       const data = entriesPerMatch.map(({ number, entries }) => {
+        const rankData = getFieldData(
+          pageData.compRecord,
+          params.field,
+          params.survey,
+          { [team.number]: entries },
+          fieldsWithDetails.orderedSingle,
+        )?.teams[0];
+
         return {
           match: number,
-          value: entries.length
-            ? getFieldData(
-                pageData.compRecord,
-                params.field,
-                params.survey,
-                { [team.number]: entries },
-                fieldsWithDetails.orderedSingle,
-              )?.teams[0].value
-            : undefined,
+          value: entries.length ? rankData?.value : undefined,
+          inputs: undefined,
         };
       });
-      return createMetric(data, params);
+      return createMetric(data, params, fieldsWithDetails.orderedSingle);
     }
   }
 
@@ -165,14 +171,34 @@
   }
 
   function createMetric(
-    data: { match: number; value: number | undefined }[],
+    data: {
+      match: number;
+      value: number | undefined;
+      inputs: { value: number; percentage: number }[] | undefined;
+    }[],
     params: { survey: MatchSurvey; expression: Expression } | { survey: MatchSurvey; field: SingleFieldWithDetails },
+    orderedSingleFields: SingleFieldWithDetails[],
   ) {
     const values = data.map((d) => d.value).filter((v) => v !== undefined);
     const max = values.length ? Math.max(...values) : 0;
+    const inputMaxes = data.map((d) => (d.inputs?.length ? Math.max(...d.inputs.map((i) => i.value)) : undefined));
+
+    let inputNames: string[] | undefined = undefined;
+    if (!("expression" in params)) {
+      inputNames = undefined;
+    } else if (params.expression.input.from == "expressions") {
+      inputNames = params.expression.input.expressionNames;
+    } else if (params.expression.input.from == "tba") {
+      inputNames = params.expression.input.metrics;
+    } else {
+      inputNames = params.expression.input.fieldIds
+        .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+        .filter((f) => f !== undefined);
+    }
 
     return {
       ...params,
+      inputNames,
       max,
       min: values.length ? Math.min(...values) : 0,
       average: values.reduce((prev, curr) => prev + curr, 0) / (values.length || 1),
@@ -181,6 +207,17 @@
         let percentage = 0;
         if (matchValuePair.value !== undefined) {
           percentage = matchValuePair.value / max;
+        }
+        if (matchValuePair.inputs !== undefined) {
+          matchValuePair.inputs = matchValuePair.inputs
+            .map((input, index) => {
+              const max = inputMaxes[index];
+              if (max !== undefined) {
+                return { ...input, percentage: input.value / max };
+              }
+              return input;
+            })
+            .toReversed();
         }
         return { ...matchValuePair, percentage };
       }),
@@ -229,29 +266,6 @@
     {@const objectParam = expressionParam || fieldParam || ""}
     {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedMetric.survey.id)}&${objectParam}`}
 
-    <div class="-m-1 -mx-3 flex items-end gap-3 overflow-x-auto p-1 px-3 text-center text-sm">
-      {#each selectedMetric.data as { match, value, percentage }}
-        {@const color = `rgb(var(--theme-color) / ${(percentage * 100).toFixed(2)}%)`}
-
-        <div class="flex shrink-0 grow basis-8 flex-col">
-          <div>{value ?? "_"}</div>
-          <div
-            class="shrink-0 {value !== undefined ? 'min-h-px' : ''}"
-            style="background-color:{color};height:{percentage * 128}px"
-          ></div>
-          <Button
-            onclick={() => {
-              sessionStorage.setItem("rank-view", sessionStorage.getItem("metric-view") || "");
-              goto(`#/comp/${pageData.compRecord.id}/match/${match}`);
-            }}
-            class="justify-center px-1"
-          >
-            {match}
-          </Button>
-        </div>
-      {/each}
-    </div>
-
     <div class="flex flex-wrap justify-between gap-x-6 gap-y-4 text-sm">
       <div class="flex flex-wrap gap-x-6 gap-y-3">
         <div class="flex flex-col">
@@ -278,12 +292,80 @@
           <span>{selectedMetric.max}</span>
         </div>
       </div>
-
-      <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
-        <ChartBarBigIcon class="text-theme size-5" />
-        View rank
-      </Anchor>
+      {#if selectedMetric.inputNames && selectedMetric.inputNames.length > 1}
+        <Button
+          onclick={() => ($showInputs = $showInputs ? "" : "true")}
+          class={$showInputs ? "font-bold" : "font-light"}
+        >
+          {#if $showInputs}
+            <SquareCheckBigIcon class="text-theme size-5" />
+          {:else}
+            <SquareIcon class="text-theme size-5" />
+          {/if}
+          Inputs
+        </Button>
+      {/if}
     </div>
+
+    <div class="flex flex-col gap-1">
+      {#if $showInputs && selectedMetric.inputNames && selectedMetric.inputNames?.length > 1}
+        <div class="flex flex-wrap gap-x-4 text-xs">
+          {#each selectedMetric.inputNames as name, i}
+            {@const color = colors[i % colors.length]}
+            <div>
+              <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+              {name}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="-m-1 -mx-3 flex items-end gap-3 overflow-x-auto p-1 px-3 text-center text-sm">
+        {#each selectedMetric.data as { match, value, percentage, inputs }}
+          {@const color = `rgb(var(--theme-color) / ${(percentage * 100).toFixed(2)}%)`}
+
+          <div class="flex shrink-0 grow basis-8 flex-col">
+            <div>{value ?? "_"}</div>
+            {#if $showInputs && inputs && inputs.length > 1}
+              {@const totalHeightPixels = percentage * 256 + 2 * (inputs.length - 1)}
+
+              <div class="mb-0.5 flex flex-col gap-0.5" style="height:{totalHeightPixels}px">
+                {#each inputs as input, i}
+                  {@const color = colors[inputs.length - 1 - i]}
+                  {@const heightPercent = (input.value / (value || 0)) * 100}
+
+                  <div
+                    class="flex flex-col justify-center overflow-hidden text-xs text-black"
+                    style="background-color:{color};height:{heightPercent}%"
+                  >
+                    {input.value}
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <div
+                class="shrink-0 {value !== undefined ? 'min-h-px' : ''}"
+                style="background-color:{color};height:{percentage * 128}px"
+              ></div>
+            {/if}
+            <Button
+              onclick={() => {
+                sessionStorage.setItem("rank-view", sessionStorage.getItem("metric-view") || "");
+                goto(`#/comp/${pageData.compRecord.id}/match/${match}`);
+              }}
+              class="justify-center px-1"
+            >
+              {match}
+            </Button>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
+      <ChartBarBigIcon class="text-theme size-5" />
+      View rank
+    </Anchor>
   {:else}
     {#each groupedRanks as group}
       <div class="flex flex-col gap-2">
