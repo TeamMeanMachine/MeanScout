@@ -8,7 +8,14 @@
   import type { Entry, MatchEntry } from "$lib/entry";
   import { getExpressionData, getFieldData } from "$lib/rank";
   import Button from "./Button.svelte";
-  import { ChartBarBigIcon, ChartColumnBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
+  import {
+    ChartBarBigIcon,
+    ChartColumnBigIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+    TrendingDownIcon,
+    TrendingUpIcon,
+  } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
   import { goto } from "$app/navigation";
 
@@ -104,12 +111,8 @@
       }));
 
     if ("expression" in params) {
-      let metric = {
-        ...params,
-        max: 0,
-        min: 0,
-        average: 0,
-        data: entriesPerMatch.map(({ number, entries }) => ({
+      const data = entriesPerMatch.map(({ number, entries }) => {
+        return {
           match: number,
           value: entries.length
             ? getExpressionData(
@@ -120,61 +123,28 @@
                 fieldsWithDetails.orderedSingle,
               )?.teams[0].value
             : undefined,
-          percentage: 0,
-        })),
-      };
-
-      const values = metric.data.map((d) => d.value).filter((v) => v !== undefined);
-      metric.max = values.length ? Math.max(...values) : 0;
-      metric.min = values.length ? Math.min(...values) : 0;
-      metric.average = values.reduce((prev, curr) => prev + curr, 0) / (values.length || 1);
-
-      metric.data = metric.data.map((matchValuePair) => {
-        if (matchValuePair.value !== undefined) {
-          matchValuePair.percentage = matchValuePair.value / metric.max;
-        }
-        return matchValuePair;
+        };
       });
 
-      return metric;
+      return createMetric(data, params);
     }
 
     if ("field" in params) {
-      let metric = {
-        ...params,
-        max: 0,
-        min: 0,
-        average: 0,
-        data: entriesPerMatch.map(({ number, entries }) => {
-          return {
-            match: number,
-            value: entries.length
-              ? getFieldData(
-                  pageData.compRecord,
-                  params.field,
-                  params.survey,
-                  { [team.number]: entries },
-                  fieldsWithDetails.orderedSingle,
-                )?.teams[0].value
-              : undefined,
-            percentage: 0,
-          };
-        }),
-      };
-
-      const values = metric.data.map((d) => d.value).filter((v) => v !== undefined);
-      metric.max = values.length ? Math.max(...values) : 0;
-      metric.min = values.length ? Math.min(...values) : 0;
-      metric.average = values.reduce((prev, curr) => prev + curr, 0) / (values.length || 1);
-
-      metric.data = metric.data.map((matchValuePair) => {
-        if (matchValuePair.value !== undefined) {
-          matchValuePair.percentage = matchValuePair.value / metric.max;
-        }
-        return matchValuePair;
+      const data = entriesPerMatch.map(({ number, entries }) => {
+        return {
+          match: number,
+          value: entries.length
+            ? getFieldData(
+                pageData.compRecord,
+                params.field,
+                params.survey,
+                { [team.number]: entries },
+                fieldsWithDetails.orderedSingle,
+              )?.teams[0].value
+            : undefined,
+        };
       });
-
-      return metric;
+      return createMetric(data, params);
     }
   }
 
@@ -192,6 +162,41 @@
       }
     }
     return metric;
+  }
+
+  function createMetric(
+    data: { match: number; value: number | undefined }[],
+    params: { survey: MatchSurvey; expression: Expression } | { survey: MatchSurvey; field: SingleFieldWithDetails },
+  ) {
+    const values = data.map((d) => d.value).filter((v) => v !== undefined);
+    const max = values.length ? Math.max(...values) : 0;
+
+    return {
+      ...params,
+      max,
+      min: values.length ? Math.min(...values) : 0,
+      average: values.reduce((prev, curr) => prev + curr, 0) / (values.length || 1),
+      trend: calculateTrend(values),
+      data: data.map((matchValuePair) => {
+        let percentage = 0;
+        if (matchValuePair.value !== undefined) {
+          percentage = matchValuePair.value / max;
+        }
+        return { ...matchValuePair, percentage };
+      }),
+    };
+  }
+
+  function calculateTrend(data: number[]) {
+    const n = data.length;
+    if (!n) return 0;
+
+    const sumX = data.reduce((prev, _, index) => prev + index + 1, 0);
+    const sumXSquared = data.reduce((prev, _, index) => prev + (index + 1) ** 2, 0);
+    const sumY = data.reduce((prev, curr) => prev + curr, 0);
+    const sumXY = data.reduce((prev, curr, index) => prev + curr * (index + 1), 0);
+
+    return (n * sumXY - sumX * sumY) / (n * sumXSquared - sumX ** 2);
   }
 </script>
 
@@ -249,6 +254,17 @@
 
     <div class="flex flex-wrap justify-between gap-x-6 gap-y-4 text-sm">
       <div class="flex flex-wrap gap-x-6 gap-y-3">
+        <div class="flex flex-col">
+          <span class="text-xs font-light">Trend</span>
+          <span>
+            {#if selectedMetric.trend > 0}
+              <TrendingUpIcon class="inline size-5" />
+            {:else if selectedMetric.trend < 0}
+              <TrendingDownIcon class="inline size-5" />
+            {/if}
+            {selectedMetric.trend > 0 ? "+" : ""}{selectedMetric.trend.toFixed(2)}
+          </span>
+        </div>
         <div class="flex flex-col">
           <span class="text-xs font-light">Average</span>
           <span>{selectedMetric.average.toFixed(2)}</span>

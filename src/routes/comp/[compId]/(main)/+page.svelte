@@ -202,7 +202,7 @@
                     {entryRecords.filter((e) => e.status != "draft").length}
                     {#if surveyRecord.type == "match" && data.compRecord.matches.length}
                       of {data.compRecord.matches.length * 6}
-                    {:else if data.compRecord.teams.length}
+                    {:else if surveyRecord.type == "pit" && data.compRecord.teams.length}
                       of {data.compRecord.teams.length}
                     {/if}
                     done
