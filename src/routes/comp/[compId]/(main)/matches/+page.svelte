@@ -105,7 +105,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  {#if !data.compRecord.matches.length}
+  {#if !data.matches.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold">Matches</h2>
       <span class="text-sm">No matches.</span>
