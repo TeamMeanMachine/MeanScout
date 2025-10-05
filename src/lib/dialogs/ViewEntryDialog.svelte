@@ -35,6 +35,8 @@
 
   function editEntry() {
     if (entry.status == "draft") {
+      sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
+      sessionStorage.removeItem("new-entry");
       goto(`#/entry/${entry.id}`);
       return;
     }
@@ -50,6 +52,8 @@
 
     editRequest.onsuccess = () => {
       idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
+      sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
+      sessionStorage.removeItem("new-entry");
       goto(`#/entry/${entry.id}`);
     };
   }

@@ -21,6 +21,7 @@
   import type { CompPageData } from "$lib/comp";
   import type { Survey } from "$lib/survey";
   import { z } from "zod";
+  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
 
   let {
     pageData,
@@ -81,6 +82,15 @@
   }
 
   const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
+
+  const matchingEntries = $derived.by(() => {
+    const uniqueString = (surveyRecord.type == "pit" ? "pit" : newEntryState.match) + "_" + newEntryState.team;
+
+    return pageData.entryRecords.filter((e) => {
+      const existingUniqueString = (e.type == "pit" ? "pit" : e.match) + "_" + e.team;
+      return uniqueString == existingUniqueString;
+    });
+  });
 
   function selectTargetTeamFromMatch(matchNumber: number) {
     const match = pageData.compRecord.matches.find((m) => m.number == matchNumber);
@@ -147,6 +157,12 @@
       }
     } else {
       for (const team of pageData.compRecord.teams) {
+        if (
+          pageData.entryRecords.find((e) => e.type == "pit" && e.surveyId == surveyRecord.id && e.team == team.number)
+        ) {
+          continue;
+        }
+
         teamSet.add(team.number);
       }
     }
@@ -251,7 +267,6 @@
     <h2 class="font-bold">New entry</h2>
     <span class="text-xs font-light">{surveyRecord.name}</span>
   </div>
-  <span class="text-xs font-light">{id}</span>
 </div>
 
 {#if pageData.compRecord.scouts}
@@ -491,13 +506,69 @@
   <span>Error: {error}</span>
 {/if}
 
+{#if matchingEntries.length}
+  <div class="my-3 flex flex-col gap-2">
+    <div class="flex flex-col">
+      <h2 class="font-bold">Matching Entries</h2>
+      <span class="text-xs font-light">Consider editing an existing entry, instead of creating a new one.</span>
+      <span class="text-xs font-light">You can view, edit, or delete them here.</span>
+    </div>
+
+    {#each matchingEntries as entry (entry.id)}
+      <Button
+        onclick={() => {
+          openDialog(ViewEntryDialog, {
+            compRecord: pageData.compRecord,
+            surveyRecord,
+            fieldRecords: pageData.fieldRecords,
+            entryRecord: entry,
+            onchange: invalidateAll,
+          });
+        }}
+        class="gap-x-4"
+      >
+        {#if entry.type == "match"}
+          <div class="flex w-9 flex-col">
+            <span class="text-xs font-light">Match</span>
+            <span>{entry.match}</span>
+          </div>
+        {:else if entry.type == "pit"}
+          <div class="flex w-9 flex-col">
+            <span class="text-sm">Pit</span>
+          </div>
+        {/if}
+        <div class="flex w-32 max-w-full flex-col">
+          <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+            {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
+          </span>
+          <span>{entry.team}</span>
+        </div>
+        {#if entry.scout}
+          <div class="flex w-24 max-w-full flex-col">
+            <span class="text-xs font-light text-wrap">Scout</span>
+            <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+          </div>
+        {/if}
+        <div class="flex flex-col">
+          {#if entry.type == "match" && entry.absent}
+            <span class="text-xs">Absent</span>
+          {/if}
+          {#if entry.status != "submitted"}
+            <span class="text-xs capitalize">{entry.status}</span>
+          {/if}
+        </div>
+      </Button>
+    {/each}
+  </div>
+{/if}
+
 <div class="mt-3 flex flex-wrap gap-3">
+  <Button onclick={onconfirm}>
+    <PlusIcon class="text-theme" />
+    Create new
+  </Button>
   <Button onclick={oncancel}>
     <XIcon class="text-theme" />
     Cancel
-  </Button>
-  <Button onclick={onconfirm}>
-    <CheckIcon class="text-theme" />
-    Confirm
   </Button>
 </div>
