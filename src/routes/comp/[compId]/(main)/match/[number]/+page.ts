@@ -39,6 +39,7 @@ export const load: PageLoad = async (event) => {
       }
     }
   }
+  matches.sort((a, b) => a.number - b.number);
 
   const match = matches.find((m) => m.number.toString() == event.params.number);
 
@@ -46,9 +47,23 @@ export const load: PageLoad = async (event) => {
     error(404, `Match not found with number ${event.params.number}`);
   }
 
+  const redWon = match.redScore !== undefined && match.blueScore !== undefined && match.redScore > match.blueScore;
+  const blueWon = match.redScore !== undefined && match.blueScore !== undefined && match.redScore < match.blueScore;
+
+  const nextMatch = matches.find((m) => m.number > match.number);
+  const previousMatch = matches.findLast((m) => m.number < match.number);
+
   const hasExpressions = data.surveyRecords.some(
     (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
   );
 
-  return { title: `Match ${match.number}`, matches, match, hasExpressions };
+  return {
+    title: `Match ${match.number}`,
+    match,
+    nextMatch,
+    previousMatch,
+    redWon,
+    blueWon,
+    hasExpressions,
+  };
 };

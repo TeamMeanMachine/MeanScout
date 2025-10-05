@@ -15,38 +15,20 @@
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
   const showWhich = sessionStorageStore<"info" | "ranks" | "data">("match-view-show-which", "info");
 
-  const nextMatch = $derived.by(() => {
-    return data.matches.find((match) => match.number == data.match!.number + 1);
-  });
-  const previousMatch = $derived.by(() => {
-    return data.matches.find((match) => match.number == data.match!.number - 1);
-  });
-
-  const redWon = $derived(
-    data.match?.redScore !== undefined &&
-      data.match.blueScore !== undefined &&
-      data.match.redScore > data.match.blueScore,
-  );
-  const blueWon = $derived(
-    data.match?.redScore !== undefined &&
-      data.match.blueScore !== undefined &&
-      data.match.redScore < data.match.blueScore,
-  );
-
   function teamWonFontWeight(team: string) {
-    if (data.match.redScore !== undefined && data.match.blueScore !== undefined) {
-      if (redWon && [data.match.red1, data.match.red2, data.match.red3].includes(team)) {
-        return "font-bold";
-      }
-
-      if (blueWon && [data.match.blue1, data.match.blue2, data.match.blue3].includes(team)) {
-        return "font-bold";
-      }
-
-      return "font-light";
+    if (!data.redWon || !data.blueWon) {
+      return "";
     }
 
-    return "";
+    if (data.redWon && [data.match.red1, data.match.red2, data.match.red3].includes(team)) {
+      return "font-bold";
+    }
+
+    if (data.blueWon && [data.match.blue1, data.match.blue2, data.match.blue3].includes(team)) {
+      return "font-bold";
+    }
+
+    return "font-light";
   }
 </script>
 
@@ -56,27 +38,27 @@
       <h2 class="font-bold">Match {data.match.number}</h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
         <div class="text-xs">
-          {#if redWon}
+          {#if data.redWon}
             <span class="text-red font-bold">Red</span>
             won:
-          {:else if blueWon}
+          {:else if data.blueWon}
             <span class="text-blue font-bold">Blue</span>
             won:
           {:else}
             <span class="font-bold">Tied:</span>
           {/if}
-          <span class="text-red {redWon ? 'font-bold' : 'font-light'}">{data.match.redScore}</span>
+          <span class="text-red {data.redWon ? 'font-bold' : 'font-light'}">{data.match.redScore}</span>
           <span>to</span>
-          <span class="text-blue {blueWon ? 'font-bold' : 'font-light'}">{data.match.blueScore}</span>
+          <span class="text-blue {data.blueWon ? 'font-bold' : 'font-light'}">{data.match.blueScore}</span>
         </div>
       {/if}
     </div>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
       <div class="flex gap-2">
-        {#if previousMatch}
+        {#if data.previousMatch}
           <Anchor
-            route="comp/{data.compRecord.id}/match/{previousMatch.number}"
+            route="comp/{data.compRecord.id}/match/{data.previousMatch.number}"
             class="active:-translate-x-0.5! active:translate-y-0!"
           >
             <ArrowLeftIcon class="text-theme size-5" />
@@ -87,9 +69,9 @@
           </Button>
         {/if}
 
-        {#if nextMatch}
+        {#if data.nextMatch}
           <Anchor
-            route="comp/{data.compRecord.id}/match/{nextMatch.number}"
+            route="comp/{data.compRecord.id}/match/{data.nextMatch.number}"
             class="active:translate-x-0.5! active:translate-y-0!"
           >
             <ArrowRightIcon class="text-theme size-5" />
