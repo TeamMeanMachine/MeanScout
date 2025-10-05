@@ -56,7 +56,7 @@ export async function tbaGetEventMatches(eventKey: string) {
 
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data
-      .filter((match) => match.comp_level == "qm" && match.score_breakdown)
+      .filter((match) => match.comp_level == "qm")
       .map((match) => {
         const newMatch: Match = {
           number: match.match_number,

@@ -16,6 +16,7 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import NewSurveyDialog from "./NewSurveyDialog.svelte";
   import ImportConfigsDialog from "./ImportConfigsDialog.svelte";
+  import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
 
   let {
     pageData,
@@ -30,6 +31,12 @@
     <span class="text-xs font-light">{pageData.compRecord.id}</span>
   </div>
 
+  {#if pageData.compRecord.tbaEventKey}
+    <FetchTbaDataButton {pageData} />
+  {/if}
+</div>
+
+<div class="flex flex-col gap-1">
   <Button
     onclick={() => {
       openDialog(BulkExportDialog, {
