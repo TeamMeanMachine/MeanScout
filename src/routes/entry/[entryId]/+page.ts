@@ -8,6 +8,7 @@ import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 type EntryPageData = {
+  title: string;
   compRecord: Comp;
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
   defaultValues: Value[];
@@ -48,6 +49,7 @@ export const load: PageLoad = async (event) => {
   const thisCompEntries = all.entries.filter((entry) => thisCompSurveys.some((survey) => survey.id == entry.surveyId));
 
   return {
+    title: (entryRecord.type == "match" ? `Match ${entryRecord.match} - ` : "") + `Team ${entryRecord.team}`,
     compRecord,
     fieldsWithDetails,
     defaultValues,

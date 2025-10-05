@@ -41,9 +41,9 @@
 </script>
 
 <Header
-  title="Draft - {data.compRecord.name} - {data.surveyRecord.name} - MeanScout"
-  heading="Draft"
-  subheading="{data.compRecord.name} - {data.surveyRecord.name}"
+  title="{data.title} - {data.surveyRecord.name} - {data.compRecord.name} - MeanScout"
+  heading={data.title}
+  subheading="{data.surveyRecord.name} Draft"
   backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
