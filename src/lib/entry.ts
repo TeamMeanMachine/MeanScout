@@ -59,11 +59,11 @@ function compareMatch(a: Entry, b: Entry) {
   }
 
   if (a.type == "match" && b.type == "pit") {
-    return 1;
+    return -1;
   }
 
   if (a.type == "pit" && b.type == "match") {
-    return -1;
+    return 1;
   }
 
   return 0;
