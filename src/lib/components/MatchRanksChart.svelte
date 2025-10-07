@@ -3,8 +3,8 @@
   import { getExpressionData, getPickListData, type TeamRank, type PickList, getFieldData } from "$lib/rank";
   import Button from "$lib/components/Button.svelte";
   import { type MatchEntry } from "$lib/entry";
-  import { type Expression } from "$lib/expression";
-  import { getFieldsWithDetails, type Field, type SingleFieldWithDetails } from "$lib/field";
+  import { sortExpressions, type Expression } from "$lib/expression";
+  import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
   import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
@@ -18,6 +18,8 @@
     pageData: CompPageData;
     match: Match & { extraTeams?: string[] };
   } = $props();
+
+  const anyTeamNames = $derived(pageData.compRecord.teams.some((t) => t.name));
 
   const redAlliance = $derived([match.red1, match.red2, match.red3].filter((team) => team));
   const blueAlliance = $derived([match.blue1, match.blue2, match.blue3].filter((team) => team));
@@ -47,16 +49,40 @@
 
   function getRankView() {
     try {
-      return JSON.parse(sessionStorage.getItem("rank-view") ?? "null");
+      return JSON.parse(sessionStorage.getItem("match-rank-view") ?? "null");
     } catch {}
   }
 
   let selecting = $state(false);
   let selectedRanking = $state(initialRanking());
 
+  function firstRankingChoice() {
+    const survey = matchSurveys[0];
+    if (!survey) return;
+
+    if (survey.pickLists.length) {
+      return getRanking({ survey, pickList: survey.pickLists[0] });
+    }
+
+    if (survey.expressions.length) {
+      return getRanking({ survey, expression: survey.expressions.sort(sortExpressions)[0] });
+    }
+
+    if (survey.fieldIds.length) {
+      const orderedSingleFields = getFieldsWithDetails(
+        survey,
+        pageData.fieldRecords.filter((f) => f.surveyId == survey.type),
+      ).orderedSingle.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type));
+
+      if (orderedSingleFields.length) {
+        return getRanking({ survey, field: orderedSingleFields[0] });
+      }
+    }
+  }
+
   function initialRanking() {
     const rankView = rankViewSchema.parse(getRankView());
-    if (!rankView) return;
+    if (!rankView) return firstRankingChoice();
 
     const survey = matchSurveys.find((survey) => survey.id == rankView?.surveyId);
     if (!survey) return;
@@ -81,6 +107,8 @@
       ).orderedSingle.find((f) => f.field.id == id);
       if (field) return getRanking({ survey, field });
     }
+
+    return firstRankingChoice();
   }
 
   function switchRanking(params: Parameters<typeof getRanking>[0]) {
@@ -90,13 +118,13 @@
     if (ranking) {
       if (ranking.rankData?.type == "picklist") {
         const rankView = { surveyId: params.survey.id, pickList: ranking.rankData.pickList.name };
-        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
+        sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       } else if (ranking.rankData?.type == "expression") {
         const rankView = { surveyId: params.survey.id, expression: ranking.rankData.expression.name };
-        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
+        sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       } else if (ranking.rankData.type == "field") {
         const rankView = { surveyId: params.survey.id, field: ranking.rankData.field.field.id };
-        sessionStorage.setItem("rank-view", JSON.stringify(rankView));
+        sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       }
     }
     return ranking;
@@ -205,23 +233,17 @@
     <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
       {#each redAlliance as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {#if teamRank}
-          {@render teamRow(teamRank, "bg-red")}
-        {/if}
+        {@render teamRow(team, teamRank, "bg-red")}
       {/each}
 
       {#each blueAlliance as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {#if teamRank}
-          {@render teamRow(teamRank, "bg-blue")}
-        {/if}
+        {@render teamRow(team, teamRank, "bg-blue")}
       {/each}
 
       {#each match.extraTeams || [] as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {#if teamRank}
-          {@render teamRow(teamRank, "bg-neutral-400")}
-        {/if}
+        {@render teamRow(team, teamRank, "bg-neutral-400")}
       {/each}
     </div>
 
@@ -230,34 +252,39 @@
       View rank
     </Anchor>
 
-    {#snippet teamRow(teamRank: TeamRank, bgColor: string)}
-      <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
-        <div class="flex items-baseline">
-          {#if teamRank.rank}
+    {#snippet teamRow(team: string, teamRank: TeamRank | undefined, bgColor: string)}
+      {#if teamRank}
+        <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
+          <div class="flex items-baseline">
             <span class="font-bold">{teamRank.rank}</span>
             <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
-          {:else}
-            -
-          {/if}
-        </div>
-      </Anchor>
+          </div>
+        </Anchor>
+      {/if}
 
-      <div>
+      <div class="truncate {!teamRank ? 'col-span-2' : ''}">
         <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col">
-            <span class="font-bold">{teamRank.team}</span>
-            {#if teamRank?.teamName}
-              <span class="text-xs font-light">{teamRank?.teamName}</span>
+          <div class="flex flex-col truncate">
+            <span class="font-bold">{team}</span>
+            {#if anyTeamNames}
+              <span class="truncate text-xs font-light">
+                {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
+              </span>
             {/if}
           </div>
-          {#if "value" in teamRank}
-            {teamRank.value.toFixed(2) || 0}
-          {:else}
-            <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+          {#if teamRank}
+            {#if "value" in teamRank}
+              {teamRank.value.toFixed(2) || 0}
+            {:else}
+              <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+            {/if}
           {/if}
         </div>
         <div class="bg-neutral-800">
-          <div class={bgColor} style="width:{teamRank?.percentage.toFixed(2) || 0}%;height:6px"></div>
+          <div
+            class={teamRank ? bgColor : ""}
+            style="width:{(teamRank?.percentage.toFixed(2) ?? 100) || 0}%;height:6px"
+          ></div>
         </div>
       </div>
     {/snippet}

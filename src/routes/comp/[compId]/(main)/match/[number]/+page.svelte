@@ -13,7 +13,6 @@
   const showRanks = $derived(data.fieldRecords.length && data.entryRecords.length);
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
-  const showWhich = sessionStorageStore<"info" | "ranks" | "data">("match-view-show-which", "info");
 
   function teamWonFontWeight(team: string) {
     if (!data.redWon || !data.blueWon) {
@@ -33,7 +32,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+  <div class="flex flex-wrap justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">Match {data.match.number}</h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
@@ -54,82 +53,37 @@
       {/if}
     </div>
 
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <div class="flex gap-2">
-        {#if data.previousMatch}
-          <Anchor
-            route="comp/{data.compRecord.id}/match/{data.previousMatch.number}"
-            class="active:-translate-x-0.5! active:translate-y-0!"
-          >
-            <ArrowLeftIcon class="text-theme size-5" />
-          </Anchor>
-        {:else}
-          <Button disabled>
-            <ArrowLeftIcon class="text-theme size-5" />
-          </Button>
-        {/if}
-
-        {#if data.nextMatch}
-          <Anchor
-            route="comp/{data.compRecord.id}/match/{data.nextMatch.number}"
-            class="active:translate-x-0.5! active:translate-y-0!"
-          >
-            <ArrowRightIcon class="text-theme size-5" />
-          </Anchor>
-        {:else}
-          <Button disabled>
-            <ArrowRightIcon class="text-theme size-5" />
-          </Button>
-        {/if}
-      </div>
-
-      <div class="flex flex-wrap gap-2 text-sm">
-        <Button onclick={() => ($showWhich = "info")} class={$showWhich == "info" ? "font-bold" : "font-light"}>
-          Info
-        </Button>
-        {#if showRanks}
-          <Button onclick={() => ($showWhich = "ranks")} class={$showWhich == "ranks" ? "font-bold" : "font-light"}>
-            Ranks
-          </Button>
-        {/if}
-        {#if data.hasExpressions}
-          <Button
-            onclick={() => {
-              $showData = "expressions";
-              $showWhich = "data";
-            }}
-            class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
-          >
-            Derived
-          </Button>
-        {/if}
-        <Button
-          onclick={() => {
-            $showData = "raw";
-            $showWhich = "data";
-          }}
-          class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}
+    <div class="flex gap-2">
+      {#if data.previousMatch}
+        <Anchor
+          route="comp/{data.compRecord.id}/match/{data.previousMatch.number}"
+          class="active:-translate-x-0.5! active:translate-y-0!"
         >
-          Raw
+          <ArrowLeftIcon class="text-theme size-5" />
+        </Anchor>
+      {:else}
+        <Button disabled>
+          <ArrowLeftIcon class="text-theme size-5" />
         </Button>
-      </div>
+      {/if}
+
+      {#if data.nextMatch}
+        <Anchor
+          route="comp/{data.compRecord.id}/match/{data.nextMatch.number}"
+          class="active:translate-x-0.5! active:translate-y-0!"
+        >
+          <ArrowRightIcon class="text-theme size-5" />
+        </Anchor>
+      {:else}
+        <Button disabled>
+          <ArrowRightIcon class="text-theme size-5" />
+        </Button>
+      {/if}
     </div>
   </div>
 
-  {#if $showWhich == "ranks" && showRanks}
+  {#if showRanks}
     <MatchRanksChart pageData={data} match={data.match} />
-  {:else if $showWhich == "data"}
-    {#each data.surveyRecords
-      .filter((survey) => survey.type == "match")
-      .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto">
-        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-        {#key data.match}
-          <MatchDataTable pageData={data} {surveyRecord} match={data.match} show={$showData} />
-        {/key}
-      </div>
-    {/each}
   {:else}
     <div class="flex flex-col gap-2 sm:grid sm:grid-cols-2">
       {#each [data.match.red1, data.match.red2, data.match.red3] as team, index}
@@ -161,6 +115,41 @@
       {/each}
     </div>
   {/if}
+
+  {#each data.surveyRecords
+    .filter((survey) => survey.type == "match")
+    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+    <div class="flex flex-col gap-1">
+      <div class="flex flex-wrap items-center justify-between">
+        <h2 class="text-sm">{surveyRecord.name}</h2>
+
+        <div class="flex flex-wrap gap-2 text-sm">
+          <Button
+            onclick={() => {
+              $showData = "expressions";
+            }}
+            class={$showData == "expressions" ? "font-bold" : "font-light"}
+          >
+            Derived
+          </Button>
+          <Button
+            onclick={() => {
+              $showData = "raw";
+            }}
+            class={$showData == "raw" ? "font-bold" : "font-light"}
+          >
+            Raw
+          </Button>
+        </div>
+      </div>
+
+      <div class="w-full overflow-x-auto">
+        {#key data.match}
+          <MatchDataTable pageData={data} {surveyRecord} match={data.match} show={$showData} />
+        {/key}
+      </div>
+    </div>
+  {/each}
 
   {#each data.surveyRecords
     .filter((survey) => survey.type == "pit")
