@@ -8,7 +8,14 @@
   import { targets, targetStore } from "$lib/settings";
   import type { PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import { ChevronDownIcon, ChevronRightIcon, ImportIcon, NotepadTextIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
+  import {
+    ChevronDownIcon,
+    ChevronRightIcon,
+    DownloadIcon,
+    NotepadTextIcon,
+    PlusIcon,
+    ShareIcon,
+  } from "@lucide/svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
   import type { Survey } from "$lib/survey";
@@ -38,9 +45,6 @@
 
   const groupedEntries = $derived(groupEntries(data.compRecord, data.surveyRecords, data.entryRecords, $groupBy));
 
-  const recordedMatches = data.entryRecords.filter((entry) => entry.type == "match").map((entry) => entry.match);
-  const latestMatch = Math.max(...recordedMatches, 1);
-
   const toggleStatesSchema = z
     .object({
       status: z.array(z.union(entryStatuses.map((status) => z.literal(status)))),
@@ -54,11 +58,11 @@
     .catch({
       status: ["draft", "submitted"],
       survey: [],
-      match: [latestMatch],
+      match: [],
       team: [],
       scout: [],
-      target: [$targetStore],
-      absent: [true],
+      target: [],
+      absent: [],
     });
 
   function getToggleStates() {
@@ -174,6 +178,7 @@
         }}
       />
     </div>
+    <hr class="mb-6 border-neutral-600" />
   {:else}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold">New entry</h2>
@@ -230,10 +235,26 @@
         {/each}
       </div>
     </div>
+  {/if}
 
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <h2 class="font-bold">Entries</h2>
+  <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-1">
+      <h2 class="font-bold">Entries</h2>
+
+      <div class="flex flex-wrap gap-3 text-sm">
+        <Button
+          onclick={() => {
+            const entries = data.entryRecords.filter((e) => e.status != "draft");
+            openDialog(BulkExportDialog, {
+              entries,
+              onexport: () => onbulkexport(entries),
+            });
+          }}
+          class="w-24 flex-col gap-1!"
+        >
+          <ShareIcon class="text-theme" />
+          Send
+        </Button>
         <Button
           onclick={() => {
             openDialog(ImportEntriesDialog, {
@@ -242,131 +263,129 @@
               onimport: refresh,
             });
           }}
-          class="text-sm"
+          class="w-24 flex-col gap-1!"
         >
-          <ImportIcon class="text-theme size-5" />
-          Import
+          <DownloadIcon class="text-theme" />
+          Receive
         </Button>
       </div>
-
-      {#if !data.entryRecords.length}
-        <span class="text-sm">No entries.</span>
-      {:else}
-        <select bind:value={$groupBy} class="text-theme min-w-0 grow bg-neutral-800 p-2">
-          <option value="status">Group by Status</option>
-          <option value="survey">Group by Survey</option>
-          <option value="match">Group by Match</option>
-          <option value="team">Group by Team</option>
-          <option value="scout">Group by Scout</option>
-          <option value="target">Group by Target</option>
-          <option value="absent">Group by Absent</option>
-        </select>
-      {/if}
     </div>
+  </div>
 
-    {#if data.entryRecords.length}
-      {#snippet entryButton(entry: Entry)}
-        {@const survey = data.surveyRecords.find((survey) => survey.id == entry.surveyId)}
+  {#if !data.entryRecords.length}
+    <span class="text-sm">No entries.</span>
+  {:else}
+    <select bind:value={$groupBy} class="text-theme min-w-0 grow bg-neutral-800 p-2">
+      <option value="status">Group by Status</option>
+      <option value="survey">Group by Survey</option>
+      <option value="match">Group by Match</option>
+      <option value="team">Group by Team</option>
+      <option value="scout">Group by Scout</option>
+      <option value="target">Group by Target</option>
+      <option value="absent">Group by Absent</option>
+    </select>
 
-        <Button
-          onclick={() => {
-            openDialog(ViewEntryDialog, {
-              compRecord: data.compRecord,
-              surveyRecord: survey!,
-              fieldRecords: data.fieldRecords,
-              entryRecord: entry,
-              onchange: refresh,
-            });
-          }}
-          class="gap-x-4"
-        >
-          {#if entry.type == "match" && groupedEntries.by != "match"}
-            <div class="flex w-9 flex-col">
-              <span class="text-xs font-light">Match</span>
-              <span>{entry.match}</span>
-            </div>
-          {:else if entry.type == "pit" && groupedEntries.by != "survey" && groupedEntries.by != "target"}
-            <div class="flex w-9 flex-col">
-              <span class="text-sm">Pit</span>
-            </div>
-          {/if}
-          {#if groupedEntries.by != "team"}
-            <div class="flex w-32 max-w-full flex-col">
-              <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-                {data.teamNames.get(entry.team) || "Team"}
-              </span>
-              <span>{entry.team}</span>
-            </div>
-          {/if}
-          {#if groupedEntries.by != "scout" && entry.scout}
-            <div class="flex w-24 max-w-full flex-col">
-              <span class="text-xs font-light text-wrap">Scout</span>
-              <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
-            </div>
-          {/if}
-          <div class="flex flex-col">
-            {#if groupedEntries.by != "absent" && entry.type == "match" && entry.absent}
-              <span class="text-xs">Absent</span>
-            {/if}
-            {#if groupedEntries.by != "status" && entry.status != "submitted"}
-              <span class="text-xs capitalize">{entry.status}</span>
-            {/if}
+    {#snippet entryButton(entry: Entry)}
+      {@const survey = data.surveyRecords.find((survey) => survey.id == entry.surveyId)}
+
+      <Button
+        onclick={() => {
+          openDialog(ViewEntryDialog, {
+            compRecord: data.compRecord,
+            surveyRecord: survey!,
+            fieldRecords: data.fieldRecords,
+            entryRecord: entry,
+            onchange: refresh,
+          });
+        }}
+        class="gap-x-4"
+      >
+        {#if entry.type == "match" && groupedEntries.by != "match"}
+          <div class="flex w-9 flex-col">
+            <span class="text-xs font-light">Match</span>
+            <span>{entry.match}</span>
           </div>
-        </Button>
-      {/snippet}
+        {:else if entry.type == "pit" && groupedEntries.by != "survey" && groupedEntries.by != "target"}
+          <div class="flex w-9 flex-col">
+            <span class="text-sm">Pit</span>
+          </div>
+        {/if}
+        {#if groupedEntries.by != "team"}
+          <div class="flex w-32 max-w-full flex-col">
+            <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+              {data.teamNames.get(entry.team) || "Team"}
+            </span>
+            <span>{entry.team}</span>
+          </div>
+        {/if}
+        {#if groupedEntries.by != "scout" && entry.scout}
+          <div class="flex w-24 max-w-full flex-col">
+            <span class="text-xs font-light text-wrap">Scout</span>
+            <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+          </div>
+        {/if}
+        <div class="flex flex-col">
+          {#if groupedEntries.by != "absent" && entry.type == "match" && entry.absent}
+            <span class="text-xs">Absent</span>
+          {/if}
+          {#if groupedEntries.by != "status" && entry.status != "submitted"}
+            <span class="text-xs capitalize">{entry.status}</span>
+          {/if}
+        </div>
+      </Button>
+    {/snippet}
 
-      {#if groupedEntries.by == "survey"}
-        {#each groupedEntries.groups as { surveyId, entries }}
-          {@const surveyName = data.surveyRecords.find((s) => s.id == surveyId)?.name}
+    {#if groupedEntries.by == "survey"}
+      {#each groupedEntries.groups as { surveyId, entries }}
+        {@const surveyName = data.surveyRecords.find((s) => s.id == surveyId)?.name}
 
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <Button
-                onclick={() => {
-                  if (toggleStates.survey.includes(surveyId)) {
-                    toggleStates.survey = toggleStates.survey.filter((val) => val != surveyId);
-                  } else {
-                    toggleStates.survey.push(surveyId);
-                  }
-                }}
-                class="grow flex-nowrap!"
-              >
-                {#if toggleStates.survey.includes(surveyId)}
-                  <ChevronDownIcon class="text-theme shrink-0" />
-                {:else}
-                  <ChevronRightIcon class="text-theme shrink-0" />
-                {/if}
-                <div class="flex grow items-center justify-between">
-                  <span class={toggleStates.survey.includes(surveyId) ? "font-bold" : "font-light"}>{surveyName}</span>
-                  <div class="flex gap-0.5 text-sm">
-                    {entries.length}<NotepadTextIcon class="size-4" />
-                  </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              onclick={() => {
+                if (toggleStates.survey.includes(surveyId)) {
+                  toggleStates.survey = toggleStates.survey.filter((val) => val != surveyId);
+                } else {
+                  toggleStates.survey.push(surveyId);
+                }
+              }}
+              class="grow flex-nowrap!"
+            >
+              {#if toggleStates.survey.includes(surveyId)}
+                <ChevronDownIcon class="text-theme shrink-0" />
+              {:else}
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class={toggleStates.survey.includes(surveyId) ? "font-bold" : "font-light"}>{surveyName}</span>
+                <div class="flex gap-0.5 text-sm">
+                  {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
-              </Button>
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="flex-nowrap! text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                <span class="max-sm:hidden">Export</span>
-              </Button>
-            </div>
-
-            {#if toggleStates.survey.includes(surveyId)}
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else if groupedEntries.by == "match"}
-        {#each groupedEntries.groups as { match, entries }}
-          <div class="flex flex-col gap-2">
+
+          {#if toggleStates.survey.includes(surveyId)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else if groupedEntries.by == "match"}
+      {#each groupedEntries.groups as { match, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
             <Button
               onclick={() => {
                 if (toggleStates.match.includes(match)) {
@@ -375,7 +394,7 @@
                   toggleStates.match.push(match);
                 }
               }}
-              class="flex-nowrap!"
+              class="grow flex-nowrap!"
             >
               {#if toggleStates.match.includes(match)}
                 <ChevronDownIcon class="text-theme shrink-0" />
@@ -389,29 +408,29 @@
                 </div>
               </div>
             </Button>
-
-            {#if toggleStates.match.includes(match)}
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="self-start text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                Export
-              </Button>
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else if groupedEntries.by == "scout"}
-        {#each groupedEntries.groups as { scout, entries }}
-          <div class="flex flex-col gap-2">
+
+          {#if toggleStates.match.includes(match)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else if groupedEntries.by == "scout"}
+      {#each groupedEntries.groups as { scout, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
             <Button
               onclick={() => {
                 if (toggleStates.scout.includes(scout)) {
@@ -420,7 +439,7 @@
                   toggleStates.scout.push(scout);
                 }
               }}
-              class="flex-nowrap!"
+              class="grow flex-nowrap!"
             >
               {#if toggleStates.scout.includes(scout)}
                 <ChevronDownIcon class="text-theme shrink-0" />
@@ -435,78 +454,76 @@
                 </div>
               </div>
             </Button>
-
-            {#if toggleStates.scout.includes(scout)}
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="self-start text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                Export
-              </Button>
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else if groupedEntries.by == "target"}
-        {#each groupedEntries.groups as { target, entries }}
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <Button
-                onclick={() => {
-                  if (toggleStates.target.includes(target)) {
-                    toggleStates.target = toggleStates.target.filter((val) => val != target);
-                  } else {
-                    toggleStates.target.push(target);
-                  }
-                }}
-                class="grow flex-nowrap!"
-              >
-                {#if toggleStates.target.includes(target)}
-                  <ChevronDownIcon class="text-theme shrink-0" />
-                {:else}
-                  <ChevronRightIcon class="text-theme shrink-0" />
-                {/if}
-                <div class="flex grow items-center justify-between">
-                  <span class="capitalize {toggleStates.target.includes(target) ? 'font-bold' : 'font-light'}"
-                    >{target}</span
-                  >
-                  <div class="flex gap-0.5 text-sm">
-                    {entries.length}<NotepadTextIcon class="size-4" />
-                  </div>
+
+          {#if toggleStates.scout.includes(scout)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else if groupedEntries.by == "target"}
+      {#each groupedEntries.groups as { target, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              onclick={() => {
+                if (toggleStates.target.includes(target)) {
+                  toggleStates.target = toggleStates.target.filter((val) => val != target);
+                } else {
+                  toggleStates.target.push(target);
+                }
+              }}
+              class="grow flex-nowrap!"
+            >
+              {#if toggleStates.target.includes(target)}
+                <ChevronDownIcon class="text-theme shrink-0" />
+              {:else}
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class="capitalize {toggleStates.target.includes(target) ? 'font-bold' : 'font-light'}">
+                  {target}
+                </span>
+                <div class="flex gap-0.5 text-sm">
+                  {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
-              </Button>
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="flex-nowrap! text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                <span class="max-sm:hidden">Export</span>
-              </Button>
-            </div>
-
-            {#if toggleStates.target.includes(target)}
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else if groupedEntries.by == "team"}
-        {#each groupedEntries.groups as { team, teamName, entries }}
-          <div class="flex flex-col gap-2">
+
+          {#if toggleStates.target.includes(target)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else if groupedEntries.by == "team"}
+      {#each groupedEntries.groups as { team, teamName, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
             <Button
               onclick={() => {
                 if (toggleStates.team.includes(team)) {
@@ -515,7 +532,7 @@
                   toggleStates.team.push(team);
                 }
               }}
-              class="flex-nowrap!"
+              class="grow flex-nowrap!"
             >
               {#if toggleStates.team.includes(team)}
                 <ChevronDownIcon class="text-theme shrink-0" />
@@ -526,9 +543,9 @@
                 <div class="flex flex-col">
                   <span class="font-bold">{team}</span>
                   {#if teamName}
-                    <span class="text-xs {toggleStates.team.includes(team) ? 'font-bold' : 'font-light'}"
-                      >{teamName}</span
-                    >
+                    <span class="text-xs {toggleStates.team.includes(team) ? 'font-bold' : 'font-light'}">
+                      {teamName}
+                    </span>
                   {/if}
                 </div>
                 <div class="flex gap-0.5 text-sm">
@@ -536,125 +553,119 @@
                 </div>
               </div>
             </Button>
-
-            {#if toggleStates.team.includes(team)}
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="self-start text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                Export
-              </Button>
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else if groupedEntries.by == "absent"}
-        {#each groupedEntries.groups as { absent, entries }}
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <Button
-                onclick={() => {
-                  if (toggleStates.absent.includes(absent)) {
-                    toggleStates.absent = toggleStates.absent.filter((val) => val != absent);
-                  } else {
-                    toggleStates.absent.push(absent);
-                  }
-                }}
-                class="grow flex-nowrap!"
-              >
-                {#if toggleStates.absent.includes(absent)}
-                  <ChevronDownIcon class="text-theme shrink-0" />
-                {:else}
-                  <ChevronRightIcon class="text-theme shrink-0" />
-                {/if}
-                <div class="flex grow items-center justify-between">
-                  <span class="capitalize {toggleStates.absent.includes(absent) ? 'font-bold' : 'font-light'}"
-                    >{absent}</span
-                  >
-                  <div class="flex gap-0.5 text-sm">
-                    {entries.length}<NotepadTextIcon class="size-4" />
-                  </div>
+
+          {#if toggleStates.team.includes(team)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else if groupedEntries.by == "absent"}
+      {#each groupedEntries.groups as { absent, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              onclick={() => {
+                if (toggleStates.absent.includes(absent)) {
+                  toggleStates.absent = toggleStates.absent.filter((val) => val != absent);
+                } else {
+                  toggleStates.absent.push(absent);
+                }
+              }}
+              class="grow flex-nowrap!"
+            >
+              {#if toggleStates.absent.includes(absent)}
+                <ChevronDownIcon class="text-theme shrink-0" />
+              {:else}
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class="capitalize {toggleStates.absent.includes(absent) ? 'font-bold' : 'font-light'}"
+                  >{absent}</span
+                >
+                <div class="flex gap-0.5 text-sm">
+                  {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
-              </Button>
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="flex-nowrap! text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                <span class="max-sm:hidden">Export</span>
-              </Button>
-            </div>
-
-            {#if toggleStates.absent.includes(absent)}
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {:else}
-        {#each groupedEntries.groups as { status, entries }}
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <Button
-                onclick={() => {
-                  if (toggleStates.status.includes(status)) {
-                    toggleStates.status = toggleStates.status.filter((val) => val != status);
-                  } else {
-                    toggleStates.status.push(status);
-                  }
-                }}
-                class="grow flex-nowrap!"
-              >
-                {#if toggleStates.status.includes(status)}
-                  <ChevronDownIcon class="text-theme shrink-0" />
-                {:else}
-                  <ChevronRightIcon class="text-theme shrink-0" />
-                {/if}
-                <div class="flex grow items-center justify-between">
-                  <span class="capitalize {toggleStates.status.includes(status) ? 'font-bold' : 'font-light'}"
-                    >{status}</span
-                  >
-                  <div class="flex gap-0.5 text-sm">
-                    {entries.length}<NotepadTextIcon class="size-4" />
-                  </div>
+
+          {#if toggleStates.absent.includes(absent)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
+    {:else}
+      {#each groupedEntries.groups as { status, entries }}
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <Button
+              onclick={() => {
+                if (toggleStates.status.includes(status)) {
+                  toggleStates.status = toggleStates.status.filter((val) => val != status);
+                } else {
+                  toggleStates.status.push(status);
+                }
+              }}
+              class="grow flex-nowrap!"
+            >
+              {#if toggleStates.status.includes(status)}
+                <ChevronDownIcon class="text-theme shrink-0" />
+              {:else}
+                <ChevronRightIcon class="text-theme shrink-0" />
+              {/if}
+              <div class="flex grow items-center justify-between">
+                <span class="capitalize {toggleStates.status.includes(status) ? 'font-bold' : 'font-light'}">
+                  {status}
+                </span>
+                <div class="flex gap-0.5 text-sm">
+                  {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
-              </Button>
-              <Button
-                onclick={() => {
-                  openDialog(BulkExportDialog, {
-                    entries,
-                    onexport: () => onbulkexport(entries),
-                  });
-                }}
-                class="flex-nowrap! text-sm"
-              >
-                <ShareIcon class="text-theme size-5" />
-                <span class="max-sm:hidden">Export</span>
-              </Button>
-            </div>
-
-            {#if toggleStates.status.includes(status)}
-              {#each entries as entry (entry.id)}
-                {@render entryButton(entry)}
-              {/each}
-            {/if}
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+            >
+              <ShareIcon class="text-theme size-5" />
+            </Button>
           </div>
-        {/each}
-      {/if}
+
+          {#if toggleStates.status.includes(status)}
+            {#each entries as entry (entry.id)}
+              {@render entryButton(entry)}
+            {/each}
+          {/if}
+        </div>
+      {/each}
     {/if}
   {/if}
 </div>

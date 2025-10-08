@@ -5,7 +5,7 @@
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
-    ImportIcon,
+    DownloadIcon,
     InfoIcon,
     PlusIcon,
     Settings2Icon,
@@ -48,7 +48,10 @@
     }}
   >
     <ShareIcon class="text-theme" />
-    <div class="flex flex-col">Export</div>
+    <div class="flex flex-col">
+      Send all
+      <span class="text-xs font-light">Comp, surveys, entries</span>
+    </div>
   </Button>
 </div>
 
@@ -63,28 +66,31 @@
     }}
   >
     <ShareIcon class="text-theme" />
-    <div class="flex flex-col">Export configs</div>
+    <div class="flex flex-col">Send configs</div>
   </Button>
 
   <Button onclick={() => openDialog(ImportConfigsDialog, { ...pageData })}>
-    <ImportIcon class="text-theme" />
-    <div class="flex flex-col">Import configs</div>
+    <DownloadIcon class="text-theme" />
+    <div class="flex flex-col">Receive configs</div>
   </Button>
 </div>
 
 <div class="flex flex-col gap-1">
   <Anchor route="comp/{pageData.compRecord.id}/admin">
     <Settings2Icon class="text-theme" />
-    <div class="flex grow flex-col">Config</div>
+    <div class="flex grow flex-col">
+      {pageData.compRecord.name}
+      <span class="text-xs font-light">Scouts, matches, teams</span>
+    </div>
     <ArrowRightIcon class="text-theme" />
   </Anchor>
 
   {#if pageData.surveyRecords.length}
     {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
       <Anchor route="survey/{survey.id}" class="flex-nowrap!">
-        <div class="flex grow flex-wrap items-center justify-between gap-x-2">
+        <div class="flex grow flex-col">
           <span>{survey.name}</span>
-          <span class="text-xs font-light">{survey.id}</span>
+          <span class="text-xs font-light">Fields{survey.type == "match" ? ", ranks" : ""}</span>
         </div>
         <ArrowRightIcon class="text-theme" />
       </Anchor>

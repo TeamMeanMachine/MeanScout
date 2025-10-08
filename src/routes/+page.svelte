@@ -4,8 +4,7 @@
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
-  import { cameraStore } from "$lib/settings";
-  import { ArrowRightIcon, ImportIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, DownloadIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
 
@@ -31,16 +30,10 @@
     {/if}
 
     <Button onclick={() => openDialog(BulkImportDialog, {})}>
-      <ImportIcon class="text-theme" />
+      <DownloadIcon class="text-theme" />
       <div class="flex flex-col">
-        Import
-        <span class="text-xs font-light">
-          {#if $cameraStore}
-            QRF code, File
-          {:else}
-            File
-          {/if}
-        </span>
+        Receive
+        <span class="text-xs font-light">Comps, surveys, entries</span>
       </div>
     </Button>
     <Button onclick={() => openDialog(NewCompDialog, {})}>

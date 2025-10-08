@@ -9,7 +9,6 @@
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
-    CheckIcon,
     ListOrderedIcon,
     PlusIcon,
     SquareCheckBigIcon,
@@ -562,12 +561,12 @@
   </div>
 {/if}
 
-<div class="mt-3 flex flex-wrap gap-3">
-  <Button onclick={onconfirm}>
+<div class="mt-3 flex flex-wrap gap-3 text-sm">
+  <Button onclick={onconfirm} class="w-24 flex-col gap-1!">
     <PlusIcon class="text-theme" />
-    Create new
+    Create
   </Button>
-  <Button onclick={oncancel}>
+  <Button onclick={oncancel} class="w-24 flex-col gap-1!">
     <XIcon class="text-theme" />
     Cancel
   </Button>
