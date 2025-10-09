@@ -10,7 +10,6 @@
   let { data }: PageProps = $props();
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
-  const showWhich = sessionStorageStore<"chart" | "data">("team-view-show-which", "chart");
 </script>
 
 <div class="flex flex-col gap-6">
@@ -21,60 +20,56 @@
         <span class="text-xs font-light">{data.team.name}</span>
       {/if}
     </div>
-
-    <div class="flex flex-wrap gap-2 text-sm">
-      <Button onclick={() => ($showWhich = "chart")} class={$showWhich == "chart" ? "font-bold" : "font-light"}>
-        Chart
-      </Button>
-      {#if data.hasExpressions}
-        <Button
-          onclick={() => {
-            $showData = "expressions";
-            $showWhich = "data";
-          }}
-          class={$showData == "expressions" && $showWhich == "data" ? "font-bold" : "font-light"}
-        >
-          Derived
-        </Button>
-      {/if}
-      <Button
-        onclick={() => {
-          $showData = "raw";
-          $showWhich = "data";
-        }}
-        class={$showData == "raw" && $showWhich == "data" ? "font-bold" : "font-light"}>Raw</Button
-      >
-    </div>
   </div>
 
-  {#if $showWhich == "chart"}
-    <TimeChart pageData={data} team={data.team} />
-    {#each data.surveyRecords
-      .filter((s) => s.type == "pit")
-      .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto">
-        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+  <TimeChart pageData={data} team={data.team} />
 
+  {#each data.surveyRecords
+    .filter((survey) => survey.type == "match")
+    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+    <div class="flex flex-col gap-1">
+      <div class="flex flex-wrap items-center justify-between">
+        <h2 class="text-sm">{surveyRecord.name}</h2>
+
+        <div class="flex flex-wrap gap-2 text-sm">
+          <Button
+            onclick={() => {
+              $showData = "expressions";
+            }}
+            class={$showData == "expressions" ? "font-bold" : "font-light"}
+          >
+            Derived
+          </Button>
+          <Button
+            onclick={() => {
+              $showData = "raw";
+            }}
+            class={$showData == "raw" ? "font-bold" : "font-light"}
+          >
+            Raw
+          </Button>
+        </div>
+      </div>
+
+      <div class="w-full overflow-x-auto">
         {#key data.team}
-          <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
+          <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
         {/key}
       </div>
-    {/each}
-  {:else}
-    {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto">
-        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+    </div>
+  {/each}
 
-        {#key data.team}
-          {#if surveyRecord.type == "match"}
-            <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
-          {:else}
-            <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
-          {/if}
-        {/key}
-      </div>
-    {/each}
-  {/if}
+  {#each data.surveyRecords
+    .filter((s) => s.type == "pit")
+    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+    <div class="flex flex-col items-start gap-1 overflow-x-auto">
+      <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+
+      {#key data.team}
+        <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
+      {/key}
+    </div>
+  {/each}
 
   <div class="flex flex-wrap gap-x-4">
     {#if data.compRecord.tbaEventKey}

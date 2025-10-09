@@ -21,6 +21,7 @@
   import type { Survey } from "$lib/survey";
   import { z } from "zod";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -448,20 +449,14 @@
 {/if}
 
 {#if matchData}
-  <Button
-    onclick={() => {
-      sessionStorage.setItem("match-view-show-which", "ranks");
-      goto(`#/comp/${pageData.compRecord.id}/match/${newEntryState.match}`);
-    }}
-    class="mt-3"
-  >
+  <Anchor route="comp/{pageData.compRecord.id}/match/{newEntryState.match}" class="mt-3">
     <ListOrderedIcon class="text-theme" />
     <div class="flex grow flex-col">
       Match {newEntryState.match}
       <span class="text-xs font-light">Analyze existing data</span>
     </div>
     <ArrowRightIcon class="text-theme" />
-  </Button>
+  </Anchor>
 {/if}
 
 {#if surveyRecord.type == "match" && pageData.compRecord.scouts}
