@@ -13,24 +13,37 @@
   } = $props();
 
   const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
+
+  function getParamsForInput(index: number) {
+    if (rankData.type == "picklist") {
+      return `surveyId=${encodeURIComponent(rankData.survey.id)}&expression=${rankData.pickList.weights[index].expressionName}`;
+    } else if (rankData.type == "expression") {
+      if (rankData.expression.input.from == "expressions") {
+        return `surveyId=${encodeURIComponent(rankData.survey.id)}&expression=${rankData.expression.input.expressionNames[index]}`;
+      } else if (rankData.expression.input.from == "fields") {
+        return `surveyId=${encodeURIComponent(rankData.survey.id)}&field=${rankData.expression.input.fieldIds[index]}`;
+      }
+    }
+  }
 </script>
 
-<div class="flex flex-wrap gap-x-4 text-xs">
+<div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
   {#if rankData.type == "picklist"}
     {#each rankData.pickList.weights as weight, i}
       {@const color = colors[i % colors.length]}
-      <div>
+      <Anchor route="comp/{pageData.compRecord.id}/rank?{getParamsForInput(i)}">
         <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
         {weight.expressionName} ({weight.percentage}%)
-      </div>
+      </Anchor>
     {/each}
-  {:else}
+  {:else if rankData.type == "expression" && rankData.inputs.length > 1}
     {#each rankData.inputs as { name }, i}
       {@const color = colors[i % colors.length]}
-      <div>
+
+      <Anchor route="comp/{pageData.compRecord.id}/rank?{getParamsForInput(i)}">
         <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
         {name}
-      </div>
+      </Anchor>
     {/each}
   {/if}
 </div>
@@ -70,7 +83,7 @@
         </div>
 
         <div class={$highlightedTeam == teamRank.team ? "bg-neutral-700" : "bg-neutral-800"}>
-          <div class="flex gap-1" style="width:{teamRank.percentage.toFixed(2)}%">
+          <div class="flex" style="width:{teamRank.percentage.toFixed(2)}%">
             {#if "value" in teamRank && rankData.type != "picklist"}
               {#each teamRank.inputs as input, i}
                 {@const color = colors[i % colors.length]}
@@ -79,7 +92,10 @@
 
                 {#if divWidth}
                   <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                    <div style="background-color:{color};height:6px;opacity:{opacity}%"></div>
+                    <div
+                      class="border-x-2"
+                      style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
+                    ></div>
                   </div>
                 {/if}
               {/each}
@@ -91,7 +107,10 @@
 
                 {#if divWidth}
                   <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                    <div style="background-color:{color};height:6px;opacity:{opacity}%"></div>
+                    <div
+                      class="border-x-2"
+                      style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
+                    ></div>
                   </div>
                 {/if}
               {/each}
@@ -99,15 +118,13 @@
           </div>
         </div>
 
-        <div class="flex gap-1" style="width:{teamRank.percentage.toFixed(2)}%">
+        <div class="flex text-center text-xs font-light" style="width:{teamRank.percentage.toFixed(2)}%">
           {#if "value" in teamRank && rankData.type != "picklist"}
             {#each teamRank.inputs as input}
               {@const divWidth = input.value * teamRank.percentage}
               {#if divWidth}
                 <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                  <div class="text-center text-xs font-light">
-                    {input.value.toFixed(2)}
-                  </div>
+                  <div>{input.value.toFixed()}</div>
                 </div>
               {/if}
             {/each}
@@ -116,9 +133,7 @@
               {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
               {#if divWidth}
                 <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                  <div class="text-center text-xs font-light">
-                    {((teamRank.inputs[i] / weight.percentage) * 100).toFixed(0)}%
-                  </div>
+                  <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed(0)}%</div>
                 </div>
               {/if}
             {/each}

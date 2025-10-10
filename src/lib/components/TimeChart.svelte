@@ -156,7 +156,6 @@
 
   function switchMetric(params: Parameters<typeof getMetric>[0]) {
     selecting = false;
-    scrollTo(0, 0);
     const metric = getMetric(params);
     if (metric) {
       if ("expression" in metric) {
@@ -209,15 +208,13 @@
           percentage = matchValuePair.value / max;
         }
         if (matchValuePair.inputs !== undefined) {
-          matchValuePair.inputs = matchValuePair.inputs
-            .map((input, index) => {
-              const max = inputMaxes[index];
-              if (max !== undefined) {
-                return { ...input, percentage: input.value / max };
-              }
-              return input;
-            })
-            .toReversed();
+          matchValuePair.inputs = matchValuePair.inputs.map((input, index) => {
+            const max = inputMaxes[index];
+            if (max !== undefined) {
+              return { ...input, percentage: input.value / max };
+            }
+            return input;
+          });
         }
         return { ...matchValuePair, percentage };
       }),
@@ -309,13 +306,42 @@
 
     <div class="flex flex-col gap-1">
       {#if $showInputs && selectedMetric.inputNames && selectedMetric.inputNames?.length > 1}
-        <div class="flex flex-wrap gap-x-4 text-xs">
+        <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
           {#each selectedMetric.inputNames as name, i}
-            {@const color = colors[i % colors.length]}
-            <div>
+            {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
+            {@const color = disabled ? "var(--color-neutral-500)" : colors[i % colors.length]}
+
+            <Button
+              onclick={() => {
+                if (selectedMetric && "expression" in selectedMetric) {
+                  if (selectedMetric.expression.input.from == "expressions") {
+                    selectedMetric = switchMetric({
+                      survey: selectedMetric.survey,
+                      expression: selectedMetric.survey.expressions.find((e) => e.name == name)!,
+                    });
+                  } else if (selectedMetric.expression.input.from == "fields") {
+                    const fieldId = selectedMetric.expression.input.fieldIds[i];
+                    const fieldWithDetails = getFieldsWithDetails(
+                      selectedMetric.survey,
+                      pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
+                    ).orderedSingle.find((f) => f.field.id == fieldId);
+
+                    if (!fieldWithDetails) {
+                      return;
+                    }
+
+                    selectedMetric = switchMetric({
+                      survey: selectedMetric.survey,
+                      field: fieldWithDetails,
+                    });
+                  }
+                }
+              }}
+              {disabled}
+            >
               <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
               {name}
-            </div>
+            </Button>
           {/each}
         </div>
       {/if}
@@ -327,19 +353,21 @@
           <div class="flex shrink-0 grow basis-8 flex-col">
             <div>{value ?? "_"}</div>
             {#if $showInputs && inputs && inputs.length > 1}
-              {@const totalHeightPixels = percentage * 256 + 2 * (inputs.length - 1)}
+              {@const totalHeightPixels = percentage * 256}
 
-              <div class="mb-0.5 flex flex-col gap-0.5" style="height:{totalHeightPixels}px">
-                {#each inputs as input, i}
-                  {@const color = colors[inputs.length - 1 - i]}
-                  {@const heightPercent = (input.value / (value || 0)) * 100}
+              <div class="mb-0.5 flex flex-col" style="height:{totalHeightPixels}px">
+                {#each inputs.toReversed() as input, i}
+                  {#if input.value}
+                    {@const color = colors[inputs.length - 1 - i]}
+                    {@const heightPercent = (input.value / (value || 0)) * 100}
 
-                  <div
-                    class="flex flex-col justify-center overflow-hidden text-xs text-black"
-                    style="background-color:{color};height:{heightPercent}%"
-                  >
-                    {input.value}
-                  </div>
+                    <div
+                      class="flex flex-col justify-center overflow-hidden border-y text-xs text-black"
+                      style="background-color:{color};height:{heightPercent}%;border-color:rgba(0,0,0,0.25)"
+                    >
+                      {input.value}
+                    </div>
+                  {/if}
                 {/each}
               </div>
             {:else}
@@ -376,12 +404,22 @@
 
         <div class="flex flex-wrap gap-2 text-sm">
           {#each group.expressions || [] as expression}
-            <Button onclick={() => (selectedMetric = switchMetric({ survey: group.survey, expression }))}>
+            <Button
+              onclick={() => {
+                scrollTo(0, 0);
+                selectedMetric = switchMetric({ survey: group.survey, expression });
+              }}
+            >
               {expression.name}
             </Button>
           {/each}
           {#each group.fields || [] as field}
-            <Button onclick={() => (selectedMetric = switchMetric({ survey: group.survey, field }))}>
+            <Button
+              onclick={() => {
+                scrollTo(0, 0);
+                selectedMetric = switchMetric({ survey: group.survey, field });
+              }}
+            >
               {field.detailedName}
             </Button>
           {/each}

@@ -34,6 +34,7 @@ type ExpressionTeamRank = {
 export type TeamRank = PickListTeamRank | ExpressionTeamRank;
 
 type PickListRankData = {
+  survey: MatchSurvey;
   type: "picklist";
   pickList: PickList;
   teams: PickListTeamRank[];
@@ -41,6 +42,7 @@ type PickListRankData = {
 };
 
 type ExpressionRankData = {
+  survey: MatchSurvey;
   type: "expression";
   expression: Expression;
   teams: ExpressionTeamRank[];
@@ -51,6 +53,7 @@ type ExpressionRankData = {
 };
 
 type FieldRankData = {
+  survey: MatchSurvey;
   type: "field";
   field: SingleFieldWithDetails;
   teams: ExpressionTeamRank[];
@@ -109,6 +112,7 @@ export function getPickListData(
     });
 
   return {
+    survey: surveyRecord,
     type: "picklist",
     pickList,
     teams: teamRanks,
@@ -184,6 +188,7 @@ export function getExpressionData(
   });
 
   return {
+    survey: surveyRecord,
     type: "expression",
     expression,
     teams: teamRanks,
