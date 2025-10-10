@@ -29,26 +29,31 @@
     let dataPulled = false;
 
     try {
-      dataPulled ||= await getMatchesFromTbaEvent();
+      const matchDataPulled = await getMatchesFromTbaEvent();
+      dataPulled ||= matchDataPulled;
     } catch (e) {
       getTbaDataError = "Error while trying to get matches";
       console.error(e);
     }
 
     try {
-      dataPulled ||= await getTeamsFromTbaEvent();
+      const teamDataPulled = await getTeamsFromTbaEvent();
+      dataPulled ||= teamDataPulled;
     } catch (e) {
       getTbaDataError = "Error while trying to get teams";
       console.error(e);
     }
 
+    showCheck = dataPulled;
+
     if (dataPulled) {
-      showCheck = true;
+      invalidateAll();
       showCheckTimeout = window.setTimeout(() => (showCheck = false), 1000);
+    } else {
+      window.clearTimeout(showCheckTimeout);
     }
 
     isLoadingTbaData = false;
-    invalidateAll();
   }
 
   async function getMatchesFromTbaEvent() {
