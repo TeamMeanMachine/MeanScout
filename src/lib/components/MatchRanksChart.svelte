@@ -10,6 +10,7 @@
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
   import { z } from "zod";
+  import { goto } from "$app/navigation";
 
   let {
     pageData,
@@ -254,12 +255,20 @@
 
     {#snippet teamRow(team: string, teamRank: TeamRank | undefined, bgColor: string)}
       {#if teamRank}
-        <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
+        <Button
+          onclick={() => {
+            if ("expression" in teamRank) {
+              sessionStorage.setItem("metric-view", sessionStorage.getItem("rank-view") || "");
+            }
+            goto(`#/comp/${pageData.compRecord.id}/team/${teamRank.team}`);
+          }}
+          class="justify-center text-sm"
+        >
           <div class="flex items-baseline">
             <span class="font-bold">{teamRank.rank}</span>
             <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
           </div>
-        </Anchor>
+        </Button>
       {/if}
 
       <div class="truncate {!teamRank ? 'col-span-2' : ''}">

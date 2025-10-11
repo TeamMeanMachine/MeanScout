@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
-  import type { Expression } from "$lib/expression";
+  import { sortExpressions, type Expression } from "$lib/expression";
   import { sessionStorageStore, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
@@ -64,9 +64,29 @@
   let selecting = $state(false);
   let selectedMetric = $state(initialMetric());
 
+  function firstMetricChoice() {
+    const survey = matchSurveys[0];
+    if (!survey) return;
+
+    if (survey.expressions.length) {
+      return getMetric({ survey, expression: survey.expressions.sort(sortExpressions)[0] });
+    }
+
+    if (survey.fieldIds.length) {
+      const orderedSingleFields = getFieldsWithDetails(
+        survey,
+        pageData.fieldRecords.filter((f) => f.surveyId == survey.type),
+      ).orderedSingle.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type));
+
+      if (orderedSingleFields.length) {
+        return getMetric({ survey, field: orderedSingleFields[0] });
+      }
+    }
+  }
+
   function initialMetric() {
     const metricView = metricViewSchema.parse(getMetricView());
-    if (!metricView) return;
+    if (!metricView) return firstMetricChoice();
 
     const survey = pageData.surveyRecords.find(
       (survey): survey is MatchSurvey => survey.type == "match" && survey.id == metricView?.surveyId,
@@ -87,6 +107,8 @@
       ).orderedSingle.find((f) => f.field.id == id);
       if (field) return getMetric({ survey, field });
     }
+
+    return firstMetricChoice();
   }
 
   function getMetric(
