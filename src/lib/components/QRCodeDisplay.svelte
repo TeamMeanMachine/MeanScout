@@ -12,6 +12,7 @@
   import Button from "./Button.svelte";
   import { sessionStorageStore } from "$lib";
   import { compress, supportsCompressionApi } from "$lib/compress";
+  import { useCompressionStore } from "$lib/settings";
 
   let {
     data,
@@ -33,7 +34,6 @@
   const rateKilos = $derived((bytesPerFrame * framesPerSecond) / 1024);
   let blocksCount = $state(0);
 
-  const useCompression = sessionStorageStore<"true" | "">("use-compression", supportsCompressionApi ? "true" : "");
   let fountainEncoder: FountainEncoder;
 
   let dataToEncode = $state(new TextEncoder().encode(data));
@@ -41,7 +41,7 @@
   async function initFountainEncoder() {
     clearInterval(interval);
 
-    dataToEncode = $useCompression ? await compress(data) : new TextEncoder().encode(data);
+    dataToEncode = $useCompressionStore ? await compress(data) : new TextEncoder().encode(data);
     fountainEncoder = new FountainEncoder(dataToEncode, bytesPerFrame);
     blocksCount = fountainEncoder.blocks.length;
 
@@ -80,22 +80,22 @@
   Displays a QR code to scan.
 </canvas>
 
-<div class="flex flex-wrap gap-2">
-  <Button
-    disabled={blocksCount == 1}
-    onclick={() => {
-      if ($displayRate == "slow") {
-        $displayRate = "medium";
-      } else if ($displayRate == "fast") {
-        $displayRate = "slow";
-      } else {
-        $displayRate = "fast";
-      }
-      clearInterval(interval);
-      interval = setInterval(update, 1000 / framesPerSecond);
-    }}
-    class="grow basis-48 flex-col items-start"
-  >
+<Button
+  disabled={blocksCount == 1}
+  onclick={() => {
+    if ($displayRate == "slow") {
+      $displayRate = "medium";
+    } else if ($displayRate == "fast") {
+      $displayRate = "slow";
+    } else {
+      $displayRate = "fast";
+    }
+    clearInterval(interval);
+    interval = setInterval(update, 1000 / framesPerSecond);
+  }}
+  class="flex-col items-stretch"
+>
+  <div class="flex flex-wrap items-center justify-between">
     <div class="flex gap-2 capitalize">
       {#if $displayRate == "slow"}
         <ChevronRightIcon class="text-theme" />
@@ -108,8 +108,11 @@
         <span>{$displayRate}</span>
       {/if}
     </div>
+    <span class="text-xs font-light">{$useCompressionStore == "true" ? "Compressed" : "Uncompressed"}</span>
+  </div>
 
-    <div class="flex gap-x-4">
+  <div class="flex flex-wrap justify-between gap-x-4 gap-y-2">
+    <div class="flex flex-wrap gap-x-4 gap-y-2">
       <div class="flex flex-col">
         <span class="text-xs font-light">Rate</span>
         <span class="text-sm">~{Math.round(rateKilos)} KB/s</span>
@@ -119,27 +122,7 @@
         <span class="text-sm">{(dataToEncode.byteLength / 1024 / rateKilos).toFixed(2)} s</span>
       </div>
     </div>
-  </Button>
-
-  <Button
-    disabled={!supportsCompressionApi}
-    onclick={() => {
-      $useCompression = $useCompression ? "" : "true";
-      initFountainEncoder();
-    }}
-    class="grow basis-48 flex-col items-start"
-  >
-    <div class="flex gap-2">
-      {#if $useCompression}
-        <SquareCheckBigIcon class="text-theme" />
-      {:else}
-        <SquareIcon class="text-theme" />
-      {/if}
-
-      <span class={$useCompression == "true" ? "font-bold" : "font-light"}>Compress</span>
-    </div>
-
-    <div class="flex gap-x-4">
+    <div class="flex flex-wrap gap-x-4 gap-y-2">
       <div class="flex flex-col">
         <span class="text-xs font-light">Chunks</span>
         <span class="text-sm">{blocksCount}</span>
@@ -149,5 +132,5 @@
         <span class="text-sm">{(dataToEncode.byteLength / 1024).toFixed(2)} KB</span>
       </div>
     </div>
-  </Button>
-</div>
+  </div>
+</Button>

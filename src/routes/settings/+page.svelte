@@ -2,9 +2,21 @@
   import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore } from "$lib/settings";
+  import { supportsCompressionApi } from "$lib/compress";
+  import { cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore, useCompressionStore } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
-  import { CameraIcon, CheckIcon, CrosshairIcon, KeyIcon, LoaderIcon, UsersIcon, XIcon } from "@lucide/svelte";
+  import {
+    CameraIcon,
+    CheckIcon,
+    CrosshairIcon,
+    KeyIcon,
+    LoaderIcon,
+    ShrinkIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    UsersIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   const backLink = localStorage.getItem("home") || "";
@@ -13,6 +25,7 @@
   let cameraInput = $state($cameraStore);
   let teamInput = $state($teamStore);
   let tbaAuthKeyInput = $state($tbaAuthKeyStore);
+  let useCompressionInput = $state($useCompressionStore);
 
   let cameras = $state<{ id: string; name: string }[]>([]);
   let noCamera = $state(false);
@@ -24,7 +37,8 @@
       targetInput != $targetStore ||
       cameraInput != $cameraStore ||
       teamInput.trim() != $teamStore ||
-      tbaAuthKeyInput.trim() != $tbaAuthKeyStore
+      tbaAuthKeyInput.trim() != $tbaAuthKeyStore ||
+      useCompressionInput != $useCompressionStore
     );
   });
 
@@ -69,6 +83,7 @@
     $cameraStore = cameraInput;
     $teamStore = teamInput;
     $tbaAuthKeyStore = tbaAuthKeyInput;
+    $useCompressionStore = useCompressionInput;
 
     goto(backLink);
   }
@@ -127,6 +142,34 @@
     </div>
     <input bind:value={tbaAuthKeyInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-auto" />
   </label>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <ShrinkIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Compress QRF codes
+      <span class="text-xs font-light">Disable only if sending data to older devices</span>
+    </div>
+    <Button
+      disabled={!supportsCompressionApi}
+      onclick={() => {
+        useCompressionInput = useCompressionInput ? "" : "true";
+      }}
+      class="w-full sm:w-fit {useCompressionInput == 'true' ? 'font-bold' : 'font-light'}"
+    >
+      {#if useCompressionInput == "true"}
+        <SquareCheckBigIcon class="text-theme" />
+      {:else}
+        <SquareIcon class="text-theme" />
+      {/if}
+      Compress
+    </Button>
+    {#if !supportsCompressionApi}
+      <span class="text-sm font-light">Note: your device does not support the compression API.</span>
+    {/if}
+    {#if useCompressionInput == ""}
+      <span class="text-sm font-light">Uncompressed data transfers will take longer.</span>
+    {/if}
+  </div>
 
   <div class="flex flex-wrap gap-3">
     <Button onclick={() => goto(backLink)} disabled={!unsavedChanges}>

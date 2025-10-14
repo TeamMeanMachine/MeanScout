@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import { writable } from "svelte/store";
+import { supportsCompressionApi } from "./compress";
 
 function localStorageStore<T extends string>(
   key: string,
@@ -61,3 +62,10 @@ export const teamStore = localStorageStore<string>("team", "");
 // TBA API key setting
 
 export const tbaAuthKeyStore = localStorageStore<string>("tbaAuthKey", "");
+
+// Compress QRF codes setting
+
+export const useCompressionStore = localStorageStore<"true" | "">(
+  "use-compression",
+  supportsCompressionApi ? "true" : "",
+);
