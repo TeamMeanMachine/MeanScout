@@ -328,7 +328,7 @@ function runEntryExpression(
   if (input.from == "tba") {
     const values = input.metrics.map((metric) => {
       if (!entry.tbaMetrics?.length) return 0;
-      return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
+      return entry.tbaMetrics.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
     });
 
     const valueOrValues = runExpressionMethod(expression.method, values);
@@ -409,7 +409,7 @@ function runSurveyExpression(
       .map((metric) => {
         return entries.map((entry) => {
           if (!entry.tbaMetrics?.length) return 0;
-          return entry.tbaMetrics.find((m) => m.name == metric)?.value ?? 0;
+          return entry.tbaMetrics.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
         });
       })
       .map((valueOrValues: number | any[]) => {

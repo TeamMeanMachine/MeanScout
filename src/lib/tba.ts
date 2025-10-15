@@ -119,5 +119,5 @@ export async function tbaGetEventTeams(eventKey: string) {
 function teamBreakdownMetrics(metrics: TbaMetrics, robot: number) {
   return metrics
     .filter(({ name }) => name.toLowerCase().includes(`robot${robot}`))
-    .map(({ name, value }) => ({ name: name.replaceAll(/robot[123]/gi, ""), value }));
+    .map(({ name, value }) => ({ name: name.toLowerCase().replaceAll(/robot[123]/gi, ""), value }));
 }
