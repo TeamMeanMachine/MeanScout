@@ -81,7 +81,7 @@
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  <span class="text-sm">Edit expression</span>
+  <span class="text-sm">Edit {expression.scope == "entry" ? "entry" : "aggregate"} expression</span>
 
   <Button
     disabled={usedExpressionNames?.includes(expression.name)}
@@ -214,7 +214,7 @@
     {#if scope == "survey"}
       {#if input.from == "expressions" && expressions.surveyDerived.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from expressions)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from expressions)</span></span>
           {#each expressions.surveyDerived as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -222,7 +222,7 @@
       {/if}
       {#if expressions.surveyTba.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from TBA)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from TBA)</span></span>
           {#each expressions.surveyTba as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -230,7 +230,7 @@
       {/if}
       {#if expressions.surveyPrimitive.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from fields)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from fields)</span></span>
           {#each expressions.surveyPrimitive as exp}
             {@render expressionButton(exp)}
           {/each}

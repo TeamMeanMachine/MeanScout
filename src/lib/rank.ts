@@ -343,7 +343,7 @@ function runEntryExpression(
     const inputs = input.expressionNames.map((expressionName) => {
       const expression = expressions.find((e) => e.name == expressionName);
       if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
-      if (expression.scope != "entry") throw new Error("Entry expression cannot reference a survey expression");
+      if (expression.scope != "entry") throw new Error("Entry expression cannot reference an aggregate expression");
       let { output } = runEntryExpression(entry, expression, expressions, orderedSingleFields);
       if (Array.isArray(output)) {
         output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;

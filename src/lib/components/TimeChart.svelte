@@ -44,7 +44,17 @@
         );
         return groupRanks(survey, fieldsWithDetails.orderedSingle);
       })
-      .filter((group) => !group.pickLists?.length),
+      .filter((group) => {
+        if (group.pickLists?.length) {
+          return false;
+        }
+
+        if (group.expressions?.length) {
+          return !group.expressions.some((e) => e.scope == "survey");
+        }
+
+        return true;
+      }),
   );
 
   const metricViewSchema = z
@@ -69,7 +79,10 @@
     if (!survey) return;
 
     if (survey.expressions.length) {
-      return getMetric({ survey, expression: survey.expressions.sort(sortExpressions)[0] });
+      return getMetric({
+        survey,
+        expression: survey.expressions.filter((e) => e.scope == "entry").sort(sortExpressions)[0],
+      });
     }
 
     if (survey.fieldIds.length) {

@@ -201,9 +201,9 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Data-driven rankings</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Create expressions that transform (multiply, convert) and summarize (average, sum) your data</li>
-        <li>Entry expressions (aka computed fields) produce per-entry values</li>
-        <li>Survey expressions aggregate values across entries</li>
+        <li>Create expressions that transform and aggregate your data</li>
+        <li>Entry expressions act like derived/computed fields</li>
+        <li>Aggregate expressions combine data across matches</li>
         <li>Create pick lists that pull from expressions with given weights</li>
         <li>Once you have data, you can view team rankings for pick lists and expressions</li>
         <li>Rankings are also available for your numeric (number, toggle, rating, timer) fields</li>

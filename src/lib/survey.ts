@@ -53,17 +53,17 @@ export function groupRanks(survey: MatchSurvey, orderedSingleFields: SingleField
     },
     {
       survey,
-      category: "Survey Expressions from expressions",
+      category: "Aggregate Expressions from expressions",
       expressions: expressions.surveyDerived,
     },
     {
       survey,
-      category: "Survey Expressions from TBA",
+      category: "Aggregate Expressions from TBA",
       expressions: expressions.surveyTba,
     },
     {
       survey,
-      category: "Survey Expressions from fields",
+      category: "Aggregate Expressions from fields",
       expressions: expressions.surveyPrimitive,
     },
     {

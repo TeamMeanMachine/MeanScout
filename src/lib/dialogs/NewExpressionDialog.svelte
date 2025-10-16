@@ -93,7 +93,7 @@
   };
 </script>
 
-<span>New expression</span>
+<span>New {constrain.scope == "entry" ? "entry" : "aggregate"} expression</span>
 
 <label class="flex flex-col">
   Name
@@ -214,7 +214,7 @@
     {#if constrain.scope == "survey"}
       {#if constrain.input == "expressions" && expressions.surveyDerived.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from expressions)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from expressions)</span></span>
           {#each expressions.surveyDerived as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -222,7 +222,7 @@
       {/if}
       {#if expressions.surveyTba.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from TBA)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from TBA)</span></span>
           {#each expressions.surveyTba as exp}
             {@render expressionButton(exp)}
           {/each}
@@ -230,7 +230,7 @@
       {/if}
       {#if expressions.surveyPrimitive.length}
         <div class="flex flex-col gap-2">
-          <span>Survey Expressions <span class="text-xs">(from fields)</span></span>
+          <span>Aggregate Expressions <span class="text-xs">(from fields)</span></span>
           {#each expressions.surveyPrimitive as exp}
             {@render expressionButton(exp)}
           {/each}

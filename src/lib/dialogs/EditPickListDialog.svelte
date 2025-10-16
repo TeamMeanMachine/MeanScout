@@ -101,7 +101,7 @@
 <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
   {#if expressions.surveyDerived.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <span class="text-xs">(from expressions)</span></span>
+      <span>Aggregate Expressions <span class="text-xs">(from expressions)</span></span>
       {#each expressions.surveyDerived as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -109,7 +109,7 @@
   {/if}
   {#if expressions.surveyTba.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <span class="text-xs">(from TBA)</span></span>
+      <span>Aggregate Expressions <span class="text-xs">(from TBA)</span></span>
       {#each expressions.surveyTba as exp}
         {@render expressionButton(exp)}
       {/each}
@@ -117,7 +117,7 @@
   {/if}
   {#if expressions.surveyPrimitive.length}
     <div class="flex flex-col gap-2">
-      <span>Survey Expressions <span class="text-xs">(from fields)</span></span>
+      <span>Aggregate Expressions <span class="text-xs">(from fields)</span></span>
       {#each expressions.surveyPrimitive as exp}
         {@render expressionButton(exp)}
       {/each}

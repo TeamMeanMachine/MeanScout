@@ -130,7 +130,7 @@
 
     {#if sortedExpressions.some((e) => e.scope == "survey")}
       <div class="flex flex-col gap-3">
-        <h2 class="font-bold">Survey Expressions</h2>
+        <h2 class="font-bold">Aggregate Expressions</h2>
 
         {#if expressions.surveyDerived.length}
           <div class="flex flex-col">
@@ -211,7 +211,7 @@
     >
       <div class="flex flex-wrap justify-stretch gap-2">
         <Button onclick={() => ($newTab = "entry")} class={tabClass("entry")}>Entry</Button>
-        <Button onclick={() => ($newTab = "survey")} class={tabClass("survey")}>Survey</Button>
+        <Button onclick={() => ($newTab = "survey")} class={tabClass("survey")}>Aggregate</Button>
         <Button onclick={() => ($newTab = "picklist")} class={tabClass("picklist")}>Pick List</Button>
       </div>
 
@@ -241,7 +241,7 @@
             </Button>
           </div>
         {:else if $newTab == "survey"}
-          <span>Survey Expression</span>
+          <span>Aggregate Expression</span>
 
           <div class="flex flex-wrap gap-2">
             <Button onclick={() => newExpression({ scope: "survey", input: "fields" })}>
@@ -292,8 +292,8 @@
       <span>
         Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
       </span>
-      <span>Survey expressions aggregate data across matches, e.g. getting a team's highest point contribution.</span>
-      <span>Pick lists prioritize specific metrics with percentage weights.</span>
+      <span>Aggregate expressions combine data across matches, e.g. getting a team's highest point contribution.</span>
+      <span>Pick lists couple selected expressions with percentage weights.</span>
     </div>
   {/if}
 </div>
