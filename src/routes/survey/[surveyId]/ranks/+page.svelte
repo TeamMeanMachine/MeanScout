@@ -287,6 +287,14 @@
         {/if}
       </div>
     </div>
+
+    <div class="flex flex-col gap-2 text-sm font-light">
+      <span>
+        Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
+      </span>
+      <span>Survey expressions aggregate data across matches, e.g. getting a team's highest point contribution.</span>
+      <span>Pick lists prioritize specific metrics with percentage weights.</span>
+    </div>
   {/if}
 </div>
 
