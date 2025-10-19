@@ -143,7 +143,9 @@
 
     if (newRankData.type != "picklist") {
       currentRankData = currentRankData.map((teamRank) => {
-        const newPercentage = newRankData.teams.find((d) => d.team == teamRank.team)?.percentage;
+        const newTeamRank = newRankData.teams.find((d) => d.team == teamRank.team);
+
+        const newPercentage = newTeamRank?.percentage;
         if (newPercentage !== undefined) {
           teamRank.percentage.target = newPercentage;
         }
@@ -152,7 +154,7 @@
           return teamRank;
         }
 
-        const newValue = newRankData.teams.find((d) => d.team == teamRank.team)?.value;
+        const newValue = newTeamRank?.value;
         if (newValue !== undefined) {
           teamRank.value.target = newValue;
         }
@@ -161,15 +163,20 @@
       });
     } else {
       currentRankData = currentRankData.map((teamRank) => {
-        const newPercentage = newRankData.teams.find((d) => d.team == teamRank.team)?.percentage;
+        const newTeamRank = newRankData.teams.find((d) => d.team == teamRank.team);
+
+        const newPercentage = newTeamRank?.percentage;
         if (newPercentage !== undefined) {
           teamRank.percentage.target = newPercentage;
         }
+
         return teamRank;
       });
     }
 
-    currentRankData.sort((a, b) => b.percentage.target - a.percentage.target);
+    currentRankData.sort(
+      (a, b) => b.percentage.target - a.percentage.target || a.team.localeCompare(b.team, "en", { numeric: true }),
+    );
   }
 
   onDestroy(() => {
@@ -245,7 +252,7 @@
 </div>
 
 <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
-  {#each currentRankData as teamRank (teamRank.team)}
+  {#each currentRankData as teamRank, index (teamRank.team)}
     {@const color = `rgb(var(--theme-color) / ${teamRank.percentage.current.toFixed(2)}%)`}
 
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -256,8 +263,8 @@
     >
       <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
-          <span class="font-bold">{teamRank.rank}</span>
-          <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
+          <span class="font-bold">{index + 1}</span>
+          <span class="hidden text-xs font-light sm:inline">{getOrdinal(index + 1)}</span>
         </div>
       </Anchor>
 
