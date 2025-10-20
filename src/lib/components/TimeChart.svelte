@@ -29,7 +29,7 @@
     team: Team;
   } = $props();
 
-  const showInputs = sessionStorageStore<"" | "true">("metric-show-inputs", "");
+  const showInputs = sessionStorageStore<"true" | "">("metric-show-inputs", "true");
 
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),

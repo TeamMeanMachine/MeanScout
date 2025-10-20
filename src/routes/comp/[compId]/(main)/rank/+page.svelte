@@ -4,16 +4,15 @@
   import { sessionStorageStore } from "$lib";
   import RaceChart from "$lib/components/RaceChart.svelte";
   import { ClipboardCopy, Share2Icon } from "@lucide/svelte";
-  import StackedChart from "$lib/components/StackedChart.svelte";
   import BarChart from "$lib/components/BarChart.svelte";
 
   let { data }: PageProps = $props();
 
-  const chartType = sessionStorageStore<"bar" | "race" | "stacked">("rank-chart-type", "bar");
+  const chartType = sessionStorageStore<"bar" | "race">("rank-chart-type", "bar");
 </script>
 
-<div class="flex flex-col gap-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+<div class="@container flex flex-col gap-6">
+  <div class="flex flex-col flex-wrap gap-3 @sm:flex-row @sm:flex-wrap @sm:items-center @sm:justify-between">
     <div class="flex flex-col">
       <h2 class="font-bold">{data.title}</h2>
       <span class="text-xs font-light">{data.surveyRecord.name}</span>
@@ -26,9 +25,6 @@
         </Button>
         <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
           Race
-        </Button>
-        <Button onclick={() => ($chartType = "stacked")} class={$chartType == "stacked" ? "font-bold" : "font-light"}>
-          Stacked
         </Button>
       </div>
 
@@ -57,7 +53,5 @@
       entriesByTeam={data.entriesByTeam}
       rankData={data.output}
     />
-  {:else if $chartType == "stacked"}
-    <StackedChart pageData={data} rankData={data.output} />
   {/if}
 </div>

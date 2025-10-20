@@ -255,9 +255,7 @@
   {#each currentRankData as teamRank, index (teamRank.team)}
     {@const color = `rgb(var(--theme-color) / ${teamRank.percentage.current.toFixed(2)}%)`}
 
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
-      onclick={() => ($highlightedTeam = $highlightedTeam == teamRank.team ? "" : teamRank.team)}
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
@@ -268,17 +266,18 @@
         </div>
       </Anchor>
 
-      <div>
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <div onclick={() => ($highlightedTeam = teamRank.team)} class="truncate">
         <div
           class={[
             "flex items-end justify-between gap-3",
             $highlightedTeam == teamRank.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
           ]}
         >
-          <div class="flex flex-col">
+          <div class="flex flex-col truncate">
             <span class="font-bold" class:underline={matchTeams?.includes(teamRank.team)}>{teamRank.team}</span>
             {#if teamRank.teamName}
-              <span class={["text-xs", matchTeams?.includes(teamRank.team) ? "font-bold" : "font-light"]}>
+              <span class={["truncate text-xs", matchTeams?.includes(teamRank.team) ? "font-bold" : "font-light"]}>
                 {teamRank.teamName}
               </span>
             {/if}
