@@ -5,7 +5,7 @@
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import Button from "./Button.svelte";
-  import { SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
+  import { ChartBarBigIcon, ChartBarStackedIcon, XIcon } from "@lucide/svelte";
 
   let {
     pageData,
@@ -57,51 +57,49 @@
   }
 </script>
 
-{#if $highlightedTeam || inputNames.length > 1}
+{#if $highlightedTeam || inputNames.length}
   <div class="flex flex-col gap-4">
-    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-      {#if $highlightedTeam}
-        <div class="flex flex-col">
-          <span class="text-xs font-light">Jump to</span>
-          <div class="flex flex-wrap gap-2 text-sm">
-            <Button
-              onclick={() => {
-                document
-                  .getElementById($highlightedTeam)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-              }}
-              class="py-1"
-            >
-              {$highlightedTeam}
-            </Button>
-            <Button onclick={() => ($highlightedTeam = "")} class="p-1!">
-              <XIcon class="size-5" />
-            </Button>
-          </div>
+    {#if $highlightedTeam}
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Jump to</span>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <Button
+            onclick={() => {
+              document
+                .getElementById($highlightedTeam)
+                ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+            }}
+            class="py-1"
+          >
+            {$highlightedTeam}
+          </Button>
+          <Button onclick={() => ($highlightedTeam = "")} class="p-1!">
+            <XIcon class="size-5" />
+          </Button>
         </div>
-      {/if}
+      </div>
+    {/if}
 
-      {#if inputNames.length > 1}
+    {#if inputNames.length}
+      <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
         <Button
           onclick={() => ($showInputs = $showInputs ? "" : "true")}
-          class="text-sm {$showInputs ? 'font-bold' : 'font-light'}"
+          disabled={inputNames.length <= 1}
+          class="py-1 {$showInputs ? 'font-bold' : 'font-light'}"
         >
-          {#if $showInputs}
-            <SquareCheckBigIcon class="text-theme size-5" />
+          {#if $showInputs && inputNames.length > 1}
+            <ChartBarStackedIcon class="text-theme size-5" />
           {:else}
-            <SquareIcon class="text-theme size-5" />
+            <ChartBarBigIcon class="text-theme size-5" />
           {/if}
-          Inputs
         </Button>
-      {/if}
-    </div>
 
-    {#if $showInputs && inputNames.length > 1}
-      <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
         {#each inputNames as name, i}
           {@const color = colors[i % colors.length]}
           <Anchor route={inputUrl(name, i)}>
-            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+            {#if $showInputs && inputNames.length > 1}
+              <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+            {/if}
             {name}
           </Anchor>
         {/each}

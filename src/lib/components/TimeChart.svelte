@@ -9,12 +9,12 @@
   import { colors, getExpressionData, getFieldData } from "$lib/rank";
   import Button from "./Button.svelte";
   import {
+    ArrowRightIcon,
     ChartBarBigIcon,
     ChartColumnBigIcon,
+    ChartColumnStackedIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-    SquareCheckBigIcon,
-    SquareIcon,
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
@@ -222,9 +222,7 @@
       inputNames = undefined;
     } else if (params.expression.input.from == "expressions") {
       inputNames = params.expression.input.expressionNames;
-    } else if (params.expression.input.from == "tba") {
-      inputNames = params.expression.input.metrics;
-    } else {
+    } else if (params.expression.input.from == "fields") {
       inputNames = params.expression.input.fieldIds
         .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
         .filter((f) => f !== undefined);
@@ -298,50 +296,47 @@
     {@const objectParam = expressionParam || fieldParam || ""}
     {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedMetric.survey.id)}&${objectParam}`}
 
-    <div class="flex flex-wrap justify-between gap-x-6 gap-y-4 text-sm">
-      <div class="flex flex-wrap gap-x-6 gap-y-3">
-        <div class="flex flex-col">
-          <span class="text-xs font-light">Trend</span>
-          <span>
-            {#if selectedMetric.trend > 0}
-              <TrendingUpIcon class="inline size-5" />
-            {:else if selectedMetric.trend < 0}
-              <TrendingDownIcon class="inline size-5" />
-            {/if}
-            {selectedMetric.trend > 0 ? "+" : ""}{selectedMetric.trend.toFixed(2)}
-          </span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs font-light">Average</span>
-          <span>{selectedMetric.average.toFixed(2)}</span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs font-light">Min</span>
-          <span>{selectedMetric.min}</span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs font-light">Max</span>
-          <span>{selectedMetric.max}</span>
-        </div>
-      </div>
-      {#if selectedMetric.inputNames && selectedMetric.inputNames.length > 1}
-        <Button
-          onclick={() => ($showInputs = $showInputs ? "" : "true")}
-          class={$showInputs ? "font-bold" : "font-light"}
-        >
-          {#if $showInputs}
-            <SquareCheckBigIcon class="text-theme size-5" />
-          {:else}
-            <SquareIcon class="text-theme size-5" />
+    <div class="flex flex-wrap gap-x-6 gap-y-4 text-sm">
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Trend</span>
+        <span>
+          {#if selectedMetric.trend > 0}
+            <TrendingUpIcon class="inline size-5" />
+          {:else if selectedMetric.trend < 0}
+            <TrendingDownIcon class="inline size-5" />
           {/if}
-          Inputs
-        </Button>
-      {/if}
+          {selectedMetric.trend > 0 ? "+" : ""}{selectedMetric.trend.toFixed(2)}
+        </span>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Average</span>
+        <span>{selectedMetric.average.toFixed(2)}</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Min</span>
+        <span>{selectedMetric.min}</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Max</span>
+        <span>{selectedMetric.max}</span>
+      </div>
     </div>
 
     <div class="flex flex-col gap-1">
-      {#if $showInputs && selectedMetric.inputNames && selectedMetric.inputNames?.length > 1}
+      {#if selectedMetric.inputNames?.length}
         <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
+          <Button
+            onclick={() => ($showInputs = $showInputs ? "" : "true")}
+            disabled={selectedMetric.inputNames.length <= 1}
+            class="py-1 {$showInputs ? 'font-bold' : 'font-light'}"
+          >
+            {#if $showInputs && selectedMetric.inputNames.length > 1}
+              <ChartColumnStackedIcon class="text-theme size-5" />
+            {:else}
+              <ChartColumnBigIcon class="text-theme size-5" />
+            {/if}
+          </Button>
+
           {#each selectedMetric.inputNames as name, i}
             {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
             {@const color = disabled ? "var(--color-neutral-500)" : colors[i % colors.length]}
@@ -374,7 +369,9 @@
               }}
               {disabled}
             >
-              <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+              {#if $showInputs && selectedMetric.inputNames.length > 1}
+                <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+              {/if}
               {name}
             </Button>
           {/each}
@@ -390,7 +387,7 @@
             {#if $showInputs && inputs && inputs.length > 1}
               {@const totalHeightPixels = percentage * 256}
 
-              <div class="mb-0.5 flex flex-col" style="height:{totalHeightPixels}px">
+              <div class="flex flex-col" style="height:{totalHeightPixels}px">
                 {#each inputs.toReversed() as input, i}
                   {#if input.value}
                     {@const color = colors[inputs.length - 1 - i]}
@@ -408,7 +405,7 @@
             {:else}
               <div
                 class="shrink-0 {value !== undefined ? 'min-h-px' : ''}"
-                style="background-color:{color};height:{percentage * 128}px"
+                style="background-color:{color};height:{percentage * 256}px"
               ></div>
             {/if}
             <Button
@@ -426,8 +423,8 @@
     </div>
 
     <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
-      <ChartBarBigIcon class="text-theme size-5" />
       View rank
+      <ArrowRightIcon class="text-theme size-5" />
     </Anchor>
   {:else}
     {#each groupedRanks as group}
