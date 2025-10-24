@@ -12,6 +12,8 @@ export const matchValueSchema = z.number().int().gt(0);
 
 export const matchSchema = z.object({
   number: matchValueSchema,
+  set: z.optional(matchValueSchema),
+  level: z.optional(z.union([z.literal("qm"), z.literal("ef"), z.literal("qf"), z.literal("sf"), z.literal("f")])),
   red1: z.string(),
   red2: z.string(),
   red3: z.string(),
