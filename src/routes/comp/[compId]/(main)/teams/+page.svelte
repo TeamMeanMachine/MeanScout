@@ -2,7 +2,7 @@
   import type { PageProps } from "./$types";
   import { goto } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
-  import type { Team } from "$lib";
+  import { allianceTeamLabels, type Team } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -66,11 +66,23 @@
 
     <div class="flex flex-col gap-2">
       {#each filteredTeams as team}
-        <Anchor route="comp/{data.compRecord.id}/team/{team.number}">
+        {@const allianceWithIndex = data.compRecord.alliances
+          ?.map((a, i) => ({ ...a, i }))
+          .find((a) => a.teams.includes(team.number))}
+
+        <Anchor route="comp/{data.compRecord.id}/team/{team.number}" class="flex-nowrap! justify-between">
           <div class="flex flex-col">
             <span class="font-bold">{team.number}</span>
             {#if team.name}
-              <span class="text-xs font-light">{team.name}</span>
+              <span class="text-xs font-light text-balance">{team.name}</span>
+            {/if}
+          </div>
+          <div class="flex flex-col text-end">
+            {#if allianceWithIndex}
+              <div class="truncate text-xs tracking-tighter">
+                Alliance {allianceWithIndex.i + 1}<br />
+                {allianceTeamLabels[allianceWithIndex.teams.indexOf(team.number)] || "Backup"}
+              </div>
             {/if}
           </div>
         </Anchor>

@@ -67,6 +67,20 @@
           {data.compRecord.teams.length > 1 ? "teams" : "team"}
         </Button>
       {/if}
+
+      {#if data.compRecord.alliances?.length}
+        <Button
+          onclick={() => {
+            delete data.compRecord.alliances;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+          }}
+        >
+          <Trash2Icon class="text-theme" />
+          Delete
+          {data.compRecord.alliances.length}
+          {data.compRecord.alliances.length > 1 ? "alliances" : "alliance"}
+        </Button>
+      {/if}
     </div>
   {/if}
 

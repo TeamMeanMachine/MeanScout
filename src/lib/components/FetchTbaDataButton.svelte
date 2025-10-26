@@ -4,7 +4,7 @@
   import { invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
-  import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
 
   let {
     pageData,
@@ -41,6 +41,14 @@
       dataPulled ||= teamDataPulled;
     } catch (e) {
       getTbaDataError = "Error while trying to get teams";
+      console.error(e);
+    }
+
+    try {
+      const allianceDataPulled = await getAlliancesFromTbaEvent();
+      dataPulled ||= allianceDataPulled;
+    } catch (e) {
+      getTbaDataError = "Error while trying to get alliances";
       console.error(e);
     }
 
@@ -125,6 +133,22 @@
       };
       idb.put("comps", $state.snapshot(pageData.compRecord));
       return teams.length > 0;
+    }
+
+    return false;
+  }
+
+  async function getAlliancesFromTbaEvent() {
+    if (!pageData.compRecord.tbaEventKey) return false;
+
+    const response = await tbaGetEventAlliances(pageData.compRecord.tbaEventKey);
+    if (response && response.length) {
+      pageData = {
+        ...pageData,
+        compRecord: { ...pageData.compRecord, alliances: response, modified: new Date() },
+      };
+      idb.put("comps", $state.snapshot(pageData.compRecord));
+      return true;
     }
 
     return false;

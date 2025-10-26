@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { parseValueFromString, type Match, type Team, type Value } from "./";
 import { tbaAuthKeyStore } from "./settings";
 import type { TbaMetrics } from "./entry";
+import type { Alliance } from "./comp";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "bLFDfOniJOVOziESwbhPHncaUu30iIj64I2IMIOg4FLeNE0D3LGgkWslxugJKFlL";
@@ -112,6 +113,16 @@ export async function tbaGetEventTeams(eventKey: string) {
   if (response.status == "success" && Array.isArray(response.data)) {
     return response.data.map((team): Team => {
       return { number: team.key.replace("frc", ""), name: team.nickname };
+    });
+  }
+}
+
+export async function tbaGetEventAlliances(eventKey: string) {
+  const response = await tbaFetch(`/event/${eventKey}/alliances`);
+
+  if (response.status == "success" && Array.isArray(response.data)) {
+    return response.data.map((alliance): Alliance => {
+      return { teams: (alliance.picks as string[]).map((team) => team.replace("frc", "")) };
     });
   }
 }

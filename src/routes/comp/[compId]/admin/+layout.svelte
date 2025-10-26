@@ -20,13 +20,13 @@
   subheading={data.compRecord.name}
   backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
 >
-  <div class="hidden gap-2 text-sm text-nowrap md:flex">
+  <div class="hidden gap-2 text-sm text-nowrap lg:flex">
     {@render links()}
   </div>
 </Header>
 
 <div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
-  <div class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap md:hidden">
+  <div class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap lg:hidden">
     {@render links()}
   </div>
 
@@ -38,5 +38,6 @@
   <Anchor route="{routeBase}/scouts" class={getAnchorClass("scouts")}>Scouts</Anchor>
   <Anchor route="{routeBase}/matches" class={getAnchorClass("matches")}>Matches</Anchor>
   <Anchor route="{routeBase}/teams" class={getAnchorClass("teams")}>Teams</Anchor>
+  <Anchor route="{routeBase}/alliances" class={getAnchorClass("alliances")}>Alliances</Anchor>
   <Anchor route="{routeBase}/danger" class={getAnchorClass("danger zone")}>Danger Zone</Anchor>
 {/snippet}
