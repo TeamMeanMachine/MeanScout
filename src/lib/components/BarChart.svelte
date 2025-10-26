@@ -5,7 +5,9 @@
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import Button from "./Button.svelte";
-  import { ChartBarBigIcon, ChartBarStackedIcon, XIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, XIcon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
+  import { flip } from "svelte/animate";
 
   let {
     pageData,
@@ -14,6 +16,8 @@
     pageData: CompPageData;
     rankData: RankData;
   } = $props();
+
+  const flipTeamDuration = 500;
 
   const orderedSingleFields = $derived(
     getFieldsWithDetails(
@@ -37,8 +41,9 @@
     return [];
   });
 
-  const showInputs = sessionStorageStore<"true" | "">("metric-show-inputs", "true");
   const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
+
+  const highlightedTeamRank = $derived(rankData.teams.find((t) => t.team == $highlightedTeam)?.rank);
 
   function inputUrl(name: string, i: number) {
     const path = `comp/${pageData.compRecord.id}/rank?surveyId=${encodeURIComponent(rankData.survey.id)}`;
@@ -57,106 +62,120 @@
   }
 </script>
 
-{#if $highlightedTeam || inputNames.length}
-  <div class="flex flex-col gap-4">
-    {#if $highlightedTeam}
-      <div class="flex flex-col">
-        <span class="text-xs font-light">Jump to</span>
-        <div class="flex flex-wrap gap-2 text-sm">
-          <Button
-            onclick={() => {
-              document
-                .getElementById($highlightedTeam)
-                ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-            }}
-            class="py-1"
-          >
-            {$highlightedTeam}
-          </Button>
-          <Button onclick={() => ($highlightedTeam = "")} class="p-1!">
-            <XIcon class="size-5" />
-          </Button>
-        </div>
-      </div>
-    {/if}
-
-    {#if inputNames.length}
-      <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
-        <Button
-          onclick={() => ($showInputs = $showInputs ? "" : "true")}
-          disabled={inputNames.length <= 1}
-          class="py-1 {$showInputs ? 'font-bold' : 'font-light'}"
-        >
-          {#if $showInputs && inputNames.length > 1}
-            <ChartBarStackedIcon class="text-theme size-5" />
-          {:else}
-            <ChartBarBigIcon class="text-theme size-5" />
-          {/if}
-        </Button>
-
-        {#each inputNames as name, i}
-          {@const color = colors[i % colors.length]}
-          <Anchor route={inputUrl(name, i)}>
-            {#if $showInputs && inputNames.length > 1}
-              <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
-            {/if}
-            {name}
-          </Anchor>
-        {/each}
-      </div>
-    {/if}
+{#if inputNames.length}
+  <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
+    {#key inputNames}
+      {#each inputNames as name, i}
+        {@const color = inputNames.length > 1 ? colors[i % colors.length] : "var(--color-theme)"}
+        <Anchor route={inputUrl(name, i)} class="flex-col items-start">
+          <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+          <span class="text-nowrap">{name}</span>
+        </Anchor>
+      {/each}
+    {/key}
   </div>
 {/if}
 
-<div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
-  {#each rankData.teams as teamRank}
-    {@const color = `rgb(var(--theme-color) / ${teamRank.percentage.toFixed(2)}%)`}
+<div class="grid gap-x-2 gap-y-4" style="grid-template-columns:min-content auto">
+  {#each rankData.teams as teamRank (teamRank.team)}
+    {@const isHighlighted = $highlightedTeam == teamRank.team}
 
-    <div id={teamRank.team} class="col-span-full grid grid-cols-subgrid">
-      <Anchor
-        route="comp/{pageData.compRecord.id}/team/{teamRank.team}"
-        class="justify-center text-sm {$showInputs && inputNames.length > 1 ? 'mb-4' : ''}"
+    <div
+      id={teamRank.team}
+      animate:flip={{ duration: flipTeamDuration, delay: 0 }}
+      class="col-span-full grid grid-cols-subgrid"
+    >
+      <Button
+        onclick={() => ($highlightedTeam = isHighlighted ? "" : teamRank.team)}
+        class="h-[46px] justify-center text-sm"
       >
         <div class="flex items-baseline">
           <span class="font-bold">{teamRank.rank}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
         </div>
-      </Anchor>
+      </Button>
 
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-      <div onclick={() => ($highlightedTeam = teamRank.team)} class="truncate">
+      <div onclick={() => ($highlightedTeam = teamRank.team)} class="min-w-0">
         <div
           class={[
-            "flex items-end justify-between gap-3",
-            $highlightedTeam == teamRank.team && "border-x-[6px] border-neutral-400 bg-neutral-800 px-1",
+            "border-neutral-700 p-0 transition-[border,padding]",
+            isHighlighted && "border-x-[4px] border-t-[4px] px-1",
           ]}
         >
-          <div class="flex flex-col truncate">
-            <span class="font-bold">{teamRank.team}</span>
-            {#if teamRank.teamName}
-              <span class={["truncate text-xs", $highlightedTeam == teamRank.team || "font-light"]}>
-                {teamRank.teamName}
-              </span>
+          <div class="flex items-end justify-between gap-3">
+            <div class="flex flex-col truncate">
+              <div class="font-bold">{teamRank.team}</div>
+              {#if teamRank.teamName}
+                <div class="truncate text-xs font-light">{teamRank.teamName}</div>
+              {/if}
+            </div>
+
+            {#if "value" in teamRank}
+              {teamRank.value.toFixed(2)}
+            {:else}
+              <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
             {/if}
           </div>
-          {#if "value" in teamRank}
-            {teamRank.value.toFixed(2)}
-          {:else}
-            <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
+
+          {#if isHighlighted}
+            <div transition:slide>
+              <div class="col-span-full flex flex-wrap gap-2 py-1 text-sm">
+                <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
+                  View team
+                  <ArrowRightIcon class="text-theme size-5" />
+                </Anchor>
+              </div>
+
+              {#if inputNames.length > 1}
+                <div class="-mx-2 mt-1">
+                  <div
+                    class="flex text-center text-xs font-light tracking-tighter"
+                    style="width:{teamRank.percentage.toFixed(2)}%"
+                  >
+                    {#if "value" in teamRank && rankData.type != "picklist"}
+                      {#each teamRank.inputs as input, i}
+                        {@const inputName = rankData.inputs[i].name}
+                        {@const divWidth = input.value * teamRank.percentage}
+                        {#if divWidth}
+                          <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                            <div class="truncate">{inputName}</div>
+                          </div>
+                        {/if}
+                      {/each}
+                    {:else if !("value" in teamRank) && rankData.type == "picklist"}
+                      {#each rankData.pickList.weights as weight, i}
+                        {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
+                        {#if divWidth}
+                          <div
+                            title={weight.expressionName}
+                            class="overflow-hidden"
+                            style="width:{divWidth.toFixed(2)}%"
+                          >
+                            <div class="truncate">{weight.expressionName}</div>
+                          </div>
+                        {/if}
+                      {/each}
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
           {/if}
         </div>
 
-        {#if $showInputs && inputNames.length > 1}
-          <div class={$highlightedTeam == teamRank.team ? "bg-neutral-700" : "bg-neutral-800"}>
+        <div class={["transition-[background]", isHighlighted ? "bg-neutral-700" : "bg-neutral-800"]}>
+          {#if inputNames.length > 1}
             <div class="flex" style="width:{teamRank.percentage.toFixed(2)}%">
               {#if "value" in teamRank && rankData.type != "picklist"}
                 {#each teamRank.inputs as input, i}
+                  {@const inputName = rankData.inputs[i].name}
                   {@const color = colors[i % colors.length]}
                   {@const opacity = input.percentage.toFixed(2)}
                   {@const divWidth = input.value * teamRank.percentage}
 
                   {#if divWidth}
-                    <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                    <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                       <div
                         class="border-x-2"
                         style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
@@ -171,7 +190,7 @@
                   {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
 
                   {#if divWidth}
-                    <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                    <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                       <div
                         class="border-x-2"
                         style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
@@ -181,14 +200,20 @@
                 {/each}
               {/if}
             </div>
-          </div>
+          {:else}
+            {@const singleColor = `rgb(var(--theme-color) / ${teamRank.percentage.toFixed(2)}%)`}
+            <div style="background-color:{singleColor};width:{teamRank.percentage.toFixed(2)}%;height:6px"></div>
+          {/if}
+        </div>
 
+        {#if inputNames.length > 1}
           <div class="flex text-center text-xs font-light" style="width:{teamRank.percentage.toFixed(2)}%">
             {#if "value" in teamRank && rankData.type != "picklist"}
-              {#each teamRank.inputs as input}
+              {#each teamRank.inputs as input, i}
+                {@const inputName = rankData.inputs[i].name}
                 {@const divWidth = input.value * teamRank.percentage}
                 {#if divWidth}
-                  <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                     <div>{input.value.toFixed()}</div>
                   </div>
                 {/if}
@@ -197,19 +222,47 @@
               {#each rankData.pickList.weights as weight, i}
                 {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
                 {#if divWidth}
-                  <div class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                     <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed(0)}%</div>
                   </div>
                 {/if}
               {/each}
             {/if}
           </div>
-        {:else}
-          <div class={$highlightedTeam == teamRank.team ? "bg-neutral-700" : "bg-neutral-800"}>
-            <div style="background-color:{color};width:{teamRank.percentage.toFixed(2)}%;height:6px"></div>
-          </div>
         {/if}
       </div>
     </div>
   {/each}
 </div>
+
+{#if $highlightedTeam}
+  <div
+    class="sticky right-3 bottom-20 z-20 mr-2 flex flex-col self-end border border-neutral-500 bg-neutral-900 p-2 shadow-2xl lg:bottom-8"
+    transition:slide
+  >
+    <span class="text-xs font-light">Jump to</span>
+    <div class="flex flex-wrap gap-2">
+      <Button
+        onclick={() => {
+          document
+            .getElementById($highlightedTeam)
+            ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        }}
+        class="min-w-24 py-1 font-light"
+      >
+        <div class="flex flex-col">
+          {$highlightedTeam}
+          {#if highlightedTeamRank}
+            <span class="text-xs">
+              <span class="font-bold">{highlightedTeamRank}</span>{getOrdinal(highlightedTeamRank)}
+              place
+            </span>
+          {/if}
+        </div>
+      </Button>
+      <Button onclick={() => ($highlightedTeam = "")} class="p-1!">
+        <XIcon class="size-5" />
+      </Button>
+    </div>
+  </div>
+{/if}
