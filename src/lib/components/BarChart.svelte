@@ -1,21 +1,33 @@
 <script lang="ts">
-  import { colors, type RankData } from "$lib/rank";
-  import { getOrdinal, sessionStorageStore } from "$lib";
+  import { colors, type RankData, type TeamRank } from "$lib/rank";
+  import { allianceTeamLabels, getOrdinal, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import Button from "./Button.svelte";
-  import { ArrowRightIcon, XIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, UserPenIcon, UserPlusIcon, XIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { openDialog } from "$lib/dialog";
+  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
+  import { idb } from "$lib/idb";
+  import { invalidateAll } from "$app/navigation";
 
   let {
     pageData,
     rankData,
+    hideAlliances,
   }: {
     pageData: CompPageData;
     rankData: RankData;
+    hideAlliances: boolean;
   } = $props();
+
+  const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
+
+  const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
+
+  const sortedTeams = $derived(hideAlliances ? rankData.teams.toSorted(sortTeams) : rankData.teams);
 
   const flipTeamDuration = 500;
 
@@ -60,6 +72,13 @@
 
     return location.hash;
   }
+
+  function sortTeams(a: TeamRank, b: TeamRank) {
+    if (!hideAlliances) return 0;
+    const aIsAlliance = allianceTeams.includes(a.team);
+    const bIsAlliance = allianceTeams.includes(b.team);
+    return Number(aIsAlliance) - Number(bIsAlliance);
+  }
 </script>
 
 {#if inputNames.length}
@@ -77,8 +96,9 @@
 {/if}
 
 <div class="grid gap-x-2 gap-y-4" style="grid-template-columns:min-content auto">
-  {#each rankData.teams as teamRank (teamRank.team)}
+  {#each sortedTeams as teamRank (teamRank.team)}
     {@const isHighlighted = $highlightedTeam == teamRank.team}
+    {@const allianceWithIndex = alliancesWithIndexes?.find((a) => a.teams.includes(teamRank.team))}
 
     <div
       id={teamRank.team}
@@ -107,24 +127,57 @@
             <div class="flex flex-col truncate">
               <div class="font-bold">{teamRank.team}</div>
               {#if teamRank.teamName}
-                <div class="truncate text-xs font-light">{teamRank.teamName}</div>
+                <div class="truncate text-xs font-light tracking-tighter">{teamRank.teamName}</div>
               {/if}
             </div>
 
-            {#if "value" in teamRank}
-              {teamRank.value.toFixed(2)}
-            {:else}
-              <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
-            {/if}
+            <div class="flex flex-col text-end">
+              {#if allianceWithIndex}
+                <div class="truncate text-xs font-light tracking-tighter">
+                  a{allianceWithIndex.i + 1}
+                  {(allianceTeamLabels[allianceWithIndex.teams.indexOf(teamRank.team)] || "Backup").slice(0, 4)}
+                </div>
+              {/if}
+              {#if "value" in teamRank}
+                {teamRank.value.toFixed(2)}
+              {:else}
+                <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
+              {/if}
+            </div>
           </div>
 
           {#if isHighlighted}
             <div transition:slide>
-              <div class="col-span-full flex flex-wrap gap-2 py-1 text-sm">
+              <div class="col-span-full flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                 <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
                   View team
                   <ArrowRightIcon class="text-theme size-5" />
                 </Anchor>
+                <Button
+                  onclick={() => {
+                    openDialog(AddTeamToAllianceDialog, {
+                      team: { number: teamRank.team, name: teamRank.teamName },
+                      compAlliances: pageData.compRecord.alliances || [],
+                      onadd(newAlliances) {
+                        idb.put(
+                          "comps",
+                          $state.snapshot({
+                            ...pageData.compRecord,
+                            alliances: newAlliances,
+                            modified: new Date(),
+                          }),
+                        ).onsuccess = invalidateAll;
+                      },
+                    });
+                  }}
+                >
+                  {#if allianceTeams.includes(teamRank.team)}
+                    <UserPenIcon class="text-theme size-5" />
+                  {:else}
+                    <UserPlusIcon class="text-theme size-5" />
+                  {/if}
+                  Alliance
+                </Button>
               </div>
 
               {#if inputNames.length > 1}
@@ -207,7 +260,10 @@
         </div>
 
         {#if inputNames.length > 1}
-          <div class="flex text-center text-xs font-light" style="width:{teamRank.percentage.toFixed(2)}%">
+          <div
+            class="flex text-center text-xs font-light tracking-tighter"
+            style="width:{teamRank.percentage.toFixed(2)}%"
+          >
             {#if "value" in teamRank && rankData.type != "picklist"}
               {#each teamRank.inputs as input, i}
                 {@const inputName = rankData.inputs[i].name}
@@ -223,7 +279,7 @@
                 {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
                 {#if divWidth}
                   <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                    <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed(0)}%</div>
+                    <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed()}%</div>
                   </div>
                 {/if}
               {/each}

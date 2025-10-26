@@ -7,6 +7,7 @@
   import { invalidateAll } from "$app/navigation";
   import EditAllianceTeamDialog from "$lib/dialogs/EditAllianceTeamDialog.svelte";
   import NewAllianceTeamDialog from "$lib/dialogs/NewAllianceTeamDialog.svelte";
+  import { allianceTeamLabels } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -17,8 +18,6 @@
   const mostBackups = $derived(
     (compRecord.alliances || []).map((a) => a.teams.length).reduce((prev, curr) => Math.max(prev, curr - 3), 0) || 0,
   );
-
-  const teamLabels = ["Captain", "1st Pick", "2nd Pick"];
 </script>
 
 <div class="flex flex-col gap-3">
@@ -28,7 +27,7 @@
   >
     <div class="col-span-full grid grid-cols-subgrid text-xs font-light tracking-tighter text-nowrap">
       <div class="-mr-2">Alliance</div>
-      {#each teamLabels as label}
+      {#each allianceTeamLabels as label}
         <div>{label}</div>
       {/each}
       {#if mostBackups}
@@ -47,7 +46,7 @@
                 teams: compRecord.teams,
                 allianceIndex,
                 team,
-                teamLabel: teamLabels[teamIndex] || "Backup",
+                teamLabel: allianceTeamLabels[teamIndex] || "Backup",
                 onedit(newTeam) {
                   if (compRecord.alliances == undefined) return;
                   compRecord.alliances[allianceIndex].teams[teamIndex] = newTeam;
@@ -81,7 +80,7 @@
             openDialog(NewAllianceTeamDialog, {
               teams: compRecord.teams,
               allianceIndex,
-              teamLabel: teamLabels[alliance.teams.length] || "Backup",
+              teamLabel: allianceTeamLabels[alliance.teams.length] || "Backup",
               onadd(newTeam) {
                 if (compRecord.alliances == undefined) return;
                 compRecord.alliances[allianceIndex].teams.push(newTeam);
@@ -102,7 +101,7 @@
         openDialog(NewAllianceTeamDialog, {
           teams: compRecord.teams,
           allianceIndex: (compRecord.alliances || []).length,
-          teamLabel: teamLabels[0],
+          teamLabel: allianceTeamLabels[0],
           onadd(newTeam) {
             if (compRecord.alliances == undefined) {
               compRecord.alliances = [{ teams: [newTeam] }];

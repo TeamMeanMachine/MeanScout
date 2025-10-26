@@ -1,24 +1,62 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
-  import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
-  import { sessionStorageStore } from "$lib";
+  import { SquareArrowOutUpRightIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { allianceTeamLabels, sessionStorageStore } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
   import TimeChart from "$lib/components/TimeChart.svelte";
+  import { openDialog } from "$lib/dialog";
+  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
+  import { idb } from "$lib/idb";
+  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
+
+  const allianceWithIndex = $derived(
+    data.compRecord.alliances?.map((a, i) => ({ ...a, i })).find((a) => a.teams.includes(data.team.number)),
+  );
 
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 </script>
 
 <div class="flex flex-col gap-6">
-  <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+  <div class="flex items-start justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">Team {data.team.number}</h2>
       {#if data.team.name}
-        <span class="text-xs font-light">{data.team.name}</span>
+        <span class="text-xs font-light text-balance">{data.team.name}</span>
       {/if}
+    </div>
+
+    <div class="flex items-center gap-2 text-end text-xs tracking-tighter text-nowrap">
+      {#if allianceWithIndex}
+        Alliance {allianceWithIndex.i + 1}<br />
+        {allianceTeamLabels[allianceWithIndex.teams.indexOf(data.team.number)] || "Backup"}
+      {/if}
+
+      <Button
+        onclick={() => {
+          openDialog(AddTeamToAllianceDialog, {
+            team: data.team,
+            compAlliances: data.compRecord.alliances || [],
+            onadd(newAlliances) {
+              data = {
+                ...data,
+                compRecord: { ...data.compRecord, alliances: newAlliances, modified: new Date() },
+              };
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            },
+          });
+        }}
+        class="text-sm"
+      >
+        {#if allianceWithIndex}
+          <UserPenIcon class="text-theme size-5" />
+        {:else}
+          <UserPlusIcon class="text-theme size-5" />
+        {/if}
+      </Button>
     </div>
   </div>
 
