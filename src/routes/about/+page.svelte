@@ -44,19 +44,19 @@
         <li>Full offline support (progressive web app)</li>
         <li>Lightweight mobile-first design</li>
         <li>Customizable fields: toggles, numbers, selectors, textfields, ratings, and timers</li>
-        <li>Supports both match scouting and non-match (pit) scouting</li>
-        <li>Configurable match schedules and team lists</li>
+        <li>Supports any number of match and non-match (pit) scouting forms</li>
+        <li>Data-driven rankings (pick lists and expressions)</li>
+        <li>Optional scout names and match guessing game</li>
+        <li>Stores data locally, in the browser</li>
+        <li>Export/share survey configs and scouting data via QRF codes or files</li>
         <li>
-          Pull schedules/teams from
+          Pull matches/teams/alliances from
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
             <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
-        <li>Customizable rankings (pick lists and expressions)</li>
-        <li>Optional scout names and match guessing game</li>
-        <li>Stores data locally, in the browser</li>
-        <li>Export/share survey configs and scouting data via QRF codes or files</li>
+        <li>Or, manually set them up as needed</li>
       </ul>
     </div>
 
@@ -128,7 +128,7 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Your API key - MeanScout supplies its own auth key, but you may want to use your own</li>
         <li>Your team number - To get events your team participates in</li>
-        <li>Event keys - To get match schedules and participating teams for those events</li>
+        <li>Event keys - To get match schedules, participating teams, and playoff alliances for those events</li>
       </ul>
       <span>MeanScout itself is completely free of telemetry or any other form of usage analytics.</span>
       <span>
@@ -136,7 +136,7 @@
         <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">
           <span class="underline">privacy policy for Cloudflare</span>
           <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
-        </a>, which is used to host MeanScout.
+        </a>, which is used to host and deploy MeanScout.
       </span>
       <span>
         This applies only to the version of MeanScout deployed at
@@ -165,6 +165,32 @@
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Remind your scouts which team/alliance they should scout</li>
         <li>When used with TBA match data, automatically inputs team values for you</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Comps</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Event-wide config data</li>
+        <li>Contains matches, participating teams, alliances</li>
+        <li>Multiple surveys are created within a comp</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Surveys</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Config data for specific forms within one comp</li>
+        <li>Contains fields, and for match surveys, contains ranks (pick lists and expressions)</li>
+        <li>Fields are specific customizable inputs within a survey's form</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Entries</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Actual scouting data recorded by your team</li>
+        <li>Entries are tied to surveys they're based on</li>
       </ul>
     </div>
 
@@ -211,6 +237,14 @@
     </div>
 
     <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Alliance selection</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>You can add teams to playoff alliances from any ranking list</li>
+        <li>Alliance teams can be displayed after remaining teams</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
       <h2 class="font-bold">The Blue Alliance</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>MeanScout supplies its own Read API key, but you may want to use your own</li>
@@ -224,15 +258,15 @@
           Enter that API key, and your team number, in the <a href="#/settings" class="underline">settings page</a>
         </li>
         <li>In your comp's config, select one of your team's events (or manually enter any TBA event key)</li>
-        <li>Pull match schedules and/or team info from the TBA event</li>
+        <li>Pull match schedules, team info, and playoff alliances from the TBA event</li>
       </ol>
     </div>
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Exporting</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Export or copy rankings to other apps (e.g. Google Keep)</li>
-        <li>Export survey configs and scouting data via QRF codes or files</li>
+        <li>Copy ranking results to other apps (e.g. Google Keep)</li>
+        <li>Export configs and scouting data via QRF codes or files</li>
         <li>Scouting data can be easily exported from entries page</li>
         <li>If you can't use QRF codes, you'll have to manually share data as files between devices</li>
         <li>
@@ -247,7 +281,7 @@
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>Once you've fully set up your comp and surveys on one device, export it to the rest</li>
         <li>Fill in the team setting on each device (highlights your team in match lists)</li>
-        <li>Set a unique target on each device</li>
+        <li>Set a target on each device, ensuring each target is at least covered by one scout per match</li>
         <li>If you can use QRF codes, make sure to pick a rear-facing camera</li>
       </ol>
     </div>
