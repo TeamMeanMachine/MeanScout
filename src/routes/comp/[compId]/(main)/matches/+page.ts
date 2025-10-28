@@ -43,10 +43,12 @@ export const load: PageLoad = async (event) => {
       });
     }
 
-    if (!lastCompletedMatch || compareMatches(entryMatchIdentifiers, lastCompletedMatch) > 1) {
+    if (!lastCompletedMatch || compareMatches(entryMatchIdentifiers, lastCompletedMatch) > 0) {
       lastCompletedMatch = entryMatchIdentifiers;
     }
   }
+
+  matches.sort(compareMatches);
 
   return { title: "Matches", matches, lastCompletedMatch };
 };

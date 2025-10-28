@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, type Match } from "$lib";
+  import { compareMatches, matchUrl, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
   import { ChevronDownIcon, ChevronRightIcon, ListOrderedIcon } from "@lucide/svelte";
@@ -23,7 +23,7 @@
       .map((part) => parseInt(part).toString()),
   );
 
-  const filteredMatches = $derived(data.matches.toSorted(compareMatches).filter(filterMatch));
+  const filteredMatches = $derived(data.matches.filter(filterMatch));
 
   const matchToggleStateSchema = z.array(z.union([z.literal("upcoming"), z.literal("previous")])).catch(["upcoming"]);
 
@@ -40,11 +40,15 @@
   });
 
   const upcomingMatches = $derived(
-    filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch) > 0),
+    data.lastCompletedMatch
+      ? filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch!) > 0)
+      : filteredMatches,
   );
 
   const previousMatches = $derived(
-    filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch) <= 0).toReversed(),
+    data.lastCompletedMatch
+      ? filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch!) <= 0).toReversed()
+      : [],
   );
 
   function onsearchinput(value: string) {
@@ -68,7 +72,7 @@
     if (!debouncedSearch) return true;
 
     return debouncedSearchParts.every((part) => {
-      return [
+      const queryables = [
         match.number.toString(),
         match.red1,
         match.red2,
@@ -76,8 +80,12 @@
         match.blue1,
         match.blue2,
         match.blue3,
-        ...(match.extraTeams || []),
-      ].some((team) => {
+      ];
+
+      if (match.extraTeams) queryables.push(...match.extraTeams);
+      if (match.set && match.set > 1) queryables.push(match.set.toString());
+
+      return queryables.some((team) => {
         return parseInt(team).toString() == part;
       });
     });
@@ -203,7 +211,7 @@
 </div>
 
 {#snippet matchRow(match: Match & { extraTeams?: string[] })}
-  <Anchor route="comp/{data.compRecord.id}/match/{match.number}" class="flex-nowrap! text-center!">
+  <Anchor route={matchUrl(match, data.compRecord.id)} class="flex-nowrap! text-center!">
     <div class="flex flex-wrap items-center gap-x-4">
       {#if match.red1 || match.red2 || match.red3}
         <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">

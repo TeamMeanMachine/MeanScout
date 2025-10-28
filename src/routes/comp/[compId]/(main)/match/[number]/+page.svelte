@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sessionStorageStore } from "$lib";
+  import { matchUrl, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -34,7 +34,14 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-wrap justify-between gap-3">
     <div class="flex flex-col">
-      <h2 class="font-bold">Match {data.match.number}</h2>
+      <h2 class="font-bold">
+        Match
+        {#if data.match.level && data.match.level != "qm"}
+          {data.match.level}{data.match.set || 1}-{data.match.number}
+        {:else}
+          {data.match.number}
+        {/if}
+      </h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
         <div class="text-xs">
           {#if data.redWon}
@@ -56,7 +63,7 @@
     <div class="flex gap-2">
       {#if data.previousMatch}
         <Anchor
-          route="comp/{data.compRecord.id}/match/{data.previousMatch.number}"
+          route={matchUrl(data.previousMatch, data.compRecord.id)}
           class="active:-translate-x-0.5! active:translate-y-0!"
         >
           <ArrowLeftIcon class="text-theme size-5" />
@@ -69,7 +76,7 @@
 
       {#if data.nextMatch}
         <Anchor
-          route="comp/{data.compRecord.id}/match/{data.nextMatch.number}"
+          route={matchUrl(data.nextMatch, data.compRecord.id)}
           class="active:translate-x-0.5! active:translate-y-0!"
         >
           <ArrowRightIcon class="text-theme size-5" />
@@ -85,28 +92,43 @@
   {#if showRanks}
     <MatchRanksChart pageData={data} match={data.match} />
   {:else}
-    <div class="flex flex-col gap-2 sm:grid sm:grid-cols-2">
-      {#each [data.match.red1, data.match.red2, data.match.red3] as team, index}
-        {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
+    <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2 sm:grid sm:grid-cols-2">
+        {#each [data.match.red1, data.match.red2, data.match.red3] as team, index}
+          {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
+          {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+
+          <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
+            <div class="flex flex-col truncate {teamWonFontWeight(team)}">
+              <span class="text-red">{team}</span>
+              {#if teamName}
+                <span class="truncate text-xs">{teamName}</span>
+              {/if}
+            </div>
+          </Anchor>
+        {/each}
+
+        {#each [data.match.blue1, data.match.blue2, data.match.blue3] as team, index}
+          {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
+          {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+
+          <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
+            <div class="flex flex-col truncate {teamWonFontWeight(team)}">
+              <span class="text-blue">{team}</span>
+              {#if teamName}
+                <span class="truncate text-xs">{teamName}</span>
+              {/if}
+            </div>
+          </Anchor>
+        {/each}
+      </div>
+
+      {#each data.match.extraTeams || [] as team}
         {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
 
-        <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
+        <Anchor route="comp/{data.compRecord.id}/team/{team}">
           <div class="flex flex-col truncate {teamWonFontWeight(team)}">
-            <span class="text-red">{team}</span>
-            {#if teamName}
-              <span class="truncate text-xs">{teamName}</span>
-            {/if}
-          </div>
-        </Anchor>
-      {/each}
-
-      {#each [data.match.blue1, data.match.blue2, data.match.blue3] as team, index}
-        {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
-        {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
-
-        <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
-          <div class="flex flex-col truncate {teamWonFontWeight(team)}">
-            <span class="text-blue">{team}</span>
+            <span>{team}</span>
             {#if teamName}
               <span class="truncate text-xs">{teamName}</span>
             {/if}
@@ -164,16 +186,16 @@
   {/each}
 
   {#if data.compRecord.tbaEventKey}
+    {@const setPart = data.match.level && data.match.level != "qm" ? (data.match.set || 1) + "m" : ""}
+    {@const identifier = `${data.match.level || "qm"}${setPart}${data.match.number}`}
+
     <div class="flex flex-wrap gap-x-4">
-      <a
-        href="https://www.thebluealliance.com/match/{data.compRecord.tbaEventKey}_qm{data.match.number}"
-        target="_blank"
-      >
+      <a href="https://www.thebluealliance.com/match/{data.compRecord.tbaEventKey}_{identifier}" target="_blank">
         <span class="underline">TBA</span>
         <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
       </a>
 
-      <a href="https://www.statbotics.io/match/{data.compRecord.tbaEventKey}_qm{data.match.number}" target="_blank">
+      <a href="https://www.statbotics.io/match/{data.compRecord.tbaEventKey}_{identifier}" target="_blank">
         <span class="underline">Statbotics</span>
         <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
       </a>

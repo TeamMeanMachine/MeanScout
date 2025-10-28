@@ -11,6 +11,7 @@ export type Value = z.infer<typeof valueSchema>;
 export const matchValueSchema = z.number().int().gt(0);
 
 export const matchLevels = ["qm", "ef", "qf", "sf", "f"] as const;
+export type MatchLevel = (typeof matchLevels)[number];
 
 const matchIdentifier = z.object({
   number: matchValueSchema,
@@ -33,7 +34,12 @@ export const matchSchema = z.object({
 });
 export type Match = z.infer<typeof matchSchema>;
 
-/** Returns 0 if the matches share identifiers, >0 if match b takes place after match a, <0 vice versa. */
+/**
+  Ascending comparison. Returns:
+  - 0, if matches share identifiers
+  - greater than 0, if match a is BEFORE match b
+  - less than 0, if match a is AFTER match b
+ */
 export function compareMatches(a: MatchIdentifier, b: MatchIdentifier) {
   return (
     matchLevels.indexOf(a.level || "qm") - matchLevels.indexOf(b.level || "qm") ||
@@ -47,6 +53,21 @@ export function getMatchTeamFontWeight(team: string) {
   if (!teamStoreValue) return "";
   if (team == teamStoreValue) return "font-bold underline";
   return "font-light";
+}
+
+export function matchUrl(match: MatchIdentifier, compId: string) {
+  const describeLevel = match.level && match.level != "qm";
+  const describeSet = match.set && match.set != 1;
+
+  if (!describeLevel && !describeSet) {
+    return `comp/${compId}/match/${match.number}`;
+  } else if (describeLevel && !describeSet) {
+    return `comp/${compId}/match/${match.number}?level=${match.level}`;
+  } else if (!describeLevel && describeSet) {
+    return `comp/${compId}/match/${match.number}?set=${match.set}`;
+  } else {
+    return `comp/${compId}/match/${match.number}?level=${match.level}&set=${match.set}`;
+  }
 }
 
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
