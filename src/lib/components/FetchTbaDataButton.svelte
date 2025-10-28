@@ -5,6 +5,7 @@
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { compareMatches } from "$lib";
 
   let {
     pageData,
@@ -67,46 +68,60 @@
   async function getMatchesFromTbaEvent() {
     if (!pageData.compRecord.tbaEventKey) return false;
 
-    const response = await tbaGetEventMatches(pageData.compRecord.tbaEventKey);
+    try {
+      const response = await tbaGetEventMatches(pageData.compRecord.tbaEventKey);
 
-    if (response) {
-      const matchesTx = idb.transaction(["comps", "entries"], "readwrite");
-      matchesTx.onabort = () => {
-        getTbaDataError = "Error while trying to get matches";
-      };
+      if (response) {
+        const matchesTx = idb.transaction(["comps", "entries"], "readwrite");
+        matchesTx.onabort = () => {
+          getTbaDataError = "Error while trying to get matches";
+        };
 
-      const matches = structuredClone($state.snapshot(pageData.compRecord.matches));
+        let matches = structuredClone($state.snapshot(pageData.compRecord.matches));
 
-      for (const { match } of response) {
-        const matchIndex = matches.findIndex((m) => m.number == match.number);
+        for (const { match } of response) {
+          const similarMatches = matches.filter((existingMatch) => compareMatches(existingMatch, match) == 0);
+          if (similarMatches.length > 1) {
+            matches = matches.filter((m) => compareMatches(m, match) != 0);
+            matches.push(match);
+            continue;
+          }
 
-        if (matchIndex == -1) {
-          matches.push(match);
-        } else {
-          matches[matchIndex] = match;
-        }
-      }
+          const matchIndex = matches.findIndex((existingMatch) => compareMatches(existingMatch, match) == 0);
 
-      const entryStore = matchesTx.objectStore("entries");
-      for (const { match, breakdowns } of response) {
-        if (!breakdowns) continue;
-
-        for (const { team, tbaMetrics } of breakdowns) {
-          const entries = pageData.entryRecords.filter(
-            (e) => e.team == team && e.type == "match" && e.match == match.number,
-          );
-          for (const entry of entries) {
-            entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
+          if (matchIndex == -1) {
+            matches.push(match);
+          } else {
+            matches[matchIndex] = match;
           }
         }
-      }
 
-      pageData = {
-        ...pageData,
-        compRecord: { ...pageData.compRecord, matches, modified: new Date() },
-      };
-      matchesTx.objectStore("comps").put($state.snapshot(pageData.compRecord));
-      return matches.length > 0;
+        matches = matches.toSorted(compareMatches);
+
+        const entryStore = matchesTx.objectStore("entries");
+        for (const { match, breakdowns } of response) {
+          if (!breakdowns) continue;
+          if (match.level && match.level != "qm") continue;
+
+          for (const { team, tbaMetrics } of breakdowns) {
+            const entries = pageData.entryRecords.filter(
+              (e) => e.team == team && e.type == "match" && e.match == match.number,
+            );
+            for (const entry of entries) {
+              entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
+            }
+          }
+        }
+
+        pageData = {
+          ...pageData,
+          compRecord: { ...pageData.compRecord, matches, modified: new Date() },
+        };
+        matchesTx.objectStore("comps").put($state.snapshot(pageData.compRecord));
+        return matches.length > 0;
+      }
+    } catch (e) {
+      console.error(e);
     }
 
     return false;

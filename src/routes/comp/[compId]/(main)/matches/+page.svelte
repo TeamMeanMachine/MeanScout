@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Match } from "$lib";
+  import { compareMatches, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
   import { ChevronDownIcon, ChevronRightIcon, ListOrderedIcon } from "@lucide/svelte";
@@ -23,7 +23,7 @@
       .map((part) => parseInt(part).toString()),
   );
 
-  const filteredMatches = $derived(data.matches.toSorted(sortMatches).filter(filterMatch));
+  const filteredMatches = $derived(data.matches.toSorted(compareMatches).filter(filterMatch));
 
   const matchToggleStateSchema = z.array(z.union([z.literal("upcoming"), z.literal("previous")])).catch(["upcoming"]);
 
@@ -40,11 +40,11 @@
   });
 
   const upcomingMatches = $derived(
-    filteredMatches.filter((match) => match.number > data.lastCompletedMatch).toSorted((a, b) => a.number - b.number),
+    filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch) > 0),
   );
 
   const previousMatches = $derived(
-    filteredMatches.filter((match) => match.number <= data.lastCompletedMatch).toSorted((a, b) => b.number - a.number),
+    filteredMatches.filter((match) => compareMatches(match, data.lastCompletedMatch) <= 0).toReversed(),
   );
 
   function onsearchinput(value: string) {
@@ -62,10 +62,6 @@
     } else if (previousMatches.length) {
       goto(`#/comp/${data.compRecord.id}/match/${previousMatches[0].number}`);
     }
-  }
-
-  function sortMatches(a: Match & { extraTeams?: string[] }, b: Match & { extraTeams?: string[] }) {
-    return b.number - a.number;
   }
 
   function filterMatch(match: Match & { extraTeams?: string[] }) {
@@ -228,7 +224,13 @@
         {@const blueWon = match.blueScore > match.redScore}
 
         <div class="flex flex-col flex-wrap items-center gap-x-2 self-center">
-          <div class="min-w-8">{match.number}</div>
+          <div class="min-w-8">
+            {#if match.level && match.level != "qm"}
+              {match.level}{match.set || 1}-{match.number}
+            {:else}
+              {match.number}
+            {/if}
+          </div>
           <div class="flex items-center gap-x-2">
             <div class="text-red min-w-8 {redWon ? 'font-bold' : 'text-sm font-light'}">
               {match.redScore}

@@ -1,4 +1,4 @@
-import { matchValueSchema, valueSchema, type Match } from "./";
+import { matchLevels, matchValueSchema, valueSchema, type Match } from "./";
 import { z } from "zod";
 import type { Comp } from "./comp";
 import type { Survey } from "./survey";
@@ -25,6 +25,8 @@ const matchEntrySchema = z.object({
   ...baseEntrySchema.shape,
   type: z.literal("match"),
   match: matchValueSchema,
+  matchSet: z.optional(matchValueSchema),
+  matchLevel: z.optional(z.union(matchLevels.map((l) => z.literal(l)))),
   absent: z.boolean(),
   tbaMetrics: z.optional(tbaMetricsSchema),
   prediction: z.optional(z.literal("red").or(z.literal("blue"))),

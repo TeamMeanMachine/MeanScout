@@ -10,10 +10,18 @@ export type Value = z.infer<typeof valueSchema>;
 
 export const matchValueSchema = z.number().int().gt(0);
 
-export const matchSchema = z.object({
+export const matchLevels = ["qm", "ef", "qf", "sf", "f"] as const;
+
+const matchIdentifier = z.object({
   number: matchValueSchema,
   set: z.optional(matchValueSchema),
-  level: z.optional(z.union([z.literal("qm"), z.literal("ef"), z.literal("qf"), z.literal("sf"), z.literal("f")])),
+  level: z.optional(z.union(matchLevels.map((l) => z.literal(l)))),
+});
+
+export type MatchIdentifier = z.infer<typeof matchIdentifier>;
+
+export const matchSchema = z.object({
+  ...matchIdentifier.shape,
   red1: z.string(),
   red2: z.string(),
   red3: z.string(),
@@ -24,6 +32,15 @@ export const matchSchema = z.object({
   blueScore: z.optional(z.number()),
 });
 export type Match = z.infer<typeof matchSchema>;
+
+/** Returns 0 if the matches share identifiers, >0 if match b takes place after match a, <0 vice versa. */
+export function compareMatches(a: MatchIdentifier, b: MatchIdentifier) {
+  return (
+    matchLevels.indexOf(a.level || "qm") - matchLevels.indexOf(b.level || "qm") ||
+    (a.set || 1) - (b.set || 1) ||
+    a.number - b.number
+  );
+}
 
 export function getMatchTeamFontWeight(team: string) {
   const teamStoreValue = get(teamStore);

@@ -56,54 +56,61 @@ export async function tbaGetEventMatches(eventKey: string) {
   const response = await tbaFetch(`/event/${eventKey}/matches`);
 
   if (response.status == "success" && Array.isArray(response.data)) {
-    return response.data
-      .filter((match) => match.comp_level == "qm")
-      .map((match) => {
-        const newMatch: Match = {
-          number: match.match_number,
-          red1: match.alliances.red.team_keys[0].replace("frc", ""),
-          red2: match.alliances.red.team_keys[1].replace("frc", ""),
-          red3: match.alliances.red.team_keys[2].replace("frc", ""),
-          blue1: match.alliances.blue.team_keys[0].replace("frc", ""),
-          blue2: match.alliances.blue.team_keys[1].replace("frc", ""),
-          blue3: match.alliances.blue.team_keys[2].replace("frc", ""),
+    return response.data.map((match) => {
+      const newMatch: Match = {
+        number: match.match_number,
+        level: match.comp_level,
+        red1: match.alliances.red.team_keys[0].replace("frc", ""),
+        red2: match.alliances.red.team_keys[1].replace("frc", ""),
+        red3: match.alliances.red.team_keys[2].replace("frc", ""),
+        blue1: match.alliances.blue.team_keys[0].replace("frc", ""),
+        blue2: match.alliances.blue.team_keys[1].replace("frc", ""),
+        blue3: match.alliances.blue.team_keys[2].replace("frc", ""),
+      };
+
+      if (match.set_number != 1) {
+        newMatch.set = match.set_number;
+      }
+
+      if (match.comp_level != "qm") {
+        newMatch.level = match.comp_level;
+      }
+
+      const redScore = Number(match.alliances.red.score);
+      const blueScore = Number(match.alliances.blue.score);
+
+      if (redScore > -1 && blueScore > -1) {
+        newMatch.redScore = redScore;
+        newMatch.blueScore = blueScore;
+      }
+
+      if (match.score_breakdown) {
+        const redMetrics = Object.entries(match.score_breakdown.red)
+          .filter(([key]) => /robot[123]/gi.test(key))
+          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+        const blueMetrics = Object.entries(match.score_breakdown.blue)
+          .filter(([key]) => /robot[123]/gi.test(key))
+          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+
+        const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
+          team: key.replace("frc", ""),
+          tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
+        }));
+
+        const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
+          team: key.replace("frc", ""),
+          tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
+        }));
+
+        return {
+          match: newMatch,
+          breakdowns: [...redTeams, ...blueTeams],
         };
+      }
 
-        const redScore = Number(match.alliances.red.score);
-        const blueScore = Number(match.alliances.blue.score);
-
-        if (redScore > -1 && blueScore > -1) {
-          newMatch.redScore = redScore;
-          newMatch.blueScore = blueScore;
-        }
-
-        if (match.score_breakdown) {
-          const redMetrics = Object.entries(match.score_breakdown.red)
-            .filter(([key]) => /robot[123]/gi.test(key))
-            .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
-
-          const blueMetrics = Object.entries(match.score_breakdown.blue)
-            .filter(([key]) => /robot[123]/gi.test(key))
-            .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
-
-          const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
-            team: key.replace("frc", ""),
-            tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
-          }));
-
-          const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
-            team: key.replace("frc", ""),
-            tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
-          }));
-
-          return {
-            match: newMatch,
-            breakdowns: [...redTeams, ...blueTeams],
-          };
-        }
-
-        return { match: newMatch, breakdowns: undefined };
-      });
+      return { match: newMatch, breakdowns: undefined };
+    });
   }
 }
 
