@@ -2,7 +2,7 @@
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { sessionStorageStore, type Team } from "$lib";
+  import { compareMatches, matchUrl, sessionStorageStore, type Match, type MatchIdentifier, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -10,7 +10,6 @@
   import Button from "./Button.svelte";
   import {
     ArrowRightIcon,
-    ChartBarBigIcon,
     ChartColumnBigIcon,
     ChartColumnStackedIcon,
     ChevronDownIcon,
@@ -140,17 +139,56 @@
       [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
     );
 
-    const entriesPerMatch = [...new Set([...entries.map((e) => e.match), ...matches.map((m) => m.number)])]
-      .toSorted((a, b) => a - b)
-      .map((number) => ({
-        number,
-        entries: entries
-          .filter((e) => e.match == number)
-          .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
-      }));
+    let allMatches: (Match & { extraTeams?: string[] })[] = [...matches];
+    for (const entry of entries) {
+      const entryMatchIdentifier: MatchIdentifier = {
+        number: entry.match,
+        level: entry.matchLevel,
+        set: entry.matchSet,
+      };
+      const existingMatch = allMatches.find((m) => compareMatches(m, entryMatchIdentifier) == 0);
+
+      if (existingMatch) {
+        const teams = [
+          existingMatch.red1,
+          existingMatch.red2,
+          existingMatch.red3,
+          existingMatch.blue1,
+          existingMatch.blue2,
+          existingMatch.blue3,
+          ...(existingMatch.extraTeams || []),
+        ];
+
+        if (!teams.includes(entry.team)) {
+          existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
+            a.localeCompare(b),
+          );
+        }
+      } else {
+        allMatches.push({
+          ...entryMatchIdentifier,
+          red1: "",
+          red2: "",
+          red3: "",
+          blue1: "",
+          blue2: "",
+          blue3: "",
+          extraTeams: [entry.team],
+        });
+      }
+    }
+
+    allMatches = allMatches.toSorted(compareMatches);
+
+    const entriesPerMatch = allMatches.map((match) => ({
+      match,
+      entries: entries
+        .filter((e) => compareMatches({ number: e.match, level: e.matchLevel, set: e.matchSet }, match) == 0)
+        .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
+    }));
 
     if ("expression" in params) {
-      const data = entriesPerMatch.map(({ number, entries }) => {
+      const data = entriesPerMatch.map(({ match, entries }) => {
         const rankData = getExpressionData(
           pageData.compRecord,
           params.expression,
@@ -160,7 +198,7 @@
         )?.teams[0];
 
         return {
-          match: number,
+          match,
           value: entries.length ? rankData?.value : undefined,
           inputs: entries.length ? rankData?.inputs : undefined,
         };
@@ -170,7 +208,7 @@
     }
 
     if ("field" in params) {
-      const data = entriesPerMatch.map(({ number, entries }) => {
+      const data = entriesPerMatch.map(({ match, entries }) => {
         const rankData = getFieldData(
           pageData.compRecord,
           params.field,
@@ -180,7 +218,7 @@
         )?.teams[0];
 
         return {
-          match: number,
+          match,
           value: entries.length ? rankData?.value : undefined,
           inputs: undefined,
         };
@@ -206,7 +244,7 @@
 
   function createMetric(
     data: {
-      match: number;
+      match: MatchIdentifier;
       value: number | undefined;
       inputs: { value: number; percentage: number }[] | undefined;
     }[],
@@ -411,11 +449,15 @@
             <Button
               onclick={() => {
                 sessionStorage.setItem("rank-view", sessionStorage.getItem("metric-view") || "");
-                goto(`#/comp/${pageData.compRecord.id}/match/${match}`);
+                goto(`#/${matchUrl(match, pageData.compRecord.id)}`);
               }}
-              class="justify-center px-1"
+              class="min-w-13 justify-center px-0 text-nowrap!"
             >
-              {match}
+              {#if match.level && match.level != "qm"}
+                {match.level}{match.set || 1}-{match.number}
+              {:else}
+                {match.number}
+              {/if}
             </Button>
           </div>
         {/each}
