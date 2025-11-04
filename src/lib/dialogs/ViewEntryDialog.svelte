@@ -133,7 +133,13 @@
 <div class="grid max-h-[500px] grid-cols-[min-content_auto] items-center gap-x-6 gap-y-3 overflow-auto">
   {#if entryRecord.type == "match"}
     <div class="text-sm">Match</div>
-    <div class="font-bold">{entryRecord.match}</div>
+    <div class="font-bold">
+      {#if entryRecord.matchLevel && entryRecord.matchLevel != "qm"}
+        {entryRecord.matchLevel}{entryRecord.matchSet || 1}-{entryRecord.match}
+      {:else}
+        {entryRecord.match}
+      {/if}
+    </div>
   {/if}
 
   <div class="text-sm">Team</div>

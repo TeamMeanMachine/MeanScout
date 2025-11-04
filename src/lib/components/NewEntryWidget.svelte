@@ -565,9 +565,15 @@
         class="gap-x-4"
       >
         {#if entry.type == "match"}
-          <div class="flex w-9 flex-col">
+          <div class="flex w-9 flex-col text-nowrap">
             <span class="text-xs font-light">Match</span>
-            <span>{entry.match}</span>
+            <div>
+              {#if entry.matchLevel && entry.matchLevel != "qm"}
+                <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
+              {:else}
+                {entry.match}
+              {/if}
+            </div>
           </div>
         {:else if entry.type == "pit"}
           <div class="flex w-9 flex-col">

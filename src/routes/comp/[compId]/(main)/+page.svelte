@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
+  import { compareMatches, matchIdentifierSchema, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { entryStatuses, groupEntries, type Entry, type MatchEntry } from "$lib/entry";
@@ -58,7 +58,7 @@
     .object({
       status: z.array(z.union(entryStatuses.map((status) => z.literal(status)))),
       survey: z.array(z.string()),
-      match: z.array(z.number()),
+      match: z.array(matchIdentifierSchema),
       team: z.array(z.string()),
       scout: z.array(z.string()),
       target: z.array(z.union(targets.map((target) => z.literal(target)))),
@@ -254,15 +254,16 @@
               </div>
               <div class="flex items-center gap-x-4 gap-y-2">
                 {#if surveyRecord.type == "match" && prefills.match}
-                  <div class="flex flex-col">
+                  {@const { level, set, number } = prefills.match}
+                  <div class="flex w-9 flex-col text-nowrap">
                     <span class="text-xs font-light">Match</span>
-                    <span>
-                      {#if prefills.match.level && prefills.match.level != "qm"}
-                        {prefills.match.level}{prefills.match.set || 1}-{prefills.match.number}
+                    <div>
+                      {#if level && level != "qm"}
+                        <span class="text-xs">{level}{set || 1}-{number}</span>
                       {:else}
-                        {prefills.match.number}
+                        {number}
                       {/if}
-                    </span>
+                    </div>
                   </div>
                 {/if}
                 {#if prefills.team}
@@ -345,9 +346,15 @@
         class="gap-x-4"
       >
         {#if entry.type == "match" && groupedEntries.by != "match"}
-          <div class="flex w-9 flex-col">
+          <div class="flex w-9 flex-col text-nowrap">
             <span class="text-xs font-light">Match</span>
-            <span>{entry.match}</span>
+            <div>
+              {#if entry.matchLevel && entry.matchLevel != "qm"}
+                <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
+              {:else}
+                {entry.match}
+              {/if}
+            </div>
           </div>
         {:else if entry.type == "pit" && groupedEntries.by != "survey" && groupedEntries.by != "target"}
           <div class="flex w-9 flex-col">
@@ -432,21 +439,29 @@
           <div class="flex gap-2">
             <Button
               onclick={() => {
-                if (toggleStates.match.includes(match)) {
-                  toggleStates.match = toggleStates.match.filter((val) => val != match);
+                if (toggleStates.match.some((m) => compareMatches(m, match) == 0)) {
+                  toggleStates.match = toggleStates.match.filter((m) => compareMatches(m, match) != 0);
                 } else {
                   toggleStates.match.push(match);
                 }
               }}
               class="grow flex-nowrap!"
             >
-              {#if toggleStates.match.includes(match)}
+              {#if toggleStates.match.some((m) => compareMatches(m, match) == 0)}
                 <ChevronDownIcon class="text-theme shrink-0" />
               {:else}
                 <ChevronRightIcon class="text-theme shrink-0" />
               {/if}
               <div class="flex grow items-center justify-between">
-                <span class={toggleStates.match.includes(match) ? "font-bold" : "font-light"}>Match {match}</span>
+                <span
+                  class={toggleStates.match.some((m) => compareMatches(m, match) == 0) ? "font-bold" : "font-light"}
+                >
+                  {#if match.level && match.level != "qm"}
+                    {match.level}{match.set || 1}-{match.number}
+                  {:else}
+                    {match.number}
+                  {/if}
+                </span>
                 <div class="flex gap-0.5 text-sm">
                   {entries.length}<NotepadTextIcon class="size-4" />
                 </div>
@@ -464,7 +479,7 @@
             </Button>
           </div>
 
-          {#if toggleStates.match.includes(match)}
+          {#if toggleStates.match.some((m) => compareMatches(m, match) == 0)}
             {#each entries as entry (entry.id)}
               {@render entryButton(entry)}
             {/each}
