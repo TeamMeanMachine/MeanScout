@@ -37,8 +37,8 @@ export type Match = z.infer<typeof matchSchema>;
 /**
   Ascending comparison. Returns:
   - 0, if matches share identifiers
-  - greater than 0, if match a is BEFORE match b
-  - less than 0, if match a is AFTER match b
+  - less than 0, if match a is BEFORE match b
+  - greater than 0, if match a is AFTER match b
  */
 export function compareMatches(a: MatchIdentifier, b: MatchIdentifier) {
   return (
