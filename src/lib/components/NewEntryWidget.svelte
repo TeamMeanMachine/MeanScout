@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Team } from "$lib";
+  import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
@@ -32,7 +32,7 @@
     pageData: CompPageData;
     surveyRecord: Survey;
     prefills: {
-      match: number;
+      match: MatchIdentifier;
       team: string;
       scout: string | undefined;
     };
@@ -61,7 +61,7 @@
 
   const newEntryStateSchema = z
     .object({
-      match: z.number(),
+      match: matchIdentifierSchema,
       team: z.string(),
       scout: z.string().optional(),
       prediction: z.union([z.literal("red"), z.literal("blue"), z.undefined()]),
@@ -83,17 +83,39 @@
 
   const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
 
+  const adjacentMatches = $derived.by(() => {
+    const sortedMatches = pageData.compRecord.matches.toSorted(compareMatches);
+    const previous = sortedMatches.findLast((m) => compareMatches(newEntryState.match, m) > 0);
+    const next = sortedMatches.find((m) => compareMatches(newEntryState.match, m) < 0);
+    return { previous, next };
+  });
+
+  function uniqueEntryString(team: string, match?: MatchIdentifier | undefined) {
+    if (!match) {
+      return team;
+    }
+
+    return team + "_" + (match.level || "qm") + (match.set || 1) + "_" + match.number;
+  }
+
   const matchingEntries = $derived.by(() => {
-    const uniqueString = (surveyRecord.type == "pit" ? "pit" : newEntryState.match) + "_" + newEntryState.team;
+    const uniqueString = uniqueEntryString(
+      newEntryState.team,
+      surveyRecord.type == "match" ? newEntryState.match : undefined,
+    );
 
     return pageData.entryRecords.filter((e) => {
-      const existingUniqueString = (e.type == "pit" ? "pit" : e.match) + "_" + e.team;
+      const existingUniqueString = uniqueEntryString(
+        e.team,
+        e.type == "match" ? { number: e.match, set: e.matchSet, level: e.matchLevel } : undefined,
+      );
+
       return uniqueString == existingUniqueString;
     });
   });
 
-  function selectTargetTeamFromMatch(matchNumber: number) {
-    const match = pageData.compRecord.matches.find((m) => m.number == matchNumber);
+  function selectTargetTeamFromMatch(identifier: MatchIdentifier) {
+    const match = pageData.compRecord.matches.find((m) => compareMatches(m, identifier) == 0);
     if (!match) return "";
     switch ($targetStore) {
       case "red 1":
@@ -118,7 +140,7 @@
 
   let error = $state("");
 
-  const matchData = $derived(pageData.compRecord.matches.find((m) => m.number == newEntryState.match));
+  const matchData = $derived(pageData.compRecord.matches.find((m) => compareMatches(m, newEntryState.match) == 0));
 
   const suggestedTeams = $derived.by(() => {
     newEntryState.match;
@@ -192,7 +214,7 @@
       return;
     }
 
-    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${newEntryState.match}`)) {
+    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${newEntryState.match.number}`)) {
       error = "invalid value for match";
       return;
     }
@@ -207,12 +229,20 @@
         type: surveyRecord.type,
         status: "draft",
         team: newEntryState.team,
-        match: newEntryState.match,
+        match: newEntryState.match.number,
         absent: false,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
+
+      if (newEntryState.match.set && newEntryState.match.set > 1) {
+        entry.matchSet = newEntryState.match.set;
+      }
+
+      if (newEntryState.match.level && newEntryState.match.level != "qm") {
+        entry.matchLevel = newEntryState.match.level;
+      }
 
       if (newEntryState.scout) {
         entry.scout = newEntryState.scout;
@@ -313,10 +343,15 @@
   <div class="flex items-end gap-2">
     <label class="flex grow flex-col">
       Match
+      {#if newEntryState.match.level && newEntryState.match.level != "qm"}
+        {newEntryState.match.level}{newEntryState.match.set || 1}
+      {/if}
       <input
         type="number"
-        bind:value={newEntryState.match}
+        bind:value={newEntryState.match.number}
         oninput={() => {
+          newEntryState.match.level = undefined;
+          newEntryState.match.set = undefined;
           newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
         }}
         min="1"
@@ -324,9 +359,10 @@
       />
     </label>
     <Button
-      disabled={newEntryState.match <= 1}
+      disabled={!adjacentMatches.previous}
       onclick={() => {
-        newEntryState.match--;
+        if (!adjacentMatches.previous) return;
+        newEntryState.match = adjacentMatches.previous;
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
       class="active:translate-y-0! enabled:active:-translate-x-0.5!"
@@ -334,8 +370,10 @@
       <ArrowLeftIcon class="text-theme" />
     </Button>
     <Button
+      disabled={!adjacentMatches.next}
       onclick={() => {
-        newEntryState.match++;
+        if (!adjacentMatches.next) return;
+        newEntryState.match = adjacentMatches.next;
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
       class="active:translate-y-0! enabled:active:translate-x-0.5!"
@@ -449,10 +487,15 @@
 {/if}
 
 {#if matchData}
-  <Anchor route="comp/{pageData.compRecord.id}/match/{newEntryState.match}" class="mt-3">
+  <Anchor route={matchUrl(newEntryState.match, pageData.compRecord.id)} class="mt-3">
     <ListOrderedIcon class="text-theme" />
     <div class="flex grow flex-col">
-      Match {newEntryState.match}
+      Match
+      {#if newEntryState.match.level && newEntryState.match.level != "qm"}
+        {newEntryState.match.level}{newEntryState.match.set || 1}-{newEntryState.match.number}
+      {:else}
+        {newEntryState.match.number}
+      {/if}
       <span class="text-xs font-light">Analyze existing data</span>
     </div>
     <ArrowRightIcon class="text-theme" />

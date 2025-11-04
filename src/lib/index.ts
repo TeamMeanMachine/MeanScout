@@ -13,16 +13,16 @@ export const matchValueSchema = z.number().int().gt(0);
 export const matchLevels = ["qm", "ef", "qf", "sf", "f"] as const;
 export type MatchLevel = (typeof matchLevels)[number];
 
-const matchIdentifier = z.object({
+export const matchIdentifierSchema = z.object({
   number: matchValueSchema,
   set: z.optional(matchValueSchema),
   level: z.optional(z.union(matchLevels.map((l) => z.literal(l)))),
 });
 
-export type MatchIdentifier = z.infer<typeof matchIdentifier>;
+export type MatchIdentifier = z.infer<typeof matchIdentifierSchema>;
 
 export const matchSchema = z.object({
-  ...matchIdentifier.shape,
+  ...matchIdentifierSchema.shape,
   red1: z.string(),
   red2: z.string(),
   red3: z.string(),

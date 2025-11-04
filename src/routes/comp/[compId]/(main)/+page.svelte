@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { sessionStorageStore, type Match } from "$lib";
+  import { compareMatches, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, groupEntries, type Entry } from "$lib/entry";
+  import { entryStatuses, groupEntries, type Entry, type MatchEntry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { targets, targetStore } from "$lib/settings";
@@ -25,7 +25,14 @@
 
   let { data }: PageProps = $props();
 
-  let newEntry = $state<{ survey: Survey; prefills: { match: number; team: string; scout: string | undefined } }>();
+  let newEntry = $state<{
+    survey: Survey;
+    prefills: {
+      match: MatchIdentifier;
+      team: string;
+      scout: string | undefined;
+    };
+  }>();
 
   onMount(() => {
     const newEntrySurvey = sessionStorage.getItem("new-entry");
@@ -37,6 +44,8 @@
       }
     }
   });
+
+  const sortedMatches = $derived(data.compRecord.matches.toSorted(compareMatches));
 
   const groupBy = sessionStorageStore<"status" | "survey" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
@@ -79,20 +88,53 @@
 
   function getNewEntryPrefills(survey: Survey, entries: Entry[]) {
     const prefills: {
-      match: number;
+      match: MatchIdentifier;
       team: string;
       scout: string | undefined;
     } = {
-      match: 0,
+      match: { number: 0 },
       team: "",
       scout: undefined,
     };
 
     if (survey.type == "match") {
-      const recordedMatches = entries.filter((entry) => entry.type == "match").map((entry) => entry.match);
-      prefills.match = 1 + Math.max(...recordedMatches, 0);
+      let lastScoutedMatch: MatchIdentifier | undefined = undefined;
 
-      const matchData = data.compRecord.matches.find((match) => match.number == prefills.match);
+      for (const entry of entries) {
+        if (entry.type != "match") continue;
+
+        const entryMatchIdentifier: MatchIdentifier = {
+          number: entry.match,
+          set: entry.matchSet,
+          level: entry.matchLevel,
+        };
+
+        if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
+          lastScoutedMatch = entryMatchIdentifier;
+        }
+      }
+
+      if (data.compRecord.matches.length && lastScoutedMatch) {
+        const nextMatch = sortedMatches.find((m) => compareMatches(m, lastScoutedMatch) > 0);
+        if (nextMatch) {
+          prefills.match = nextMatch;
+        }
+      }
+
+      if (!prefills.match) {
+        const recordedQualMatches = entries
+          .filter(
+            (entry): entry is MatchEntry =>
+              entry.type == "match" &&
+              (!entry.matchSet || entry.matchSet == 1) &&
+              (!entry.matchLevel || entry.matchLevel == "qm"),
+          )
+          .map((entry) => entry.match);
+
+        prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
+      }
+
+      const matchData = data.compRecord.matches.find((match) => compareMatches(match, prefills.match) == 0);
       if (matchData) {
         switch ($targetStore) {
           case "red 1":
@@ -121,7 +163,9 @@
           entry.scout &&
           entry.type == "match" &&
           data.compRecord.matches.some(
-            (m) => m.number == entry.match && m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+            (m) =>
+              compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
+              m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
           )
         ) {
           prefills.scout = entry.scout;
@@ -204,13 +248,7 @@
                 <div class="flex flex-col">
                   <span>{surveyRecord.name}</span>
                   <span class="text-xs font-light">
-                    {entryRecords.filter((e) => e.status != "draft").length}
-                    {#if surveyRecord.type == "match" && data.compRecord.matches.length}
-                      of {data.compRecord.matches.length * 6}
-                    {:else if surveyRecord.type == "pit" && data.compRecord.teams.length}
-                      of {data.compRecord.teams.length}
-                    {/if}
-                    done
+                    {entryRecords.filter((e) => e.status != "draft").length} done
                   </span>
                 </div>
               </div>
@@ -218,7 +256,13 @@
                 {#if surveyRecord.type == "match" && prefills.match}
                   <div class="flex flex-col">
                     <span class="text-xs font-light">Match</span>
-                    <span>{prefills.match}</span>
+                    <span>
+                      {#if prefills.match.level && prefills.match.level != "qm"}
+                        {prefills.match.level}{prefills.match.set || 1}-{prefills.match.number}
+                      {:else}
+                        {prefills.match.number}
+                      {/if}
+                    </span>
                   </div>
                 {/if}
                 {#if prefills.team}
