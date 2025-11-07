@@ -1,12 +1,16 @@
 <script lang="ts">
-  import { matchUrl, sessionStorageStore } from "$lib";
+  import { compareMatches, matchUrl, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
+  import { ArrowLeftIcon, ArrowRightIcon, SquarePenIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import MatchPitDataTable from "$lib/components/MatchPitDataTable.svelte";
+  import { openDialog } from "$lib/dialog";
+  import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
+  import { idb } from "$lib/idb";
+  import { goto } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -32,7 +36,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  <div class="flex flex-wrap justify-between gap-3">
+  <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">{data.title}</h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
@@ -50,6 +54,8 @@
           <span>to</span>
           <span class="text-blue {data.blueWon ? 'font-bold' : 'font-light'}">{data.match.blueScore}</span>
         </div>
+      {:else}
+        <div class="text-xs font-light">No score</div>
       {/if}
     </div>
 
@@ -79,6 +85,45 @@
           <ArrowRightIcon class="text-theme size-5" />
         </Button>
       {/if}
+
+      <Button
+        onclick={() => {
+          openDialog(EditMatchDialog, {
+            match: data.match,
+            onupdate(match) {
+              const matches = structuredClone($state.snapshot(data.compRecord.matches));
+              const index = matches.findIndex((m) => compareMatches(m, data.match) == 0);
+              if (index >= 0) matches[index] = match;
+
+              idb.put(
+                "comps",
+                $state.snapshot({
+                  ...data.compRecord,
+                  matches,
+                  modified: new Date(),
+                }),
+              ).onsuccess = () => {
+                goto(`#/${matchUrl(match, data.compRecord.id)}`, { replaceState: true, invalidateAll: true });
+              };
+            },
+            ondelete() {
+              idb.put(
+                "comps",
+                $state.snapshot({
+                  ...data.compRecord,
+                  matches: data.compRecord.matches.filter((m) => compareMatches(m, data.match) != 0),
+                  modified: new Date(),
+                }),
+              ).onsuccess = () => {
+                goto(`#/comp/${data.compRecord.id}/matches`, { replaceState: true, invalidateAll: true });
+              };
+            },
+          });
+        }}
+        class="ml-2"
+      >
+        <SquarePenIcon class="text-theme size-5" />
+      </Button>
     </div>
   </div>
 

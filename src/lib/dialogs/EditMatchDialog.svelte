@@ -98,7 +98,7 @@
   <Button
     onclick={() =>
       openDialog(DeleteMatchDialog, {
-        number: match.number,
+        match,
         ondelete() {
           ondelete();
           closeDialog();
@@ -116,7 +116,7 @@
       type="number"
       pattern="[0-9]*"
       min="1"
-      bind:value={match.number}
+      bind:value={changes.number}
       class="text-theme w-full bg-neutral-800 p-2"
     />
   </label>
@@ -126,14 +126,14 @@
       type="number"
       pattern="[0-9]*"
       min="1"
-      bind:value={match.set}
+      bind:value={changes.set}
       placeholder="1"
       class="text-theme w-full bg-neutral-800 p-2"
     />
   </label>
   <label class="flex w-full flex-col">
     Level
-    <select bind:value={match.level} class="text-theme w-full bg-neutral-800 p-2">
+    <select bind:value={changes.level} class="text-theme w-full bg-neutral-800 p-2">
       {#each matchLevels as level}
         <option value={level}>{level}</option>
       {/each}

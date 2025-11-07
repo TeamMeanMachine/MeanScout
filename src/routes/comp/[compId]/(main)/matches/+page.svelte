@@ -2,11 +2,14 @@
   import { compareMatches, matchUrl, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
-  import { ChevronDownIcon, ChevronRightIcon, ListOrderedIcon } from "@lucide/svelte";
+  import { ChevronDownIcon, ChevronRightIcon, ListOrderedIcon, PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import { z } from "zod";
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
+  import { openDialog } from "$lib/dialog";
+  import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
+  import { idb } from "$lib/idb";
 
   let { data }: PageProps = $props();
 
@@ -208,6 +211,32 @@
       {/if}
     {/if}
   {/if}
+
+  <div
+    class="sticky right-3 bottom-20 z-20 mr-2 flex flex-col self-end border border-neutral-500 bg-neutral-900 p-2 shadow-2xl lg:bottom-8"
+  >
+    <Button
+      onclick={() =>
+        openDialog(NewMatchDialog, {
+          matches: data.compRecord.matches,
+          oncreate(match) {
+            data = {
+              ...data,
+              compRecord: {
+                ...data.compRecord,
+                matches: [...data.compRecord.matches, match],
+                modified: new Date(),
+              },
+            };
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+          },
+        })}
+      class="text-sm"
+    >
+      <PlusIcon class="text-theme size-5" />
+      <span class="hidden sm:block">New match</span>
+    </Button>
+  </div>
 </div>
 
 {#snippet matchRow(match: Match & { extraTeams?: string[] })}
