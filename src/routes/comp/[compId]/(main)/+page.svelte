@@ -45,8 +45,6 @@
     }
   });
 
-  const sortedMatches = $derived(data.compRecord.matches.toSorted(compareMatches));
-
   const groupBy = sessionStorageStore<"status" | "survey" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
     "status",
@@ -114,14 +112,13 @@
         }
       }
 
-      if (data.compRecord.matches.length && lastScoutedMatch) {
-        const nextMatch = sortedMatches.find((m) => compareMatches(m, lastScoutedMatch) > 0);
-        if (nextMatch) {
-          prefills.match = nextMatch;
-        }
-      }
+      const nextMatch = lastScoutedMatch
+        ? data.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0)
+        : undefined;
 
-      if (!prefills.match) {
+      if (nextMatch) {
+        prefills.match = nextMatch;
+      } else {
         const recordedQualMatches = entries
           .filter(
             (entry): entry is MatchEntry =>
@@ -134,7 +131,7 @@
         prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
       }
 
-      const matchData = data.compRecord.matches.find((match) => compareMatches(match, prefills.match) == 0);
+      const matchData = data.matches.find((match) => compareMatches(match, prefills.match) == 0);
       if (matchData) {
         switch ($targetStore) {
           case "red 1":
@@ -213,6 +210,7 @@
     <div class="flex flex-col gap-3">
       <NewEntryWidget
         pageData={data}
+        matches={data.matches}
         surveyRecord={newEntry.survey}
         prefills={newEntry.prefills}
         oncancel={() => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier, type Team } from "$lib";
+  import { compareMatches, matchIdentifierSchema, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
@@ -25,11 +25,13 @@
 
   let {
     pageData,
+    matches,
     surveyRecord,
     prefills,
     oncancel,
   }: {
     pageData: CompPageData;
+    matches: (Match & { extraTeams?: string[] })[];
     surveyRecord: Survey;
     prefills: {
       match: MatchIdentifier;
@@ -67,13 +69,15 @@
       prediction: z.union([z.literal("red"), z.literal("blue"), z.undefined()]),
       predictionReason: z.string().optional(),
     })
-    .catch({
-      match: prefills.match,
-      team: prefills.team,
-      scout: prefills.scout,
-      prediction: undefined,
-      predictionReason: undefined,
-    });
+    .catch(
+      $state.snapshot({
+        match: prefills.match,
+        team: prefills.team,
+        scout: prefills.scout,
+        prediction: undefined,
+        predictionReason: undefined,
+      }),
+    );
 
   function getNewEntryState() {
     try {
@@ -84,9 +88,8 @@
   const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
 
   const adjacentMatches = $derived.by(() => {
-    const sortedMatches = pageData.compRecord.matches.toSorted(compareMatches);
-    const previous = sortedMatches.findLast((m) => compareMatches(newEntryState.match, m) > 0);
-    const next = sortedMatches.find((m) => compareMatches(newEntryState.match, m) < 0);
+    const previous = matches.findLast((m) => compareMatches(newEntryState.match, m) > 0);
+    const next = matches.find((m) => compareMatches(newEntryState.match, m) < 0);
     return { previous, next };
   });
 
@@ -115,7 +118,7 @@
   });
 
   function selectTargetTeamFromMatch(identifier: MatchIdentifier) {
-    const match = pageData.compRecord.matches.find((m) => compareMatches(m, identifier) == 0);
+    const match = matches.find((m) => compareMatches(m, identifier) == 0);
     if (!match) return "";
     switch ($targetStore) {
       case "red 1":
@@ -140,7 +143,7 @@
 
   let error = $state("");
 
-  const matchData = $derived(pageData.compRecord.matches.find((m) => compareMatches(m, newEntryState.match) == 0));
+  const matchData = $derived(matches.find((m) => compareMatches(m, newEntryState.match) == 0));
 
   const suggestedTeams = $derived.by(() => {
     newEntryState.match;
@@ -359,10 +362,18 @@
       />
     </label>
     <Button
-      disabled={!adjacentMatches.previous}
+      disabled={!adjacentMatches.previous && newEntryState.match.number <= 1}
       onclick={() => {
-        if (!adjacentMatches.previous) return;
-        newEntryState.match = adjacentMatches.previous;
+        if (
+          !adjacentMatches.previous ||
+          (newEntryState.match.set == adjacentMatches.previous.set &&
+            newEntryState.match.level == adjacentMatches.previous.level)
+        ) {
+          newEntryState.match.number--;
+        } else {
+          newEntryState.match = structuredClone(adjacentMatches.previous);
+        }
+
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
       class="active:translate-y-0! enabled:active:-translate-x-0.5!"
@@ -370,10 +381,17 @@
       <ArrowLeftIcon class="text-theme" />
     </Button>
     <Button
-      disabled={!adjacentMatches.next}
       onclick={() => {
-        if (!adjacentMatches.next) return;
-        newEntryState.match = adjacentMatches.next;
+        if (
+          !adjacentMatches.next ||
+          (newEntryState.match.set == adjacentMatches.next.set &&
+            newEntryState.match.level == adjacentMatches.next.level)
+        ) {
+          newEntryState.match.number++;
+        } else {
+          newEntryState.match = structuredClone(adjacentMatches.next);
+        }
+
         newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
       }}
       class="active:translate-y-0! enabled:active:translate-x-0.5!"
@@ -394,81 +412,113 @@
       {/if}
     </div>
 
-    <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-      <Button
-        onclick={() => {
-          newEntryState.team = red1;
-          $targetStore = "red 1";
-        }}
-        class="w-full max-sm:order-1"
-      >
-        <div class="flex flex-col truncate {teamBold(red1)}">
-          <span class="text-red {teamUnderline(red1)}">{red1}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red1)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = red2;
-          $targetStore = "red 2";
-        }}
-        class="w-full max-sm:order-3"
-      >
-        <div class="flex flex-col truncate {teamBold(red2)}">
-          <span class="text-red {teamUnderline(red2)}">{red2}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red2)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = red3;
-          $targetStore = "red 3";
-        }}
-        class="w-full max-sm:order-5"
-      >
-        <div class="flex flex-col truncate {teamBold(red3)}">
-          <span class="text-red {teamUnderline(red3)}">{red3}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red3)}</span>
-        </div>
-      </Button>
+    {#if red1 && red2 && red3 && blue1 && blue2 && blue3}
+      <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
+        <Button
+          onclick={() => {
+            newEntryState.team = red1;
+            $targetStore = "red 1";
+          }}
+          class="w-full max-sm:order-1"
+        >
+          <div class="flex flex-col truncate {teamBold(red1)}">
+            <span class="text-red {teamUnderline(red1)}">{red1}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(red1)}</span>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            newEntryState.team = red2;
+            $targetStore = "red 2";
+          }}
+          class="w-full max-sm:order-3"
+        >
+          <div class="flex flex-col truncate {teamBold(red2)}">
+            <span class="text-red {teamUnderline(red2)}">{red2}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(red2)}</span>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            newEntryState.team = red3;
+            $targetStore = "red 3";
+          }}
+          class="w-full max-sm:order-5"
+        >
+          <div class="flex flex-col truncate {teamBold(red3)}">
+            <span class="text-red {teamUnderline(red3)}">{red3}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(red3)}</span>
+          </div>
+        </Button>
 
-      <Button
-        onclick={() => {
-          newEntryState.team = blue1;
-          $targetStore = "blue 1";
-        }}
-        class="w-full max-sm:order-2"
-      >
-        <div class="flex flex-col truncate {teamBold(blue1)}">
-          <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue1)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = blue2;
-          $targetStore = "blue 2";
-        }}
-        class="w-full max-sm:order-4"
-      >
-        <div class="flex flex-col truncate {teamBold(blue2)}">
-          <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue2)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = blue3;
-          $targetStore = "blue 3";
-        }}
-        class="w-full max-sm:order-6"
-      >
-        <div class="flex flex-col truncate {teamBold(blue3)}">
-          <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue3)}</span>
-        </div>
-      </Button>
-    </div>
+        <Button
+          onclick={() => {
+            newEntryState.team = blue1;
+            $targetStore = "blue 1";
+          }}
+          class="w-full max-sm:order-2"
+        >
+          <div class="flex flex-col truncate {teamBold(blue1)}">
+            <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(blue1)}</span>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            newEntryState.team = blue2;
+            $targetStore = "blue 2";
+          }}
+          class="w-full max-sm:order-4"
+        >
+          <div class="flex flex-col truncate {teamBold(blue2)}">
+            <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(blue2)}</span>
+          </div>
+        </Button>
+        <Button
+          onclick={() => {
+            newEntryState.team = blue3;
+            $targetStore = "blue 3";
+          }}
+          class="w-full max-sm:order-6"
+        >
+          <div class="flex flex-col truncate {teamBold(blue3)}">
+            <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
+            <span class="truncate text-xs">{teamNumberNameMap.get(blue3)}</span>
+          </div>
+        </Button>
+      </div>
+    {:else if suggestedTeams.length}
+      <label class="flex flex-col">
+        <select bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2">
+          {#each suggestedTeams as team}
+            <option value={team.number}>{team.number} {team.name}</option>
+          {/each}
+        </select>
+      </label>
+    {:else}
+      <label class="flex flex-col">
+        <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
+      </label>
+    {/if}
+
+    {#if matchData.extraTeams}
+      <div class="mt-2 grid grid-cols-3 gap-2">
+        {#each matchData.extraTeams || [] as extraTeam}
+          <Button
+            onclick={() => {
+              newEntryState.team = extraTeam;
+            }}
+            class="w-full"
+          >
+            <div class="flex flex-col truncate {teamBold(extraTeam)}">
+              <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
+              <span class="truncate text-xs">{teamNumberNameMap.get(extraTeam)}</span>
+            </div>
+          </Button>
+        {/each}
+      </div>
+    {/if}
   </div>
 {:else if suggestedTeams.length}
   <label class="flex flex-col">

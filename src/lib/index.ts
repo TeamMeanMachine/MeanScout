@@ -2,6 +2,8 @@ import { z } from "zod";
 import { teamStore } from "./settings";
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
+import type { Comp } from "./comp";
+import type { Entry } from "./entry";
 
 export const schemaVersion = 16;
 
@@ -68,6 +70,56 @@ export function matchUrl(match: MatchIdentifier, compId: string) {
   } else {
     return `comp/${compId}/match/${match.number}?level=${match.level}&set=${match.set}`;
   }
+}
+
+export function getAllMatches(comp: Comp, entries: Entry[]) {
+  const matches: (Match & { extraTeams?: string[] })[] = [...comp.matches];
+
+  let lastCompletedMatch: MatchIdentifier | undefined = undefined;
+
+  for (const entry of entries) {
+    if (entry.type != "match" || entry.status == "draft") continue;
+
+    const entryMatchIdentifiers = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
+    const existingMatch = matches.find((m) => compareMatches(m, entryMatchIdentifiers) == 0);
+
+    if (existingMatch) {
+      const teams = [
+        existingMatch.red1,
+        existingMatch.red2,
+        existingMatch.red3,
+        existingMatch.blue1,
+        existingMatch.blue2,
+        existingMatch.blue3,
+        ...(existingMatch.extraTeams || []),
+      ];
+
+      if (!teams.includes(entry.team)) {
+        existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
+          a.localeCompare(b),
+        );
+      }
+    } else {
+      matches.push({
+        ...entryMatchIdentifiers,
+        red1: "",
+        red2: "",
+        red3: "",
+        blue1: "",
+        blue2: "",
+        blue3: "",
+        extraTeams: [entry.team],
+      });
+    }
+
+    if (!lastCompletedMatch || compareMatches(entryMatchIdentifiers, lastCompletedMatch) > 0) {
+      lastCompletedMatch = entryMatchIdentifiers;
+    }
+  }
+
+  matches.sort(compareMatches);
+
+  return { matches, lastCompletedMatch };
 }
 
 export const teamSchema = z.object({ number: z.string(), name: z.string() });

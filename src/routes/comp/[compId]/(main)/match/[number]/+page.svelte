@@ -34,14 +34,7 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-wrap justify-between gap-3">
     <div class="flex flex-col">
-      <h2 class="font-bold">
-        Match
-        {#if data.match.level && data.match.level != "qm"}
-          {data.match.level}{data.match.set || 1}-{data.match.number}
-        {:else}
-          {data.match.number}
-        {/if}
-      </h2>
+      <h2 class="font-bold">{data.title}</h2>
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
         <div class="text-xs">
           {#if data.redWon}
