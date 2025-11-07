@@ -27,35 +27,20 @@
     getTbaDataError = "";
     isLoadingTbaData = true;
 
-    let dataPulled = false;
-
     try {
-      const matchDataPulled = await getMatchesFromTbaEvent();
-      dataPulled ||= matchDataPulled;
+      const anyPulled = await Promise.all([
+        getMatchesFromTbaEvent(),
+        getTeamsFromTbaEvent(),
+        getAlliancesFromTbaEvent(),
+      ]);
+
+      showCheck = anyPulled.includes(true);
     } catch (e) {
-      getTbaDataError = "Error while trying to get matches";
+      getTbaDataError = "Error while trying to get data";
       console.error(e);
     }
 
-    try {
-      const teamDataPulled = await getTeamsFromTbaEvent();
-      dataPulled ||= teamDataPulled;
-    } catch (e) {
-      getTbaDataError = "Error while trying to get teams";
-      console.error(e);
-    }
-
-    try {
-      const allianceDataPulled = await getAlliancesFromTbaEvent();
-      dataPulled ||= allianceDataPulled;
-    } catch (e) {
-      getTbaDataError = "Error while trying to get alliances";
-      console.error(e);
-    }
-
-    showCheck = dataPulled;
-
-    if (dataPulled) {
+    if (showCheck) {
       invalidateAll();
       showCheckTimeout = window.setTimeout(() => (showCheck = false), 1000);
     } else {
@@ -157,7 +142,7 @@
     if (!pageData.compRecord.tbaEventKey) return false;
 
     const response = await tbaGetEventAlliances(pageData.compRecord.tbaEventKey);
-    if (response && response.length) {
+    if (response) {
       pageData = {
         ...pageData,
         compRecord: { ...pageData.compRecord, alliances: response, modified: new Date() },

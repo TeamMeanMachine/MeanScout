@@ -59,13 +59,12 @@ export async function tbaGetEventMatches(eventKey: string) {
     return response.data.map((match) => {
       const newMatch: Match = {
         number: match.match_number,
-        level: match.comp_level,
-        red1: match.alliances.red.team_keys[0].replace("frc", ""),
-        red2: match.alliances.red.team_keys[1].replace("frc", ""),
-        red3: match.alliances.red.team_keys[2].replace("frc", ""),
-        blue1: match.alliances.blue.team_keys[0].replace("frc", ""),
-        blue2: match.alliances.blue.team_keys[1].replace("frc", ""),
-        blue3: match.alliances.blue.team_keys[2].replace("frc", ""),
+        red1: match.alliances.red.team_keys[0]?.replace("frc", "") || "",
+        red2: match.alliances.red.team_keys[1]?.replace("frc", "") || "",
+        red3: match.alliances.red.team_keys[2]?.replace("frc", "") || "",
+        blue1: match.alliances.blue.team_keys[0]?.replace("frc", "") || "",
+        blue2: match.alliances.blue.team_keys[1]?.replace("frc", "") || "",
+        blue3: match.alliances.blue.team_keys[2]?.replace("frc", "") || "",
       };
 
       if (match.set_number != 1) {

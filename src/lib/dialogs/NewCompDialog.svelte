@@ -1,19 +1,20 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import type { Comp } from "$lib/comp";
+  import type { Alliance, Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
-  import type { Match, Team } from "$lib";
-  import { tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { type Match, type Team } from "$lib";
+  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
 
   let name = $state("");
   let event = $state<string | undefined>();
   let id = $state("");
   let matches = $state<Match[]>([]);
   let teams = $state<Team[]>([]);
+  let alliances = $state<Alliance[] | undefined>(undefined);
 
   let error = $state("");
 
@@ -41,6 +42,7 @@
       };
 
       if (event) comp.tbaEventKey = event;
+      if (alliances) comp.alliances = alliances;
 
       const addRequest = idb.add("comps", $state.snapshot(comp));
       addRequest.onerror = () => {
@@ -54,60 +56,30 @@
   };
 
   async function getDataFromTbaEvent() {
+    if (!event) return;
+
     matches = [];
     teams = [];
+    alliances = undefined;
+
     isLoadingTbaData = true;
 
-    [matches, teams] = await Promise.all([getMatchesFromTbaEvent(), getTeamsFromTbaEvent()]);
+    try {
+      const [tbaMatches, tbaTeams, tbaAlliances] = await Promise.all([
+        tbaGetEventMatches(event),
+        tbaGetEventTeams(event),
+        tbaGetEventAlliances(event),
+      ]);
+
+      if (tbaMatches?.length) matches = tbaMatches.map(({ match }) => match);
+      if (tbaTeams?.length) teams = tbaTeams;
+      if (tbaAlliances?.length) alliances = tbaAlliances;
+    } catch (e) {
+      error = "Error while trying to get data";
+      console.error(e);
+    }
+
     isLoadingTbaData = false;
-  }
-
-  async function getMatchesFromTbaEvent() {
-    if (!event) return [];
-
-    const response = await tbaGetEventMatches(event);
-
-    if (response) {
-      const matches: Match[] = [];
-
-      for (const { match } of response) {
-        const matchIndex = matches.findIndex((m) => m.number == match.number);
-
-        if (matchIndex == -1) {
-          matches.push(match);
-        } else {
-          matches[matchIndex] = match;
-        }
-      }
-
-      return matches;
-    }
-
-    return [];
-  }
-
-  async function getTeamsFromTbaEvent() {
-    if (!event) return [];
-
-    const response = await tbaGetEventTeams(event);
-
-    if (response) {
-      const teams: Team[] = [];
-
-      for (const team of response) {
-        const teamIndex = teams.findIndex((t) => t.number == team.number);
-
-        if (teamIndex == -1) {
-          teams.push(team);
-        } else {
-          teams[teamIndex] = team;
-        }
-      }
-
-      return teams;
-    }
-
-    return [];
   }
 </script>
 
@@ -146,13 +118,16 @@
   </Button>
 </div>
 
-{#if matches.length || teams.length}
+{#if matches.length || teams.length || alliances?.length}
   <div class="flex flex-col gap-1 text-sm">
     {#if matches.length}
       <span>Matches: {matches.length}</span>
     {/if}
     {#if teams.length}
       <span>Teams: {teams.length}</span>
+    {/if}
+    {#if alliances?.length}
+      <span>Alliances: {alliances.length}</span>
     {/if}
   </div>
 {/if}
