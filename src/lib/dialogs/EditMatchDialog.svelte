@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Match } from "$lib";
+  import { matchLevels, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { Trash2Icon } from "@lucide/svelte";
@@ -20,6 +20,29 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
+      const number = parseFloat(`${changes.number}`);
+      if (Number.isNaN(number) || !Number.isInteger(number) || number < 1 || number > 999) {
+        error = "invalid match number!";
+        return;
+      }
+
+      if (changes.set == 1) {
+        changes.set = undefined;
+      } else if (changes.set != undefined) {
+        const set = parseFloat(`${changes.set}`);
+        if (Number.isNaN(set) || !Number.isInteger(set) || set < 1 || set > 999) {
+          error = "invalid set number";
+          return;
+        }
+      }
+
+      if (changes.level == "qm") {
+        changes.level = undefined;
+      } else if (changes.level && !matchLevels.includes(changes.level)) {
+        error = "invalid match level";
+        return;
+      }
+
       changes.red1 = changes.red1.trim();
       changes.red2 = changes.red2.trim();
       changes.red3 = changes.red3.trim();
@@ -64,7 +87,14 @@
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  <span>Edit match {changes.number}</span>
+  <span>
+    Edit match
+    {#if match.level && match.level != "qm"}
+      {match.level}{match.set || 1}-{match.number}
+    {:else}
+      {match.number}
+    {/if}
+  </span>
   <Button
     onclick={() =>
       openDialog(DeleteMatchDialog, {
@@ -77,6 +107,38 @@
   >
     <Trash2Icon class="text-theme size-5" />
   </Button>
+</div>
+
+<div class="flex gap-2">
+  <label class="flex w-full flex-col">
+    Number
+    <input
+      type="number"
+      pattern="[0-9]*"
+      min="1"
+      bind:value={match.number}
+      class="text-theme w-full bg-neutral-800 p-2"
+    />
+  </label>
+  <label class="flex w-full flex-col">
+    Set
+    <input
+      type="number"
+      pattern="[0-9]*"
+      min="1"
+      bind:value={match.set}
+      placeholder="1"
+      class="text-theme w-full bg-neutral-800 p-2"
+    />
+  </label>
+  <label class="flex w-full flex-col">
+    Level
+    <select bind:value={match.level} class="text-theme w-full bg-neutral-800 p-2">
+      {#each matchLevels as level}
+        <option value={level}>{level}</option>
+      {/each}
+    </select>
+  </label>
 </div>
 
 <div class="flex gap-2">

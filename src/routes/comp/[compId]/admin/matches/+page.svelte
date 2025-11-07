@@ -84,7 +84,13 @@
                   </div>
                 </div>
               {:else}
-                <div class="min-w-8">{match.number}</div>
+                <div class="min-w-8">
+                  {#if match.level && match.level != "qm"}
+                    {match.level}{match.set || 1}-{match.number}
+                  {:else}
+                    {match.number}
+                  {/if}
+                </div>
               {/if}
 
               {#if match.blue1 || match.blue2 || match.blue3}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Match } from "$lib";
+  import { compareMatches, type Match, matchLevels } from "$lib";
   import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
@@ -10,8 +10,12 @@
     oncreate: (match: Match) => void;
   } = $props();
 
+  const lastMatch = matches.toSorted(compareMatches).at(-1);
+
   let match = $state<Match>({
-    number: 1 + Math.max(0, ...matches.map((m) => m.number)),
+    number: 1 + (lastMatch?.number || 0),
+    set: lastMatch?.set || undefined,
+    level: lastMatch?.level,
     red1: "",
     red2: "",
     red3: "",
@@ -30,28 +34,52 @@
         return;
       }
 
-      if (!match.red1.trim()) {
+      if (match.set == 1) {
+        match.set = undefined;
+      } else if (match.set != undefined) {
+        const set = parseFloat(`${match.set}`);
+        if (Number.isNaN(set) || !Number.isInteger(set) || set < 1 || set > 999) {
+          error = "invalid set number";
+          return;
+        }
+      }
+
+      if (match.level == "qm") {
+        match.level = undefined;
+      } else if (match.level && !matchLevels.includes(match.level)) {
+        error = "invalid match level";
+        return;
+      }
+
+      match.red1 = match.red1.trim();
+      match.red2 = match.red2.trim();
+      match.red3 = match.red3.trim();
+      match.blue1 = match.blue1.trim();
+      match.blue2 = match.blue2.trim();
+      match.blue3 = match.blue3.trim();
+
+      if (!match.red1) {
         error = "invalid value for red 1!";
         return;
       }
-      if (!match.red2.trim()) {
+      if (!match.red2) {
         error = "invalid value for red 2!";
         return;
       }
-      if (!match.red3.trim()) {
+      if (!match.red3) {
         error = "invalid value for red 3!";
         return;
       }
 
-      if (!match.blue1.trim()) {
+      if (!match.blue1) {
         error = "invalid value for blue 1!";
         return;
       }
-      if (!match.blue2.trim()) {
+      if (!match.blue2) {
         error = "invalid value for blue 2!";
         return;
       }
-      if (!match.blue3.trim()) {
+      if (!match.blue3) {
         error = "invalid value for blue 3!";
         return;
       }
@@ -64,10 +92,37 @@
 
 <span>New match</span>
 
-<label class="flex flex-col">
-  Number
-  <input type="number" pattern="[0-9]*" bind:value={match.number} class="text-theme bg-neutral-800 p-2" />
-</label>
+<div class="flex gap-2">
+  <label class="flex w-full flex-col">
+    Number
+    <input
+      type="number"
+      pattern="[0-9]*"
+      min="1"
+      bind:value={match.number}
+      class="text-theme w-full bg-neutral-800 p-2"
+    />
+  </label>
+  <label class="flex w-full flex-col">
+    Set
+    <input
+      type="number"
+      pattern="[0-9]*"
+      min="1"
+      bind:value={match.set}
+      placeholder="1"
+      class="text-theme w-full bg-neutral-800 p-2"
+    />
+  </label>
+  <label class="flex w-full flex-col">
+    Level
+    <select bind:value={match.level} class="text-theme w-full bg-neutral-800 p-2">
+      {#each matchLevels as level}
+        <option value={level}>{level}</option>
+      {/each}
+    </select>
+  </label>
+</div>
 
 <div class="flex gap-2">
   <label class="flex flex-col">
