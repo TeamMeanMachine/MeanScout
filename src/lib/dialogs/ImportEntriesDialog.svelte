@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { schemaVersion, sessionStorageStore } from "$lib";
+  import { compareMatches, schemaVersion, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
@@ -167,6 +167,14 @@
         modified: new Date(),
       };
 
+      if (jsonEntry.matchSet && jsonEntry.matchSet > 1) {
+        entry.matchSet = jsonEntry.matchSet;
+      }
+
+      if (jsonEntry.matchLevel && jsonEntry.matchLevel != "qm") {
+        entry.matchLevel = jsonEntry.matchLevel;
+      }
+
       if (jsonEntry.tbaMetrics) {
         entry.tbaMetrics = jsonEntry.tbaMetrics;
       }
@@ -199,7 +207,13 @@
 
   function sortEntries(a: Entry, b: Entry) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
-    const matchCompare = a.type == "match" && b.type == "match" ? b.match - a.match : 0;
+    const matchCompare =
+      a.type == "match" && b.type == "match"
+        ? compareMatches(
+            { number: b.match, set: b.matchSet, level: b.matchLevel },
+            { number: a.match, set: a.matchSet, level: a.matchLevel },
+          )
+        : 0;
     const scoutCompare = a.scout?.localeCompare(b.scout || "") || 0;
     return matchCompare || teamCompare || scoutCompare;
   }

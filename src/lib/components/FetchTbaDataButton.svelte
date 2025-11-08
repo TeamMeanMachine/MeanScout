@@ -86,11 +86,13 @@
         const entryStore = matchesTx.objectStore("entries");
         for (const { match, breakdowns } of response) {
           if (!breakdowns) continue;
-          if (match.level && match.level != "qm") continue;
 
           for (const { team, tbaMetrics } of breakdowns) {
             const entries = pageData.entryRecords.filter(
-              (e) => e.team == team && e.type == "match" && e.match == match.number,
+              (e) =>
+                e.team == team &&
+                e.type == "match" &&
+                compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
             );
             for (const entry of entries) {
               entryStore.put({ ...$state.snapshot(entry), tbaMetrics });

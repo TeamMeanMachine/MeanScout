@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
-  import { schemaVersion, sessionStorageStore, type Match, type Team } from "$lib";
+  import { compareMatches, schemaVersion, sessionStorageStore, type Match, type Team } from "$lib";
   import { type Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
@@ -114,14 +114,20 @@
     }
 
     if (jsonComp) {
-      const matches = new Map<number, Match>();
+      const matches: Match[] = [];
 
       for (const match of compRecord.matches) {
-        matches.set(match.number, match);
+        const matchIndex = matches.findIndex((existingMatch) => compareMatches(existingMatch, match) == 0);
+
+        if (matchIndex == -1) {
+          matches.push(match);
+        } else {
+          matches[matchIndex] = match;
+        }
       }
 
       for (const importedMatch of jsonComp.matches) {
-        const existingMatch = matches.get(importedMatch.number);
+        const existingMatch = matches.find((m) => compareMatches(importedMatch, m) == 0);
 
         if (existingMatch) {
           if (
@@ -148,11 +154,9 @@
             if (importedMatch.blueScore !== undefined) {
               existingMatch.blueScore = importedMatch.blueScore;
             }
-
-            matches.set(importedMatch.number, existingMatch);
           }
         } else {
-          matches.set(importedMatch.number, importedMatch);
+          matches.push(importedMatch);
         }
       }
 
@@ -178,10 +182,7 @@
       const comp: Comp = {
         id: compRecord.id,
         name: jsonComp.name,
-        matches: matches
-          .values()
-          .toArray()
-          .toSorted((a, b) => a.number - b.number),
+        matches: matches.toSorted(compareMatches),
         teams: teams
           .values()
           .toArray()

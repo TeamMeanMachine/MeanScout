@@ -1,3 +1,4 @@
+import { compareMatches } from "$lib";
 import type { Comp } from "./comp";
 import type { Entry, MatchEntry } from "./entry";
 
@@ -20,7 +21,9 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
       let coopPoints = 0;
 
       for (const entry of scoutEntries) {
-        const match = comp.matches.find((m) => m.number == entry.match);
+        const match = comp.matches.find(
+          (m) => compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0,
+        );
         if (!match || !match.redScore || !match.blueScore) {
           continue;
         }
@@ -29,7 +32,10 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
           correctGuesses++;
 
           const otherCorrectEntriesCount = entries.filter(
-            (e) => e.scout != scout && e.match == match.number && e.prediction == "red",
+            (e) =>
+              e.scout != scout &&
+              compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0 &&
+              e.prediction == "red",
           ).length;
           coopPoints += otherCorrectEntriesCount;
         }
@@ -38,7 +44,10 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
           correctGuesses++;
 
           const otherCorrectEntriesCount = entries.filter(
-            (e) => e.scout != scout && e.match == match.number && e.prediction == "blue",
+            (e) =>
+              e.scout != scout &&
+              compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0 &&
+              e.prediction == "blue",
           ).length;
           coopPoints += otherCorrectEntriesCount;
         }
@@ -80,10 +89,16 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
 export function getPredictionsPerMatch(comp: Comp, entries: MatchEntry[]) {
   return comp.matches
     .filter((match) => match.redScore !== undefined && match.blueScore !== undefined)
-    .toSorted((a, b) => b.number - a.number)
+    .toSorted((a, b) => compareMatches(b, a))
     .map((match) => {
       const matchEntries = entries
-        .filter((entry) => entry.status != "draft" && entry.match == match.number && entry.scout && entry.prediction)
+        .filter(
+          (entry) =>
+            entry.status != "draft" &&
+            compareMatches(match, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
+            entry.scout &&
+            entry.prediction,
+        )
         .toSorted((a, b) => a.scout?.localeCompare(b.scout || "") || 0);
 
       const redEntries = matchEntries.filter((entry) => entry.prediction == "red");
