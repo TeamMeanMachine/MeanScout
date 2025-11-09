@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { compareMatches, matchIdentifierSchema, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
+  import {
+    compareMatches,
+    matchIdentifierSchema,
+    matchLevels,
+    matchUrl,
+    type Match,
+    type MatchIdentifier,
+    type Team,
+  } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import { type Entry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
-  import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    ListOrderedIcon,
-    PlusIcon,
-    SquareCheckBigIcon,
-    SquareIcon,
-    XIcon,
-  } from "@lucide/svelte";
+  import { ArrowRightIcon, ListOrderedIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
@@ -22,16 +22,19 @@
   import { z } from "zod";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import Anchor from "./Anchor.svelte";
+  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
 
   let {
     pageData,
-    matches,
     surveyRecord,
     prefills,
     oncancel,
   }: {
-    pageData: CompPageData;
-    matches: (Match & { extraTeams?: string[] })[];
+    pageData: CompPageData & {
+      matches: (Match & { extraTeams?: string[] })[];
+      lastCompletedMatch?: MatchIdentifier | undefined;
+      teamNames: Map<string, string>;
+    };
     surveyRecord: Survey;
     prefills: {
       match: MatchIdentifier;
@@ -40,11 +43,6 @@
     };
     oncancel: () => void;
   } = $props();
-
-  const teamNumberNameMap = new Map<string, string>();
-  for (const team of pageData.compRecord.teams) {
-    teamNumberNameMap.set(team.number, team.name);
-  }
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
@@ -87,12 +85,6 @@
 
   const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
 
-  const adjacentMatches = $derived.by(() => {
-    const previous = matches.findLast((m) => compareMatches(newEntryState.match, m) > 0);
-    const next = matches.find((m) => compareMatches(newEntryState.match, m) < 0);
-    return { previous, next };
-  });
-
   function uniqueEntryString(team: string, match?: MatchIdentifier | undefined) {
     if (!match) {
       return team;
@@ -118,7 +110,7 @@
   });
 
   function selectTargetTeamFromMatch(identifier: MatchIdentifier) {
-    const match = matches.find((m) => compareMatches(m, identifier) == 0);
+    const match = pageData.matches.find((m) => compareMatches(m, identifier) == 0);
     if (!match) return "";
     switch ($targetStore) {
       case "red 1":
@@ -143,7 +135,7 @@
 
   let error = $state("");
 
-  const matchData = $derived(matches.find((m) => compareMatches(m, newEntryState.match) == 0));
+  const matchData = $derived(pageData.matches.find((m) => compareMatches(m, newEntryState.match) == 0));
 
   const suggestedTeams = $derived.by(() => {
     newEntryState.match;
@@ -344,60 +336,67 @@
 
 {#if surveyRecord.type == "match"}
   <div class="flex items-end gap-2">
-    <label class="flex grow flex-col">
+    <div class="mr-2 flex flex-col">
       Match
-      {#if newEntryState.match.level && newEntryState.match.level != "qm"}
-        {newEntryState.match.level}{newEntryState.match.set || 1}
-      {/if}
+      <Button
+        onclick={() => {
+          openDialog(SelectMatchDialog, {
+            matches: pageData.matches,
+            lastCompletedMatch: pageData.lastCompletedMatch,
+            prefilled: newEntryState.match,
+            onselect(match) {
+              newEntryState.match = $state.snapshot(match);
+              newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+              closeDialog();
+            },
+          });
+        }}
+        class="text-sm"
+      >
+        <ListOrderedIcon class="text-theme" />
+        Select
+      </Button>
+    </div>
+
+    <label class="flex w-16 flex-col">
+      <span class="text-xs font-light">Number</span>
       <input
         type="number"
         bind:value={newEntryState.match.number}
         oninput={() => {
-          newEntryState.match.level = undefined;
-          newEntryState.match.set = undefined;
           newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
         }}
         min="1"
         class="text-theme w-full bg-neutral-800 p-2"
       />
     </label>
-    <Button
-      disabled={!adjacentMatches.previous && newEntryState.match.number <= 1}
-      onclick={() => {
-        if (
-          !adjacentMatches.previous ||
-          (newEntryState.match.set == adjacentMatches.previous.set &&
-            newEntryState.match.level == adjacentMatches.previous.level)
-        ) {
-          newEntryState.match.number--;
-        } else {
-          newEntryState.match = structuredClone(adjacentMatches.previous);
-        }
-
-        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-      }}
-      class="active:translate-y-0! enabled:active:-translate-x-0.5!"
-    >
-      <ArrowLeftIcon class="text-theme" />
-    </Button>
-    <Button
-      onclick={() => {
-        if (
-          !adjacentMatches.next ||
-          (newEntryState.match.set == adjacentMatches.next.set &&
-            newEntryState.match.level == adjacentMatches.next.level)
-        ) {
-          newEntryState.match.number++;
-        } else {
-          newEntryState.match = structuredClone(adjacentMatches.next);
-        }
-
-        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-      }}
-      class="active:translate-y-0! enabled:active:translate-x-0.5!"
-    >
-      <ArrowRightIcon class="text-theme" />
-    </Button>
+    <label class="flex w-14 flex-col">
+      <span class="text-xs font-light">Set</span>
+      <input
+        type="number"
+        bind:value={newEntryState.match.set}
+        oninput={() => {
+          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+        }}
+        min="1"
+        placeholder="1"
+        class="text-theme w-full bg-neutral-800 p-2"
+      />
+    </label>
+    <label class="flex flex-col">
+      <span class="text-xs font-light">Level</span>
+      <select
+        bind:value={newEntryState.match.level}
+        onchange={() => {
+          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+        }}
+        class="text-theme bg-neutral-800 p-2"
+      >
+        {#each matchLevels as level}
+          <option value={level}>{level}</option>
+        {/each}
+      </select>
+    </label>
   </div>
 {/if}
 
@@ -423,7 +422,7 @@
         >
           <div class="flex flex-col truncate {teamBold(red1)}">
             <span class="text-red {teamUnderline(red1)}">{red1}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(red1)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(red1)}</span>
           </div>
         </Button>
         <Button
@@ -435,7 +434,7 @@
         >
           <div class="flex flex-col truncate {teamBold(red2)}">
             <span class="text-red {teamUnderline(red2)}">{red2}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(red2)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(red2)}</span>
           </div>
         </Button>
         <Button
@@ -447,7 +446,7 @@
         >
           <div class="flex flex-col truncate {teamBold(red3)}">
             <span class="text-red {teamUnderline(red3)}">{red3}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(red3)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(red3)}</span>
           </div>
         </Button>
 
@@ -460,7 +459,7 @@
         >
           <div class="flex flex-col truncate {teamBold(blue1)}">
             <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(blue1)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(blue1)}</span>
           </div>
         </Button>
         <Button
@@ -472,7 +471,7 @@
         >
           <div class="flex flex-col truncate {teamBold(blue2)}">
             <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(blue2)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(blue2)}</span>
           </div>
         </Button>
         <Button
@@ -484,7 +483,7 @@
         >
           <div class="flex flex-col truncate {teamBold(blue3)}">
             <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-            <span class="truncate text-xs">{teamNumberNameMap.get(blue3)}</span>
+            <span class="truncate text-xs">{pageData.teamNames.get(blue3)}</span>
           </div>
         </Button>
       </div>
@@ -513,7 +512,7 @@
           >
             <div class="flex flex-col truncate {teamBold(extraTeam)}">
               <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
-              <span class="truncate text-xs">{teamNumberNameMap.get(extraTeam)}</span>
+              <span class="truncate text-xs">{pageData.teamNames.get(extraTeam)}</span>
             </div>
           </Button>
         {/each}

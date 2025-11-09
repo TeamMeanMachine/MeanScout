@@ -11,7 +11,9 @@ export const load: PageLoad = async (event) => {
     }
   }
 
-  const { matches } = getAllMatches(data.compRecord, data.entryRecords);
-
-  return { title: "Entries", teamNames, matches };
+  return {
+    title: "Entries",
+    teamNames,
+    ...getAllMatches(data.compRecord, data.entryRecords),
+  };
 };

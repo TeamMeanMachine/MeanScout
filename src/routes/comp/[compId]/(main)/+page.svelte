@@ -207,10 +207,9 @@
 
 <div class="flex flex-col gap-6">
   {#if newEntry}
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-4">
       <NewEntryWidget
         pageData={data}
-        matches={data.matches}
         surveyRecord={newEntry.survey}
         prefills={newEntry.prefills}
         oncancel={() => {
