@@ -14,7 +14,15 @@
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
-  import { ArrowRightIcon, ListOrderedIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
+  import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ListOrderedIcon,
+    PlusIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
@@ -23,6 +31,7 @@
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import Anchor from "./Anchor.svelte";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
+  import { fly, type FlyParams, slide } from "svelte/transition";
 
   let {
     pageData,
@@ -84,6 +93,16 @@
   }
 
   const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
+
+  const adjacentMatches = $derived.by(() => {
+    const previous = pageData.matches.findLast((m) => compareMatches(m, newEntryState.match) < 0);
+    const next = pageData.matches.find((m) => compareMatches(m, newEntryState.match) > 0);
+    return { previous, next };
+  });
+
+  const defaultTeamsMove: FlyParams = { y: -12, opacity: 1 };
+  let teamsMoveAnim = $state<FlyParams>(defaultTeamsMove);
+  let teamMoveAnimReset: number | undefined = undefined;
 
   function uniqueEntryString(team: string, match?: MatchIdentifier | undefined) {
     if (!match) {
@@ -289,15 +308,14 @@
 
 <div class="flex flex-wrap items-center justify-between gap-2">
   <div class="flex flex-col">
-    <h2 class="font-bold">New entry</h2>
-    <span class="text-xs font-light">{surveyRecord.name}</span>
+    <span class="text-sm">{surveyRecord.name}</span>
   </div>
 </div>
 
 {#if pageData.compRecord.scouts}
   <div class="flex flex-col">
     Your name
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-x-4 gap-y-2">
       {#if suggestedScouts.length}
         <select bind:value={newEntryState.scout} class="text-theme grow bg-neutral-800 p-2">
           {#each suggestedScouts as scout}
@@ -326,7 +344,7 @@
         class={pageData.compRecord.scouts.length ? "" : "w-full"}
       >
         <PlusIcon class="text-theme" />
-        {#if !pageData.compRecord.scouts.length}
+        {#if !suggestedScouts.length}
           New scout
         {/if}
       </Button>
@@ -335,8 +353,8 @@
 {/if}
 
 {#if surveyRecord.type == "match"}
-  <div class="flex items-end gap-2">
-    <div class="mr-2 flex flex-col">
+  <div class="flex flex-wrap gap-x-4 gap-y-3">
+    <div class="flex flex-col">
       Match
       <Button
         onclick={() => {
@@ -358,166 +376,233 @@
       </Button>
     </div>
 
-    <label class="flex w-16 flex-col">
-      <span class="text-xs font-light">Number</span>
-      <input
-        type="number"
-        bind:value={newEntryState.match.number}
-        oninput={() => {
+    <div class="flex items-end gap-2">
+      <Button
+        disabled={!adjacentMatches.previous && newEntryState.match.number <= 1}
+        onclick={() => {
+          window.clearTimeout(teamMoveAnimReset);
+          teamsMoveAnim = { x: -12, opacity: 1 };
+
+          if (
+            !adjacentMatches.previous ||
+            (newEntryState.match.set == adjacentMatches.previous.set &&
+              newEntryState.match.level == adjacentMatches.previous.level)
+          ) {
+            newEntryState.match.number--;
+          } else {
+            newEntryState.match = structuredClone(adjacentMatches.previous);
+          }
+
           newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
         }}
-        min="1"
-        class="text-theme w-full bg-neutral-800 p-2"
-      />
-    </label>
-    <label class="flex w-14 flex-col">
-      <span class="text-xs font-light">Set</span>
-      <input
-        type="number"
-        bind:value={newEntryState.match.set}
-        oninput={() => {
-          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-        }}
-        min="1"
-        placeholder="1"
-        class="text-theme w-full bg-neutral-800 p-2"
-      />
-    </label>
-    <label class="flex flex-col">
-      <span class="text-xs font-light">Level</span>
-      <select
-        bind:value={newEntryState.match.level}
-        onchange={() => {
-          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-        }}
-        class="text-theme bg-neutral-800 p-2"
+        class="active:translate-y-0! enabled:active:-translate-x-0.5!"
       >
-        {#each matchLevels as level}
-          <option value={level}>{level}</option>
-        {/each}
-      </select>
-    </label>
+        <ArrowLeftIcon class="text-theme" />
+      </Button>
+      <Button
+        onclick={() => {
+          window.clearTimeout(teamMoveAnimReset);
+          teamsMoveAnim = { x: 12, opacity: 1 };
+
+          if (
+            !adjacentMatches.next ||
+            (newEntryState.match.set == adjacentMatches.next.set &&
+              newEntryState.match.level == adjacentMatches.next.level)
+          ) {
+            newEntryState.match.number++;
+          } else {
+            newEntryState.match = structuredClone(adjacentMatches.next);
+          }
+
+          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+        }}
+        class="active:translate-y-0! enabled:active:translate-x-0.5!"
+      >
+        <ArrowRightIcon class="text-theme" />
+      </Button>
+    </div>
+
+    <div class="flex items-end gap-2">
+      <label class="flex basis-32 flex-col">
+        <span class="text-xs font-light">Number</span>
+        <input
+          type="number"
+          bind:value={newEntryState.match.number}
+          oninput={() => {
+            newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+          }}
+          min="1"
+          class="text-theme w-full bg-neutral-800 p-2"
+        />
+      </label>
+      <label class="flex basis-28 flex-col">
+        <span class="text-xs font-light">Set</span>
+        <input
+          type="number"
+          bind:value={newEntryState.match.set}
+          oninput={() => {
+            newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+          }}
+          min="1"
+          class="text-theme w-full bg-neutral-800 p-2"
+        />
+      </label>
+      <label class="flex flex-col">
+        <span class="text-xs font-light">Level</span>
+        <select
+          bind:value={newEntryState.match.level}
+          onchange={() => {
+            newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+          }}
+          class="text-theme bg-neutral-800 p-2"
+        >
+          {#each matchLevels as level}
+            <option value={level}>{level}</option>
+          {/each}
+        </select>
+      </label>
+    </div>
   </div>
 {/if}
 
 {#if matchData}
   {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
 
-  <div class="flex flex-col">
-    <div class="flex items-end justify-between">
-      <span>Team</span>
-      {#if $targetStore != "pit"}
-        <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
-      {/if}
-    </div>
+  <div class="flex flex-col" transition:slide>
+    {#key matchData}
+      <div class="flex flex-col" in:fly={teamsMoveAnim}>
+        <div class="flex items-end justify-between">
+          <span>Team</span>
+          {#if $targetStore != "pit"}
+            <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
+          {/if}
+        </div>
 
-    {#if red1 && red2 && red3 && blue1 && blue2 && blue3}
-      <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-        <Button
-          onclick={() => {
-            newEntryState.team = red1;
-            $targetStore = "red 1";
-          }}
-          class="w-full max-sm:order-1"
-        >
-          <div class="flex flex-col truncate {teamBold(red1)}">
-            <span class="text-red {teamUnderline(red1)}">{red1}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(red1)}</span>
-          </div>
-        </Button>
-        <Button
-          onclick={() => {
-            newEntryState.team = red2;
-            $targetStore = "red 2";
-          }}
-          class="w-full max-sm:order-3"
-        >
-          <div class="flex flex-col truncate {teamBold(red2)}">
-            <span class="text-red {teamUnderline(red2)}">{red2}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(red2)}</span>
-          </div>
-        </Button>
-        <Button
-          onclick={() => {
-            newEntryState.team = red3;
-            $targetStore = "red 3";
-          }}
-          class="w-full max-sm:order-5"
-        >
-          <div class="flex flex-col truncate {teamBold(red3)}">
-            <span class="text-red {teamUnderline(red3)}">{red3}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(red3)}</span>
-          </div>
-        </Button>
+        {#if red1 && red2 && red3 && blue1 && blue2 && blue3}
+          <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
+            <Button
+              onclick={() => {
+                newEntryState.team = red1;
+                $targetStore = "red 1";
+              }}
+              class="w-full max-sm:order-1"
+            >
+              <div class="flex flex-col truncate {teamBold(red1)}">
+                <span class="text-red {teamUnderline(red1)}">{red1}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red1)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntryState.team = red2;
+                $targetStore = "red 2";
+              }}
+              class="w-full max-sm:order-3"
+            >
+              <div class="flex flex-col truncate {teamBold(red2)}">
+                <span class="text-red {teamUnderline(red2)}">{red2}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red2)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntryState.team = red3;
+                $targetStore = "red 3";
+              }}
+              class="w-full max-sm:order-5"
+            >
+              <div class="flex flex-col truncate {teamBold(red3)}">
+                <span class="text-red {teamUnderline(red3)}">{red3}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red3)}</span>
+              </div>
+            </Button>
 
-        <Button
-          onclick={() => {
-            newEntryState.team = blue1;
-            $targetStore = "blue 1";
-          }}
-          class="w-full max-sm:order-2"
-        >
-          <div class="flex flex-col truncate {teamBold(blue1)}">
-            <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(blue1)}</span>
+            <Button
+              onclick={() => {
+                newEntryState.team = blue1;
+                $targetStore = "blue 1";
+              }}
+              class="w-full max-sm:order-2"
+            >
+              <div class="flex flex-col truncate {teamBold(blue1)}">
+                <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue1)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntryState.team = blue2;
+                $targetStore = "blue 2";
+              }}
+              class="w-full max-sm:order-4"
+            >
+              <div class="flex flex-col truncate {teamBold(blue2)}">
+                <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue2)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntryState.team = blue3;
+                $targetStore = "blue 3";
+              }}
+              class="w-full max-sm:order-6"
+            >
+              <div class="flex flex-col truncate {teamBold(blue3)}">
+                <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue3)}</span>
+              </div>
+            </Button>
           </div>
-        </Button>
-        <Button
-          onclick={() => {
-            newEntryState.team = blue2;
-            $targetStore = "blue 2";
-          }}
-          class="w-full max-sm:order-4"
-        >
-          <div class="flex flex-col truncate {teamBold(blue2)}">
-            <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(blue2)}</span>
+        {:else if suggestedTeams.length}
+          <label class="flex flex-col">
+            <select bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2">
+              {#each suggestedTeams as team}
+                <option value={team.number}>{team.number} {team.name}</option>
+              {/each}
+            </select>
+          </label>
+        {:else}
+          <label class="flex flex-col">
+            <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
+          </label>
+        {/if}
+
+        {#if matchData.extraTeams}
+          <div class="mt-2 grid grid-cols-3 gap-2">
+            {#each matchData.extraTeams || [] as extraTeam}
+              <Button
+                onclick={() => {
+                  newEntryState.team = extraTeam;
+                }}
+                class="w-full"
+              >
+                <div class="flex flex-col truncate {teamBold(extraTeam)}">
+                  <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
+                  <span class="truncate text-xs">{pageData.teamNames.get(extraTeam)}</span>
+                </div>
+              </Button>
+            {/each}
           </div>
-        </Button>
-        <Button
-          onclick={() => {
-            newEntryState.team = blue3;
-            $targetStore = "blue 3";
-          }}
-          class="w-full max-sm:order-6"
-        >
-          <div class="flex flex-col truncate {teamBold(blue3)}">
-            <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-            <span class="truncate text-xs">{pageData.teamNames.get(blue3)}</span>
+        {/if}
+
+        <Anchor route={matchUrl(newEntryState.match, pageData.compRecord.id)} class="mt-6">
+          <ListOrderedIcon class="text-theme" />
+          <div class="flex grow flex-col">
+            Match
+            {#if newEntryState.match.level && newEntryState.match.level != "qm"}
+              {newEntryState.match.level}{newEntryState.match.set || 1}-{newEntryState.match.number}
+            {:else}
+              {newEntryState.match.number}
+            {/if}
+            <span class="text-xs font-light">Analyze existing data</span>
           </div>
-        </Button>
+          <ArrowRightIcon class="text-theme" />
+        </Anchor>
       </div>
-    {:else if suggestedTeams.length}
-      <label class="flex flex-col">
-        <select bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2">
-          {#each suggestedTeams as team}
-            <option value={team.number}>{team.number} {team.name}</option>
-          {/each}
-        </select>
-      </label>
-    {:else}
-      <label class="flex flex-col">
-        <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
-      </label>
-    {/if}
-
-    {#if matchData.extraTeams}
-      <div class="mt-2 grid grid-cols-3 gap-2">
-        {#each matchData.extraTeams || [] as extraTeam}
-          <Button
-            onclick={() => {
-              newEntryState.team = extraTeam;
-            }}
-            class="w-full"
-          >
-            <div class="flex flex-col truncate {teamBold(extraTeam)}">
-              <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
-              <span class="truncate text-xs">{pageData.teamNames.get(extraTeam)}</span>
-            </div>
-          </Button>
-        {/each}
-      </div>
-    {/if}
+    {/key}
   </div>
 {:else if suggestedTeams.length}
   <label class="flex flex-col">
@@ -533,22 +618,6 @@
     Team
     <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
   </label>
-{/if}
-
-{#if matchData}
-  <Anchor route={matchUrl(newEntryState.match, pageData.compRecord.id)} class="mt-3">
-    <ListOrderedIcon class="text-theme" />
-    <div class="flex grow flex-col">
-      Match
-      {#if newEntryState.match.level && newEntryState.match.level != "qm"}
-        {newEntryState.match.level}{newEntryState.match.set || 1}-{newEntryState.match.number}
-      {:else}
-        {newEntryState.match.number}
-      {/if}
-      <span class="text-xs font-light">Analyze existing data</span>
-    </div>
-    <ArrowRightIcon class="text-theme" />
-  </Anchor>
 {/if}
 
 {#if surveyRecord.type == "match" && pageData.compRecord.scouts}
@@ -581,77 +650,79 @@
   </div>
 
   {#if newEntryState.prediction}
-    <label class="flex flex-col">
+    <label class="flex flex-col" transition:slide>
       Reason
       <input bind:value={newEntryState.predictionReason} class="text-theme bg-neutral-800 p-2" />
     </label>
   {/if}
 {/if}
 
-{#if error}
-  <span>Error: {error}</span>
-{/if}
-
 {#if matchingEntries.length}
-  <div class="my-3 flex flex-col gap-2">
+  <div class="flex flex-col gap-2" transition:slide>
     <div class="flex flex-col">
       <h2 class="font-bold">Matching Entries</h2>
-      <span class="text-xs font-light">Consider editing an existing entry, instead of creating a new one.</span>
-      <span class="text-xs font-light">You can view, edit, or delete them here.</span>
+      <span class="text-xs font-light">If you already have an existing draft, consider editing it.</span>
+      <span class="text-xs font-light">You can view, edit, or delete them (and other matching entries) here.</span>
     </div>
 
     {#each matchingEntries as entry (entry.id)}
-      <Button
-        onclick={() => {
-          openDialog(ViewEntryDialog, {
-            compRecord: pageData.compRecord,
-            surveyRecord,
-            fieldRecords: pageData.fieldRecords,
-            entryRecord: entry,
-            onchange: invalidateAll,
-          });
-        }}
-        class="gap-x-4"
-      >
-        {#if entry.type == "match"}
-          <div class="flex w-9 flex-col text-nowrap">
-            <span class="text-xs font-light">Match</span>
-            <div>
-              {#if entry.matchLevel && entry.matchLevel != "qm"}
-                <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
-              {:else}
-                {entry.match}
-              {/if}
+      <div class="flex flex-col" in:slide={{ delay: 50 }}>
+        <Button
+          onclick={() => {
+            openDialog(ViewEntryDialog, {
+              compRecord: pageData.compRecord,
+              surveyRecord,
+              fieldRecords: pageData.fieldRecords,
+              entryRecord: entry,
+              onchange: invalidateAll,
+            });
+          }}
+          class="gap-x-4"
+        >
+          {#if entry.type == "match"}
+            <div class="flex w-9 flex-col text-nowrap">
+              <span class="text-xs font-light">Match</span>
+              <div>
+                {#if entry.matchLevel && entry.matchLevel != "qm"}
+                  <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
+                {:else}
+                  {entry.match}
+                {/if}
+              </div>
             </div>
-          </div>
-        {:else if entry.type == "pit"}
-          <div class="flex w-9 flex-col">
-            <span class="text-sm">Pit</span>
-          </div>
-        {/if}
-        <div class="flex w-32 max-w-full flex-col">
-          <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-            {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
-          </span>
-          <span>{entry.team}</span>
-        </div>
-        {#if entry.scout}
-          <div class="flex w-24 max-w-full flex-col">
-            <span class="text-xs font-light text-wrap">Scout</span>
-            <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
-          </div>
-        {/if}
-        <div class="flex flex-col">
-          {#if entry.type == "match" && entry.absent}
-            <span class="text-xs">Absent</span>
+          {:else if entry.type == "pit"}
+            <div class="flex w-9 flex-col">
+              <span class="text-sm">Pit</span>
+            </div>
           {/if}
-          {#if entry.status != "submitted"}
-            <span class="text-xs capitalize">{entry.status}</span>
+          <div class="flex w-32 max-w-full flex-col">
+            <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+              {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
+            </span>
+            <span>{entry.team}</span>
+          </div>
+          {#if entry.scout}
+            <div class="flex w-24 max-w-full flex-col">
+              <span class="text-xs font-light text-wrap">Scout</span>
+              <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+            </div>
           {/if}
-        </div>
-      </Button>
+          <div class="flex flex-col">
+            {#if entry.type == "match" && entry.absent}
+              <span class="text-xs">Absent</span>
+            {/if}
+            {#if entry.status != "submitted"}
+              <span class="text-xs capitalize">{entry.status}</span>
+            {/if}
+          </div>
+        </Button>
+      </div>
     {/each}
   </div>
+{/if}
+
+{#if error}
+  <span>Error: {error}</span>
 {/if}
 
 <div class="mt-3 flex flex-wrap gap-3 text-sm">
