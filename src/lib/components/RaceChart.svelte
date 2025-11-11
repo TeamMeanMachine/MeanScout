@@ -6,7 +6,7 @@
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
   import Button from "./Button.svelte";
-  import { getOrdinal, sessionStorageStore } from "$lib";
+  import { compareMatches, getOrdinal, sessionStorageStore } from "$lib";
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
   import type { MatchSurvey } from "$lib/survey";
   import type { CompPageData } from "$lib/comp";
@@ -58,7 +58,7 @@
   let interval = $state<NodeJS.Timeout>();
 
   let matchTeams = $derived.by(() => {
-    const possibleMatch = pageData.compRecord.matches.find((m) => m.number == match);
+    const possibleMatch = pageData.compRecord.matches.find((m) => compareMatches(m, { number: match }));
     if (possibleMatch) {
       return [
         possibleMatch.red1,
@@ -87,7 +87,17 @@
     const subsetEntriesByTeam: Record<string, MatchEntry[]> = {};
 
     for (const team in entriesByTeam) {
-      subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => entry.match <= toMatch);
+      subsetEntriesByTeam[team] = entriesByTeam[team].filter(
+        (entry) =>
+          compareMatches(
+            {
+              number: entry.match,
+              set: entry.matchSet,
+              level: entry.matchLevel,
+            },
+            { number: toMatch },
+          ) <= 0,
+      );
     }
 
     let newRankData =

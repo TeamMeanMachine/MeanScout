@@ -280,7 +280,13 @@
           <tr>
             <td class="p-2 text-center">{entry.team}</td>
             {#if surveyRecords.some((survey) => survey.type == "match")}
-              <td class="p-2 text-center">{entry.type == "match" ? entry.match : ""}</td>
+              <td class="p-2 text-center">
+                {#if entry.type == "match" && entry.matchLevel && entry.matchLevel != "qm"}
+                  {entry.matchLevel}{entry.matchSet || 1}-{entry.match}
+                {:else if entry.type == "match"}
+                  {entry.match}
+                {/if}
+              </td>
               <td class="p-2 text-center">{entry.type == "match" ? entry.absent || "" : ""}</td>
             {/if}
             {#if duplicateIds.size}
