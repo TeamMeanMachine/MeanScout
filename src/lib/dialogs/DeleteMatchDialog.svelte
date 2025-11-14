@@ -1,20 +1,17 @@
 <script lang="ts">
   import type { Match } from "$lib";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { type DialogExports } from "$lib/dialog";
 
   let {
     match,
     ondelete,
   }: {
     match: Match;
-    ondelete: () => void;
+    ondelete(): void;
   } = $props();
 
   export const { onconfirm }: DialogExports = {
-    onconfirm() {
-      ondelete();
-      closeDialog();
-    },
+    onconfirm: ondelete,
   };
 </script>
 

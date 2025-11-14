@@ -8,8 +8,8 @@
   import { goto, invalidateAll } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
   import { openDialog } from "$lib/dialog";
-  import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { idb } from "$lib/idb";
+  import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
 
   let { data }: PageProps = $props();
 
@@ -217,16 +217,17 @@
   >
     <Button
       onclick={() =>
-        openDialog(NewMatchDialog, {
-          matches: data.compRecord.matches,
-          oncreate(match) {
+        openDialog(EditMatchDialog, {
+          comp: data.compRecord,
+          onupdate(match) {
+            let matches = $state.snapshot(data.compRecord.matches);
+            matches = matches.filter((m) => compareMatches(m, match) != 0);
+            matches.push(match);
+            matches = matches.toSorted(compareMatches);
+
             data = {
               ...data,
-              compRecord: {
-                ...data.compRecord,
-                matches: [...data.compRecord.matches, match],
-                modified: new Date(),
-              },
+              compRecord: { ...data.compRecord, matches, modified: new Date() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
           },

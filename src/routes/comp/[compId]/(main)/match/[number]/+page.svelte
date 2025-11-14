@@ -90,10 +90,12 @@
         onclick={() => {
           openDialog(EditMatchDialog, {
             match: data.match,
+            comp: data.compRecord,
             onupdate(match) {
-              const matches = structuredClone($state.snapshot(data.compRecord.matches));
-              const index = matches.findIndex((m) => compareMatches(m, data.match) == 0);
-              if (index >= 0) matches[index] = match;
+              let matches = $state.snapshot(data.compRecord.matches);
+              matches = matches.filter((m) => compareMatches(m, match) != 0);
+              matches.push(match);
+              matches = matches.toSorted(compareMatches);
 
               idb.put(
                 "comps",

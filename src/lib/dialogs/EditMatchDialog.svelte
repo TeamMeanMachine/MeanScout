@@ -1,28 +1,46 @@
 <script lang="ts">
-  import { matchLevels, type Match } from "$lib";
+  import { compareMatches, matchLevels, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { Trash2Icon } from "@lucide/svelte";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
+  import SelectTeamDialog from "./SelectTeamDialog.svelte";
+  import type { Comp } from "$lib/comp";
 
   let {
     match,
+    comp,
     onupdate,
     ondelete,
   }: {
-    match: Match;
+    match?: Match | undefined;
+    comp: Comp;
     onupdate: (match: Match) => void;
-    ondelete: () => void;
+    ondelete?: () => void;
   } = $props();
 
-  let changes = $state(structuredClone($state.snapshot(match)));
+  const lastMatch = comp.matches.toSorted(compareMatches).at(-1);
+
+  const newMatch: Match = {
+    number: 1 + (lastMatch?.number || 0),
+    set: lastMatch?.set || undefined,
+    level: lastMatch?.level,
+    red1: "",
+    red2: "",
+    red3: "",
+    blue1: "",
+    blue2: "",
+    blue3: "",
+  };
+
+  let changes = $state(structuredClone($state.snapshot(match || newMatch)));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
       const number = parseFloat(`${changes.number}`);
       if (Number.isNaN(number) || !Number.isInteger(number) || number < 1 || number > 999) {
-        error = "invalid match number!";
+        error = "invalid match number";
         return;
       }
 
@@ -51,32 +69,32 @@
       changes.blue3 = changes.blue3.trim();
 
       if (!changes.red1) {
-        error = "invalid value for red 1!";
+        error = "invalid value for red 1";
         return;
       }
 
       if (!changes.red2) {
-        error = "invalid value for red 2!";
+        error = "invalid value for red 2";
         return;
       }
 
       if (!changes.red3) {
-        error = "invalid value for red 3!";
+        error = "invalid value for red 3";
         return;
       }
 
       if (!changes.blue1) {
-        error = "invalid value for blue 1!";
+        error = "invalid value for blue 1";
         return;
       }
 
       if (!changes.blue2) {
-        error = "invalid value for blue 2!";
+        error = "invalid value for blue 2";
         return;
       }
 
       if (!changes.blue3) {
-        error = "invalid value for blue 3!";
+        error = "invalid value for blue 3";
         return;
       }
 
@@ -87,26 +105,24 @@
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  <span>
-    Edit match
-    {#if match.level && match.level != "qm"}
-      {match.level}{match.set || 1}-{match.number}
-    {:else}
-      {match.number}
-    {/if}
-  </span>
-  <Button
-    onclick={() =>
-      openDialog(DeleteMatchDialog, {
-        match,
-        ondelete() {
-          ondelete();
-          closeDialog();
-        },
-      })}
-  >
-    <Trash2Icon class="text-theme size-5" />
-  </Button>
+  {#if match}
+    <span>
+      Edit match
+      {#if match.level && match.level != "qm"}
+        {match.level}{match.set || 1}-{match.number}
+      {:else}
+        {match.number}
+      {/if}
+    </span>
+  {:else}
+    <span>New Match</span>
+  {/if}
+
+  {#if match && ondelete}
+    <Button onclick={() => openDialog(DeleteMatchDialog, { match, ondelete })}>
+      <Trash2Icon class="text-theme size-5" />
+    </Button>
+  {/if}
 </div>
 
 <div class="flex gap-2">
@@ -141,45 +157,51 @@
   </label>
 </div>
 
-<div class="flex gap-2">
-  <label class="flex flex-col">
-    Red 1
-    <input maxlength="5" bind:value={changes.red1} class="text-red w-full bg-neutral-800 p-2" />
-  </label>
-  <label class="flex flex-col">
-    Red 2
-    <input maxlength="5" bind:value={changes.red2} class="text-red w-full bg-neutral-800 p-2" />
-  </label>
-  <label class="flex flex-col">
-    Red 3
-    <input maxlength="5" bind:value={changes.red3} class="text-red w-full bg-neutral-800 p-2" />
-  </label>
-</div>
+{#snippet teamButton(teamKey: `${"red" | "blue"}${1 | 2 | 3}`, color: string, label: string)}
+  <Button
+    onclick={() => {
+      openDialog(SelectTeamDialog, {
+        comp,
+        previousSelection: changes[teamKey],
+        sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
+        onselect(team) {
+          changes[teamKey] = team;
+        },
+      });
+    }}
+    class="mb-2 w-full flex-col! items-start! gap-0!"
+  >
+    <span class="text-xs font-light">{label}</span>
+    <span class="{color} {changes[teamKey] ? 'font-bold' : 'font-light'}">{changes[teamKey] || "Select"}</span>
+  </Button>
+{/snippet}
 
 <div class="flex gap-2">
-  <label class="flex flex-col">
-    Blue 1
-    <input maxlength="5" bind:value={changes.blue1} class="text-blue w-full bg-neutral-800 p-2" />
-  </label>
-  <label class="flex flex-col">
-    Blue 2
-    <input maxlength="5" bind:value={changes.blue2} class="text-blue w-full bg-neutral-800 p-2" />
-  </label>
-  <label class="flex flex-col">
-    Blue 3
-    <input maxlength="5" bind:value={changes.blue3} class="text-blue w-full bg-neutral-800 p-2" />
-  </label>
-</div>
+  <div class="flex w-full flex-col">
+    <span>Red Teams</span>
 
-<div class="flex gap-2">
-  <label class="flex flex-col">
-    Red Score
-    <input maxlength="3" bind:value={changes.redScore} class="text-red w-full bg-neutral-800 p-2" />
-  </label>
-  <label class="flex flex-col">
-    Blue Score
-    <input maxlength="3" bind:value={changes.blueScore} class="text-blue w-full bg-neutral-800 p-2" />
-  </label>
+    {@render teamButton("red1", "text-red", "Red 1")}
+    {@render teamButton("red2", "text-red", "Red 2")}
+    {@render teamButton("red3", "text-red", "Red 3")}
+
+    <label class="flex flex-col">
+      Red Score
+      <input type="number" min="0" bind:value={changes.redScore} class="text-red w-full bg-neutral-800 p-2" />
+    </label>
+  </div>
+
+  <div class="flex w-full flex-col">
+    <span>Blue Teams</span>
+
+    {@render teamButton("blue1", "text-blue", "Blue 1")}
+    {@render teamButton("blue2", "text-blue", "Blue 2")}
+    {@render teamButton("blue3", "text-blue", "Blue 3")}
+
+    <label class="flex flex-col">
+      Blue Score
+      <input type="number" min="0" bind:value={changes.blueScore} class="text-blue w-full bg-neutral-800 p-2" />
+    </label>
+  </div>
 </div>
 
 {#if error}

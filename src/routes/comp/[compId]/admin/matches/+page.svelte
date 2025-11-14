@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { compareMatches, getMatchTeamFontWeight, type Match } from "$lib";
+  import { compareMatches, getMatchTeamFontWeight } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
+  import { closeAllDialogs, openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
-  import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -21,10 +20,12 @@
             onclick={() => {
               openDialog(EditMatchDialog, {
                 match,
-                onupdate(match: Match) {
-                  const matches = structuredClone($state.snapshot(data.compRecord.matches));
-                  const index = matches.findIndex((m) => compareMatches(m, match) == 0);
-                  if (index >= 0) matches[index] = match;
+                comp: data.compRecord,
+                onupdate(match) {
+                  let matches = $state.snapshot(data.compRecord.matches);
+                  matches = matches.filter((m) => compareMatches(m, match) != 0);
+                  matches.push(match);
+                  matches = matches.toSorted(compareMatches);
 
                   data = {
                     ...data,
@@ -41,7 +42,10 @@
                       modified: new Date(),
                     },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = () => {
+                    closeAllDialogs();
+                    invalidateAll();
+                  };
                 },
               });
             }}
@@ -119,16 +123,17 @@
     >
       <Button
         onclick={() =>
-          openDialog(NewMatchDialog, {
-            matches: data.compRecord.matches,
-            oncreate(match) {
+          openDialog(EditMatchDialog, {
+            comp: data.compRecord,
+            onupdate(match) {
+              let matches = $state.snapshot(data.compRecord.matches);
+              matches = matches.filter((m) => compareMatches(m, match) != 0);
+              matches.push(match);
+              matches = matches.toSorted(compareMatches);
+
               data = {
                 ...data,
-                compRecord: {
-                  ...data.compRecord,
-                  matches: [...data.compRecord.matches, match],
-                  modified: new Date(),
-                },
+                compRecord: { ...data.compRecord, matches, modified: new Date() },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
             },
