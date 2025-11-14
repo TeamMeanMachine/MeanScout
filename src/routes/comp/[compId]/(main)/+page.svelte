@@ -2,7 +2,7 @@
   import { compareMatches, matchIdentifierSchema, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, groupEntries, type Entry, type MatchEntry } from "$lib/entry";
+  import { entryStatuses, groupEntries, type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { targets, targetStore } from "$lib/settings";
@@ -11,35 +11,101 @@
   import { ChevronRightIcon, DownloadIcon, NotepadTextIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import { invalidateAll } from "$app/navigation";
-  import type { Survey } from "$lib/survey";
   import NewEntryWidget from "$lib/components/NewEntryWidget.svelte";
   import { z } from "zod";
   import { slide } from "svelte/transition";
+  import type { MatchSurvey, PitSurvey } from "$lib/survey";
 
   let { data }: PageProps = $props();
 
-  let newEntry = $state<
+  const newEntryStateSchema = z.object({
+    match: matchIdentifierSchema.optional(),
+    team: z.string(),
+    scout: z.string().optional(),
+    prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+    predictionReason: z.string().optional(),
+  });
+
+  const storedNewEntrySchema = z.object({
+    survey: z.string(),
+    state: newEntryStateSchema,
+  });
+
+  let newEntry = $state(getNewEntry());
+
+  function getNewEntry():
     | {
-        survey: Survey;
+        type: "match";
+        survey: MatchSurvey;
         prefills: {
           match: MatchIdentifier;
           team: string;
-          scout: string | undefined;
+          scout?: string | undefined;
+        };
+        state: {
+          match: MatchIdentifier;
+          team: string;
+          scout?: string | undefined;
+          prediction?: "red" | "blue" | undefined;
+          predictionReason?: string | undefined;
         };
       }
-    | undefined
-  >(getNewEntry());
+    | {
+        type: "pit";
+        survey: PitSurvey;
+        prefills: {
+          team: string;
+          scout?: string | undefined;
+        };
+        state: {
+          team: string;
+          scout?: string | undefined;
+        };
+      }
+    | undefined {
+    const storedNewEntry = storedNewEntrySchema.safeParse(
+      (() => {
+        try {
+          return JSON.parse(sessionStorage.getItem("new-entry") ?? "null");
+        } catch {}
+      })(),
+    );
 
-  function getNewEntry() {
-    const newEntrySurvey = sessionStorage.getItem("new-entry");
-    if (newEntrySurvey) {
-      const survey = data.surveyRecords.find((s) => s.id == newEntrySurvey);
-      const entries = data.entryRecords.filter((e) => e.surveyId == newEntrySurvey);
-      if (survey) {
-        return { survey, prefills: getNewEntryPrefills(survey, entries) };
+    if (storedNewEntry.success) {
+      const survey = data.surveyRecords.find((s) => s.id == storedNewEntry.data.survey);
+
+      if (survey && survey.type == "match") {
+        const entries = data.entryRecords.filter((e) => e.surveyId == storedNewEntry.data.survey) as MatchEntry[];
+        const prefills = getNewMatchEntryPrefills(entries);
+        return {
+          type: "match",
+          survey,
+          prefills,
+          state: storedNewEntry.data.state as {
+            match: MatchIdentifier;
+            team: string;
+            scout?: string | undefined;
+            prediction?: "red" | "blue" | undefined;
+            predictionReason?: string | undefined;
+          },
+        };
+      }
+
+      if (survey && survey.type == "pit") {
+        const entries = data.entryRecords.filter((e) => e.surveyId == storedNewEntry.data.survey) as PitEntry[];
+        const prefills = getNewPitEntryPrefills(entries);
+        return { type: "pit", survey, prefills, state: storedNewEntry.data.state };
       }
     }
   }
+
+  $effect(() => {
+    if (!newEntry) return;
+    sessionStorage.setItem(
+      "new-entry",
+      JSON.stringify($state.snapshot({ survey: newEntry.survey.id, state: newEntry.state })),
+    );
+  });
 
   const groupBy = sessionStorageStore<"status" | "survey" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
@@ -80,108 +146,117 @@
     sessionStorage.setItem("entries-toggle-states", JSON.stringify(toggleStates));
   });
 
-  function getNewEntryPrefills(survey: Survey, entries: Entry[]) {
+  function getNewMatchEntryPrefills(entries: MatchEntry[]) {
     const prefills: {
       match: MatchIdentifier;
       team: string;
-      scout: string | undefined;
+      scout?: string | undefined;
     } = {
-      match: { number: 0 },
+      match: { number: 1 },
       team: "",
-      scout: undefined,
     };
 
-    if (survey.type == "match") {
-      let lastScoutedMatch: MatchIdentifier | undefined = undefined;
+    let lastScoutedMatch: MatchIdentifier | undefined = undefined;
 
-      for (const entry of entries) {
-        if (entry.type != "match") continue;
+    for (const entry of entries) {
+      if (entry.type != "match") continue;
 
-        const entryMatchIdentifier: MatchIdentifier = {
-          number: entry.match,
-          set: entry.matchSet,
-          level: entry.matchLevel,
-        };
+      const entryMatchIdentifier: MatchIdentifier = {
+        number: entry.match,
+        set: entry.matchSet,
+        level: entry.matchLevel,
+      };
 
-        if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
-          lastScoutedMatch = entryMatchIdentifier;
-        }
-      }
-
-      const nextMatch = lastScoutedMatch
-        ? data.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0)
-        : undefined;
-
-      if (nextMatch) {
-        prefills.match = nextMatch;
-      } else {
-        const recordedQualMatches = entries
-          .filter(
-            (entry): entry is MatchEntry =>
-              entry.type == "match" &&
-              (!entry.matchSet || entry.matchSet == 1) &&
-              (!entry.matchLevel || entry.matchLevel == "qm"),
-          )
-          .map((entry) => entry.match);
-
-        prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
-      }
-
-      const matchData = data.matches.find((match) => compareMatches(match, prefills.match) == 0);
-      if (matchData) {
-        switch ($targetStore) {
-          case "red 1":
-            prefills.team = matchData.red1;
-            break;
-          case "red 2":
-            prefills.team = matchData.red2;
-            break;
-          case "red 3":
-            prefills.team = matchData.red3;
-            break;
-          case "blue 1":
-            prefills.team = matchData.blue1;
-            break;
-          case "blue 2":
-            prefills.team = matchData.blue2;
-            break;
-          case "blue 3":
-            prefills.team = matchData.blue3;
-            break;
-        }
-      }
-
-      for (const entry of entries) {
-        if (
-          entry.scout &&
-          entry.type == "match" &&
-          data.compRecord.matches.some(
-            (m) =>
-              compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
-              m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
-          )
-        ) {
-          prefills.scout = entry.scout;
-          break;
-        }
+      if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
+        lastScoutedMatch = entryMatchIdentifier;
       }
     }
 
-    if (survey.type == "pit") {
-      const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
-      const unscoutedTeams = data.compRecord.teams
-        .filter((t) => !scoutedTeams.includes(t.number))
-        .toSorted((a, b) => Number(a.number) - Number(b.number));
+    const nextMatch = lastScoutedMatch ? data.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0) : undefined;
 
-      prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
+    if (nextMatch) {
+      prefills.match = nextMatch;
+    } else {
+      const recordedQualMatches = entries
+        .filter(
+          (entry): entry is MatchEntry =>
+            entry.type == "match" &&
+            (!entry.matchSet || entry.matchSet == 1) &&
+            (!entry.matchLevel || entry.matchLevel == "qm"),
+        )
+        .map((entry) => entry.match);
+
+      prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
+    }
+
+    const matchData = prefills.match
+      ? data.matches.find((match) => compareMatches(match, prefills.match!) == 0)
+      : undefined;
+    if (matchData) {
+      switch ($targetStore) {
+        case "red 1":
+          prefills.team = matchData.red1;
+          break;
+        case "red 2":
+          prefills.team = matchData.red2;
+          break;
+        case "red 3":
+          prefills.team = matchData.red3;
+          break;
+        case "blue 1":
+          prefills.team = matchData.blue1;
+          break;
+        case "blue 2":
+          prefills.team = matchData.blue2;
+          break;
+        case "blue 3":
+          prefills.team = matchData.blue3;
+          break;
+      }
+    }
+
+    for (const entry of entries) {
+      if (
+        entry.scout &&
+        data.compRecord.matches.some(
+          (m) =>
+            compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
+            m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+        )
+      ) {
+        prefills.scout = entry.scout;
+        break;
+      }
     }
 
     if (!prefills.scout && entries[0] && entries[0].scout) {
       prefills.scout = entries[0].scout;
     }
 
-    if (prefills.match.number && !prefills.match.level) {
+    if (prefills.match?.number && !prefills.match.level) {
       prefills.match.level = "qm";
+    }
+
+    return prefills;
+  }
+
+  function getNewPitEntryPrefills(entries: PitEntry[]) {
+    const prefills: {
+      team: string;
+      scout?: string | undefined;
+    } = {
+      team: "",
+    };
+
+    const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
+    const unscoutedTeams = data.compRecord.teams
+      .filter((t) => !scoutedTeams.includes(t.number))
+      .toSorted((a, b) => Number(a.number) - Number(b.number));
+
+    prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
+
+    if (!prefills.scout && entries[0] && entries[0].scout) {
+      prefills.scout = entries[0].scout;
     }
 
     return prefills;
@@ -206,7 +281,7 @@
 </script>
 
 <div class="flex flex-col space-y-6">
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col space-y-3">
     <h2 class="font-bold">New entry</h2>
 
     <div class="-m-1 flex gap-3 overflow-x-auto p-1">
@@ -215,80 +290,55 @@
           .filter((e) => e.surveyId == surveyRecord.id)
           .toSorted((a, b) => b.modified.getTime() - a.modified.getTime())}
 
-        {@const prefills = getNewEntryPrefills(surveyRecord, entryRecords)}
-
         <div class="flex min-w-64 grow basis-64 flex-col gap-3">
           <Button
             onclick={() => {
               if (newEntry && newEntry.survey.id == surveyRecord.id) {
-                sessionStorage.removeItem(`${newEntry.survey.id}-new-entry-state`);
                 sessionStorage.removeItem("new-entry");
                 newEntry = undefined;
                 return;
               }
 
-              newEntry = { survey: surveyRecord, prefills };
-              sessionStorage.setItem("new-entry", newEntry.survey.id);
+              if (surveyRecord.type == "match") {
+                const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
+                newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+              }
+
+              if (surveyRecord.type == "pit") {
+                const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
+                newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+              }
             }}
-            class="flex-col items-stretch"
           >
             <div class="flex items-center gap-2">
               <PlusIcon class="text-theme shrink-0" />
               <div class="flex flex-col">
-                <span class={newEntry && newEntry.survey.id == surveyRecord.id ? "font-bold" : ""}
-                  >{surveyRecord.name}</span
-                >
+                <span class={newEntry && newEntry.survey.id == surveyRecord.id ? "font-bold" : ""}>
+                  {surveyRecord.name}
+                </span>
                 <span class="text-xs font-light">
                   {entryRecords.filter((e) => e.status != "draft").length} done
                 </span>
               </div>
             </div>
-            <div class="flex items-center gap-x-4 gap-y-2">
-              {#if surveyRecord.type == "match" && prefills.match}
-                {@const { level, set, number } = prefills.match}
-                <div class="flex w-9 flex-col text-nowrap">
-                  <span class="text-xs font-light">Match</span>
-                  <div>
-                    {#if level && level != "qm"}
-                      <span class="text-xs">{level}{set || 1}-{number}</span>
-                    {:else}
-                      {number}
-                    {/if}
-                  </div>
-                </div>
-              {/if}
-              {#if prefills.team}
-                <div class="flex flex-col">
-                  <span class="text-xs font-light">
-                    {data.compRecord.teams.find((t) => t.number == prefills.team)?.name || "Team"}
-                  </span>
-                  <span>{prefills.team}</span>
-                </div>
-              {/if}
-            </div>
           </Button>
         </div>
       {/each}
     </div>
-  </div>
 
-  {#if newEntry}
-    <div class="flex flex-col space-y-4" transition:slide>
-      {#key newEntry}
+    {#if newEntry}
+      <div class="mt-2 flex flex-col space-y-4 border border-neutral-600 p-3 pt-0" transition:slide>
         <NewEntryWidget
           pageData={data}
-          surveyRecord={newEntry.survey}
-          prefills={newEntry.prefills}
+          bind:newEntry
           oncancel={() => {
-            sessionStorage.removeItem(`${newEntry?.survey.id}-new-entry-state`);
             sessionStorage.removeItem("new-entry");
             newEntry = undefined;
           }}
         />
-      {/key}
-      <hr class="mt-3 mb-6 border-neutral-600" />
-    </div>
-  {/if}
+      </div>
+    {/if}
+  </div>
 
   <div class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
