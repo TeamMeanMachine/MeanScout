@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { compareMatches, matchIdentifierSchema, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
+  import { compareMatches, matchIdentifierSchema, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, groupEntries, type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
+  import { entryStatuses, groupEntries, type Entry } from "$lib/entry";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
-  import { targets, targetStore } from "$lib/settings";
+  import { targets } from "$lib/settings";
   import type { PageProps } from "./$types";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import { ChevronRightIcon, DownloadIcon, NotepadTextIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
@@ -14,98 +14,10 @@
   import NewEntryWidget from "$lib/components/NewEntryWidget.svelte";
   import { z } from "zod";
   import { slide } from "svelte/transition";
-  import type { MatchSurvey, PitSurvey } from "$lib/survey";
 
   let { data }: PageProps = $props();
 
-  const newEntryStateSchema = z.object({
-    match: matchIdentifierSchema.optional(),
-    team: z.string(),
-    scout: z.string().optional(),
-    prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
-    predictionReason: z.string().optional(),
-  });
-
-  const storedNewEntrySchema = z.object({
-    survey: z.string(),
-    state: newEntryStateSchema,
-  });
-
-  let newEntry = $state(getNewEntry());
-
-  function getNewEntry():
-    | {
-        type: "match";
-        survey: MatchSurvey;
-        prefills: {
-          match: MatchIdentifier;
-          team: string;
-          scout?: string | undefined;
-        };
-        state: {
-          match: MatchIdentifier;
-          team: string;
-          scout?: string | undefined;
-          prediction?: "red" | "blue" | undefined;
-          predictionReason?: string | undefined;
-        };
-      }
-    | {
-        type: "pit";
-        survey: PitSurvey;
-        prefills: {
-          team: string;
-          scout?: string | undefined;
-        };
-        state: {
-          team: string;
-          scout?: string | undefined;
-        };
-      }
-    | undefined {
-    const storedNewEntry = storedNewEntrySchema.safeParse(
-      (() => {
-        try {
-          return JSON.parse(sessionStorage.getItem("new-entry") ?? "null");
-        } catch {}
-      })(),
-    );
-
-    if (storedNewEntry.success) {
-      const survey = data.surveyRecords.find((s) => s.id == storedNewEntry.data.survey);
-
-      if (survey && survey.type == "match") {
-        const entries = data.entryRecords.filter((e) => e.surveyId == storedNewEntry.data.survey) as MatchEntry[];
-        const prefills = getNewMatchEntryPrefills(entries);
-        return {
-          type: "match",
-          survey,
-          prefills,
-          state: storedNewEntry.data.state as {
-            match: MatchIdentifier;
-            team: string;
-            scout?: string | undefined;
-            prediction?: "red" | "blue" | undefined;
-            predictionReason?: string | undefined;
-          },
-        };
-      }
-
-      if (survey && survey.type == "pit") {
-        const entries = data.entryRecords.filter((e) => e.surveyId == storedNewEntry.data.survey) as PitEntry[];
-        const prefills = getNewPitEntryPrefills(entries);
-        return { type: "pit", survey, prefills, state: storedNewEntry.data.state };
-      }
-    }
-  }
-
-  $effect(() => {
-    if (!newEntry) return;
-    sessionStorage.setItem(
-      "new-entry",
-      JSON.stringify($state.snapshot({ survey: newEntry.survey.id, state: newEntry.state })),
-    );
-  });
+  let newEntry = $state(!!sessionStorage.getItem("new-entry"));
 
   const groupBy = sessionStorageStore<"status" | "survey" | "match" | "team" | "scout" | "target" | "absent">(
     "entries-group",
@@ -146,122 +58,6 @@
     sessionStorage.setItem("entries-toggle-states", JSON.stringify(toggleStates));
   });
 
-  function getNewMatchEntryPrefills(entries: MatchEntry[]) {
-    const prefills: {
-      match: MatchIdentifier;
-      team: string;
-      scout?: string | undefined;
-    } = {
-      match: { number: 1 },
-      team: "",
-    };
-
-    let lastScoutedMatch: MatchIdentifier | undefined = undefined;
-
-    for (const entry of entries) {
-      if (entry.type != "match") continue;
-
-      const entryMatchIdentifier: MatchIdentifier = {
-        number: entry.match,
-        set: entry.matchSet,
-        level: entry.matchLevel,
-      };
-
-      if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
-        lastScoutedMatch = entryMatchIdentifier;
-      }
-    }
-
-    const nextMatch = lastScoutedMatch ? data.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0) : undefined;
-
-    if (nextMatch) {
-      prefills.match = nextMatch;
-    } else {
-      const recordedQualMatches = entries
-        .filter(
-          (entry): entry is MatchEntry =>
-            entry.type == "match" &&
-            (!entry.matchSet || entry.matchSet == 1) &&
-            (!entry.matchLevel || entry.matchLevel == "qm"),
-        )
-        .map((entry) => entry.match);
-
-      prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
-    }
-
-    const matchData = prefills.match
-      ? data.matches.find((match) => compareMatches(match, prefills.match!) == 0)
-      : undefined;
-    if (matchData) {
-      switch ($targetStore) {
-        case "red 1":
-          prefills.team = matchData.red1;
-          break;
-        case "red 2":
-          prefills.team = matchData.red2;
-          break;
-        case "red 3":
-          prefills.team = matchData.red3;
-          break;
-        case "blue 1":
-          prefills.team = matchData.blue1;
-          break;
-        case "blue 2":
-          prefills.team = matchData.blue2;
-          break;
-        case "blue 3":
-          prefills.team = matchData.blue3;
-          break;
-      }
-    }
-
-    for (const entry of entries) {
-      if (
-        entry.scout &&
-        data.compRecord.matches.some(
-          (m) =>
-            compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
-            m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
-        )
-      ) {
-        prefills.scout = entry.scout;
-        break;
-      }
-    }
-
-    if (!prefills.scout && entries[0] && entries[0].scout) {
-      prefills.scout = entries[0].scout;
-    }
-
-    if (prefills.match?.number && !prefills.match.level) {
-      prefills.match.level = "qm";
-    }
-
-    return prefills;
-  }
-
-  function getNewPitEntryPrefills(entries: PitEntry[]) {
-    const prefills: {
-      team: string;
-      scout?: string | undefined;
-    } = {
-      team: "",
-    };
-
-    const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
-    const unscoutedTeams = data.compRecord.teams
-      .filter((t) => !scoutedTeams.includes(t.number))
-      .toSorted((a, b) => Number(a.number) - Number(b.number));
-
-    prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
-
-    if (!prefills.scout && entries[0] && entries[0].scout) {
-      prefills.scout = entries[0].scout;
-    }
-
-    return prefills;
-  }
-
   function refresh() {
     idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = invalidateAll;
   }
@@ -281,99 +77,61 @@
 </script>
 
 <div class="flex flex-col space-y-6">
-  <div class="flex flex-col space-y-3">
-    <h2 class="font-bold">New entry</h2>
-
-    <div class="-m-1 flex gap-3 overflow-x-auto p-1">
-      {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
-        {@const entryRecords = data.entryRecords
-          .filter((e) => e.surveyId == surveyRecord.id)
-          .toSorted((a, b) => b.modified.getTime() - a.modified.getTime())}
-
-        <div class="flex min-w-64 grow basis-64 flex-col gap-3">
-          <Button
-            onclick={() => {
-              if (newEntry && newEntry.survey.id == surveyRecord.id) {
-                sessionStorage.removeItem("new-entry");
-                newEntry = undefined;
-                return;
-              }
-
-              if (surveyRecord.type == "match") {
-                const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
-                newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-              }
-
-              if (surveyRecord.type == "pit") {
-                const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
-                newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-              }
-            }}
-          >
-            <div class="flex items-center gap-2">
-              <PlusIcon class="text-theme shrink-0" />
-              <div class="flex flex-col">
-                <span class={newEntry && newEntry.survey.id == surveyRecord.id ? "font-bold" : ""}>
-                  {surveyRecord.name}
-                </span>
-                <span class="text-xs font-light">
-                  {entryRecords.filter((e) => e.status != "draft").length} done
-                </span>
-              </div>
-            </div>
-          </Button>
-        </div>
-      {/each}
-    </div>
-
-    {#if newEntry}
-      <div class="mt-2 flex flex-col space-y-4 border border-neutral-600 p-3 pt-0" transition:slide>
-        <NewEntryWidget
-          pageData={data}
-          bind:newEntry
-          oncancel={() => {
-            sessionStorage.removeItem("new-entry");
-            newEntry = undefined;
-          }}
-        />
-      </div>
-    {/if}
-  </div>
-
   <div class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
       <h2 class="font-bold">Entries</h2>
 
-      <div class="flex flex-wrap gap-3 text-sm">
+      <div class="flex flex-wrap justify-between gap-3 text-sm">
         <Button
           onclick={() => {
-            const entries = data.entryRecords.filter((e) => e.status != "draft");
-            openDialog(BulkExportDialog, {
-              entries,
-              onexport: () => onbulkexport(entries),
-            });
+            newEntry = !newEntry;
+            if (!newEntry) sessionStorage.removeItem("new-entry");
           }}
-          class="w-24 flex-col gap-1!"
+          class="w-20 flex-col gap-1! {newEntry ? 'font-bold' : ''}"
         >
-          <ShareIcon class="text-theme" />
-          Send
+          <PlusIcon class="text-theme transition-[rotate] {newEntry ? 'rotate-45' : 'rotate-0'}" />
+          {newEntry ? "Cancel" : "New"}
         </Button>
-        <Button
-          onclick={() => {
-            openDialog(ImportEntriesDialog, {
-              surveyRecords: data.surveyRecords,
-              existingEntries: data.entryRecords,
-              onimport: refresh,
-            });
-          }}
-          class="w-24 flex-col gap-1!"
-        >
-          <DownloadIcon class="text-theme" />
-          Receive
-        </Button>
+
+        <div class="flex flex-wrap gap-2">
+          {#if data.entryRecords.some((e) => e.status != "draft")}
+            <Button
+              onclick={() => {
+                const entries = data.entryRecords.filter((e) => e.status != "draft");
+                openDialog(BulkExportDialog, {
+                  entries,
+                  onexport: () => onbulkexport(entries),
+                });
+              }}
+              class="w-20 flex-col gap-1!"
+            >
+              <ShareIcon class="text-theme" />
+              Send
+            </Button>
+          {/if}
+          <Button
+            onclick={() => {
+              openDialog(ImportEntriesDialog, {
+                surveyRecords: data.surveyRecords,
+                existingEntries: data.entryRecords,
+                onimport: refresh,
+              });
+            }}
+            class="w-20 flex-col gap-1!"
+          >
+            <DownloadIcon class="text-theme" />
+            Receive
+          </Button>
+        </div>
       </div>
     </div>
   </div>
+
+  {#if newEntry}
+    <div class="flex flex-col space-y-4 border border-neutral-600 p-3 pt-0" transition:slide>
+      <NewEntryWidget pageData={data} />
+    </div>
+  {/if}
 
   {#if !data.entryRecords.length}
     <span class="text-sm">No entries.</span>

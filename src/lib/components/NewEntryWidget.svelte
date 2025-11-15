@@ -1,8 +1,16 @@
 <script lang="ts">
-  import { compareMatches, matchLevels, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
+  import {
+    compareMatches,
+    matchIdentifierSchema,
+    matchLevels,
+    matchUrl,
+    type Match,
+    type MatchIdentifier,
+    type Team,
+  } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
-  import { type Entry } from "$lib/entry";
+  import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
@@ -13,7 +21,6 @@
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
-    XIcon,
   } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
@@ -23,48 +30,95 @@
   import Anchor from "./Anchor.svelte";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import { fly, type FlyParams, slide } from "svelte/transition";
+  import { z } from "zod";
 
   let {
     pageData,
-    newEntry = $bindable(),
-    oncancel,
   }: {
     pageData: CompPageData & {
       matches: (Match & { extraTeams?: string[] })[];
       lastCompletedMatch?: MatchIdentifier | undefined;
       teamNames: Map<string, string>;
     };
-    newEntry:
-      | {
-          type: "match";
-          survey: MatchSurvey;
-          prefills: {
-            match: MatchIdentifier;
-            team: string;
-            scout?: string | undefined;
-          };
-          state: {
-            match: MatchIdentifier;
-            team: string;
-            scout?: string | undefined;
-            prediction?: "red" | "blue" | undefined;
-            predictionReason?: string | undefined;
-          };
-        }
-      | {
-          type: "pit";
-          survey: PitSurvey;
-          prefills: {
-            team: string;
-            scout?: string | undefined;
-          };
-          state: {
-            team: string;
-            scout?: string | undefined;
-          };
-        };
-    oncancel: () => void;
   } = $props();
+
+  type MatchPrefills = {
+    match: MatchIdentifier;
+    team: string;
+    scout?: string | undefined;
+  };
+
+  type PitPrefills = {
+    team: string;
+    scout?: string | undefined;
+  };
+
+  const newEntryStateSchema = z.object({
+    match: matchIdentifierSchema.optional(),
+    team: z.string(),
+    scout: z.string().optional(),
+    prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+    predictionReason: z.string().optional(),
+  });
+
+  const storedNewEntrySchema = z.object({
+    survey: z.string(),
+    state: newEntryStateSchema,
+  });
+
+  let newEntry = $state(getNewEntry());
+
+  function getNewEntry():
+    | {
+        type: "match";
+        survey: MatchSurvey;
+        prefills: MatchPrefills;
+        state: MatchPrefills & {
+          prediction?: "red" | "blue" | undefined;
+          predictionReason?: string | undefined;
+        };
+      }
+    | {
+        type: "pit";
+        survey: PitSurvey;
+        prefills: PitPrefills;
+        state: PitPrefills;
+      } {
+    const storedNewEntry = storedNewEntrySchema.safeParse(
+      (() => {
+        try {
+          return JSON.parse(sessionStorage.getItem("new-entry") ?? "null");
+        } catch {}
+      })(),
+    );
+
+    const survey =
+      pageData.surveyRecords.find((s) => s.id == storedNewEntry.data?.survey) ||
+      pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime())[0];
+
+    if (survey.type == "match") {
+      const entries = pageData.entryRecords.filter((e) => e.surveyId == survey.id) as MatchEntry[];
+      const prefills = getNewMatchEntryPrefills(entries);
+      return {
+        type: "match",
+        survey,
+        prefills,
+        state: (storedNewEntry.data?.state as MatchPrefills) || structuredClone(prefills),
+      };
+    } else {
+      const entries = pageData.entryRecords.filter((e) => e.surveyId == survey.id) as PitEntry[];
+      const prefills = getNewPitEntryPrefills(entries);
+      return { type: "pit", survey, prefills, state: storedNewEntry.data?.state || structuredClone(prefills) };
+    }
+  }
+
+  $effect(() => {
+    if (!newEntry) return;
+    sessionStorage.setItem(
+      "new-entry",
+      JSON.stringify($state.snapshot({ survey: newEntry.survey.id, state: newEntry.state })),
+    );
+  });
 
   const fieldRecords = $derived(pageData.fieldRecords.filter((field) => field.surveyId == newEntry.survey.id));
   const fieldsWithDetails = $derived(getFieldsWithDetails(newEntry.survey, fieldRecords));
@@ -84,8 +138,10 @@
 
   const adjacentMatches = $derived.by(() => {
     if (newEntry.type != "match") return { previous: undefined, next: undefined };
-    const previous = pageData.matches.findLast((m) => compareMatches(m, newEntry.state.match) < 0);
-    const next = pageData.matches.find((m) => compareMatches(m, newEntry.state.match) > 0);
+    const match = newEntry.state.match;
+
+    const previous = pageData.matches.findLast((m) => compareMatches(m, match) < 0);
+    const next = pageData.matches.find((m) => compareMatches(m, match) > 0);
     return { previous, next };
   });
 
@@ -111,7 +167,7 @@
   let error = $state("");
 
   const matchData = $derived(
-    newEntry.type == "match" ? pageData.matches.find((m) => compareMatches(m, newEntry.state.match) == 0) : undefined,
+    pageData.matches.find((m) => newEntry.type == "match" && compareMatches(m, newEntry.state.match) == 0),
   );
 
   const suggestedTeams = $derived.by(() => {
@@ -293,13 +349,137 @@
   function teamBold(teamNumber?: string) {
     return teamNumber == newEntry.state.team ? "font-bold" : "font-light";
   }
+
+  function getNewMatchEntryPrefills(entries: MatchEntry[]) {
+    const prefills: MatchPrefills = {
+      match: { number: 1 },
+      team: "",
+    };
+
+    let lastScoutedMatch: MatchIdentifier | undefined = undefined;
+
+    for (const entry of entries) {
+      const entryMatchIdentifier: MatchIdentifier = {
+        number: entry.match,
+        set: entry.matchSet,
+        level: entry.matchLevel,
+      };
+
+      if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
+        lastScoutedMatch = entryMatchIdentifier;
+      }
+    }
+
+    const nextMatch = lastScoutedMatch
+      ? pageData.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0)
+      : undefined;
+
+    if (nextMatch) {
+      prefills.match = nextMatch;
+    } else {
+      const recordedQualMatches = entries
+        .filter((entry) => (!entry.matchSet || entry.matchSet == 1) && (!entry.matchLevel || entry.matchLevel == "qm"))
+        .map((entry) => entry.match);
+
+      prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
+    }
+
+    const matchData = pageData.matches.find((match) => compareMatches(match, prefills.match!) == 0);
+    if (matchData) {
+      switch ($targetStore) {
+        case "red 1":
+          prefills.team = matchData.red1;
+          break;
+        case "red 2":
+          prefills.team = matchData.red2;
+          break;
+        case "red 3":
+          prefills.team = matchData.red3;
+          break;
+        case "blue 1":
+          prefills.team = matchData.blue1;
+          break;
+        case "blue 2":
+          prefills.team = matchData.blue2;
+          break;
+        case "blue 3":
+          prefills.team = matchData.blue3;
+          break;
+      }
+    }
+
+    for (const entry of entries) {
+      if (
+        entry.scout &&
+        pageData.compRecord.matches.some(
+          (m) =>
+            compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
+            m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+        )
+      ) {
+        prefills.scout = entry.scout;
+        break;
+      }
+    }
+
+    if (!prefills.scout && entries[0] && entries[0].scout) {
+      prefills.scout = entries[0].scout;
+    }
+
+    if (prefills.match?.number && !prefills.match.level) {
+      prefills.match.level = "qm";
+    }
+
+    return prefills;
+  }
+
+  function getNewPitEntryPrefills(entries: PitEntry[]) {
+    const prefills: PitPrefills = {
+      team: "",
+    };
+
+    const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
+    const unscoutedTeams = pageData.compRecord.teams
+      .filter((t) => !scoutedTeams.includes(t.number))
+      .toSorted((a, b) => Number(a.number) - Number(b.number));
+
+    prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
+
+    if (!prefills.scout && entries[0] && entries[0].scout) {
+      prefills.scout = entries[0].scout;
+    }
+
+    return prefills;
+  }
 </script>
 
-<div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-  <div class="flex flex-col">
-    <span class="text-sm">{newEntry.survey.name}</span>
-  </div>
-</div>
+<label class="mt-3 flex flex-col">
+  <select
+    value={newEntry.survey.id}
+    onchange={(e) => {
+      const newSurveyId = e.currentTarget.value;
+      const surveyRecord = pageData.surveyRecords.find((s) => s.id == newSurveyId);
+      if (!surveyRecord || newSurveyId == newEntry.survey.id) return;
+
+      if (surveyRecord.type == "match") {
+        const entryRecords = pageData.entryRecords.filter((e) => e.surveyId == newSurveyId);
+        const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
+        newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+      }
+
+      if (surveyRecord.type == "pit") {
+        const entryRecords = pageData.entryRecords.filter((e) => e.surveyId == newSurveyId);
+        const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
+        newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+      }
+    }}
+    class="text-theme grow bg-neutral-800 p-2"
+  >
+    {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+      <option value={surveyRecord.id}>{surveyRecord.name}</option>
+    {/each}
+  </select>
+</label>
 
 {#if pageData.compRecord.scouts}
   <div class="flex flex-col">
@@ -347,11 +527,13 @@
       Match
       <Button
         onclick={() => {
+          if (newEntry.type != "match") return;
           openDialog(SelectMatchDialog, {
             matches: pageData.matches,
             lastCompletedMatch: pageData.lastCompletedMatch,
             prefilled: newEntry.state.match,
             onselect(match) {
+              if (newEntry.type != "match") return;
               newEntry.state.match = $state.snapshot(match);
               newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
               closeDialog();
@@ -369,6 +551,7 @@
       <Button
         disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
         onclick={() => {
+          if (newEntry.type != "match") return;
           window.clearTimeout(teamMoveAnimReset);
           teamsMoveAnim = { x: -12, opacity: 1 };
 
@@ -391,6 +574,7 @@
       </Button>
       <Button
         onclick={() => {
+          if (newEntry.type != "match") return;
           window.clearTimeout(teamMoveAnimReset);
           teamsMoveAnim = { x: 12, opacity: 1 };
 
@@ -420,6 +604,7 @@
           type="number"
           bind:value={newEntry.state.match.number}
           oninput={() => {
+            if (newEntry.type != "match") return;
             newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
           }}
           min="1"
@@ -432,6 +617,7 @@
           type="number"
           bind:value={newEntry.state.match.set}
           oninput={() => {
+            if (newEntry.type != "match") return;
             newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
           }}
           min="1"
@@ -443,6 +629,7 @@
         <select
           bind:value={newEntry.state.match.level}
           onchange={() => {
+            if (newEntry.type != "match") return;
             newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
           }}
           class="text-theme bg-neutral-800 p-2"
@@ -614,7 +801,10 @@
     <span>Your guess</span>
     <div class="flex flex-wrap gap-2">
       <Button
-        onclick={() => (newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red")}
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
+        }}
         class="text-red grow basis-[150px] {newEntry.state.prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
       >
         {#if newEntry.state.prediction == "red"}
@@ -625,7 +815,10 @@
         Red wins
       </Button>
       <Button
-        onclick={() => (newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue")}
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
+        }}
         class="text-blue grow basis-[150px] {newEntry.state.prediction == 'blue'
           ? 'font-bold uppercase'
           : 'font-light'}"
@@ -716,13 +909,7 @@
   <span transition:slide>Error: {error}</span>
 {/if}
 
-<div class="mt-3 flex flex-wrap gap-3 text-sm">
-  <Button onclick={onconfirm} class="w-24 flex-col gap-1!">
-    <PlusIcon class="text-theme" />
-    Create
-  </Button>
-  <Button onclick={oncancel} class="w-24 flex-col gap-1!">
-    <XIcon class="text-theme" />
-    Cancel
-  </Button>
-</div>
+<Button onclick={onconfirm} class="mt-2 self-start font-bold">
+  <PlusIcon class="text-theme" />
+  Create
+</Button>
