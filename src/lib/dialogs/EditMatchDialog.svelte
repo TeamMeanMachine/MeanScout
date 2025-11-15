@@ -4,8 +4,8 @@
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { Trash2Icon } from "@lucide/svelte";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import SelectTeamDialog from "./SelectTeamDialog.svelte";
   import type { Comp } from "$lib/comp";
+  import SelectTeamsDialog from "./SelectTeamsDialog.svelte";
 
   let {
     match,
@@ -157,32 +157,38 @@
   </label>
 </div>
 
-{#snippet teamButton(teamKey: `${"red" | "blue"}${1 | 2 | 3}`, color: string, label: string)}
-  <Button
-    onclick={() => {
-      openDialog(SelectTeamDialog, {
-        comp,
-        previousSelection: changes[teamKey],
-        sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
-        onselect(team) {
-          changes[teamKey] = team;
-        },
-      });
-    }}
-    class="mb-2 w-full flex-col! items-start! gap-0!"
-  >
-    <span class="text-xs font-light">{label}</span>
-    <span class="{color} {changes[teamKey] ? 'font-bold' : 'font-light'}">{changes[teamKey] || "Select"}</span>
-  </Button>
-{/snippet}
-
 <div class="flex gap-2">
   <div class="flex w-full flex-col">
     <span>Red Teams</span>
 
-    {@render teamButton("red1", "text-red", "Red 1")}
-    {@render teamButton("red2", "text-red", "Red 2")}
-    {@render teamButton("red3", "text-red", "Red 3")}
+    <Button
+      onclick={() => {
+        openDialog(SelectTeamsDialog, {
+          comp,
+          previousSelection: [changes.red1, changes.red2, changes.red3],
+          sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
+          onselect(teams) {
+            [changes.red1, changes.red2, changes.red3] = $state.snapshot(teams);
+          },
+        });
+      }}
+      class="mb-3 w-full flex-col! items-start!"
+    >
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Red 1</span>
+        <span class="text-red">{changes.red1 || "--"}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Red 2</span>
+        <span class="text-red">{changes.red2 || "--"}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Red 3</span>
+        <span class="text-red">{changes.red3 || "--"}</span>
+      </div>
+    </Button>
 
     <label class="flex flex-col">
       Red Score
@@ -193,9 +199,34 @@
   <div class="flex w-full flex-col">
     <span>Blue Teams</span>
 
-    {@render teamButton("blue1", "text-blue", "Blue 1")}
-    {@render teamButton("blue2", "text-blue", "Blue 2")}
-    {@render teamButton("blue3", "text-blue", "Blue 3")}
+    <Button
+      onclick={() => {
+        openDialog(SelectTeamsDialog, {
+          comp,
+          previousSelection: [changes.blue1, changes.blue2, changes.blue3],
+          sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
+          onselect(teams) {
+            [changes.blue1, changes.blue2, changes.blue3] = $state.snapshot(teams);
+          },
+        });
+      }}
+      class="mb-3 w-full flex-col! items-start!"
+    >
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Blue 1</span>
+        <span class="text-blue">{changes.blue1 || "--"}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Blue 2</span>
+        <span class="text-blue">{changes.blue2 || "--"}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-xs font-light">Blue 3</span>
+        <span class="text-blue">{changes.blue3 || "--"}</span>
+      </div>
+    </Button>
 
     <label class="flex flex-col">
       Blue Score

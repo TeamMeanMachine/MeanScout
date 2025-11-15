@@ -3,7 +3,7 @@
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
+  import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     comp,
@@ -13,8 +13,8 @@
   }: {
     comp: Comp;
     sortBy: "number" | "alliance";
-    previousSelection?: string | undefined;
-    onselect(team: string): void;
+    previousSelection?: string[] | undefined;
+    onselect(teams: string[]): void;
   } = $props();
 
   const allianceTeams = comp.alliances?.flatMap((a) => a.teams);
@@ -67,24 +67,23 @@
 
   const multipleGroups = $derived(Object.values(groupedTeams).length > 1);
 
-  let selection = $state(previousSelection || "");
+  let selection = $state(($state.snapshot(previousSelection) || []).filter((s) => s));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      selection = selection.trim();
-      if (!selection) {
-        error = "invalid value";
-        return;
-      }
-
-      onselect(selection);
+      onselect(selection.map((s) => s.trim()).filter((s) => s));
       closeDialog();
     },
   };
 </script>
 
-<span>Select team</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>Select teams</span>
+  <Button onclick={() => (selection = [])} disabled={!selection.length}>
+    <EraserIcon class="text-theme size-5" />
+  </Button>
+</div>
 
 <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
   {#each Object.entries(groupedTeams).toSorted(([a], [b]) => a.localeCompare(b)) as [group, teams]}
@@ -92,17 +91,27 @@
       <span class="mr-2 text-end text-sm not-first:mt-2">{group}</span>
     {/if}
     {#each teams || [] as team}
+      {@const selected = selection.includes(team.number)}
       {@const allianceWithIndex = comp.alliances
         ?.map((a, i) => ({ ...a, i }))
         .find((a) => a.teams.includes(team.number))}
-      {@const font = selection == team.number ? "font-bold" : "font-light"}
+      {@const font = selected ? "font-bold" : "font-light"}
 
-      <Button onclick={() => (selection = team.number)} class="flex-nowrap! {font} justify-between">
+      <Button
+        onclick={() => {
+          if (selected) {
+            selection = selection.filter((s) => s != team.number);
+          } else {
+            selection.push(team.number);
+          }
+        }}
+        class="flex-nowrap! {font} justify-between"
+      >
         <div class="flex items-center gap-2 truncate">
-          {#if selection == team.number}
-            <CircleCheckBigIcon class="text-theme size-5 shrink-0" />
+          {#if selected}
+            <SquareCheckBigIcon class="text-theme size-5 shrink-0" />
           {:else}
-            <CircleIcon class="text-theme size-5 shrink-0" />
+            <SquareIcon class="text-theme size-5 shrink-0" />
           {/if}
           <div class="flex flex-col truncate">
             <span>{team.number}</span>
@@ -126,13 +135,18 @@
 </div>
 
 <label class="flex flex-col">
-  <div class="flex items-baseline justify-between gap-x-3">
-    <span>Team</span>
-    <span class="truncate text-xs font-light">
-      {comp.teams.find((t) => t.number == selection)?.name}
-    </span>
-  </div>
-  <input bind:value={selection} class="text-theme bg-neutral-800 p-2" />
+  <span>Teams</span>
+  <input
+    value={selection.join(",")}
+    oninput={(e) => {
+      selection = e.currentTarget.value
+        .replaceAll(" ", ",")
+        .split(",")
+        .filter((s) => s);
+    }}
+    class="text-theme bg-neutral-800 p-2"
+  />
+  <span class="pt-1 text-xs font-light">Use commas to separate teams</span>
 </label>
 
 {#if error}
