@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { getMatchTeamFontWeight, type Match } from "$lib";
+  import { compareMatches, getMatchTeamFontWeight } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
+  import { closeAllDialogs, openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
-  import NewMatchDialog from "$lib/dialogs/NewMatchDialog.svelte";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -13,18 +12,20 @@
 </script>
 
 <div class="flex flex-col gap-6">
-  <div class="flex flex-col gap-3">
+  <div class="@container flex flex-col gap-3">
     {#if data.compRecord.matches.length}
-      <div class="flex flex-wrap gap-2">
-        {#each data.compRecord.matches.toSorted((a, b) => a.number - b.number) as match (match)}
+      <div class="flex flex-col gap-2 @lg:flex-row @lg:flex-wrap">
+        {#each data.compRecord.matches.toSorted(compareMatches) as match (match)}
           <Button
             onclick={() => {
               openDialog(EditMatchDialog, {
                 match,
-                onupdate(match: Match) {
-                  const matches = structuredClone($state.snapshot(data.compRecord.matches));
-                  const index = matches.findIndex((m) => m.number == match.number);
-                  if (index >= 0) matches[index] = match;
+                comp: data.compRecord,
+                onupdate(match) {
+                  let matches = $state.snapshot(data.compRecord.matches);
+                  matches = matches.filter((m) => compareMatches(m, match) != 0);
+                  matches.push(match);
+                  matches = matches.toSorted(compareMatches);
 
                   data = {
                     ...data,
@@ -37,28 +38,78 @@
                     ...data,
                     compRecord: {
                       ...data.compRecord,
-                      matches: data.compRecord.matches.filter((m) => m.number != match.number),
+                      matches: data.compRecord.matches.filter((m) => compareMatches(m, match) != 0),
                       modified: new Date(),
                     },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = () => {
+                    closeAllDialogs();
+                    invalidateAll();
+                  };
                 },
               });
             }}
-            class="grow flex-nowrap! text-center!"
+            class="grow flex-nowrap! justify-center text-center!"
           >
-            <div class="min-w-8">{match.number}</div>
-            <div class="flex flex-col gap-x-2">
-              <div class="text-red flex flex-wrap gap-x-2">
-                <div class="min-w-13 {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
-                <div class="min-w-13 {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
-                <div class="min-w-13 {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
-              </div>
-              <div class="text-blue flex flex-wrap gap-x-2">
-                <div class="min-w-13 {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
-                <div class="min-w-13 {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
-                <div class="min-w-13 {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
-              </div>
+            <div class="flex flex-wrap items-center gap-x-4">
+              {#if match.red1 || match.red2 || match.red3}
+                <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+                  {#if match.red1}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
+                  {/if}
+                  {#if match.red2}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.red2)}">{match.red2}</div>
+                  {/if}
+                  {#if match.red3}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.red3)}">{match.red3}</div>
+                  {/if}
+                </div>
+              {/if}
+
+              {#if match.redScore !== undefined && match.blueScore !== undefined}
+                {@const redWon = match.redScore > match.blueScore}
+                {@const blueWon = match.blueScore > match.redScore}
+
+                <div class="flex flex-col flex-wrap items-center gap-x-2 self-center">
+                  <div class="min-w-8">
+                    {#if match.level && match.level != "qm"}
+                      {match.level}{match.set || 1}-{match.number}
+                    {:else}
+                      {match.number}
+                    {/if}
+                  </div>
+                  <div class="flex items-center gap-x-2">
+                    <div class="text-red min-w-8 {redWon ? 'font-bold' : 'text-sm font-light'}">
+                      {match.redScore}
+                    </div>
+                    <div class="text-blue min-w-8 {blueWon ? 'font-bold' : 'text-sm font-light'}">
+                      {match.blueScore}
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <div class="min-w-8">
+                  {#if match.level && match.level != "qm"}
+                    {match.level}{match.set || 1}-{match.number}
+                  {:else}
+                    {match.number}
+                  {/if}
+                </div>
+              {/if}
+
+              {#if match.blue1 || match.blue2 || match.blue3}
+                <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+                  {#if match.blue1}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
+                  {/if}
+                  {#if match.blue2}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.blue2)}">{match.blue2}</div>
+                  {/if}
+                  {#if match.blue3}
+                    <div class="min-w-13 {getMatchTeamFontWeight(match.blue3)}">{match.blue3}</div>
+                  {/if}
+                </div>
+              {/if}
             </div>
           </Button>
         {/each}
@@ -72,16 +123,17 @@
     >
       <Button
         onclick={() =>
-          openDialog(NewMatchDialog, {
-            matches: data.compRecord.matches,
-            oncreate(match) {
+          openDialog(EditMatchDialog, {
+            comp: data.compRecord,
+            onupdate(match) {
+              let matches = $state.snapshot(data.compRecord.matches);
+              matches = matches.filter((m) => compareMatches(m, match) != 0);
+              matches.push(match);
+              matches = matches.toSorted(compareMatches);
+
               data = {
                 ...data,
-                compRecord: {
-                  ...data.compRecord,
-                  matches: [...data.compRecord.matches, match],
-                  modified: new Date(),
-                },
+                compRecord: { ...data.compRecord, matches, modified: new Date() },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
             },

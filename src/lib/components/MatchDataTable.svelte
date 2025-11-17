@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Match, type Value } from "$lib";
+  import { compareMatches, type Match, type Value } from "$lib";
   import { getExpressionData } from "$lib/rank";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
@@ -87,7 +87,9 @@
   }
 
   function filterEntries(entry: Entry): entry is MatchEntry {
-    return entry.type == "match" && entry.match == match.number && entry.surveyId == surveyRecord.id;
+    if (entry.type != "match" || entry.surveyId != surveyRecord.id) return false;
+    const entryMatchIdentifiers = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
+    return compareMatches(entryMatchIdentifiers, match) == 0;
   }
 </script>
 

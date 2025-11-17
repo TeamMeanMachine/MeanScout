@@ -2,6 +2,8 @@ import { z } from "zod";
 import { teamStore } from "./settings";
 import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
+import type { Comp } from "./comp";
+import type { Entry } from "./entry";
 
 export const schemaVersion = 16;
 
@@ -10,10 +12,19 @@ export type Value = z.infer<typeof valueSchema>;
 
 export const matchValueSchema = z.number().int().gt(0);
 
-export const matchSchema = z.object({
+export const matchLevels = ["qm", "ef", "qf", "sf", "f"] as const;
+export type MatchLevel = (typeof matchLevels)[number];
+
+export const matchIdentifierSchema = z.object({
   number: matchValueSchema,
   set: z.optional(matchValueSchema),
-  level: z.optional(z.union([z.literal("qm"), z.literal("ef"), z.literal("qf"), z.literal("sf"), z.literal("f")])),
+  level: z.optional(z.union(matchLevels.map((l) => z.literal(l)))),
+});
+
+export type MatchIdentifier = z.infer<typeof matchIdentifierSchema>;
+
+export const matchSchema = z.object({
+  ...matchIdentifierSchema.shape,
   red1: z.string(),
   red2: z.string(),
   red3: z.string(),
@@ -25,6 +36,20 @@ export const matchSchema = z.object({
 });
 export type Match = z.infer<typeof matchSchema>;
 
+/**
+  Ascending comparison. Returns:
+  - 0, if matches share identifiers
+  - less than 0, if match a is BEFORE match b
+  - greater than 0, if match a is AFTER match b
+ */
+export function compareMatches(a: MatchIdentifier, b: MatchIdentifier) {
+  return (
+    matchLevels.indexOf(a.level || "qm") - matchLevels.indexOf(b.level || "qm") ||
+    (a.set || 1) - (b.set || 1) ||
+    a.number - b.number
+  );
+}
+
 export function getMatchTeamFontWeight(team: string) {
   const teamStoreValue = get(teamStore);
   if (!teamStoreValue) return "";
@@ -32,8 +57,77 @@ export function getMatchTeamFontWeight(team: string) {
   return "font-light";
 }
 
+export function matchUrl(match: MatchIdentifier, compId: string) {
+  const describeLevel = match.level && match.level != "qm";
+  const describeSet = match.set && match.set != 1;
+
+  if (!describeLevel && !describeSet) {
+    return `comp/${compId}/match/${match.number}`;
+  } else if (describeLevel && !describeSet) {
+    return `comp/${compId}/match/${match.number}?level=${match.level}`;
+  } else if (!describeLevel && describeSet) {
+    return `comp/${compId}/match/${match.number}?set=${match.set}`;
+  } else {
+    return `comp/${compId}/match/${match.number}?level=${match.level}&set=${match.set}`;
+  }
+}
+
+export function getAllMatches(comp: Comp, entries: Entry[]) {
+  const matches: (Match & { extraTeams?: string[] })[] = [...comp.matches];
+
+  let lastCompletedMatch: MatchIdentifier | undefined = undefined;
+
+  for (const entry of entries) {
+    if (entry.type != "match" || entry.status == "draft") continue;
+
+    const entryMatchIdentifiers = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
+    const existingMatch = matches.find((m) => compareMatches(m, entryMatchIdentifiers) == 0);
+
+    if (existingMatch) {
+      const teams = [
+        existingMatch.red1,
+        existingMatch.red2,
+        existingMatch.red3,
+        existingMatch.blue1,
+        existingMatch.blue2,
+        existingMatch.blue3,
+        ...(existingMatch.extraTeams || []),
+      ];
+
+      if (!teams.includes(entry.team)) {
+        existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
+          a.localeCompare(b),
+        );
+      }
+    } else {
+      matches.push({
+        ...entryMatchIdentifiers,
+        red1: "",
+        red2: "",
+        red3: "",
+        blue1: "",
+        blue2: "",
+        blue3: "",
+        extraTeams: [entry.team],
+      });
+    }
+
+    if (!lastCompletedMatch || compareMatches(entryMatchIdentifiers, lastCompletedMatch) > 0) {
+      lastCompletedMatch = entryMatchIdentifiers;
+    }
+  }
+
+  matches.sort(compareMatches);
+
+  return { matches, lastCompletedMatch };
+}
+
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
+
+export function isValidTeam(team: string) {
+  return /^\d{1,5}[A-Z]?$/.test(team);
+}
 
 export const allianceTeamLabels = ["Captain", "1st Pick", "2nd Pick"];
 

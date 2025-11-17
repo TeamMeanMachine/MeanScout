@@ -1,8 +1,17 @@
 <script lang="ts">
-  import { type Team } from "$lib";
+  import {
+    compareMatches,
+    isValidTeam,
+    matchIdentifierSchema,
+    matchLevels,
+    matchUrl,
+    type Match,
+    type MatchIdentifier,
+    type Team,
+  } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import { type Entry } from "$lib/entry";
+  import { closeDialog, openDialog } from "$lib/dialog";
+  import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { targetStore } from "$lib/settings";
@@ -13,40 +22,109 @@
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
-    XIcon,
   } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
-  import type { Survey } from "$lib/survey";
-  import { z } from "zod";
+  import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import Anchor from "./Anchor.svelte";
+  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
+  import { fly, type FlyParams, slide } from "svelte/transition";
+  import { z } from "zod";
 
   let {
     pageData,
-    surveyRecord,
-    prefills,
-    oncancel,
   }: {
-    pageData: CompPageData;
-    surveyRecord: Survey;
-    prefills: {
-      match: number;
-      team: string;
-      scout: string | undefined;
+    pageData: CompPageData & {
+      matches: (Match & { extraTeams?: string[] })[];
+      lastCompletedMatch?: MatchIdentifier | undefined;
+      teamNames: Map<string, string>;
     };
-    oncancel: () => void;
   } = $props();
 
-  const teamNumberNameMap = new Map<string, string>();
-  for (const team of pageData.compRecord.teams) {
-    teamNumberNameMap.set(team.number, team.name);
+  type MatchPrefills = {
+    match: MatchIdentifier;
+    team: string;
+    scout?: string | undefined;
+  };
+
+  type PitPrefills = {
+    team: string;
+    scout?: string | undefined;
+  };
+
+  const newEntryStateSchema = z.object({
+    match: matchIdentifierSchema.optional(),
+    team: z.string(),
+    scout: z.string().optional(),
+    prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+    predictionReason: z.string().optional(),
+  });
+
+  const storedNewEntrySchema = z.object({
+    survey: z.string(),
+    state: newEntryStateSchema,
+  });
+
+  let newEntry = $state(getNewEntry());
+
+  function getNewEntry():
+    | {
+        type: "match";
+        survey: MatchSurvey;
+        prefills: MatchPrefills;
+        state: MatchPrefills & {
+          prediction?: "red" | "blue" | undefined;
+          predictionReason?: string | undefined;
+        };
+      }
+    | {
+        type: "pit";
+        survey: PitSurvey;
+        prefills: PitPrefills;
+        state: PitPrefills;
+      } {
+    const storedNewEntry = storedNewEntrySchema.safeParse(
+      (() => {
+        try {
+          return JSON.parse(sessionStorage.getItem("new-entry") ?? "null");
+        } catch {}
+      })(),
+    );
+
+    const survey =
+      pageData.surveyRecords.find((s) => s.id == storedNewEntry.data?.survey) ||
+      pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime())[0];
+
+    if (survey.type == "match") {
+      const entries = pageData.entryRecords.filter((e) => e.surveyId == survey.id) as MatchEntry[];
+      const prefills = getNewMatchEntryPrefills(entries);
+      return {
+        type: "match",
+        survey,
+        prefills,
+        state: (storedNewEntry.data?.state as MatchPrefills) || structuredClone(prefills),
+      };
+    } else {
+      const entries = pageData.entryRecords.filter((e) => e.surveyId == survey.id) as PitEntry[];
+      const prefills = getNewPitEntryPrefills(entries);
+      return { type: "pit", survey, prefills, state: storedNewEntry.data?.state || structuredClone(prefills) };
+    }
   }
 
-  const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
-  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
+  $effect(() => {
+    if (!newEntry) return;
+    sessionStorage.setItem(
+      "new-entry",
+      JSON.stringify($state.snapshot({ survey: newEntry.survey.id, state: newEntry.state })),
+    );
+  });
 
+  const fieldRecords = $derived(pageData.fieldRecords.filter((field) => field.surveyId == newEntry.survey.id));
+  const fieldsWithDetails = $derived(getFieldsWithDetails(newEntry.survey, fieldRecords));
+
+  const defaultTeamsMove: FlyParams = { y: -12, opacity: 1 };
   const id = idb.generateId();
 
   const suggestedScouts = $derived(
@@ -59,72 +137,44 @@
       .toSorted((a, b) => a.localeCompare(b)),
   );
 
-  const newEntryStateSchema = z
-    .object({
-      match: z.number(),
-      team: z.string(),
-      scout: z.string().optional(),
-      prediction: z.union([z.literal("red"), z.literal("blue"), z.undefined()]),
-      predictionReason: z.string().optional(),
-    })
-    .catch({
-      match: prefills.match,
-      team: prefills.team,
-      scout: prefills.scout,
-      prediction: undefined,
-      predictionReason: undefined,
-    });
+  const adjacentMatches = $derived.by(() => {
+    if (newEntry.type != "match") return { previous: undefined, next: undefined };
+    const match = newEntry.state.match;
 
-  function getNewEntryState() {
-    try {
-      return JSON.parse(sessionStorage.getItem(`${surveyRecord.id}-new-entry-state`) ?? "null");
-    } catch {}
-  }
+    const previous = pageData.matches.findLast((m) => compareMatches(m, match) < 0);
+    const next = pageData.matches.find((m) => compareMatches(m, match) > 0);
+    return { previous, next };
+  });
 
-  const newEntryState = $state(newEntryStateSchema.parse(getNewEntryState()));
+  let teamsMoveAnim = $state<FlyParams>(defaultTeamsMove);
+  let teamMoveAnimReset: number | undefined = undefined;
 
   const matchingEntries = $derived.by(() => {
-    const uniqueString = (surveyRecord.type == "pit" ? "pit" : newEntryState.match) + "_" + newEntryState.team;
+    const uniqueString = uniqueEntryString(
+      newEntry.state.team,
+      newEntry.type == "match" ? newEntry.state.match : undefined,
+    );
 
     return pageData.entryRecords.filter((e) => {
-      const existingUniqueString = (e.type == "pit" ? "pit" : e.match) + "_" + e.team;
+      const existingUniqueString = uniqueEntryString(
+        e.team,
+        e.type == "match" ? { number: e.match, set: e.matchSet, level: e.matchLevel } : undefined,
+      );
+
       return uniqueString == existingUniqueString;
     });
   });
 
-  function selectTargetTeamFromMatch(matchNumber: number) {
-    const match = pageData.compRecord.matches.find((m) => m.number == matchNumber);
-    if (!match) return "";
-    switch ($targetStore) {
-      case "red 1":
-        return match.red1;
-      case "red 2":
-        return match.red2;
-      case "red 3":
-        return match.red3;
-      case "blue 1":
-        return match.blue1;
-      case "blue 2":
-        return match.blue2;
-      case "blue 3":
-        return match.blue3;
-    }
-    return "";
-  }
-
-  $effect(() => {
-    sessionStorage.setItem(`${surveyRecord.id}-new-entry-state`, JSON.stringify(newEntryState));
-  });
-
   let error = $state("");
 
-  const matchData = $derived(pageData.compRecord.matches.find((m) => m.number == newEntryState.match));
+  const matchData = $derived(
+    pageData.matches.find((m) => newEntry.type == "match" && compareMatches(m, newEntry.state.match) == 0),
+  );
 
   const suggestedTeams = $derived.by(() => {
-    newEntryState.match;
     const teamSet = new Set<string>();
 
-    if (matchData && surveyRecord.type == "match") {
+    if (matchData && newEntry.type == "match") {
       switch ($targetStore) {
         case "red 1":
           teamSet.add(matchData.red1);
@@ -158,7 +208,9 @@
     } else {
       for (const team of pageData.compRecord.teams) {
         if (
-          pageData.entryRecords.find((e) => e.type == "pit" && e.surveyId == surveyRecord.id && e.team == team.number)
+          pageData.entryRecords.find(
+            (e) => e.type == "pit" && e.surveyId == newEntry.survey.id && e.team == team.number,
+          )
         ) {
           continue;
         }
@@ -173,26 +225,28 @@
   });
 
   function onconfirm() {
-    newEntryState.team = newEntryState.team.trim();
-    newEntryState.scout = newEntryState.scout?.trim();
-    newEntryState.predictionReason = newEntryState.predictionReason?.trim();
+    newEntry.state.team = newEntry.state.team.trim();
+    newEntry.state.scout = newEntry.state.scout?.trim();
+    if (newEntry.type == "match") {
+      newEntry.state.predictionReason = newEntry.state.predictionReason?.trim();
+    }
 
-    if (!/^\d{1,5}[A-Z]?$/.test(newEntryState.team)) {
+    if (!isValidTeam(newEntry.state.team)) {
       error = "invalid value for team";
       return;
     }
 
-    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == newEntryState.team)) {
+    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == newEntry.state.team)) {
       error = "team is not listed";
       return;
     }
 
-    if (pageData.compRecord.scouts && !newEntryState.scout) {
+    if (pageData.compRecord.scouts && !newEntry.state.scout) {
       error = "scout name missing";
       return;
     }
 
-    if (surveyRecord.type == "match" && !/\d{1,3}/.test(`${newEntryState.match}`)) {
+    if (newEntry.type == "match" && !/\d{1,3}/.test(`${newEntry.state.match.number}`)) {
       error = "invalid value for match";
       return;
     }
@@ -200,43 +254,51 @@
     const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
     let entry: Entry;
-    if (surveyRecord.type == "match") {
+    if (newEntry.type == "match") {
       entry = {
         id,
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
+        surveyId: newEntry.survey.id,
+        type: "match",
         status: "draft",
-        team: newEntryState.team,
-        match: newEntryState.match,
+        team: newEntry.state.team,
+        match: newEntry.state.match.number,
         absent: false,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
 
-      if (newEntryState.scout) {
-        entry.scout = newEntryState.scout;
-        if (newEntryState.prediction) {
-          entry.prediction = newEntryState.prediction;
-          if (newEntryState.predictionReason) {
-            entry.predictionReason = newEntryState.predictionReason;
+      if (newEntry.state.match.set && newEntry.state.match.set > 1) {
+        entry.matchSet = newEntry.state.match.set;
+      }
+
+      if (newEntry.state.match.level && newEntry.state.match.level != "qm") {
+        entry.matchLevel = newEntry.state.match.level;
+      }
+
+      if (newEntry.state.scout) {
+        entry.scout = newEntry.state.scout;
+        if (newEntry.state.prediction) {
+          entry.prediction = newEntry.state.prediction;
+          if (newEntry.state.predictionReason) {
+            entry.predictionReason = newEntry.state.predictionReason;
           }
         }
       }
     } else {
       entry = {
         id,
-        surveyId: surveyRecord.id,
-        type: surveyRecord.type,
+        surveyId: newEntry.survey.id,
+        type: "pit",
         status: "draft",
-        team: newEntryState.team,
+        team: newEntry.state.team,
         values: defaultValues,
         created: new Date(),
         modified: new Date(),
       };
 
-      if (newEntryState.scout) {
-        entry.scout = newEntryState.scout;
+      if (newEntry.state.scout) {
+        entry.scout = newEntry.state.scout;
       }
     }
 
@@ -246,35 +308,186 @@
     };
 
     addRequest.onsuccess = () => {
-      sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
       sessionStorage.removeItem("new-entry");
-      idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
-      goto(`#/entry/${entry.id}`);
+      idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: new Date() }).onsuccess = () => {
+        goto(`#/entry/${entry.id}`, { invalidateAll: true });
+      };
     };
   }
 
+  function uniqueEntryString(team: string, match?: MatchIdentifier | undefined) {
+    if (!match) {
+      return team;
+    }
+
+    return team + "_" + (match.level || "qm") + (match.set || 1) + "_" + match.number;
+  }
+
+  function selectTargetTeamFromMatch(identifier: MatchIdentifier) {
+    const match = pageData.matches.find((m) => compareMatches(m, identifier) == 0);
+    if (!match) return "";
+    switch ($targetStore) {
+      case "red 1":
+        return match.red1;
+      case "red 2":
+        return match.red2;
+      case "red 3":
+        return match.red3;
+      case "blue 1":
+        return match.blue1;
+      case "blue 2":
+        return match.blue2;
+      case "blue 3":
+        return match.blue3;
+    }
+    return "";
+  }
+
   function teamUnderline(teamNumber?: string) {
-    return teamNumber == newEntryState.team ? "underline" : "";
+    return teamNumber == newEntry.state.team ? "underline" : "";
   }
 
   function teamBold(teamNumber?: string) {
-    return teamNumber == newEntryState.team ? "font-bold" : "font-light";
+    return teamNumber == newEntry.state.team ? "font-bold" : "font-light";
+  }
+
+  function getNewMatchEntryPrefills(entries: MatchEntry[]) {
+    const prefills: MatchPrefills = {
+      match: { number: 1 },
+      team: "",
+    };
+
+    let lastScoutedMatch: MatchIdentifier | undefined = undefined;
+
+    for (const entry of entries) {
+      const entryMatchIdentifier: MatchIdentifier = {
+        number: entry.match,
+        set: entry.matchSet,
+        level: entry.matchLevel,
+      };
+
+      if (!lastScoutedMatch || compareMatches(lastScoutedMatch, entryMatchIdentifier) < 0) {
+        lastScoutedMatch = entryMatchIdentifier;
+      }
+    }
+
+    const nextMatch = lastScoutedMatch
+      ? pageData.matches.find((m) => compareMatches(m, lastScoutedMatch) > 0)
+      : undefined;
+
+    if (nextMatch) {
+      prefills.match = nextMatch;
+    } else {
+      const recordedQualMatches = entries
+        .filter((entry) => (!entry.matchSet || entry.matchSet == 1) && (!entry.matchLevel || entry.matchLevel == "qm"))
+        .map((entry) => entry.match);
+
+      prefills.match = { number: 1 + Math.max(...recordedQualMatches, 0) };
+    }
+
+    const matchData = pageData.matches.find((match) => compareMatches(match, prefills.match!) == 0);
+    if (matchData) {
+      switch ($targetStore) {
+        case "red 1":
+          prefills.team = matchData.red1;
+          break;
+        case "red 2":
+          prefills.team = matchData.red2;
+          break;
+        case "red 3":
+          prefills.team = matchData.red3;
+          break;
+        case "blue 1":
+          prefills.team = matchData.blue1;
+          break;
+        case "blue 2":
+          prefills.team = matchData.blue2;
+          break;
+        case "blue 3":
+          prefills.team = matchData.blue3;
+          break;
+      }
+    }
+
+    for (const entry of entries) {
+      if (
+        entry.scout &&
+        pageData.compRecord.matches.some(
+          (m) =>
+            compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
+            m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+        )
+      ) {
+        prefills.scout = entry.scout;
+        break;
+      }
+    }
+
+    if (!prefills.scout && entries[0] && entries[0].scout) {
+      prefills.scout = entries[0].scout;
+    }
+
+    if (prefills.match?.number && !prefills.match.level) {
+      prefills.match.level = "qm";
+    }
+
+    return prefills;
+  }
+
+  function getNewPitEntryPrefills(entries: PitEntry[]) {
+    const prefills: PitPrefills = {
+      team: "",
+    };
+
+    const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
+    const unscoutedTeams = pageData.compRecord.teams
+      .filter((t) => !scoutedTeams.includes(t.number))
+      .toSorted((a, b) => Number(a.number) - Number(b.number));
+
+    prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
+
+    if (!prefills.scout && entries[0] && entries[0].scout) {
+      prefills.scout = entries[0].scout;
+    }
+
+    return prefills;
   }
 </script>
 
-<div class="flex flex-wrap items-center justify-between gap-2">
-  <div class="flex flex-col">
-    <h2 class="font-bold">New entry</h2>
-    <span class="text-xs font-light">{surveyRecord.name}</span>
-  </div>
-</div>
+<label class="mt-3 flex flex-col">
+  <select
+    value={newEntry.survey.id}
+    onchange={(e) => {
+      const newSurveyId = e.currentTarget.value;
+      const surveyRecord = pageData.surveyRecords.find((s) => s.id == newSurveyId);
+      if (!surveyRecord || newSurveyId == newEntry.survey.id) return;
+
+      if (surveyRecord.type == "match") {
+        const entryRecords = pageData.entryRecords.filter((e) => e.surveyId == newSurveyId);
+        const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
+        newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+      }
+
+      if (surveyRecord.type == "pit") {
+        const entryRecords = pageData.entryRecords.filter((e) => e.surveyId == newSurveyId);
+        const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
+        newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+      }
+    }}
+    class="text-theme grow bg-neutral-800 p-2"
+  >
+    {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+      <option value={surveyRecord.id}>{surveyRecord.name}</option>
+    {/each}
+  </select>
+</label>
 
 {#if pageData.compRecord.scouts}
   <div class="flex flex-col">
     Your name
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-x-4 gap-y-2">
       {#if suggestedScouts.length}
-        <select bind:value={newEntryState.scout} class="text-theme grow bg-neutral-800 p-2">
+        <select bind:value={newEntry.state.scout} class="text-theme grow bg-neutral-800 p-2">
           {#each suggestedScouts as scout}
             <option>{scout}</option>
           {/each}
@@ -294,14 +507,14 @@
                 },
               };
               idb.put("comps", $state.snapshot(pageData.compRecord)).onsuccess = invalidateAll;
-              newEntryState.scout = newScout;
+              newEntry.state.scout = newScout;
             },
           });
         }}
-        class={pageData.compRecord.scouts.length ? "" : "w-full"}
+        class={suggestedScouts.length ? "" : "w-full"}
       >
         <PlusIcon class="text-theme" />
-        {#if !pageData.compRecord.scouts.length}
+        {#if !suggestedScouts.length}
           New scout
         {/if}
       </Button>
@@ -309,133 +522,269 @@
   </div>
 {/if}
 
-{#if surveyRecord.type == "match"}
-  <div class="flex items-end gap-2">
-    <label class="flex grow flex-col">
+{#if newEntry.type == "match"}
+  <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
+    <div class="flex flex-col">
       Match
-      <input
-        type="number"
-        bind:value={newEntryState.match}
-        oninput={() => {
-          newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
+      <Button
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          openDialog(SelectMatchDialog, {
+            matches: pageData.matches,
+            lastCompletedMatch: pageData.lastCompletedMatch,
+            prefilled: newEntry.state.match,
+            onselect(match) {
+              if (newEntry.type != "match") return;
+              newEntry.state.match = $state.snapshot(match);
+              newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+              closeDialog();
+            },
+          });
         }}
-        min="1"
-        class="text-theme w-full bg-neutral-800 p-2"
-      />
-    </label>
-    <Button
-      disabled={newEntryState.match <= 1}
-      onclick={() => {
-        newEntryState.match--;
-        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-      }}
-      class="active:translate-y-0! enabled:active:-translate-x-0.5!"
-    >
-      <ArrowLeftIcon class="text-theme" />
-    </Button>
-    <Button
-      onclick={() => {
-        newEntryState.match++;
-        newEntryState.team = selectTargetTeamFromMatch(newEntryState.match);
-      }}
-      class="active:translate-y-0! enabled:active:translate-x-0.5!"
-    >
-      <ArrowRightIcon class="text-theme" />
-    </Button>
+        class="text-sm"
+      >
+        <ListOrderedIcon class="text-theme" />
+        Select
+      </Button>
+    </div>
+
+    <div class="flex items-end gap-2">
+      <Button
+        disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          window.clearTimeout(teamMoveAnimReset);
+          teamsMoveAnim = { x: -12, opacity: 1 };
+
+          if (
+            !adjacentMatches.previous ||
+            (newEntry.state.match.set == adjacentMatches.previous.set &&
+              newEntry.state.match.level == adjacentMatches.previous.level)
+          ) {
+            newEntry.state.match.number--;
+          } else {
+            newEntry.state.match = structuredClone(adjacentMatches.previous);
+          }
+
+          newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+        }}
+        class="active:translate-y-0! enabled:active:-translate-x-0.5!"
+      >
+        <ArrowLeftIcon class="text-theme" />
+      </Button>
+      <Button
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          window.clearTimeout(teamMoveAnimReset);
+          teamsMoveAnim = { x: 12, opacity: 1 };
+
+          if (
+            !adjacentMatches.next ||
+            (newEntry.state.match.set == adjacentMatches.next.set &&
+              newEntry.state.match.level == adjacentMatches.next.level)
+          ) {
+            newEntry.state.match.number++;
+          } else {
+            newEntry.state.match = structuredClone(adjacentMatches.next);
+          }
+
+          newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+        }}
+        class="active:translate-y-0! enabled:active:translate-x-0.5!"
+      >
+        <ArrowRightIcon class="text-theme" />
+      </Button>
+    </div>
+
+    <div class="flex items-end gap-2">
+      <label class="flex basis-32 flex-col">
+        <span class="text-xs font-light">Number</span>
+        <input
+          type="number"
+          bind:value={newEntry.state.match.number}
+          oninput={() => {
+            if (newEntry.type != "match") return;
+            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+          }}
+          min="1"
+          class="text-theme w-full bg-neutral-800 p-2"
+        />
+      </label>
+      <label class="flex basis-28 flex-col">
+        <span class="text-xs font-light">Set</span>
+        <input
+          type="number"
+          bind:value={newEntry.state.match.set}
+          oninput={() => {
+            if (newEntry.type != "match") return;
+            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+          }}
+          min="1"
+          class="text-theme w-full bg-neutral-800 p-2"
+        />
+      </label>
+      <label class="flex flex-col">
+        <span class="text-xs font-light">Level</span>
+        <select
+          bind:value={newEntry.state.match.level}
+          onchange={() => {
+            if (newEntry.type != "match") return;
+            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+          }}
+          class="text-theme bg-neutral-800 p-2"
+        >
+          {#each matchLevels as level}
+            <option value={level}>{level}</option>
+          {/each}
+        </select>
+      </label>
+    </div>
   </div>
 {/if}
 
-{#if matchData}
+{#if matchData && newEntry.type == "match"}
   {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
 
-  <div class="flex flex-col">
-    <div class="flex items-end justify-between">
-      <span>Team</span>
-      {#if $targetStore != "pit"}
-        <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
-      {/if}
-    </div>
+  <div class="flex flex-col" transition:slide>
+    {#key matchData}
+      <div class="flex flex-col" in:fly={teamsMoveAnim}>
+        <div class="flex items-end justify-between">
+          <span>Team</span>
+          {#if $targetStore != "pit"}
+            <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
+          {/if}
+        </div>
 
-    <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-      <Button
-        onclick={() => {
-          newEntryState.team = red1;
-          $targetStore = "red 1";
-        }}
-        class="w-full max-sm:order-1"
-      >
-        <div class="flex flex-col truncate {teamBold(red1)}">
-          <span class="text-red {teamUnderline(red1)}">{red1}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red1)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = red2;
-          $targetStore = "red 2";
-        }}
-        class="w-full max-sm:order-3"
-      >
-        <div class="flex flex-col truncate {teamBold(red2)}">
-          <span class="text-red {teamUnderline(red2)}">{red2}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red2)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = red3;
-          $targetStore = "red 3";
-        }}
-        class="w-full max-sm:order-5"
-      >
-        <div class="flex flex-col truncate {teamBold(red3)}">
-          <span class="text-red {teamUnderline(red3)}">{red3}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(red3)}</span>
-        </div>
-      </Button>
+        {#if red1 && red2 && red3 && blue1 && blue2 && blue3}
+          <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
+            <Button
+              onclick={() => {
+                newEntry.state.team = red1;
+                $targetStore = "red 1";
+              }}
+              class="w-full max-sm:order-1"
+            >
+              <div class="flex flex-col truncate {teamBold(red1)}">
+                <span class="text-red {teamUnderline(red1)}">{red1}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red1)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntry.state.team = red2;
+                $targetStore = "red 2";
+              }}
+              class="w-full max-sm:order-3"
+            >
+              <div class="flex flex-col truncate {teamBold(red2)}">
+                <span class="text-red {teamUnderline(red2)}">{red2}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red2)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntry.state.team = red3;
+                $targetStore = "red 3";
+              }}
+              class="w-full max-sm:order-5"
+            >
+              <div class="flex flex-col truncate {teamBold(red3)}">
+                <span class="text-red {teamUnderline(red3)}">{red3}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(red3)}</span>
+              </div>
+            </Button>
 
-      <Button
-        onclick={() => {
-          newEntryState.team = blue1;
-          $targetStore = "blue 1";
-        }}
-        class="w-full max-sm:order-2"
-      >
-        <div class="flex flex-col truncate {teamBold(blue1)}">
-          <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue1)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = blue2;
-          $targetStore = "blue 2";
-        }}
-        class="w-full max-sm:order-4"
-      >
-        <div class="flex flex-col truncate {teamBold(blue2)}">
-          <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue2)}</span>
-        </div>
-      </Button>
-      <Button
-        onclick={() => {
-          newEntryState.team = blue3;
-          $targetStore = "blue 3";
-        }}
-        class="w-full max-sm:order-6"
-      >
-        <div class="flex flex-col truncate {teamBold(blue3)}">
-          <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-          <span class="truncate text-xs">{teamNumberNameMap.get(blue3)}</span>
-        </div>
-      </Button>
-    </div>
+            <Button
+              onclick={() => {
+                newEntry.state.team = blue1;
+                $targetStore = "blue 1";
+              }}
+              class="w-full max-sm:order-2"
+            >
+              <div class="flex flex-col truncate {teamBold(blue1)}">
+                <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue1)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntry.state.team = blue2;
+                $targetStore = "blue 2";
+              }}
+              class="w-full max-sm:order-4"
+            >
+              <div class="flex flex-col truncate {teamBold(blue2)}">
+                <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue2)}</span>
+              </div>
+            </Button>
+            <Button
+              onclick={() => {
+                newEntry.state.team = blue3;
+                $targetStore = "blue 3";
+              }}
+              class="w-full max-sm:order-6"
+            >
+              <div class="flex flex-col truncate {teamBold(blue3)}">
+                <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
+                <span class="truncate text-xs">{pageData.teamNames.get(blue3)}</span>
+              </div>
+            </Button>
+          </div>
+        {:else if suggestedTeams.length}
+          <label class="flex flex-col">
+            <select bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2">
+              {#each suggestedTeams as team}
+                <option value={team.number}>{team.number} {team.name}</option>
+              {/each}
+            </select>
+          </label>
+        {:else}
+          <label class="flex flex-col">
+            <input bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2" />
+          </label>
+        {/if}
+
+        {#if matchData.extraTeams}
+          <div class="mt-2 grid grid-cols-3 gap-2">
+            {#each matchData.extraTeams || [] as extraTeam}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = extraTeam;
+                }}
+                class="w-full"
+              >
+                <div class="flex flex-col truncate {teamBold(extraTeam)}">
+                  <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
+                  <span class="truncate text-xs">{pageData.teamNames.get(extraTeam)}</span>
+                </div>
+              </Button>
+            {/each}
+          </div>
+        {/if}
+
+        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)} class="mt-6">
+          <ListOrderedIcon class="text-theme" />
+          <div class="flex grow flex-col">
+            Match
+            {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
+              {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
+            {:else}
+              {newEntry.state.match.number}
+            {/if}
+            <span class="text-xs font-light">Analyze existing data</span>
+          </div>
+          <ArrowRightIcon class="text-theme" />
+        </Anchor>
+      </div>
+    {/key}
   </div>
 {:else if suggestedTeams.length}
   <label class="flex flex-col">
     Team
-    <select bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2">
+    <select bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2">
       {#each suggestedTeams as team}
         <option value={team.number}>{team.number} {team.name}</option>
       {/each}
@@ -444,30 +793,22 @@
 {:else}
   <label class="flex flex-col">
     Team
-    <input bind:value={newEntryState.team} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2" />
   </label>
 {/if}
 
-{#if matchData}
-  <Anchor route="comp/{pageData.compRecord.id}/match/{newEntryState.match}" class="mt-3">
-    <ListOrderedIcon class="text-theme" />
-    <div class="flex grow flex-col">
-      Match {newEntryState.match}
-      <span class="text-xs font-light">Analyze existing data</span>
-    </div>
-    <ArrowRightIcon class="text-theme" />
-  </Anchor>
-{/if}
-
-{#if surveyRecord.type == "match" && pageData.compRecord.scouts}
-  <div class="flex flex-col">
+{#if newEntry.type == "match" && pageData.compRecord.scouts}
+  <div class="flex flex-col" transition:slide>
     <span>Your guess</span>
     <div class="flex flex-wrap gap-2">
       <Button
-        onclick={() => (newEntryState.prediction = newEntryState.prediction == "red" ? undefined : "red")}
-        class="text-red grow basis-[150px] {newEntryState.prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
+        }}
+        class="text-red grow basis-[150px] {newEntry.state.prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
       >
-        {#if newEntryState.prediction == "red"}
+        {#if newEntry.state.prediction == "red"}
           <SquareCheckBigIcon />
         {:else}
           <SquareIcon />
@@ -475,10 +816,15 @@
         Red wins
       </Button>
       <Button
-        onclick={() => (newEntryState.prediction = newEntryState.prediction == "blue" ? undefined : "blue")}
-        class="text-blue grow basis-[150px] {newEntryState.prediction == 'blue' ? 'font-bold uppercase' : 'font-light'}"
+        onclick={() => {
+          if (newEntry.type != "match") return;
+          newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
+        }}
+        class="text-blue grow basis-[150px] {newEntry.state.prediction == 'blue'
+          ? 'font-bold uppercase'
+          : 'font-light'}"
       >
-        {#if newEntryState.prediction == "blue"}
+        {#if newEntry.state.prediction == "blue"}
           <SquareCheckBigIcon />
         {:else}
           <SquareIcon />
@@ -488,81 +834,83 @@
     </div>
   </div>
 
-  {#if newEntryState.prediction}
-    <label class="flex flex-col">
+  {#if newEntry.state.prediction}
+    <label class="flex flex-col" transition:slide>
       Reason
-      <input bind:value={newEntryState.predictionReason} class="text-theme bg-neutral-800 p-2" />
+      <input bind:value={newEntry.state.predictionReason} class="text-theme bg-neutral-800 p-2" />
     </label>
   {/if}
 {/if}
 
-{#if error}
-  <span>Error: {error}</span>
-{/if}
-
 {#if matchingEntries.length}
-  <div class="my-3 flex flex-col gap-2">
+  <div class="flex flex-col gap-2" transition:slide>
     <div class="flex flex-col">
       <h2 class="font-bold">Matching Entries</h2>
-      <span class="text-xs font-light">Consider editing an existing entry, instead of creating a new one.</span>
-      <span class="text-xs font-light">You can view, edit, or delete them here.</span>
+      <span class="text-xs font-light">If you already have an existing draft, consider editing it.</span>
+      <span class="text-xs font-light">You can view, edit, or delete them (and other matching entries) here.</span>
     </div>
 
     {#each matchingEntries as entry (entry.id)}
-      <Button
-        onclick={() => {
-          openDialog(ViewEntryDialog, {
-            compRecord: pageData.compRecord,
-            surveyRecord,
-            fieldRecords: pageData.fieldRecords,
-            entryRecord: entry,
-            onchange: invalidateAll,
-          });
-        }}
-        class="gap-x-4"
-      >
-        {#if entry.type == "match"}
-          <div class="flex w-9 flex-col">
-            <span class="text-xs font-light">Match</span>
-            <span>{entry.match}</span>
-          </div>
-        {:else if entry.type == "pit"}
-          <div class="flex w-9 flex-col">
-            <span class="text-sm">Pit</span>
-          </div>
-        {/if}
-        <div class="flex w-32 max-w-full flex-col">
-          <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-            {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
-          </span>
-          <span>{entry.team}</span>
-        </div>
-        {#if entry.scout}
-          <div class="flex w-24 max-w-full flex-col">
-            <span class="text-xs font-light text-wrap">Scout</span>
-            <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
-          </div>
-        {/if}
-        <div class="flex flex-col">
-          {#if entry.type == "match" && entry.absent}
-            <span class="text-xs">Absent</span>
+      <div class="flex flex-col" in:slide={{ delay: 50 }}>
+        <Button
+          onclick={() => {
+            openDialog(ViewEntryDialog, {
+              compRecord: pageData.compRecord,
+              surveyRecord: newEntry.survey,
+              fieldRecords: pageData.fieldRecords,
+              entryRecord: entry,
+              onchange: invalidateAll,
+            });
+          }}
+          class="gap-x-4"
+        >
+          {#if entry.type == "match"}
+            <div class="flex w-9 flex-col text-nowrap">
+              <span class="text-xs font-light">Match</span>
+              <div>
+                {#if entry.matchLevel && entry.matchLevel != "qm"}
+                  <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
+                {:else}
+                  {entry.match}
+                {/if}
+              </div>
+            </div>
+          {:else if entry.type == "pit"}
+            <div class="flex w-9 flex-col">
+              <span class="text-sm">Pit</span>
+            </div>
           {/if}
-          {#if entry.status != "submitted"}
-            <span class="text-xs capitalize">{entry.status}</span>
+          <div class="flex w-32 max-w-full flex-col">
+            <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+              {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
+            </span>
+            <span>{entry.team}</span>
+          </div>
+          {#if entry.scout}
+            <div class="flex w-24 max-w-full flex-col">
+              <span class="text-xs font-light text-wrap">Scout</span>
+              <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+            </div>
           {/if}
-        </div>
-      </Button>
+          <div class="flex flex-col">
+            {#if entry.type == "match" && entry.absent}
+              <span class="text-xs">Absent</span>
+            {/if}
+            {#if entry.status != "submitted"}
+              <span class="text-xs capitalize">{entry.status}</span>
+            {/if}
+          </div>
+        </Button>
+      </div>
     {/each}
   </div>
 {/if}
 
-<div class="mt-3 flex flex-wrap gap-3 text-sm">
-  <Button onclick={onconfirm} class="w-24 flex-col gap-1!">
-    <PlusIcon class="text-theme" />
-    Create
-  </Button>
-  <Button onclick={oncancel} class="w-24 flex-col gap-1!">
-    <XIcon class="text-theme" />
-    Cancel
-  </Button>
-</div>
+{#if error}
+  <span transition:slide>Error: {error}</span>
+{/if}
+
+<Button onclick={onconfirm} class="mt-2 self-start font-bold">
+  <PlusIcon class="text-theme" />
+  Create
+</Button>

@@ -271,6 +271,14 @@
           modified: new Date(),
         };
 
+        if (jsonEntry.matchSet && jsonEntry.matchSet > 1) {
+          entry.matchSet = jsonEntry.matchSet;
+        }
+
+        if (jsonEntry.matchLevel && jsonEntry.matchLevel != "qm") {
+          entry.matchLevel = jsonEntry.matchLevel;
+        }
+
         if (jsonEntry.tbaMetrics) {
           entry.tbaMetrics = jsonEntry.tbaMetrics;
         }

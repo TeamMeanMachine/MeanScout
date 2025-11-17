@@ -48,8 +48,25 @@ export const load: PageLoad = async (event) => {
   const thisCompSurveys = all.surveys.filter((survey) => survey.compId == compRecord.id);
   const thisCompEntries = all.entries.filter((entry) => thisCompSurveys.some((survey) => survey.id == entry.surveyId));
 
+  let title: string;
+
+  if (entryRecord.type == "pit") {
+    title = "Team " + entryRecord.team;
+  } else if (entryRecord.matchLevel && entryRecord.matchLevel != "qm") {
+    title =
+      "Match " +
+      entryRecord.matchLevel +
+      (entryRecord.matchSet || 1) +
+      "-" +
+      entryRecord.match +
+      ": Team " +
+      entryRecord.team;
+  } else {
+    title = "Match " + entryRecord.match + " - Team " + entryRecord.team;
+  }
+
   return {
-    title: (entryRecord.type == "match" ? `Match ${entryRecord.match} - ` : "") + `Team ${entryRecord.team}`,
+    title,
     compRecord,
     fieldsWithDetails,
     defaultValues,

@@ -1,20 +1,28 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import type { Match } from "$lib";
+  import { type DialogExports } from "$lib/dialog";
 
   let {
-    number,
+    match,
     ondelete,
   }: {
-    number: number;
-    ondelete: () => void;
+    match: Match;
+    ondelete(): void;
   } = $props();
 
   export const { onconfirm }: DialogExports = {
-    onconfirm() {
-      ondelete();
-      closeDialog();
-    },
+    onconfirm: ondelete,
   };
 </script>
 
-<span>Delete match {number}?</span>
+<div class="flex flex-col">
+  <span>
+    Delete match
+    {#if match.level && match.level != "qm"}
+      {match.level}{match.set || 1}-{match.number}?
+    {:else}
+      {match.number}?
+    {/if}
+  </span>
+  <span class="text-sm font-light">Scouting data won't be affected.</span>
+</div>

@@ -1,3 +1,4 @@
+import { getAllMatches } from "$lib";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
@@ -10,5 +11,9 @@ export const load: PageLoad = async (event) => {
     }
   }
 
-  return { title: "Entries", teamNames };
+  return {
+    title: "Entries",
+    teamNames,
+    ...getAllMatches(data.compRecord, data.entryRecords),
+  };
 };

@@ -1,4 +1,4 @@
-import { matchValueSchema, valueSchema, type Match } from "./";
+import { compareMatches, matchLevels, matchValueSchema, valueSchema, type Match, type MatchIdentifier } from "./";
 import { z } from "zod";
 import type { Comp } from "./comp";
 import type { Survey } from "./survey";
@@ -25,6 +25,8 @@ const matchEntrySchema = z.object({
   ...baseEntrySchema.shape,
   type: z.literal("match"),
   match: matchValueSchema,
+  matchSet: z.optional(matchValueSchema),
+  matchLevel: z.optional(z.union(matchLevels.map((l) => z.literal(l)))),
   absent: z.boolean(),
   tbaMetrics: z.optional(tbaMetricsSchema),
   prediction: z.optional(z.literal("red").or(z.literal("blue"))),
@@ -53,9 +55,12 @@ export function getMatchEntriesByTeam(entries: MatchEntry[]) {
   return entriesByTeam;
 }
 
-function compareMatch(a: Entry, b: Entry) {
+function compareEntryMatch(a: Entry, b: Entry) {
   if (a.type == "match" && b.type == "match") {
-    return b.match - a.match;
+    return compareMatches(
+      { number: b.match, set: b.matchSet, level: b.matchLevel },
+      { number: a.match, set: a.matchSet, level: a.matchLevel },
+    );
   }
 
   if (a.type == "match" && b.type == "pit") {
@@ -72,14 +77,19 @@ function compareMatch(a: Entry, b: Entry) {
 function getComparisons(a: Entry, b: Entry) {
   return {
     teamCompare: a.team.localeCompare(b.team, "en", { numeric: true }),
-    matchCompare: compareMatch(a, b),
+    matchCompare: compareEntryMatch(a, b),
     scoutCompare: a.scout?.localeCompare(b.scout || "") || 0,
   };
 }
 
 function compareMatchTeams(a: Entry, b: Entry, matches: Match[]) {
-  if (a.type == "match" && b.type == "match" && a.match == b.match) {
-    const match = matches.find((m) => m.number == a.match);
+  if (a.type != "match" || b.type != "match") return 0;
+
+  const aMatchIdentifier: MatchIdentifier = { number: a.match, set: a.matchSet, level: a.matchLevel };
+  const bMatchIdentifier: MatchIdentifier = { number: b.match, set: b.matchSet, level: b.matchLevel };
+
+  if (compareMatches(aMatchIdentifier, bMatchIdentifier) == 0) {
+    const match = matches.find((m) => compareMatches(m, aMatchIdentifier) == 0);
     if (match) {
       const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
       const targetA = targets.findIndex((t) => t == a.team);
@@ -87,6 +97,7 @@ function compareMatchTeams(a: Entry, b: Entry, matches: Match[]) {
       return targetA - targetB;
     }
   }
+
   return 0;
 }
 
@@ -166,19 +177,26 @@ export function groupEntries(
   }
 
   if (by == "match") {
-    const matchSet = new Set<number>();
+    const matches: MatchIdentifier[] = [];
+
     for (const entry of entries) {
       if (entry.type != "match") continue;
-      matchSet.add(entry.match);
+      const entryIdentifier: MatchIdentifier = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
+      if (!matches.some((m) => compareMatches(m, entryIdentifier) == 0)) {
+        matches.push(entryIdentifier);
+      }
     }
-
-    const matches = [...matchSet].toSorted((a, b) => b - a);
 
     return {
       by: "match" as const,
       groups: matches
+        .toSorted((a, b) => compareMatches(b, a))
         .map((match) => {
-          const entries = sortedEntries.filter((e) => e.type == "match" && e.match == match);
+          const entries = sortedEntries.filter(
+            (e) =>
+              e.type == "match" &&
+              compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
+          );
           if (entries.length) {
             return { match, entries };
           }
@@ -221,7 +239,9 @@ export function groupEntries(
 
             if (e.type != "match") return;
 
-            const match = comp.matches.find((m) => m.number == e.match);
+            const match = comp.matches.find(
+              (m) => compareMatches(m, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
+            );
             if (!match) return;
 
             switch (target) {

@@ -4,12 +4,9 @@
   import { openDialog } from "$lib/dialog";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { CheckIcon } from "@lucide/svelte";
+  import { compareMatches } from "$lib";
 
   let { data }: PageProps = $props();
-
-  function winLoseWeight(winner: "red" | "blue" | undefined, matching: "red" | "blue" | undefined) {
-    return winner && winner == matching ? "font-bold" : "font-light";
-  }
 </script>
 
 <div class="flex flex-col gap-6">
@@ -48,8 +45,10 @@
       </div>
 
       {#each data.entries as entry}
-        {@const winner = data.predictionsPerMatch.find((m) => m.number == entry.match)?.winner}
-        {@const predictionWeight = winLoseWeight(winner, entry.prediction)}
+        {@const winner = data.predictionsPerMatch.find(
+          (m) => compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0,
+        )?.winner}
+        {@const predictionWeight = winner && winner == entry.prediction}
         {@const predictionColor =
           entry.prediction == "red" ? "text-red" : entry.prediction == "blue" ? "text-blue" : ""}
 
@@ -64,7 +63,13 @@
           }}
           class="col-span-full grid grid-cols-subgrid gap-x-3 {predictionWeight}"
         >
-          <div>{entry.match}</div>
+          <div>
+            {#if entry.matchLevel && entry.matchLevel != "qm"}
+              {entry.matchLevel}{entry.matchSet || 1}-{entry.match}
+            {:else}
+              {entry.match}
+            {/if}
+          </div>
           <div class="text-nowrap capitalize {predictionColor}">{entry.prediction} wins</div>
           <div class="flex justify-center">
             {#if entry.prediction && entry.prediction == winner}

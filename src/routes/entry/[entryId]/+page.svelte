@@ -52,7 +52,13 @@
     {#if data.surveyType == "match"}
       <div class="flex flex-col">
         <span class="text-xs">Match</span>
-        <span class="font-bold">{data.entryRecord.match}</span>
+        <span class="font-bold">
+          {#if data.entryRecord.matchLevel && data.entryRecord.matchLevel != "qm"}
+            {data.entryRecord.matchLevel}{data.entryRecord.matchSet || 1}-{data.entryRecord.match}
+          {:else}
+            {data.entryRecord.match}
+          {/if}
+        </span>
       </div>
     {/if}
     <div class="flex flex-col">

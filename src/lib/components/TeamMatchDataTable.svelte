@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Team, Value } from "$lib";
+  import { compareMatches, matchUrl, type Match, type MatchIdentifier, type Team, type Value } from "$lib";
   import { getExpressionData } from "$lib/rank";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
@@ -39,14 +39,49 @@
     [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
   );
 
-  const entriesPerMatch = [...new Set([...entries.map((e) => e.match), ...matches.map((m) => m.number)])]
-    .toSorted((a, b) => b - a)
-    .map((number) => ({
-      number,
-      entries: entries
-        .filter((e) => e.match == number)
-        .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
-    }));
+  let allMatches: (Match & { extraTeams?: string[] })[] = [...matches];
+  for (const entry of entries) {
+    const entryMatchIdentifier: MatchIdentifier = { number: entry.match, level: entry.matchLevel, set: entry.matchSet };
+    const existingMatch = allMatches.find((m) => compareMatches(m, entryMatchIdentifier) == 0);
+
+    if (existingMatch) {
+      const teams = [
+        existingMatch.red1,
+        existingMatch.red2,
+        existingMatch.red3,
+        existingMatch.blue1,
+        existingMatch.blue2,
+        existingMatch.blue3,
+        ...(existingMatch.extraTeams || []),
+      ];
+
+      if (!teams.includes(entry.team)) {
+        existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
+          a.localeCompare(b),
+        );
+      }
+    } else {
+      allMatches.push({
+        ...entryMatchIdentifier,
+        red1: "",
+        red2: "",
+        red3: "",
+        blue1: "",
+        blue2: "",
+        blue3: "",
+        extraTeams: [entry.team],
+      });
+    }
+  }
+
+  allMatches = allMatches.toSorted(compareMatches).toReversed();
+
+  const entriesPerMatch = allMatches.map((match) => ({
+    match,
+    entries: entries
+      .filter((e) => compareMatches({ number: e.match, level: e.matchLevel, set: e.matchSet }, match) == 0)
+      .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
+  }));
 
   const someScout = entries.some((entry) => entry.scout);
   const someDraft = entries.some((entry) => entry.status == "draft");
@@ -252,12 +287,16 @@
     </thead>
 
     <tbody>
-      {#each entriesPerMatch as { number, entries }}
+      {#each entriesPerMatch as { match, entries }}
         {#each entries as entry}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/match/{number}" class="w-13 justify-center py-1.5">
-                {number}
+              <Anchor route={matchUrl(match, pageData.compRecord.id)} class="w-13 justify-center py-1.5">
+                {#if match.level && match.level != "qm"}
+                  {match.level}{match.set || 1}-{match.number}
+                {:else}
+                  {match.number}
+                {/if}
               </Anchor>
             </th>
 
@@ -328,8 +367,12 @@
         {:else}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/match/{number}" class="w-13 justify-center py-1.5">
-                {number}
+              <Anchor route={matchUrl(match, pageData.compRecord.id)} class="w-13 justify-center py-1.5 text-nowrap!">
+                {#if match.level && match.level != "qm"}
+                  {match.level}{match.set || 1}-{match.number}
+                {:else}
+                  {match.number}
+                {/if}
               </Anchor>
             </th>
 
