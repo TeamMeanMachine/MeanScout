@@ -10,6 +10,7 @@
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
+  import { slide } from "svelte/transition";
 
   let { data }: PageProps = $props();
 
@@ -65,9 +66,9 @@
 
   function onsearchenter() {
     if (upcomingMatches.length) {
-      goto(`#/comp/${data.compRecord.id}/match/${upcomingMatches[0].number}`);
+      goto(`#/${matchUrl(upcomingMatches[0], data.compRecord.id)}`);
     } else if (previousMatches.length) {
-      goto(`#/comp/${data.compRecord.id}/match/${previousMatches[0].number}`);
+      goto(`#/${matchUrl(previousMatches[0], data.compRecord.id)}`);
     }
   }
 
@@ -96,22 +97,23 @@
 
   function teamSearchFontWeight(team: string) {
     if (debouncedSearch && debouncedSearchParts.includes(parseInt(team).toString())) {
-      return "font-bold underline";
+      return "underline underline-offset-6";
     }
 
-    if (!debouncedSearch && team == $teamStore) {
-      return "font-bold underline";
+    if (!debouncedSearch && $teamStore == team) {
+      return "underline underline-offset-6";
     }
 
-    if (!debouncedSearch && !$teamStore) {
-      return "";
-    }
+    return "";
+  }
 
-    return "font-light";
+  function allianceFontWeight(winner: boolean | undefined) {
+    if (winner == undefined) return "";
+    return winner ? "font-bold" : "font-light";
   }
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col space-y-6">
   {#if !data.matches.length}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold">Matches</h2>
@@ -137,78 +139,72 @@
       </label>
     </div>
 
-    {#if !debouncedSearch || filteredMatches.length}
-      {#if upcomingMatches.length}
-        {@const isToggled = matchToggleState.includes("upcoming") || debouncedSearch}
+    {#if (!debouncedSearch || filteredMatches.length) && upcomingMatches.length}
+      {@const isToggled = matchToggleState.includes("upcoming") || debouncedSearch}
 
-        <div class="@container flex flex-col gap-2">
-          <Button
-            onclick={() => {
-              if (debouncedSearch) return;
-              if (matchToggleState.includes("upcoming")) {
-                matchToggleState = matchToggleState.filter((val) => val != "upcoming");
-              } else {
-                matchToggleState.push("upcoming");
-              }
-            }}
-            class="flex-nowrap!"
-          >
-            {#if isToggled}
-              <ChevronDownIcon class="text-theme shrink-0" />
-            {:else}
-              <ChevronRightIcon class="text-theme shrink-0" />
-            {/if}
-            <div class="flex grow items-center justify-between">
-              <span class={matchToggleState.includes("upcoming") ? "font-bold" : "font-light"}>Upcoming</span>
-              <div class="flex gap-0.5 text-sm">
-                {upcomingMatches.length}<ListOrderedIcon class="size-4" />
-              </div>
+      <div class="@container flex flex-col space-y-2" transition:slide>
+        <Button
+          onclick={() => {
+            if (debouncedSearch) return;
+            if (matchToggleState.includes("upcoming")) {
+              matchToggleState = matchToggleState.filter((val) => val != "upcoming");
+            } else {
+              matchToggleState.push("upcoming");
+            }
+          }}
+          class="flex-nowrap!"
+        >
+          <ChevronRightIcon class="text-theme shrink-0 transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
+          <div class="flex grow items-center justify-between">
+            <span class={matchToggleState.includes("upcoming") ? "font-bold" : "font-light"}>Upcoming</span>
+            <div class="flex gap-0.5 text-sm">
+              {upcomingMatches.length}<ListOrderedIcon class="size-4" />
             </div>
-          </Button>
+          </div>
+        </Button>
 
-          {#if isToggled}
-            {#each upcomingMatches as match}
+        {#if isToggled}
+          <div class="flex flex-col gap-2" transition:slide>
+            {#each upcomingMatches as match ([match.level || "qm", match.set || 1, match.number].join("-"))}
               {@render matchRow(match)}
             {/each}
-          {/if}
-        </div>
-      {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
-      {#if previousMatches.length}
-        {@const isToggled = matchToggleState.includes("previous") || debouncedSearch}
+    {#if (!debouncedSearch || filteredMatches.length) && previousMatches.length}
+      {@const isToggled = matchToggleState.includes("previous") || debouncedSearch}
 
-        <div class="@container flex flex-col gap-2">
-          <Button
-            onclick={() => {
-              if (debouncedSearch) return;
-              if (matchToggleState.includes("previous")) {
-                matchToggleState = matchToggleState.filter((val) => val != "previous");
-              } else {
-                matchToggleState.push("previous");
-              }
-            }}
-            class="flex-nowrap!"
-          >
-            {#if isToggled}
-              <ChevronDownIcon class="text-theme shrink-0" />
-            {:else}
-              <ChevronRightIcon class="text-theme shrink-0" />
-            {/if}
-            <div class="flex grow items-center justify-between">
-              <span class={matchToggleState.includes("previous") ? "font-bold" : "font-light"}>Previous</span>
-              <div class="flex gap-0.5 text-sm">
-                {previousMatches.length}<ListOrderedIcon class="size-4" />
-              </div>
+      <div class="@container flex flex-col space-y-2" transition:slide>
+        <Button
+          onclick={() => {
+            if (debouncedSearch) return;
+            if (matchToggleState.includes("previous")) {
+              matchToggleState = matchToggleState.filter((val) => val != "previous");
+            } else {
+              matchToggleState.push("previous");
+            }
+          }}
+          class="flex-nowrap!"
+        >
+          <ChevronRightIcon class="text-theme shrink-0 transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
+          <div class="flex grow items-center justify-between">
+            <span class={matchToggleState.includes("previous") ? "font-bold" : "font-light"}>Previous</span>
+            <div class="flex gap-0.5 text-sm">
+              {previousMatches.length}<ListOrderedIcon class="size-4" />
             </div>
-          </Button>
+          </div>
+        </Button>
 
-          {#if isToggled}
-            {#each previousMatches as match}
+        {#if isToggled}
+          <div class="flex flex-col gap-2" transition:slide>
+            {#each previousMatches as match ([match.level || "qm", match.set || 1, match.number].join("-"))}
               {@render matchRow(match)}
             {/each}
-          {/if}
-        </div>
-      {/if}
+          </div>
+        {/if}
+      </div>
     {/if}
   {/if}
 
@@ -244,7 +240,10 @@
   <Anchor route={matchUrl(match, data.compRecord.id)} class="flex-nowrap! text-center!">
     <div class="flex flex-wrap items-center gap-x-4">
       {#if match.red1 || match.red2 || match.red3}
-        <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+        {@const redWon =
+          match.redScore !== undefined && match.blueScore !== undefined ? match.redScore > match.blueScore : undefined}
+
+        <div class="text-red flex flex-col gap-x-2 {allianceFontWeight(redWon)} @lg:flex-row @lg:flex-wrap">
           {#if match.red1}
             <div class="min-w-13 {teamSearchFontWeight(match.red1)}">{match.red1}</div>
           {/if}
@@ -289,7 +288,10 @@
       {/if}
 
       {#if match.blue1 || match.blue2 || match.blue3}
-        <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+        {@const blueWon =
+          match.redScore !== undefined && match.blueScore !== undefined ? match.redScore < match.blueScore : undefined}
+
+        <div class="text-blue flex flex-col gap-x-2 {allianceFontWeight(blueWon)} @lg:flex-row @lg:flex-wrap">
           {#if match.blue1}
             <div class="min-w-13 {teamSearchFontWeight(match.blue1)}">{match.blue1}</div>
           {/if}

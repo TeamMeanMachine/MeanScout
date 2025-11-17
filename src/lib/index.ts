@@ -125,6 +125,10 @@ export function getAllMatches(comp: Comp, entries: Entry[]) {
 export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
 
+export function isValidTeam(team: string) {
+  return /^\d{1,5}[A-Z]?$/.test(team);
+}
+
 export const allianceTeamLabels = ["Captain", "1st Pick", "2nd Pick"];
 
 export function parseValueFromString(value: any) {

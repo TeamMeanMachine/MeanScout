@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     compareMatches,
+    isValidTeam,
     matchIdentifierSchema,
     matchLevels,
     matchUrl,
@@ -230,7 +231,7 @@
       newEntry.state.predictionReason = newEntry.state.predictionReason?.trim();
     }
 
-    if (!/^\d{1,5}[A-Z]?$/.test(newEntry.state.team)) {
+    if (!isValidTeam(newEntry.state.team)) {
       error = "invalid value for team";
       return;
     }

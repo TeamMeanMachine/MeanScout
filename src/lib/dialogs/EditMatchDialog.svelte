@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { compareMatches, matchLevels, type Match } from "$lib";
+  import { compareMatches, isValidTeam, matchLevels, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { Trash2Icon } from "@lucide/svelte";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import type { Comp } from "$lib/comp";
   import SelectTeamsDialog from "./SelectTeamsDialog.svelte";
+  import { slide } from "svelte/transition";
 
   let {
     match,
@@ -34,14 +35,15 @@
   };
 
   let changes = $state(structuredClone($state.snapshot(match || newMatch)));
-  let error = $state("");
+  let errors = $state<string[]>([]);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
+      errors = [];
+
       const number = parseFloat(`${changes.number}`);
       if (Number.isNaN(number) || !Number.isInteger(number) || number < 1 || number > 999) {
-        error = "invalid match number";
-        return;
+        errors.push("invalid match number");
       }
 
       if (changes.set == 1) {
@@ -49,16 +51,14 @@
       } else if (changes.set != undefined) {
         const set = parseFloat(`${changes.set}`);
         if (Number.isNaN(set) || !Number.isInteger(set) || set < 1 || set > 999) {
-          error = "invalid set number";
-          return;
+          errors.push("invalid set number");
         }
       }
 
       if (changes.level == "qm") {
         changes.level = undefined;
       } else if (changes.level && !matchLevels.includes(changes.level)) {
-        error = "invalid match level";
-        return;
+        errors.push("invalid match level");
       }
 
       changes.red1 = changes.red1.trim();
@@ -68,33 +68,21 @@
       changes.blue2 = changes.blue2.trim();
       changes.blue3 = changes.blue3.trim();
 
-      if (!changes.red1) {
-        error = "invalid value for red 1";
-        return;
+      [changes.red1, changes.red2, changes.red3, changes.blue1, changes.blue2, changes.blue3].forEach((team) => {
+        if (team && !isValidTeam(team)) {
+          errors.push(`invalid team: '${team}'`);
+        }
+      });
+
+      if (!changes.red1 && !changes.red2 && !changes.red3) {
+        errors.push("at least 1 red team required");
       }
 
-      if (!changes.red2) {
-        error = "invalid value for red 2";
-        return;
+      if (!changes.blue1 && !changes.blue2 && !changes.blue3) {
+        errors.push("at least 1 blue team required");
       }
 
-      if (!changes.red3) {
-        error = "invalid value for red 3";
-        return;
-      }
-
-      if (!changes.blue1) {
-        error = "invalid value for blue 1";
-        return;
-      }
-
-      if (!changes.blue2) {
-        error = "invalid value for blue 2";
-        return;
-      }
-
-      if (!changes.blue3) {
-        error = "invalid value for blue 3";
+      if (errors.length) {
         return;
       }
 
@@ -167,8 +155,10 @@
           comp,
           previousSelection: [changes.red1, changes.red2, changes.red3],
           sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
-          onselect(teams) {
-            [changes.red1, changes.red2, changes.red3] = $state.snapshot(teams);
+          onselect([red1, red2, red3]) {
+            changes.red1 = red1 || "";
+            changes.red2 = red2 || "";
+            changes.red3 = red3 || "";
           },
         });
       }}
@@ -205,8 +195,10 @@
           comp,
           previousSelection: [changes.blue1, changes.blue2, changes.blue3],
           sortBy: changes.level && changes.level != "qm" ? "alliance" : "number",
-          onselect(teams) {
-            [changes.blue1, changes.blue2, changes.blue3] = $state.snapshot(teams);
+          onselect([blue1, blue2, blue3]) {
+            changes.blue1 = blue1 || "";
+            changes.blue2 = blue2 || "";
+            changes.blue3 = blue3 || "";
           },
         });
       }}
@@ -235,6 +227,13 @@
   </div>
 </div>
 
-{#if error}
-  <span>Error: {error}</span>
+{#if errors.length}
+  <div class="flex flex-col" transition:slide>
+    <span>Errors</span>
+    <ul class="ml-3 list-inside list-disc space-y-1 text-sm font-light">
+      {#each errors as error}
+        <li transition:slide>{error}</li>
+      {/each}
+    </ul>
+  </div>
 {/if}

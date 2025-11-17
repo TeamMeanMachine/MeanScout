@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { allianceTeamLabels } from "$lib";
+  import { allianceTeamLabels, isValidTeam } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
 
   let {
     comp,
@@ -68,11 +69,28 @@
   const multipleGroups = $derived(Object.values(groupedTeams).length > 1);
 
   let selection = $state(($state.snapshot(previousSelection) || []).filter((s) => s));
-  let error = $state("");
+  let errors = $state<string[]>([]);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      onselect(selection.map((s) => s.trim()).filter((s) => s));
+      errors = [];
+
+      const filtered = selection.map((team) => team.trim()).filter((team) => team);
+      filtered.forEach((team) => {
+        if (!isValidTeam(team)) {
+          errors.push(`invalid team: '${team}'`);
+        }
+      });
+
+      if (!filtered.length) {
+        errors.push("no teams added");
+      }
+
+      if (errors.length) {
+        return;
+      }
+
+      onselect(filtered);
       closeDialog();
     },
   };
@@ -149,6 +167,13 @@
   <span class="pt-1 text-xs font-light">Use commas to separate teams</span>
 </label>
 
-{#if error}
-  <span>Error: {error}</span>
+{#if errors.length}
+  <div class="flex flex-col" transition:slide>
+    <span>Errors</span>
+    <ul class="ml-3 list-inside list-disc space-y-1 text-sm font-light">
+      {#each errors as error}
+        <li transition:slide>{error}</li>
+      {/each}
+    </ul>
+  </div>
 {/if}
