@@ -11,6 +11,7 @@
   import Anchor from "./Anchor.svelte";
   import { z } from "zod";
   import { goto } from "$app/navigation";
+  import { slide } from "svelte/transition";
 
   let {
     pageData,
@@ -30,11 +31,12 @@
   );
 
   const groupedRanks = $derived(
-    matchSurveys.flatMap((survey) => {
+    matchSurveys.map((survey) => {
       const fieldsWithDetails = getFieldsWithDetails(
         survey,
         pageData.fieldRecords.filter((f) => f.surveyId == survey.id),
       );
+
       return groupRanks(survey, fieldsWithDetails.orderedSingle);
     }),
   );
@@ -195,30 +197,90 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <Button onclick={() => (selecting = !selecting)} class="text-sm">
-    <ChartBarBigIcon class="text-theme size-5" />
-    {#if selectedRanking}
-      <span class="grow">
-        {#if "pickList" in selectedRanking}
-          {selectedRanking.pickList.name}
-        {:else if "expression" in selectedRanking}
-          {selectedRanking.expression.name}
-        {:else if "field" in selectedRanking}
-          {selectedRanking.field.detailedName}
-        {/if}
-      </span>
-    {:else}
-      <span class="grow">Select</span>
-    {/if}
+  <div class="flex flex-col">
+    <Button onclick={() => (selecting = !selecting)} class="text-sm">
+      <ChartBarBigIcon class="text-theme size-5" />
+      {#if selectedRanking}
+        <span class="grow">
+          {#if "pickList" in selectedRanking}
+            {selectedRanking.pickList.name}
+          {:else if "expression" in selectedRanking}
+            {selectedRanking.expression.name}
+          {:else if "field" in selectedRanking}
+            {selectedRanking.field.detailedName}
+          {/if}
+        </span>
+      {:else}
+        <span class="grow">Select</span>
+      {/if}
 
-    {#if !selecting && selectedRanking}
-      <ChevronDownIcon class="text-theme size-5" />
-    {:else}
-      <ChevronUpIcon class="text-theme size-5" />
-    {/if}
-  </Button>
+      <ChevronDownIcon
+        class="text-theme size-5 transition-[rotate] {selecting || !selectedRanking ? 'rotate-180' : ''}"
+      />
+    </Button>
 
-  {#if !selecting && selectedRanking}
+    {#if selecting || !selectedRanking}
+      <div class="flex flex-col gap-4 border-2 border-t-0 border-neutral-800 p-3 pt-0" transition:slide>
+        {#each groupedRanks as { survey, groups }}
+          <div class="flex flex-col gap-3 first:mt-3">
+            <h2 class="text-sm font-bold">{survey.name}</h2>
+
+            {#each groups as group}
+              <div class="flex flex-col">
+                <span class="text-xs font-light">{group.category}</span>
+
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {#each group.pickLists || [] as pickList}
+                    {@const selected =
+                      selectedRanking &&
+                      "pickList" in selectedRanking &&
+                      selectedRanking.pickList.name == pickList.name}
+
+                    <Button
+                      onclick={() => (selectedRanking = switchRanking({ survey, pickList }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {pickList.name}
+                    </Button>
+                  {/each}
+
+                  {#each group.expressions || [] as expression}
+                    {@const selected =
+                      selectedRanking &&
+                      "expression" in selectedRanking &&
+                      selectedRanking.expression.name == expression.name}
+
+                    <Button
+                      onclick={() => (selectedRanking = switchRanking({ survey, expression }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {expression.name}
+                    </Button>
+                  {/each}
+
+                  {#each group.fields || [] as field}
+                    {@const selected =
+                      selectedRanking &&
+                      "field" in selectedRanking &&
+                      selectedRanking.field.valueIndex == field.valueIndex}
+
+                    <Button
+                      onclick={() => (selectedRanking = switchRanking({ survey, field }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {field.detailedName}
+                    </Button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  {#if selectedRanking}
     {@const pickListParam =
       selectedRanking.rankData.type == "picklist" &&
       "picklist=" + encodeURIComponent(selectedRanking.rankData.pickList.name)}
@@ -252,77 +314,50 @@
       <ChartBarBigIcon class="text-theme size-5" />
       View rank
     </Anchor>
-
-    {#snippet teamRow(team: string, teamRank: TeamRank | undefined, bgColor: string)}
-      {#if teamRank}
-        <Button
-          onclick={() => {
-            if ("expression" in teamRank) {
-              sessionStorage.setItem("metric-view", sessionStorage.getItem("rank-view") || "");
-            }
-            goto(`#/comp/${pageData.compRecord.id}/team/${teamRank.team}`);
-          }}
-          class="justify-center text-sm"
-        >
-          <div class="flex items-baseline">
-            <span class="font-bold">{teamRank.rank}</span>
-            <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
-          </div>
-        </Button>
-      {/if}
-
-      <div class="truncate {!teamRank ? 'col-span-2' : ''}">
-        <div class="flex items-end justify-between gap-3">
-          <div class="flex flex-col truncate">
-            <span class="font-bold">{team}</span>
-            {#if anyTeamNames}
-              <span class="truncate text-xs font-light">
-                {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
-              </span>
-            {/if}
-          </div>
-          {#if teamRank}
-            {#if "value" in teamRank}
-              {teamRank.value.toFixed(2) || 0}
-            {:else}
-              <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
-            {/if}
-          {/if}
-        </div>
-        <div class="bg-neutral-800">
-          <div
-            class={teamRank ? bgColor : ""}
-            style="width:{(teamRank?.percentage.toFixed(2) ?? 100) || 0}%;height:6px"
-          ></div>
-        </div>
-      </div>
-    {/snippet}
-  {:else}
-    {#each groupedRanks as group}
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-col">
-          <h2 class="text-sm">{group.survey.name}</h2>
-          <span class="text-xs font-light">{group.category}</span>
-        </div>
-
-        <div class="flex flex-wrap gap-2 text-sm">
-          {#each group.pickLists || [] as pickList}
-            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, pickList }))}>
-              {pickList.name}
-            </Button>
-          {/each}
-          {#each group.expressions || [] as expression}
-            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, expression }))}>
-              {expression.name}
-            </Button>
-          {/each}
-          {#each group.fields || [] as field}
-            <Button onclick={() => (selectedRanking = switchRanking({ survey: group.survey, field }))}>
-              {field.detailedName}
-            </Button>
-          {/each}
-        </div>
-      </div>
-    {/each}
   {/if}
 </div>
+
+{#snippet teamRow(team: string, teamRank: TeamRank | undefined, bgColor: string)}
+  {#if teamRank}
+    <Button
+      onclick={() => {
+        if ("expression" in teamRank) {
+          sessionStorage.setItem("metric-view", sessionStorage.getItem("rank-view") || "");
+        }
+        goto(`#/comp/${pageData.compRecord.id}/team/${teamRank.team}`);
+      }}
+      class="justify-center text-sm"
+    >
+      <div class="flex items-baseline">
+        <span class="font-bold">{teamRank.rank}</span>
+        <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
+      </div>
+    </Button>
+  {/if}
+
+  <div class="truncate {!teamRank ? 'col-span-2' : ''}">
+    <div class="flex items-end justify-between gap-3">
+      <div class="flex flex-col truncate">
+        <span class="font-bold">{team}</span>
+        {#if anyTeamNames}
+          <span class="truncate text-xs font-light">
+            {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
+          </span>
+        {/if}
+      </div>
+      {#if teamRank}
+        {#if "value" in teamRank}
+          {teamRank.value.toFixed(2) || 0}
+        {:else}
+          <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
+        {/if}
+      {/if}
+    </div>
+    <div class="bg-neutral-800">
+      <div
+        class={teamRank ? bgColor : ""}
+        style="width:{(teamRank?.percentage.toFixed(2) ?? 100) || 0}%;height:6px"
+      ></div>
+    </div>
+  </div>
+{/snippet}

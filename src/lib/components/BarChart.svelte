@@ -86,8 +86,13 @@
     {#key inputNames}
       {#each inputNames as name, i}
         {@const color = inputNames.length > 1 ? colors[i % colors.length] : "var(--color-theme)"}
-        <Anchor route={inputUrl(name, i)} class="flex-col items-start">
-          <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+        <Anchor route={inputUrl(name, i)} class="flex-col items-stretch {rankData.type == 'picklist' ? 'gap-0!' : ''}">
+          <div class="flex items-start justify-between font-light">
+            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+            {#if rankData.type == "picklist"}
+              {rankData.pickList.weights[i].percentage}%
+            {/if}
+          </div>
           <span class="text-nowrap">{name}</span>
         </Anchor>
       {/each}

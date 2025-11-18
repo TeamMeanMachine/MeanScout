@@ -19,6 +19,7 @@
   } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
   import { goto } from "$app/navigation";
+  import { slide } from "svelte/transition";
 
   let {
     pageData,
@@ -36,24 +37,30 @@
 
   const groupedRanks = $derived(
     matchSurveys
-      .flatMap((survey) => {
+      .map((survey) => {
         const fieldsWithDetails = getFieldsWithDetails(
           survey,
           pageData.fieldRecords.filter((f) => f.surveyId == survey.id),
         );
-        return groupRanks(survey, fieldsWithDetails.orderedSingle);
+
+        const surveyGroups = groupRanks(survey, fieldsWithDetails.orderedSingle);
+
+        return {
+          survey: surveyGroups.survey,
+          groups: surveyGroups.groups.filter((group) => {
+            if (group.pickLists?.length) {
+              return false;
+            }
+
+            if (group.expressions?.length) {
+              return !group.expressions.some((e) => e.scope == "survey");
+            }
+
+            return true;
+          }),
+        };
       })
-      .filter((group) => {
-        if (group.pickLists?.length) {
-          return false;
-        }
-
-        if (group.expressions?.length) {
-          return !group.expressions.some((e) => e.scope == "survey");
-        }
-
-        return true;
-      }),
+      .filter((group) => group.groups.length),
   );
 
   const metricViewSchema = z
@@ -229,6 +236,7 @@
 
   function switchMetric(params: Parameters<typeof getMetric>[0]) {
     selecting = false;
+    scrollTo(0, 0);
     const metric = getMetric(params);
     if (metric) {
       if ("expression" in metric) {
@@ -306,28 +314,74 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <Button onclick={() => (selecting = !selecting)} class="text-sm">
-    <ChartColumnBigIcon class="text-theme size-5" />
-    {#if selectedMetric}
-      <span class="grow">
-        {#if "expression" in selectedMetric}
-          {selectedMetric.expression.name}
-        {:else if "field" in selectedMetric}
-          {selectedMetric.field.detailedName}
-        {/if}
-      </span>
-    {:else}
-      <span class="grow">Select</span>
-    {/if}
+  <div class="flex flex-col">
+    <Button onclick={() => (selecting = !selecting)} class="text-sm">
+      <ChartColumnBigIcon class="text-theme size-5" />
+      {#if selectedMetric}
+        <span class="grow">
+          {#if "expression" in selectedMetric}
+            {selectedMetric.expression.name}
+          {:else if "field" in selectedMetric}
+            {selectedMetric.field.detailedName}
+          {/if}
+        </span>
+      {:else}
+        <span class="grow">Select</span>
+      {/if}
 
-    {#if !selecting && selectedMetric}
-      <ChevronDownIcon class="text-theme size-5" />
-    {:else}
-      <ChevronUpIcon class="text-theme size-5" />
-    {/if}
-  </Button>
+      <ChevronDownIcon
+        class="text-theme size-5 transition-[rotate] {selecting || !selectedMetric ? 'rotate-180' : ''}"
+      />
+    </Button>
 
-  {#if !selecting && selectedMetric}
+    {#if selecting || !selectedMetric}
+      <div class="flex flex-col gap-4 border-2 border-t-0 border-neutral-800 p-3 pt-0" transition:slide>
+        {#each groupedRanks as { survey, groups }}
+          <div class="flex flex-col gap-3 first:mt-3">
+            <h2 class="text-sm font-bold">{survey.name}</h2>
+
+            {#each groups as group}
+              <div class="flex flex-col">
+                <span class="text-xs font-light">{group.category}</span>
+
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {#each group.expressions || [] as expression}
+                    {@const selected =
+                      selectedMetric &&
+                      "expression" in selectedMetric &&
+                      selectedMetric.expression.name == expression.name}
+
+                    <Button
+                      onclick={() => (selectedMetric = switchMetric({ survey, expression }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {expression.name}
+                    </Button>
+                  {/each}
+
+                  {#each group.fields || [] as field}
+                    {@const selected =
+                      selectedMetric &&
+                      "field" in selectedMetric &&
+                      selectedMetric.field.valueIndex == field.valueIndex}
+
+                    <Button
+                      onclick={() => (selectedMetric = switchMetric({ survey, field }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {field.detailedName}
+                    </Button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  {#if selectedMetric}
     {@const expressionParam =
       "expression" in selectedMetric && "expression=" + encodeURIComponent(selectedMetric.expression.name)}
     {@const fieldParam = "field" in selectedMetric && "field=" + encodeURIComponent(selectedMetric.field.field.id)}
@@ -468,37 +522,5 @@
       View rank
       <ArrowRightIcon class="text-theme size-5" />
     </Anchor>
-  {:else}
-    {#each groupedRanks as group}
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-col">
-          <h2 class="text-sm">{group.survey.name}</h2>
-          <span class="text-xs font-light">{group.category}</span>
-        </div>
-
-        <div class="flex flex-wrap gap-2 text-sm">
-          {#each group.expressions || [] as expression}
-            <Button
-              onclick={() => {
-                scrollTo(0, 0);
-                selectedMetric = switchMetric({ survey: group.survey, expression });
-              }}
-            >
-              {expression.name}
-            </Button>
-          {/each}
-          {#each group.fields || [] as field}
-            <Button
-              onclick={() => {
-                scrollTo(0, 0);
-                selectedMetric = switchMetric({ survey: group.survey, field });
-              }}
-            >
-              {field.detailedName}
-            </Button>
-          {/each}
-        </div>
-      </div>
-    {/each}
   {/if}
 </div>

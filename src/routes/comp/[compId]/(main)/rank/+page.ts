@@ -3,6 +3,7 @@ import type { PageLoad } from "./$types";
 import type { MatchEntry } from "$lib/entry";
 import { getFieldsWithDetails } from "$lib/field";
 import { getExpressionData, getFieldData, getPickListData } from "$lib/rank";
+import { sortExpressions } from "$lib/expression";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();
@@ -20,6 +21,22 @@ export const load: PageLoad = async (event) => {
   if (surveyRecord.type != "match") {
     error(404, `${surveyRecord.name} (${surveyRecord.id}) is not a match survey`);
   }
+
+  const sortedExpressions = surveyRecord.expressions.toSorted(sortExpressions);
+
+  const usedExpressionNames = [
+    ...surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
+    ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
+  ];
+
+  const expressions = {
+    surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
+    surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
+    surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
+    entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
+    entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
+    entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+  };
 
   const entriesByTeam: Record<string, MatchEntry[]> = {};
   for (const entry of data.entryRecords.filter(
@@ -60,7 +77,15 @@ export const load: PageLoad = async (event) => {
 
     sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, pickList: pickListName }));
 
-    return { title: pickList.name, surveyRecord, entriesByTeam, output };
+    return {
+      title: pickList.name,
+      surveyRecord,
+      expressions,
+      usedExpressionNames,
+      fieldsWithDetails,
+      entriesByTeam,
+      output,
+    };
   }
 
   if (expressionName) {
@@ -82,7 +107,15 @@ export const load: PageLoad = async (event) => {
 
     sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, expression: expressionName }));
 
-    return { title: expression.name, surveyRecord, entriesByTeam, output };
+    return {
+      title: expression.name,
+      surveyRecord,
+      expressions,
+      usedExpressionNames,
+      fieldsWithDetails,
+      entriesByTeam,
+      output,
+    };
   }
 
   if (fieldId) {
@@ -98,7 +131,15 @@ export const load: PageLoad = async (event) => {
 
     sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, field: fieldId }));
 
-    return { title: field.detailedName, surveyRecord, entriesByTeam, output };
+    return {
+      title: field.detailedName,
+      surveyRecord,
+      expressions,
+      usedExpressionNames,
+      fieldsWithDetails,
+      entriesByTeam,
+      output,
+    };
   }
 
   error(404, "No ranking name given");

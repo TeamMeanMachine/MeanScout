@@ -45,46 +45,20 @@ export function groupRanks(survey: MatchSurvey, orderedSingleFields: SingleField
     return "";
   });
 
-  return [
-    {
-      survey,
-      category: "Pick Lists",
-      pickLists: survey.pickLists,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from expressions",
-      expressions: expressions.surveyDerived,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from TBA",
-      expressions: expressions.surveyTba,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from fields",
-      expressions: expressions.surveyPrimitive,
-    },
-    {
-      survey,
-      category: "Entry Expressions from expressions",
-      expressions: expressions.entryDerived,
-    },
-    {
-      survey,
-      category: "Entry Expressions from TBA",
-      expressions: expressions.entryTba,
-    },
-    {
-      survey,
-      category: "Entry Expressions from fields",
-      expressions: expressions.entryPrimitive,
-    },
-    {
-      survey,
-      category: "Fields",
-      fields: orderedSingleFields.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type)),
-    },
-  ].filter((group) => group.pickLists?.length || group.expressions?.length || group.fields?.length);
+  return {
+    survey,
+    groups: [
+      { category: "Pick Lists", pickLists: survey.pickLists },
+      { category: "Aggregate Expressions from expressions", expressions: expressions.surveyDerived },
+      { category: "Aggregate Expressions from TBA", expressions: expressions.surveyTba },
+      { category: "Aggregate Expressions from fields", expressions: expressions.surveyPrimitive },
+      { category: "Entry Expressions from expressions", expressions: expressions.entryDerived },
+      { category: "Entry Expressions from TBA", expressions: expressions.entryTba },
+      { category: "Entry Expressions from fields", expressions: expressions.entryPrimitive },
+      {
+        category: "Fields",
+        fields: orderedSingleFields.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type)),
+      },
+    ].filter((group) => group.pickLists?.length || group.expressions?.length || group.fields?.length),
+  };
 }

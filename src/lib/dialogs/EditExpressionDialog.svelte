@@ -6,7 +6,8 @@
   import type { SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
-  import { PenSquareIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import DeleteExpressionDialog from "./DeleteExpressionDialog.svelte";
 
   let {
     surveyRecord,
@@ -86,8 +87,12 @@
   <Button
     disabled={usedExpressionNames?.includes(expression.name)}
     onclick={() => {
-      ondelete();
-      closeDialog();
+      openDialog(DeleteExpressionDialog, {
+        ondelete() {
+          ondelete();
+          closeDialog();
+        },
+      });
     }}
   >
     <Trash2Icon class="text-theme size-5" />
@@ -172,7 +177,7 @@
       });
     }}
   >
-    <PenSquareIcon class="text-theme" />
+    <SquarePenIcon class="text-theme" />
     Edit Converters
   </Button>
 {:else if method.type == "multiply"}
