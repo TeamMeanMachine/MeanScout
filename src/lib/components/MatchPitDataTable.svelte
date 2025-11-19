@@ -20,7 +20,7 @@
   const blueAlliance = [match.blue1, match.blue2, match.blue3].filter((team) => team);
   const teams = [...redAlliance, ...blueAlliance, ...(match.extraTeams || [])];
 
-  const leftStickColumnName = "left-2";
+  const leftStickColumnName = "left-16";
 
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);

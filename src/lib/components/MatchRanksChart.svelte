@@ -1,17 +1,28 @@
 <script lang="ts">
-  import { getOrdinal, type Match } from "$lib";
-  import { getExpressionData, getPickListData, type TeamRank, type PickList, getFieldData } from "$lib/rank";
+  import { allianceTeamLabels, getOrdinal, sessionStorageStore, type Match } from "$lib";
+  import {
+    getExpressionData,
+    getPickListData,
+    type TeamRank,
+    type PickList,
+    getFieldData,
+    colors,
+    type RankData,
+  } from "$lib/rank";
   import Button from "$lib/components/Button.svelte";
   import { type MatchEntry } from "$lib/entry";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import type { CompPageData } from "$lib/comp";
-  import { ChartBarBigIcon, ChevronDownIcon, ChevronUpIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
   import { z } from "zod";
-  import { goto } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
   import { slide } from "svelte/transition";
+  import { openDialog } from "$lib/dialog";
+  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
+  import { idb } from "$lib/idb";
 
   let {
     pageData,
@@ -20,6 +31,11 @@
     pageData: CompPageData;
     match: Match & { extraTeams?: string[] };
   } = $props();
+
+  const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
+
+  const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
+  const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
 
   const anyTeamNames = $derived(pageData.compRecord.teams.some((t) => t.name));
 
@@ -58,6 +74,30 @@
 
   let selecting = $state(false);
   let selectedRanking = $state(initialRanking());
+
+  const orderedSingleFields = $derived.by(() => {
+    if (!selectedRanking) return [];
+    return getFieldsWithDetails(
+      selectedRanking.rankData.survey,
+      pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.rankData.survey.id),
+    ).orderedSingle;
+  });
+
+  const inputNames = $derived.by(() => {
+    if (!selectedRanking) return [];
+    if (selectedRanking.rankData.type == "picklist") {
+      return selectedRanking.rankData.pickList.weights.map((w) => w.expressionName);
+    } else if (selectedRanking.rankData.type == "expression") {
+      if (selectedRanking.rankData.expression.input.from == "expressions") {
+        return selectedRanking.rankData.expression.input.expressionNames;
+      } else if (selectedRanking.rankData.expression.input.from == "fields") {
+        return selectedRanking.rankData.expression.input.fieldIds
+          .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+          .filter((f) => f !== undefined);
+      }
+    }
+    return [];
+  });
 
   function firstRankingChoice() {
     const survey = matchSurveys[0];
@@ -293,71 +333,281 @@
     {@const objectParam = pickListParam || expressionParam || fieldParam || ""}
     {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${objectParam}`}
 
-    <div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
+    {#if inputNames.length}
+      <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
+        {#key inputNames}
+          {#each inputNames as name, i}
+            {@const color = inputNames.length > 1 ? colors[i % colors.length] : "var(--color-theme)"}
+
+            <Button
+              onclick={() => {
+                if (!selectedRanking) return;
+                if ("pickList" in selectedRanking) {
+                  selectedRanking = switchRanking({
+                    survey: selectedRanking.survey,
+                    expression: selectedRanking.survey.expressions.find((e) => e.name == name)!,
+                  });
+                } else if ("expression" in selectedRanking) {
+                  if (selectedRanking.expression.input.from == "expressions") {
+                    selectedRanking = switchRanking({
+                      survey: selectedRanking.survey,
+                      expression: selectedRanking.survey.expressions.find((e) => e.name == name)!,
+                    });
+                  } else if (selectedRanking.expression.input.from == "fields") {
+                    const fieldId = selectedRanking.expression.input.fieldIds[i];
+                    const fieldWithDetails = getFieldsWithDetails(
+                      selectedRanking.survey,
+                      pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.survey.id),
+                    ).orderedSingle.find((f) => f.field.id == fieldId);
+
+                    if (!fieldWithDetails) {
+                      return;
+                    }
+
+                    selectedRanking = switchRanking({
+                      survey: selectedRanking.survey,
+                      field: fieldWithDetails,
+                    });
+                  }
+                }
+              }}
+              class="flex-col items-stretch {selectedRanking.rankData.type == 'picklist' ? 'gap-0!' : ''}"
+            >
+              <div class="flex items-start justify-between font-light">
+                <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+                {#if selectedRanking.rankData.type == "picklist"}
+                  {selectedRanking.rankData.pickList.weights[i].percentage}%
+                {/if}
+              </div>
+              <span class="text-nowrap">{name}</span>
+            </Button>
+          {/each}
+        {/key}
+      </div>
+    {/if}
+
+    <div class="grid gap-x-2 gap-y-4" style="grid-template-columns:min-content auto">
       {#each redAlliance as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {@render teamRow(team, teamRank, "bg-red")}
+        {#if teamRank}
+          {@render teamRankRow(teamRank, selectedRanking.rankData, "var(--color-red)")}
+        {:else}
+          {@render teamRow(team, "var(--color-red)")}
+        {/if}
       {/each}
 
       {#each blueAlliance as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {@render teamRow(team, teamRank, "bg-blue")}
+        {#if teamRank}
+          {@render teamRankRow(teamRank, selectedRanking.rankData, "var(--color-blue)")}
+        {:else}
+          {@render teamRow(team, "var(--color-blue)")}
+        {/if}
       {/each}
 
       {#each match.extraTeams || [] as team}
         {@const teamRank = selectedRanking.rankData.teams.find((teamRank) => teamRank.team == team)}
-        {@render teamRow(team, teamRank, "bg-neutral-400")}
+        {#if teamRank}
+          {@render teamRankRow(teamRank, selectedRanking.rankData, "var(--color-white)")}
+        {:else}
+          {@render teamRow(team, "var(--color-white)")}
+        {/if}
       {/each}
     </div>
 
     <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
-      <ChartBarBigIcon class="text-theme size-5" />
       View rank
+      <ArrowRightIcon class="text-theme size-5" />
     </Anchor>
   {/if}
 </div>
 
-{#snippet teamRow(team: string, teamRank: TeamRank | undefined, bgColor: string)}
-  {#if teamRank}
-    <Button
-      onclick={() => {
-        if ("expression" in teamRank) {
-          sessionStorage.setItem("metric-view", sessionStorage.getItem("rank-view") || "");
-        }
-        goto(`#/comp/${pageData.compRecord.id}/team/${teamRank.team}`);
-      }}
-      class="justify-center text-sm"
-    >
-      <div class="flex items-baseline">
-        <span class="font-bold">{teamRank.rank}</span>
-        <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
+{#snippet teamRow(team: string, color: string)}
+  <div class="col-span-2 truncate">
+    <div class="font-bold" style="color:{color}">{team}</div>
+    {#if anyTeamNames}
+      <div class="truncate text-xs font-light">
+        {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
       </div>
-    </Button>
-  {/if}
+    {/if}
+    <div class="bg-neutral-800" style="height:6px"></div>
+  </div>
+{/snippet}
 
-  <div class="truncate {!teamRank ? 'col-span-2' : ''}">
-    <div class="flex items-end justify-between gap-3">
-      <div class="flex flex-col truncate">
-        <span class="font-bold">{team}</span>
-        {#if anyTeamNames}
-          <span class="truncate text-xs font-light">
-            {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
-          </span>
-        {/if}
+{#snippet teamRankRow(teamRank: TeamRank, rankData: RankData, color: string)}
+  {@const isHighlighted = $highlightedTeam == teamRank.team}
+  {@const allianceWithIndex = alliancesWithIndexes?.find((a) => a.teams.includes(teamRank.team))}
+  {@const percentageStr = teamRank.percentage.toFixed(2) + "%"}
+
+  <Button
+    onclick={() => ($highlightedTeam = isHighlighted ? "" : teamRank.team)}
+    class="h-[46px] justify-center text-sm"
+  >
+    <div class="flex items-baseline" style="color:{color}">
+      <span class="font-bold" style="color:{color}">{teamRank.rank}</span>
+      <span class="hidden text-xs sm:inline">{getOrdinal(teamRank.rank)}</span>
+    </div>
+  </Button>
+
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div onclick={() => ($highlightedTeam = teamRank.team)} class="min-w-0">
+    <div
+      class={[
+        "border-neutral-700 p-0 transition-[border,padding]",
+        isHighlighted && "border-x-[4px] border-t-[4px] px-1",
+      ]}
+    >
+      <div class="flex items-end justify-between gap-3">
+        <div class="flex flex-col truncate">
+          <div class="font-bold" style="color:{color}">{teamRank.team}</div>
+          {#if teamRank.teamName}
+            <div class="truncate text-xs font-light tracking-tighter">{teamRank.teamName}</div>
+          {/if}
+        </div>
+
+        <div class="flex flex-col text-end">
+          {#if allianceWithIndex}
+            <div class="truncate text-xs font-light tracking-tighter">
+              a{allianceWithIndex.i + 1}
+              {(allianceTeamLabels[allianceWithIndex.teams.indexOf(teamRank.team)] || "Backup").slice(0, 4)}
+            </div>
+          {/if}
+          {#if "value" in teamRank}
+            {teamRank.value.toFixed(2)}
+          {:else}
+            <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
+          {/if}
+        </div>
       </div>
-      {#if teamRank}
-        {#if "value" in teamRank}
-          {teamRank.value.toFixed(2) || 0}
-        {:else}
-          <span>{teamRank?.percentage.toFixed(1) || 0}<span class="text-sm">%</span></span>
-        {/if}
+
+      {#if isHighlighted}
+        <div transition:slide>
+          <div class="col-span-full flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
+            <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
+              View team
+              <ArrowRightIcon class="text-theme size-5" />
+            </Anchor>
+            <Button
+              onclick={() => {
+                openDialog(AddTeamToAllianceDialog, {
+                  team: { number: teamRank.team, name: teamRank.teamName },
+                  compAlliances: pageData.compRecord.alliances || [],
+                  onadd(newAlliances) {
+                    idb.put(
+                      "comps",
+                      $state.snapshot({
+                        ...pageData.compRecord,
+                        alliances: newAlliances,
+                        modified: new Date(),
+                      }),
+                    ).onsuccess = invalidateAll;
+                  },
+                });
+              }}
+            >
+              {#if allianceTeams.includes(teamRank.team)}
+                <UserPenIcon class="text-theme size-5" />
+              {:else}
+                <UserPlusIcon class="text-theme size-5" />
+              {/if}
+              Alliance
+            </Button>
+          </div>
+
+          {#if inputNames.length > 1}
+            <div class="-mx-2 mt-1">
+              <div class="flex text-center text-xs font-light tracking-tighter" style="width:{percentageStr}">
+                {#if "value" in teamRank && rankData.type != "picklist"}
+                  {#each teamRank.inputs as input, i}
+                    {@const inputName = rankData.inputs[i].name}
+                    {@const divWidth = input.value * teamRank.percentage}
+                    {#if divWidth}
+                      <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                        <div class="truncate">{inputName}</div>
+                      </div>
+                    {/if}
+                  {/each}
+                {:else if !("value" in teamRank) && rankData.type == "picklist"}
+                  {#each rankData.pickList.weights as weight, i}
+                    {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
+                    {#if divWidth}
+                      <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                        <div class="truncate">{weight.expressionName}</div>
+                      </div>
+                    {/if}
+                  {/each}
+                {/if}
+              </div>
+            </div>
+          {/if}
+        </div>
       {/if}
     </div>
-    <div class="bg-neutral-800">
-      <div
-        class={teamRank ? bgColor : ""}
-        style="width:{(teamRank?.percentage.toFixed(2) ?? 100) || 0}%;height:6px"
-      ></div>
+
+    <div class={["transition-[background]", isHighlighted ? "bg-neutral-700" : "bg-neutral-800"]}>
+      {#if inputNames.length > 1}
+        <div class="flex" style="width:{percentageStr}">
+          {#if "value" in teamRank && rankData.type != "picklist"}
+            {#each teamRank.inputs as input, i}
+              {@const inputName = rankData.inputs[i].name}
+              {@const color = colors[i % colors.length]}
+              {@const opacity = input.percentage.toFixed(2)}
+              {@const divWidth = input.value * teamRank.percentage}
+
+              {#if divWidth}
+                <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div
+                    class="border-x-2"
+                    style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
+                  ></div>
+                </div>
+              {/if}
+            {/each}
+          {:else if !("value" in teamRank) && rankData.type == "picklist"}
+            {#each rankData.pickList.weights as weight, i}
+              {@const color = colors[i % colors.length]}
+              {@const opacity = ((teamRank.inputs[i] / weight.percentage) * 100).toFixed(2)}
+              {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
+
+              {#if divWidth}
+                <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div
+                    class="border-x-2"
+                    style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
+                  ></div>
+                </div>
+              {/if}
+            {/each}
+          {/if}
+        </div>
+      {:else}
+        <div style="background-color:{color};opacity:{percentageStr};width:{percentageStr};height:6px"></div>
+      {/if}
     </div>
+
+    {#if inputNames.length > 1}
+      <div class="flex text-center text-xs font-light tracking-tighter" style="width:{percentageStr}">
+        {#if "value" in teamRank && rankData.type != "picklist"}
+          {#each teamRank.inputs as input, i}
+            {@const inputName = rankData.inputs[i].name}
+            {@const divWidth = input.value * teamRank.percentage}
+            {#if divWidth}
+              <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                <div>{input.value.toFixed()}</div>
+              </div>
+            {/if}
+          {/each}
+        {:else if !("value" in teamRank) && rankData.type == "picklist"}
+          {#each rankData.pickList.weights as weight, i}
+            {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
+            {#if divWidth}
+              <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed()}%</div>
+              </div>
+            {/if}
+          {/each}
+        {/if}
+      </div>
+    {/if}
   </div>
 {/snippet}

@@ -2,7 +2,7 @@
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { compareMatches, matchUrl, sessionStorageStore, type Match, type MatchIdentifier, type Team } from "$lib";
+  import { compareMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -11,9 +11,7 @@
   import {
     ArrowRightIcon,
     ChartColumnBigIcon,
-    ChartColumnStackedIcon,
     ChevronDownIcon,
-    ChevronUpIcon,
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
@@ -28,8 +26,6 @@
     pageData: CompPageData;
     team: Team;
   } = $props();
-
-  const showInputs = sessionStorageStore<"true" | "">("metric-show-inputs", "true");
 
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
@@ -416,57 +412,50 @@
 
     <div class="flex flex-col gap-1">
       {#if selectedMetric.inputNames?.length}
-        <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
-          <Button
-            onclick={() => ($showInputs = $showInputs ? "" : "true")}
-            disabled={selectedMetric.inputNames.length <= 1}
-            class="py-1 {$showInputs ? 'font-bold' : 'font-light'}"
-          >
-            {#if $showInputs && selectedMetric.inputNames.length > 1}
-              <ChartColumnStackedIcon class="text-theme size-5" />
-            {:else}
-              <ChartColumnBigIcon class="text-theme size-5" />
-            {/if}
-          </Button>
+        <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
+          {#key selectedMetric.inputNames}
+            {#each selectedMetric.inputNames as name, i}
+              {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
+              {@const color = disabled
+                ? "var(--color-neutral-500)"
+                : selectedMetric.inputNames.length > 1
+                  ? colors[i % colors.length]
+                  : "var(--color-theme)"}
 
-          {#each selectedMetric.inputNames as name, i}
-            {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
-            {@const color = disabled ? "var(--color-neutral-500)" : colors[i % colors.length]}
+              <Button
+                onclick={() => {
+                  if (selectedMetric && "expression" in selectedMetric) {
+                    if (selectedMetric.expression.input.from == "expressions") {
+                      selectedMetric = switchMetric({
+                        survey: selectedMetric.survey,
+                        expression: selectedMetric.survey.expressions.find((e) => e.name == name)!,
+                      });
+                    } else if (selectedMetric.expression.input.from == "fields") {
+                      const fieldId = selectedMetric.expression.input.fieldIds[i];
+                      const fieldWithDetails = getFieldsWithDetails(
+                        selectedMetric.survey,
+                        pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
+                      ).orderedSingle.find((f) => f.field.id == fieldId);
 
-            <Button
-              onclick={() => {
-                if (selectedMetric && "expression" in selectedMetric) {
-                  if (selectedMetric.expression.input.from == "expressions") {
-                    selectedMetric = switchMetric({
-                      survey: selectedMetric.survey,
-                      expression: selectedMetric.survey.expressions.find((e) => e.name == name)!,
-                    });
-                  } else if (selectedMetric.expression.input.from == "fields") {
-                    const fieldId = selectedMetric.expression.input.fieldIds[i];
-                    const fieldWithDetails = getFieldsWithDetails(
-                      selectedMetric.survey,
-                      pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
-                    ).orderedSingle.find((f) => f.field.id == fieldId);
+                      if (!fieldWithDetails) {
+                        return;
+                      }
 
-                    if (!fieldWithDetails) {
-                      return;
+                      selectedMetric = switchMetric({
+                        survey: selectedMetric.survey,
+                        field: fieldWithDetails,
+                      });
                     }
-
-                    selectedMetric = switchMetric({
-                      survey: selectedMetric.survey,
-                      field: fieldWithDetails,
-                    });
                   }
-                }
-              }}
-              {disabled}
-            >
-              {#if $showInputs && selectedMetric.inputNames.length > 1}
+                }}
+                {disabled}
+                class="flex-col items-stretch"
+              >
                 <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
-              {/if}
-              {name}
-            </Button>
-          {/each}
+                {name}
+              </Button>
+            {/each}
+          {/key}
         </div>
       {/if}
 
@@ -475,8 +464,16 @@
           {@const color = `rgb(var(--theme-color) / ${(percentage * 100).toFixed(2)}%)`}
 
           <div class="flex shrink-0 grow basis-8 flex-col">
-            <div>{value ?? "_"}</div>
-            {#if $showInputs && inputs && inputs.length > 1}
+            <div
+              title={"expression" in selectedMetric
+                ? selectedMetric.expression.name
+                : "field" in selectedMetric
+                  ? selectedMetric.field.detailedName
+                  : undefined}
+            >
+              {value ?? "_"}
+            </div>
+            {#if inputs && inputs.length > 1}
               {@const totalHeightPixels = percentage * 256}
 
               <div class="flex flex-col" style="height:{totalHeightPixels}px">
@@ -486,6 +483,7 @@
                     {@const heightPercent = (input.value / (value || 0)) * 100}
 
                     <div
+                      title={selectedMetric.inputNames?.[i]}
                       class="flex flex-col justify-center overflow-hidden border-y text-xs text-black"
                       style="background-color:{color};height:{heightPercent}%;border-color:rgba(0,0,0,0.25)"
                     >
