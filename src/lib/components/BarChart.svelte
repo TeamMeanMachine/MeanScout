@@ -5,29 +5,32 @@
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import Button from "./Button.svelte";
-  import { ArrowRightIcon, UserPenIcon, UserPlusIcon, XIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, PenLineIcon, UserPenIcon, UserPlusIcon, XIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { idb } from "$lib/idb";
   import { invalidateAll } from "$app/navigation";
+  import OmitTeamFromPickListDialog from "$lib/dialogs/OmitTeamFromPickListDialog.svelte";
 
   let {
     pageData,
     rankData,
     hideAlliances,
+    hideOmitted,
   }: {
     pageData: CompPageData;
     rankData: RankData;
     hideAlliances: boolean;
+    hideOmitted: boolean;
   } = $props();
 
   const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
 
   const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
 
-  const sortedTeams = $derived(hideAlliances ? rankData.teams.toSorted(sortTeams) : rankData.teams);
+  const sortedTeams = $derived(hideAlliances || hideOmitted ? rankData.teams.toSorted(sortTeams) : rankData.teams);
 
   const flipTeamDuration = 500;
 
@@ -74,10 +77,20 @@
   }
 
   function sortTeams(a: TeamRank, b: TeamRank) {
-    if (!hideAlliances) return 0;
     const aIsAlliance = allianceTeams.includes(a.team);
     const bIsAlliance = allianceTeams.includes(b.team);
-    return Number(aIsAlliance) - Number(bIsAlliance);
+
+    let aIsOmitted = false;
+    let bIsOmitted = false;
+
+    if (rankData.type == "picklist" && rankData.pickList.omittedTeams) {
+      aIsOmitted = a.team in rankData.pickList.omittedTeams;
+      bIsOmitted = b.team in rankData.pickList.omittedTeams;
+    }
+
+    const whetherOmittedSort = Number(aIsOmitted) - Number(bIsOmitted);
+    const whetherAllianceSort = Number(aIsAlliance) - Number(bIsAlliance);
+    return (hideOmitted ? whetherOmittedSort : 0) || (hideAlliances ? whetherAllianceSort : 0) || 0;
   }
 </script>
 
@@ -104,6 +117,14 @@
   {#each sortedTeams as teamRank (teamRank.team)}
     {@const isHighlighted = $highlightedTeam == teamRank.team}
     {@const allianceWithIndex = alliancesWithIndexes?.find((a) => a.teams.includes(teamRank.team))}
+    {@const isOmitted =
+      rankData.type == "picklist" &&
+      rankData.pickList.omittedTeams != undefined &&
+      teamRank.team in rankData.pickList.omittedTeams}
+    {@const omitReason =
+      rankData.type == "picklist" && rankData.pickList.omittedTeams && teamRank.team in rankData.pickList.omittedTeams
+        ? rankData.pickList.omittedTeams[teamRank.team]?.reason
+        : undefined}
 
     <div
       id={teamRank.team}
@@ -114,7 +135,7 @@
         onclick={() => ($highlightedTeam = isHighlighted ? "" : teamRank.team)}
         class="h-[46px] justify-center text-sm"
       >
-        <div class="flex items-baseline">
+        <div class="flex items-baseline {isOmitted ? 'line-through opacity-50' : ''}">
           <span class="font-bold">{teamRank.rank}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
         </div>
@@ -129,14 +150,14 @@
           ]}
         >
           <div class="flex items-end justify-between gap-3">
-            <div class="flex flex-col truncate">
+            <div class="flex flex-col truncate {isOmitted ? 'line-through opacity-50' : ''}">
               <div class="font-bold">{teamRank.team}</div>
               {#if teamRank.teamName}
                 <div class="truncate text-xs font-light tracking-tighter">{teamRank.teamName}</div>
               {/if}
             </div>
 
-            <div class="flex flex-col text-end">
+            <div class="flex flex-col text-end {isOmitted ? 'line-through opacity-50' : ''}">
               {#if allianceWithIndex}
                 <div class="truncate text-xs font-light tracking-tighter">
                   a{allianceWithIndex.i + 1}
@@ -153,37 +174,101 @@
 
           {#if isHighlighted}
             <div transition:slide>
-              <div class="col-span-full flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                 <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
                   View team
                   <ArrowRightIcon class="text-theme size-5" />
                 </Anchor>
-                <Button
-                  onclick={() => {
-                    openDialog(AddTeamToAllianceDialog, {
-                      team: { number: teamRank.team, name: teamRank.teamName },
-                      compAlliances: pageData.compRecord.alliances || [],
-                      onadd(newAlliances) {
-                        idb.put(
-                          "comps",
-                          $state.snapshot({
-                            ...pageData.compRecord,
-                            alliances: newAlliances,
-                            modified: new Date(),
-                          }),
-                        ).onsuccess = invalidateAll;
-                      },
-                    });
-                  }}
-                >
-                  {#if allianceTeams.includes(teamRank.team)}
-                    <UserPenIcon class="text-theme size-5" />
-                  {:else}
-                    <UserPlusIcon class="text-theme size-5" />
+
+                <div class="flex gap-2">
+                  <Button
+                    onclick={() => {
+                      openDialog(AddTeamToAllianceDialog, {
+                        team: { number: teamRank.team, name: teamRank.teamName },
+                        compAlliances: pageData.compRecord.alliances || [],
+                        onadd(newAlliances) {
+                          idb.put(
+                            "comps",
+                            $state.snapshot({
+                              ...pageData.compRecord,
+                              alliances: newAlliances,
+                              modified: new Date(),
+                            }),
+                          ).onsuccess = invalidateAll;
+                        },
+                      });
+                    }}
+                  >
+                    {#if allianceTeams.includes(teamRank.team)}
+                      <UserPenIcon class="text-theme size-5" />
+                    {:else}
+                      <UserPlusIcon class="text-theme size-5" />
+                    {/if}
+                    Alliance
+                  </Button>
+
+                  {#if rankData.type == "picklist"}
+                    <Button
+                      onclick={() => {
+                        openDialog(OmitTeamFromPickListDialog, {
+                          team: { number: teamRank.team, name: teamRank.teamName },
+                          pickListName: rankData.pickList.name,
+                          omitted: isOmitted,
+                          omittedReason: rankData.pickList.omittedTeams?.[teamRank.team]?.reason,
+                          onomit(newReason) {
+                            let omittedTeams = $state.snapshot(rankData.pickList.omittedTeams);
+
+                            const data: { reason?: string | undefined } = {};
+                            if (newReason) data.reason = newReason;
+
+                            if (!omittedTeams) {
+                              omittedTeams = { [teamRank.team]: data };
+                            } else {
+                              omittedTeams[teamRank.team] = data;
+                            }
+
+                            const pickLists = $state.snapshot(rankData.survey.pickLists);
+                            pickLists.find((pl) => pl.name == rankData.pickList.name)!.omittedTeams = omittedTeams;
+
+                            idb.put(
+                              "surveys",
+                              $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
+                            ).onsuccess = invalidateAll;
+                          },
+                          onunomit() {
+                            const omittedTeams = $state.snapshot(rankData.pickList.omittedTeams);
+
+                            if (omittedTeams) {
+                              delete omittedTeams[teamRank.team];
+                            }
+
+                            const pickLists = $state.snapshot(rankData.survey.pickLists);
+                            pickLists.find((pl) => pl.name == rankData.pickList.name)!.omittedTeams = omittedTeams;
+
+                            idb.put(
+                              "surveys",
+                              $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
+                            ).onsuccess = invalidateAll;
+                          },
+                        });
+                      }}
+                    >
+                      <PenLineIcon class="text-theme size-5" />
+                      Omit
+                    </Button>
                   {/if}
-                  Alliance
-                </Button>
+                </div>
               </div>
+
+              {#if isOmitted}
+                <div class="flex justify-end pt-1 text-xs font-light" transition:slide>
+                  {#if omitReason}
+                    Omit reason: {omitReason}
+                  {:else}
+                    Omitted
+                  {/if}
+                </div>
+              {/if}
 
               {#if inputNames.length > 1}
                 <div class="-mx-2 mt-1">

@@ -5,7 +5,7 @@
   import RaceChart from "$lib/components/RaceChart.svelte";
   import { ClipboardCopy, EyeIcon, EyeOffIcon, Share2Icon, SquarePenIcon } from "@lucide/svelte";
   import BarChart from "$lib/components/BarChart.svelte";
-  import { sortExpressions, type Expression } from "$lib/expression";
+  import { type Expression } from "$lib/expression";
   import { openDialog } from "$lib/dialog";
   import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
@@ -16,6 +16,12 @@
 
   const chartType = sessionStorageStore<"bar" | "race">("rank-chart-type", "bar");
   const hideAlliances = sessionStorageStore<"true" | "">("rank-hide-alliances", "true");
+  const hideOmitted = sessionStorageStore<"true" | "">("rank-hide-omitted", "true");
+
+  const showAllianceToggle = $derived(data.compRecord.alliances?.some((a) => a.teams.length));
+  const showOmittedToggle = $derived(
+    data.output.type == "picklist" && Object.keys(data.output.pickList.omittedTeams || {}).length,
+  );
 
   function editRank() {
     if (data.output.type == "picklist") {
@@ -207,26 +213,42 @@
         </Button>
       </div>
 
-      {#if $chartType == "bar" && data.compRecord.alliances?.some((a) => a.teams.length)}
+      {#if $chartType == "bar" && (showAllianceToggle || showOmittedToggle)}
         <div class="flex gap-2 text-sm tracking-tighter">
-          <Button
-            onclick={() => ($hideAlliances = $hideAlliances ? "" : "true")}
-            class={$hideAlliances ? "font-light" : "font-bold"}
-          >
-            {#if $hideAlliances}
-              <EyeOffIcon class="text-theme size-5" />
-            {:else}
-              <EyeIcon class="text-theme size-5" />
-            {/if}
-            Alliances
-          </Button>
+          {#if showAllianceToggle}
+            <Button
+              onclick={() => ($hideAlliances = $hideAlliances ? "" : "true")}
+              class={$hideAlliances ? "font-light" : "font-bold"}
+            >
+              {#if $hideAlliances}
+                <EyeOffIcon class="text-theme size-5" />
+              {:else}
+                <EyeIcon class="text-theme size-5" />
+              {/if}
+              Alliances
+            </Button>
+          {/if}
+
+          {#if showOmittedToggle}
+            <Button
+              onclick={() => ($hideOmitted = $hideOmitted ? "" : "true")}
+              class={$hideOmitted ? "font-light" : "font-bold"}
+            >
+              {#if $hideOmitted}
+                <EyeOffIcon class="text-theme size-5" />
+              {:else}
+                <EyeIcon class="text-theme size-5" />
+              {/if}
+              Omitted
+            </Button>
+          {/if}
         </div>
       {/if}
     </div>
   </div>
 
   {#if $chartType == "bar"}
-    <BarChart pageData={data} rankData={data.output} hideAlliances={!!$hideAlliances} />
+    <BarChart pageData={data} rankData={data.output} hideAlliances={!!$hideAlliances} hideOmitted={!!$hideOmitted} />
   {:else if $chartType == "race"}
     <RaceChart
       pageData={data}

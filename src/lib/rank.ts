@@ -11,6 +11,7 @@ const weightSchema = z.object({ expressionName: z.string(), percentage: z.number
 export const pickListSchema = z.object({
   name: z.string(),
   weights: z.array(weightSchema),
+  omittedTeams: z.record(z.string(), z.object({ reason: z.string().optional() })).optional(),
 });
 export type PickList = z.infer<typeof pickListSchema>;
 
