@@ -10,18 +10,25 @@
   import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
   import { idb } from "$lib/idb";
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
+  import { generateNJitteredKeysBetween } from "fractional-indexing-jittered";
 
   let { data }: PageProps = $props();
 
   const chartType = sessionStorageStore<"bar" | "race">("rank-chart-type", "bar");
   const hideAlliances = sessionStorageStore<"true" | "">("rank-hide-alliances", "true");
   const hideOmitted = sessionStorageStore<"true" | "">("rank-hide-omitted", "true");
+  const useCustomRanks = sessionStorageStore<"" | "true">("rank-show-custom", "");
 
   const showAllianceToggle = $derived(data.compRecord.alliances?.some((a) => a.teams.length));
   const showOmittedToggle = $derived(
     data.output.type == "picklist" && Object.keys(data.output.pickList.omittedTeams || {}).length,
   );
+  const showCustomRanksToggle = $derived(data.output.type == "picklist");
+
+  $effect(() => {
+    if ($useCustomRanks) setupCustom();
+  });
 
   function editRank() {
     if (data.output.type == "picklist") {
@@ -172,6 +179,37 @@
       ),
     };
   }
+
+  function setupCustom() {
+    if (data.output.type != "picklist") {
+      return;
+    }
+
+    const pickList = $state.snapshot(data.output.pickList);
+
+    if (Object.keys(pickList.customRanks || {}).length == data.output.teams.length) {
+      return;
+    }
+
+    if (!pickList.customRanks) {
+      pickList.customRanks = {};
+    }
+
+    // Really should prevent existing custom ranks from being erased, but this will do for now
+    const indexes = generateNJitteredKeysBetween(null, null, data.output.teams.length);
+
+    data.output.teams.forEach((teamRank, i) => {
+      pickList.customRanks![teamRank.team] = indexes[i];
+    });
+
+    const pickLists = $state.snapshot(data.output.survey.pickLists);
+    pickLists.find((pl) => pl.name == pickList.name)!.customRanks = pickList.customRanks;
+    idb.put("surveys", {
+      ...data.output.survey,
+      pickLists,
+      modified: new Date(),
+    }).onsuccess = invalidateAll;
+  }
 </script>
 
 <div class="@container flex flex-col gap-6">
@@ -215,6 +253,20 @@
 
       {#if $chartType == "bar" && (showAllianceToggle || showOmittedToggle)}
         <div class="flex gap-2 text-sm tracking-tighter">
+          {#if showCustomRanksToggle}
+            <Button
+              onclick={() => ($useCustomRanks = $useCustomRanks ? "" : "true")}
+              class={$useCustomRanks ? "font-bold" : "font-light"}
+            >
+              {#if $useCustomRanks}
+                <EyeIcon class="text-theme size-5" />
+              {:else}
+                <EyeOffIcon class="text-theme size-5" />
+              {/if}
+              Custom
+            </Button>
+          {/if}
+
           {#if showAllianceToggle}
             <Button
               onclick={() => ($hideAlliances = $hideAlliances ? "" : "true")}
@@ -248,7 +300,13 @@
   </div>
 
   {#if $chartType == "bar"}
-    <BarChart pageData={data} rankData={data.output} hideAlliances={!!$hideAlliances} hideOmitted={!!$hideOmitted} />
+    <BarChart
+      pageData={data}
+      rankData={data.output}
+      hideAlliances={!!$hideAlliances}
+      hideOmitted={!!$hideOmitted && data.output.type == "picklist"}
+      useCustomRanks={!!$useCustomRanks && data.output.type == "picklist"}
+    />
   {:else if $chartType == "race"}
     <RaceChart
       pageData={data}

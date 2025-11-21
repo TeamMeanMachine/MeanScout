@@ -12,6 +12,7 @@ export const pickListSchema = z.object({
   name: z.string(),
   weights: z.array(weightSchema),
   omittedTeams: z.record(z.string(), z.object({ reason: z.string().optional() })).optional(),
+  customRanks: z.record(z.string(), z.string()).optional(),
 });
 export type PickList = z.infer<typeof pickListSchema>;
 

@@ -5,7 +5,19 @@
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
   import Button from "./Button.svelte";
-  import { ArrowRightIcon, PenLineIcon, UserPenIcon, UserPlusIcon, XIcon } from "@lucide/svelte";
+  import {
+    ArrowRightIcon,
+    CornerDownRightIcon,
+    CornerUpRightIcon,
+    EraserIcon,
+    MoveDownIcon,
+    MoveUpIcon,
+    MoveVerticalIcon,
+    PenLineIcon,
+    UserPenIcon,
+    UserPlusIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import { slide } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { openDialog } from "$lib/dialog";
@@ -13,24 +25,47 @@
   import { idb } from "$lib/idb";
   import { invalidateAll } from "$app/navigation";
   import OmitTeamFromPickListDialog from "$lib/dialogs/OmitTeamFromPickListDialog.svelte";
+  import { IndexGenerator } from "fractional-indexing-jittered";
+  import { untrack } from "svelte";
 
   let {
     pageData,
     rankData,
     hideAlliances,
     hideOmitted,
+    useCustomRanks,
   }: {
     pageData: CompPageData;
     rankData: RankData;
     hideAlliances: boolean;
     hideOmitted: boolean;
+    useCustomRanks: boolean;
   } = $props();
 
-  const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
+  const indexGen = new IndexGenerator([]);
 
+  const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
   const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
 
-  const sortedTeams = $derived(hideAlliances || hideOmitted ? rankData.teams.toSorted(sortTeams) : rankData.teams);
+  const sortedTeams = $derived(
+    hideAlliances || hideOmitted || useCustomRanks ? rankData.teams.toSorted(sortTeams) : rankData.teams,
+  );
+
+  const reorderableTeams = $derived(
+    useCustomRanks
+      ? sortedTeams.filter((t) => {
+          if (hideAlliances && allianceTeams.includes(t.team)) {
+            return false;
+          }
+
+          if (hideOmitted && rankData.type == "picklist" && t.team in (rankData.pickList.omittedTeams || {})) {
+            return false;
+          }
+
+          return true;
+        })
+      : rankData.teams,
+  );
 
   const flipTeamDuration = 500;
 
@@ -60,6 +95,25 @@
 
   const highlightedTeamRank = $derived(rankData.teams.find((t) => t.team == $highlightedTeam)?.rank);
 
+  let movingTeam = $state<string | undefined>();
+  const movingIndex = $derived(
+    rankData.type == "picklist" && rankData.pickList.customRanks && movingTeam
+      ? rankData.pickList.customRanks[movingTeam]
+      : undefined,
+  );
+
+  $effect(() => {
+    indexGen.updateList(rankData.type == "picklist" ? Object.values(rankData.pickList.customRanks || {}) : []);
+  });
+
+  $effect(() => {
+    if (!useCustomRanks) {
+      untrack(() => {
+        movingTeam = undefined;
+      });
+    }
+  });
+
   function inputUrl(name: string, i: number) {
     const path = `comp/${pageData.compRecord.id}/rank?surveyId=${encodeURIComponent(rankData.survey.id)}`;
 
@@ -88,9 +142,24 @@
       bIsOmitted = b.team in rankData.pickList.omittedTeams;
     }
 
+    let aIndex = "";
+    let bIndex = "";
+
+    if (rankData.type == "picklist" && rankData.pickList.customRanks) {
+      aIndex = rankData.pickList.customRanks[a.team];
+      bIndex = rankData.pickList.customRanks[b.team];
+    }
+
     const whetherOmittedSort = Number(aIsOmitted) - Number(bIsOmitted);
     const whetherAllianceSort = Number(aIsAlliance) - Number(bIsAlliance);
-    return (hideOmitted ? whetherOmittedSort : 0) || (hideAlliances ? whetherAllianceSort : 0) || 0;
+    const whetherIndexSort = aIndex < bIndex ? -1 : aIndex > bIndex ? 1 : 0;
+
+    return (
+      (hideOmitted ? whetherOmittedSort : 0) ||
+      (hideAlliances ? whetherAllianceSort : 0) ||
+      (useCustomRanks ? whetherIndexSort : 0) ||
+      0
+    );
   }
 </script>
 
@@ -116,7 +185,15 @@
 <div class="grid gap-x-2 gap-y-4" style="grid-template-columns:min-content auto">
   {#each sortedTeams as teamRank (teamRank.team)}
     {@const isHighlighted = $highlightedTeam == teamRank.team}
+
+    {@const teamIndex =
+      rankData.type == "picklist" && rankData.pickList.customRanks
+        ? rankData.pickList.customRanks[teamRank.team]
+        : undefined}
+
     {@const allianceWithIndex = alliancesWithIndexes?.find((a) => a.teams.includes(teamRank.team))}
+    {@const hiddenAlliance = !!allianceWithIndex && hideAlliances}
+
     {@const isOmitted =
       rankData.type == "picklist" &&
       rankData.pickList.omittedTeams != undefined &&
@@ -131,44 +208,118 @@
       animate:flip={{ duration: flipTeamDuration, delay: 0 }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Button
-        onclick={() => ($highlightedTeam = isHighlighted ? "" : teamRank.team)}
-        class="h-[46px] justify-center text-sm"
-      >
-        <div class="flex items-baseline {isOmitted ? 'line-through opacity-50' : ''}">
-          <span class="font-bold">{teamRank.rank}</span>
-          <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
-        </div>
-      </Button>
+      <div class="flex flex-col">
+        <Button
+          onclick={() => {
+            if (movingTeam && movingTeam != teamRank.team && rankData.type == "picklist") {
+              if (!teamIndex || !movingIndex) {
+                return;
+              }
+
+              let customRanks: Record<string, string> = $state.snapshot(rankData.pickList.customRanks || {});
+
+              if (teamIndex < movingIndex) {
+                customRanks[movingTeam] = indexGen.keyBefore(teamIndex);
+              } else if (teamIndex > movingIndex) {
+                customRanks[movingTeam] = indexGen.keyAfter(teamIndex);
+              } else {
+                return;
+              }
+
+              indexGen.updateList(Object.values(customRanks));
+
+              const pickLists = $state.snapshot(rankData.survey.pickLists);
+              pickLists.find((pl) => pl.name == rankData.pickList.name)!.customRanks = customRanks;
+              idb.put("surveys", { ...rankData.survey, pickLists, modified: new Date() }).onsuccess = invalidateAll;
+
+              movingTeam = undefined;
+            } else if (isHighlighted) {
+              $highlightedTeam = "";
+              movingTeam = undefined;
+            } else {
+              $highlightedTeam = teamRank.team;
+            }
+          }}
+          class="relative h-[46px] w-10 justify-center text-sm sm:w-12"
+        >
+          {#if teamIndex && movingIndex && teamIndex < movingIndex}
+            <CornerUpRightIcon class="text-theme" />
+          {:else if teamIndex && movingIndex && teamIndex > movingIndex}
+            <CornerDownRightIcon class="text-theme" />
+          {:else}
+            <div
+              class={["flex items-baseline", hiddenAlliance && "opacity-75", isOmitted && "line-through opacity-50"]}
+            >
+              <span class="font-bold">{teamRank.rank}</span>
+              <span class="hidden text-xs font-light sm:inline">{getOrdinal(teamRank.rank)}</span>
+            </div>
+            {#if useCustomRanks}
+              <span class="absolute top-0 right-0 text-xs font-light">*</span>
+            {/if}
+          {/if}
+        </Button>
+
+        {#if rankData.type == "picklist" && rankData.pickList.customRanks && useCustomRanks && isHighlighted && (!hideOmitted || (hideOmitted && !isOmitted)) && (!hideAlliances || (hideAlliances && !allianceWithIndex))}
+          {@const arrIndex = reorderableTeams.findIndex((t) => t.team == teamRank.team)}
+
+          <div class="mt-2 flex flex-col gap-2" transition:slide>
+            <Button
+              onclick={() => {
+                if (movingTeam == teamRank.team) {
+                  movingTeam = undefined;
+                } else {
+                  movingTeam = teamRank.team;
+                }
+              }}
+              class="h-[46px] shrink-0 justify-center"
+            >
+              {#if !movingTeam}
+                {#if arrIndex == 0}
+                  <MoveDownIcon class="text-theme" />
+                {:else if arrIndex == reorderableTeams.length - 1}
+                  <MoveUpIcon class="text-theme" />
+                {:else}
+                  <MoveVerticalIcon class="text-theme" />
+                {/if}
+              {:else if movingTeam == teamRank.team}
+                <XIcon class="text-theme" />
+              {:else}
+                <MoveVerticalIcon class="text-theme" />
+              {/if}
+            </Button>
+          </div>
+        {/if}
+      </div>
 
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <div onclick={() => ($highlightedTeam = teamRank.team)} class="min-w-0">
         <div
-          class={[
-            "border-neutral-700 p-0 transition-[border,padding]",
-            isHighlighted && "border-x-[4px] border-t-[4px] px-1",
-          ]}
+          class={["border-neutral-700 p-0 transition-[border,padding]", isHighlighted && "border-x-4 border-t-4 px-1"]}
         >
           <div class="flex items-end justify-between gap-3">
-            <div class="flex flex-col truncate {isOmitted ? 'line-through opacity-50' : ''}">
+            <div
+              class={["flex flex-col truncate", hiddenAlliance && "opacity-75", isOmitted && "line-through opacity-50"]}
+            >
               <div class="font-bold">{teamRank.team}</div>
               {#if teamRank.teamName}
                 <div class="truncate text-xs font-light tracking-tighter">{teamRank.teamName}</div>
               {/if}
             </div>
 
-            <div class="flex flex-col text-end {isOmitted ? 'line-through opacity-50' : ''}">
+            <div class={["flex flex-col text-end", isOmitted && "line-through opacity-50"]}>
               {#if allianceWithIndex}
-                <div class="truncate text-xs font-light tracking-tighter">
+                <div class={["truncate text-xs tracking-tighter", hiddenAlliance ? "font-bold" : "font-light"]}>
                   a{allianceWithIndex.i + 1}
                   {(allianceTeamLabels[allianceWithIndex.teams.indexOf(teamRank.team)] || "Backup").slice(0, 4)}
                 </div>
               {/if}
-              {#if "value" in teamRank}
-                {teamRank.value.toFixed(2)}
-              {:else}
-                <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
-              {/if}
+              <div class={[hiddenAlliance && "opacity-75"]}>
+                {#if "value" in teamRank}
+                  {teamRank.value.toFixed(2)}
+                {:else}
+                  <span>{teamRank.percentage.toFixed(1)}<span class="text-xs font-light">%</span></span>
+                {/if}
+              </div>
             </div>
           </div>
 
@@ -176,7 +327,7 @@
             <div transition:slide>
               <div class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                 <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
-                  View team
+                  View
                   <ArrowRightIcon class="text-theme size-5" />
                 </Anchor>
 
@@ -204,7 +355,6 @@
                     {:else}
                       <UserPlusIcon class="text-theme size-5" />
                     {/if}
-                    Alliance
                   </Button>
 
                   {#if rankData.type == "picklist"}
@@ -253,8 +403,7 @@
                         });
                       }}
                     >
-                      <PenLineIcon class="text-theme size-5" />
-                      Omit
+                      <EraserIcon class="text-theme size-5" />
                     </Button>
                   {/if}
                 </div>
