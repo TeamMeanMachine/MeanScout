@@ -13,7 +13,6 @@
     MoveDownIcon,
     MoveUpIcon,
     MoveVerticalIcon,
-    PenLineIcon,
     UserPenIcon,
     UserPlusIcon,
     XIcon,
@@ -203,6 +202,8 @@
         ? rankData.pickList.omittedTeams[teamRank.team]?.reason
         : undefined}
 
+    {@const isReorderable = reorderableTeams.some((t) => t.team == teamRank.team)}
+
     <div
       id={teamRank.team}
       animate:flip={{ duration: flipTeamDuration, delay: 0 }}
@@ -211,7 +212,7 @@
       <div class="flex flex-col">
         <Button
           onclick={() => {
-            if (movingTeam && movingTeam != teamRank.team && rankData.type == "picklist") {
+            if (isReorderable && movingTeam && movingTeam != teamRank.team && rankData.type == "picklist") {
               if (!teamIndex || !movingIndex) {
                 return;
               }
@@ -242,9 +243,9 @@
           }}
           class="relative h-[46px] w-10 justify-center text-sm sm:w-12"
         >
-          {#if teamIndex && movingIndex && teamIndex < movingIndex}
+          {#if isReorderable && teamIndex && movingIndex && teamIndex < movingIndex}
             <CornerUpRightIcon class="text-theme" />
-          {:else if teamIndex && movingIndex && teamIndex > movingIndex}
+          {:else if isReorderable && teamIndex && movingIndex && teamIndex > movingIndex}
             <CornerDownRightIcon class="text-theme" />
           {:else}
             <div
@@ -259,7 +260,7 @@
           {/if}
         </Button>
 
-        {#if rankData.type == "picklist" && rankData.pickList.customRanks && useCustomRanks && isHighlighted && (!hideOmitted || (hideOmitted && !isOmitted)) && (!hideAlliances || (hideAlliances && !allianceWithIndex))}
+        {#if rankData.type == "picklist" && rankData.pickList.customRanks && useCustomRanks && isHighlighted && isReorderable}
           {@const arrIndex = reorderableTeams.findIndex((t) => t.team == teamRank.team)}
 
           <div class="mt-2 flex flex-col gap-2" transition:slide>
