@@ -88,8 +88,7 @@
 
   function filterEntries(entry: Entry): entry is MatchEntry {
     if (entry.type != "match" || entry.surveyId != surveyRecord.id) return false;
-    const entryMatchIdentifiers = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
-    return compareMatches(entryMatchIdentifiers, match) == 0;
+    return compareMatches(entry, match) == 0;
   }
 </script>
 

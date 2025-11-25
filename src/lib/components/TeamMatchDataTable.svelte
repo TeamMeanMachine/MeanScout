@@ -79,7 +79,7 @@
   const entriesPerMatch = allMatches.map((match) => ({
     match,
     entries: entries
-      .filter((e) => compareMatches({ number: e.match, level: e.matchLevel, set: e.matchSet }, match) == 0)
+      .filter((e) => compareMatches(e, match) == 0)
       .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
   }));
 

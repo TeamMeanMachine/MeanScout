@@ -413,9 +413,7 @@
       if (
         entry.scout &&
         pageData.compRecord.matches.some(
-          (m) =>
-            compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0 &&
-            m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
+          (m) => compareMatches(m, entry) == 0 && m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
         )
       ) {
         prefills.scout = entry.scout;

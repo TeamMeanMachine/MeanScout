@@ -58,17 +58,23 @@
   let interval = $state<NodeJS.Timeout>();
 
   let matchTeams = $derived.by(() => {
-    const possibleMatch = pageData.compRecord.matches.find((m) => compareMatches(m, { number: match }));
+    const teams = pageData.entryRecords
+      .filter((e) => e.type == "match" && compareMatches(match, e) == 0)
+      .map((e) => e.team);
+
+    const possibleMatch = pageData.compRecord.matches.find((m) => compareMatches(m, match) == 0);
     if (possibleMatch) {
-      return [
+      teams.push(
         possibleMatch.red1,
         possibleMatch.red2,
         possibleMatch.red3,
         possibleMatch.blue1,
         possibleMatch.blue2,
         possibleMatch.blue3,
-      ];
+      );
     }
+
+    return new Set(teams);
   });
 
   $effect(() => {
@@ -87,17 +93,7 @@
     const subsetEntriesByTeam: Record<string, MatchEntry[]> = {};
 
     for (const team in entriesByTeam) {
-      subsetEntriesByTeam[team] = entriesByTeam[team].filter(
-        (entry) =>
-          compareMatches(
-            {
-              number: entry.match,
-              set: entry.matchSet,
-              level: entry.matchLevel,
-            },
-            { number: toMatch },
-          ) <= 0,
-      );
+      subsetEntriesByTeam[team] = entriesByTeam[team].filter((entry) => compareMatches(entry, toMatch) <= 0);
     }
 
     let newRankData =
@@ -285,9 +281,9 @@
           ]}
         >
           <div class="flex flex-col truncate">
-            <span class="font-bold" class:underline={matchTeams?.includes(teamRank.team)}>{teamRank.team}</span>
+            <span class="font-bold" class:underline={matchTeams.has(teamRank.team)}>{teamRank.team}</span>
             {#if teamRank.teamName}
-              <span class={["truncate text-xs", matchTeams?.includes(teamRank.team) ? "font-bold" : "font-light"]}>
+              <span class={["truncate text-xs", matchTeams.has(teamRank.team) ? "font-bold" : "font-light"]}>
                 {teamRank.teamName}
               </span>
             {/if}

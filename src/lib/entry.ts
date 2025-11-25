@@ -57,10 +57,7 @@ export function getMatchEntriesByTeam(entries: MatchEntry[]) {
 
 function compareEntryMatch(a: Entry, b: Entry) {
   if (a.type == "match" && b.type == "match") {
-    return compareMatches(
-      { number: b.match, set: b.matchSet, level: b.matchLevel },
-      { number: a.match, set: a.matchSet, level: a.matchLevel },
-    );
+    return compareMatches(b, a);
   }
 
   if (a.type == "match" && b.type == "pit") {
@@ -85,11 +82,8 @@ function getComparisons(a: Entry, b: Entry) {
 function compareMatchTeams(a: Entry, b: Entry, matches: Match[]) {
   if (a.type != "match" || b.type != "match") return 0;
 
-  const aMatchIdentifier: MatchIdentifier = { number: a.match, set: a.matchSet, level: a.matchLevel };
-  const bMatchIdentifier: MatchIdentifier = { number: b.match, set: b.matchSet, level: b.matchLevel };
-
-  if (compareMatches(aMatchIdentifier, bMatchIdentifier) == 0) {
-    const match = matches.find((m) => compareMatches(m, aMatchIdentifier) == 0);
+  if (compareMatches(a, b) == 0) {
+    const match = matches.find((m) => compareMatches(m, a) == 0);
     if (match) {
       const targets = [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3];
       const targetA = targets.findIndex((t) => t == a.team);
@@ -192,11 +186,7 @@ export function groupEntries(
       groups: matches
         .toSorted((a, b) => compareMatches(b, a))
         .map((match) => {
-          const entries = sortedEntries.filter(
-            (e) =>
-              e.type == "match" &&
-              compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
-          );
+          const entries = sortedEntries.filter((e) => e.type == "match" && compareMatches(match, e) == 0);
           if (entries.length) {
             return { match, entries };
           }
@@ -239,9 +229,7 @@ export function groupEntries(
 
             if (e.type != "match") return;
 
-            const match = comp.matches.find(
-              (m) => compareMatches(m, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
-            );
+            const match = comp.matches.find((m) => compareMatches(m, e) == 0);
             if (!match) return;
 
             switch (target) {

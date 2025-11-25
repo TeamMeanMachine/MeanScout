@@ -207,13 +207,7 @@
 
   function sortEntries(a: Entry, b: Entry) {
     const teamCompare = a.team.localeCompare(b.team, "en", { numeric: true });
-    const matchCompare =
-      a.type == "match" && b.type == "match"
-        ? compareMatches(
-            { number: b.match, set: b.matchSet, level: b.matchLevel },
-            { number: a.match, set: a.matchSet, level: a.matchLevel },
-          )
-        : 0;
+    const matchCompare = a.type == "match" && b.type == "match" ? compareMatches(b, a) : 0;
     const scoutCompare = a.scout?.localeCompare(b.scout || "") || 0;
     return matchCompare || teamCompare || scoutCompare;
   }
