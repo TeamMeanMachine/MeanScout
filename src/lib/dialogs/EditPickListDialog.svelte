@@ -3,15 +3,21 @@
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { Expression } from "$lib/expression";
-  import { SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquareCheckBigIcon, SquareIcon, Trash2Icon, Undo2Icon } from "@lucide/svelte";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
+  import ResetPickListDialog from "./ResetPickListDialog.svelte";
+  import type { MatchSurvey } from "$lib/survey";
 
   let {
+    surveyRecord,
     expressions,
     pickList,
+    index,
     onupdate,
+    onreset,
     ondelete,
   }: {
+    surveyRecord: MatchSurvey;
     expressions: {
       entryDerived: Expression[];
       entryTba: Expression[];
@@ -21,15 +27,30 @@
       surveyPrimitive: Expression[];
     };
     pickList: PickList;
-    onupdate: (pickList: PickList) => void;
-    ondelete: () => void;
+    index: number;
+    onupdate(pickList: PickList): void;
+    onreset(): void;
+    ondelete(): void;
   } = $props();
 
   let changes = $state(structuredClone($state.snapshot(pickList)));
   let totalWeights = $derived(changes.weights.reduce((total, weight) => total + Math.abs(weight.percentage), 0));
+  let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
+      changes.name = changes.name.trim();
+
+      if (!changes.name) {
+        error = "name can't be empty!";
+        return;
+      }
+
+      if (surveyRecord.pickLists.find((pl, i) => pl.name == changes.name && i != index)) {
+        error = "name must be unique!";
+        return;
+      }
+
       changes.weights = changes.weights.filter((weight) => weight.percentage);
       onupdate(changes);
       closeDialog();
@@ -40,18 +61,35 @@
 <div class="flex flex-wrap items-center justify-between gap-2">
   <span class="text-sm">Edit pick list</span>
 
-  <Button
-    onclick={() => {
-      openDialog(DeletePickListDialog, {
-        ondelete() {
-          ondelete();
-          closeDialog();
-        },
-      });
-    }}
-  >
-    <Trash2Icon class="text-theme size-5" />
-  </Button>
+  <div class="flex gap-2">
+    {#if Object.keys(pickList.customRanks || {}).length || Object.keys(pickList.omittedTeams || {}).length}
+      <Button
+        onclick={() => {
+          openDialog(ResetPickListDialog, {
+            onreset() {
+              onreset();
+              closeDialog();
+            },
+          });
+        }}
+      >
+        <Undo2Icon class="text-theme size-5" />
+      </Button>
+    {/if}
+
+    <Button
+      onclick={() => {
+        openDialog(DeletePickListDialog, {
+          ondelete() {
+            ondelete();
+            closeDialog();
+          },
+        });
+      }}
+    >
+      <Trash2Icon class="text-theme size-5" />
+    </Button>
+  </div>
 </div>
 
 <label class="flex flex-col">
@@ -150,3 +188,7 @@
 </div>
 
 <span>Total weights: {totalWeights}%</span>
+
+{#if error}
+  <span>Error: {error}</span>
+{/if}

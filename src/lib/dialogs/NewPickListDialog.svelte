@@ -4,11 +4,14 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Expression } from "$lib/expression";
   import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import type { MatchSurvey } from "$lib/survey";
 
   let {
+    surveyRecord,
     expressions,
     oncreate,
   }: {
+    surveyRecord: MatchSurvey;
     expressions: {
       entryDerived: Expression[];
       entryTba: Expression[];
@@ -22,9 +25,22 @@
 
   let pickList = $state<PickList>({ name: "", weights: [] });
   let totalWeights = $derived(pickList.weights.reduce((total, weight) => total + Math.abs(weight.percentage), 0));
+  let error = $state("");
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
+      pickList.name = pickList.name.trim();
+
+      if (!pickList.name) {
+        error = "name can't be empty!";
+        return;
+      }
+
+      if (surveyRecord.pickLists.find((pl) => pl.name == pickList.name)) {
+        error = "name must be unique!";
+        return;
+      }
+
       pickList.weights = pickList.weights.filter((weight) => weight.percentage);
       oncreate(pickList);
       closeDialog();
@@ -129,3 +145,7 @@
 </div>
 
 <span>Total weights: {totalWeights}%</span>
+
+{#if error}
+  <span>Error: {error}</span>
+{/if}

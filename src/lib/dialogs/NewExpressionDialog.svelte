@@ -6,7 +6,7 @@
   import { type SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
-  import { PenSquareIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { SquarePenIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -172,7 +172,7 @@
       });
     }}
   >
-    <PenSquareIcon class="text-theme" />
+    <SquarePenIcon class="text-theme" />
     Edit Converters
   </Button>
 {:else if method.type == "multiply"}

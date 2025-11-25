@@ -36,8 +36,10 @@
       const index = data.surveyRecord.pickLists.findIndex((pl) => pl.name == pickList.name);
 
       openDialog(EditPickListDialog, {
+        surveyRecord: data.surveyRecord,
         expressions: data.expressions,
         pickList,
+        index,
         onupdate(pickList) {
           const pickLists = $state.snapshot(data.surveyRecord.pickLists);
           pickLists[index] = pickList;
@@ -52,6 +54,19 @@
             const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(data.surveyRecord.id)}`;
             goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { replaceState: true, invalidateAll: true });
           };
+        },
+        onreset() {
+          const pickLists = $state.snapshot(data.surveyRecord.pickLists);
+          delete pickLists[index].customRanks;
+          delete pickLists[index].omittedTeams;
+          idb.put(
+            "surveys",
+            $state.snapshot({
+              ...data.surveyRecord,
+              pickLists,
+              modified: new Date(),
+            }),
+          ).onsuccess = invalidateAll;
         },
         ondelete() {
           idb.put(

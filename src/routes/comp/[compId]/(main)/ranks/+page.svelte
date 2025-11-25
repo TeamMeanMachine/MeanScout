@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
   import Anchor from "$lib/components/Anchor.svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import { PlusIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
@@ -265,6 +265,7 @@
                 <Button
                   onclick={() => {
                     openDialog(NewPickListDialog, {
+                      surveyRecord: survey,
                       expressions: groupedExpressions,
                       oncreate(pickList) {
                         idb.put(

@@ -105,10 +105,18 @@
             <Button
               onclick={() => {
                 openDialog(EditPickListDialog, {
+                  surveyRecord,
                   expressions,
                   pickList,
+                  index,
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
+                    surveyRecord.modified = new Date();
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+                  },
+                  onreset() {
+                    delete surveyRecord.pickLists[index].customRanks;
+                    delete surveyRecord.pickLists[index].omittedTeams;
                     surveyRecord.modified = new Date();
                     idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
                   },
@@ -270,6 +278,7 @@
             <Button
               onclick={() => {
                 openDialog(NewPickListDialog, {
+                  surveyRecord: data.surveyRecord,
                   expressions,
                   oncreate(pickList) {
                     surveyRecord.pickLists.push(pickList);
