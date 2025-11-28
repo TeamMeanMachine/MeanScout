@@ -174,22 +174,10 @@
 
   function getExpressionsAvailableTo(expression: Expression) {
     return {
-      entryDerived: data.expressions.entryDerived.filter(
+      entry: data.expressions.entry.filter(
         (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
       ),
-      entryTba: data.expressions.entryTba.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
-      entryPrimitive: data.expressions.entryPrimitive.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
-      surveyDerived: data.expressions.surveyDerived.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
-      surveyTba: data.expressions.surveyTba.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
-      surveyPrimitive: data.expressions.surveyPrimitive.filter(
+      survey: data.expressions.survey.filter(
         (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
       ),
     };

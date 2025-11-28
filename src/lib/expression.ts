@@ -10,6 +10,12 @@ const tbaMetricInputSchema = z.object({ from: z.literal("tba"), metrics: z.array
 const expressionInputSchema = z.object({ from: z.literal("expressions"), expressionNames: z.array(z.string()) });
 const inputSchema = z.discriminatedUnion("from", [fieldInputSchema, tbaMetricInputSchema, expressionInputSchema]);
 
+const inputsSchema = z.discriminatedUnion("from", [
+  z.object({ from: z.literal("field"), fieldId: z.string() }),
+  z.object({ from: z.literal("tba"), tbaMetric: z.string() }),
+  z.object({ from: z.literal("expression"), expressionName: z.string() }),
+]);
+
 const reduceMethodsSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("average") }),
   z.object({ type: z.literal("min") }),
@@ -34,27 +40,26 @@ const entryExpressionSchema = z.object({
   name: z.string(),
   scope: z.literal("entry"),
   input: inputSchema,
+  inputs: z.array(inputsSchema).optional(),
   method: methodSchema,
 });
 const surveyExpressionSchema = z.object({
   name: z.string(),
   scope: z.literal("survey"),
   input: inputSchema,
+  inputs: z.array(inputsSchema).optional(),
   method: methodSchema,
 });
 export const expressionSchema = z.discriminatedUnion("scope", [entryExpressionSchema, surveyExpressionSchema]);
 
 export type ExpressionInput = z.infer<typeof inputSchema>;
-export type ExpressionInputFields = Extract<ExpressionInput, { from: "fields" }>;
-export type ExpressionInputTba = Extract<ExpressionInput, { from: "tba" }>;
-export type ExpressionInputExpressions = Extract<ExpressionInput, { from: "expressions" }>;
 
 export type ExpressionMethod = z.infer<typeof methodSchema>;
 export type ConvertExpressionMethod = Extract<ExpressionMethod, { type: "convert" }>;
 
 export type Expression = z.infer<typeof expressionSchema>;
-export type EntryExpression = Extract<Expression, { scope: "entry" }>;
 export type SurveyExpression = Extract<Expression, { scope: "survey" }>;
+export type EntryExpression = Extract<Expression, { scope: "entry" }>;
 
 export function sortExpressions(a: Expression, b: Expression) {
   if (a.scope == "survey" && b.scope == "entry") {
@@ -65,34 +70,55 @@ export function sortExpressions(a: Expression, b: Expression) {
     return 1;
   }
 
-  if (a.input.from == "expressions" && b.input.from != "expressions") {
+  let aHighestInputType: "expression" | "tba" | "field" = "field";
+  let bHighestInputType: "expression" | "tba" | "field" = "field";
+
+  if (a.input.from == "expressions" || a.inputs?.some((i) => i.from == "expression")) {
+    aHighestInputType = "expression";
+  } else if (a.input.from == "tba" || a.inputs?.some((i) => i.from == "tba")) {
+    aHighestInputType = "tba";
+  }
+
+  if (b.input.from == "expressions" || b.inputs?.some((i) => i.from == "expression")) {
+    bHighestInputType = "expression";
+  } else if (b.input.from == "tba" || b.inputs?.some((i) => i.from == "tba")) {
+    bHighestInputType = "tba";
+  }
+
+  if (aHighestInputType == "expression" && bHighestInputType != "expression") {
     return -1;
   }
 
-  if (a.input.from != "expressions" && b.input.from == "expressions") {
+  if (aHighestInputType != "expression" && bHighestInputType == "expression") {
     return 1;
   }
 
-  if (a.input.from == "expressions" && b.input.from == "expressions") {
-    if (a.input.expressionNames.includes(b.name)) {
+  if (aHighestInputType == "expression" && bHighestInputType == "expression") {
+    if (
+      (a.input.from == "expressions" && a.input.expressionNames.includes(b.name)) ||
+      a.inputs?.some((i) => i.from == "expression" && i.expressionName == b.name)
+    ) {
       return -1;
     }
 
-    if (b.input.expressionNames.includes(a.name)) {
+    if (
+      (b.input.from == "expressions" && b.input.expressionNames.includes(a.name)) ||
+      b.inputs?.some((i) => i.from == "expression" && i.expressionName == a.name)
+    ) {
       return 1;
     }
   }
 
-  if (a.input.from == "tba" && b.input.from == "fields") {
+  if (aHighestInputType == "tba" && bHighestInputType == "field") {
     return -1;
   }
 
-  if (a.input.from == "fields" && b.input.from == "tba") {
+  if (aHighestInputType == "field" && bHighestInputType == "tba") {
     return 1;
   }
 
   return (
     expressionTypes.findIndex((type) => type == a.method.type) -
-    expressionTypes.findIndex((type) => type == b.method.type)
+      expressionTypes.findIndex((type) => type == b.method.type) || a.name.localeCompare(b.name)
   );
 }

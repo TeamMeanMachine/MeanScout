@@ -4,17 +4,15 @@
   import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import { PlusIcon } from "@lucide/svelte";
-  import { sessionStorageStore } from "$lib";
   import { openDialog } from "$lib/dialog";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
   import type { MatchSurvey } from "$lib/survey";
   import { type SingleFieldWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
+  import type { EntryExpression, SurveyExpression } from "$lib/expression";
 
   let { data }: PageProps = $props();
-
-  const newTab = sessionStorageStore<"entry" | "survey" | "picklist">("admin-rank-new-tab", "entry");
 
   const debounceTimeMillis = 500;
   let debounceTimer: number | undefined = undefined;
@@ -28,37 +26,28 @@
   });
 
   function filterGroupedRanks(search: string) {
-    return structuredClone(data.groupedRanks)
-      .map((surveyGroups) => {
-        surveyGroups.groups = surveyGroups.groups
-          .map((group) => {
-            if (!search) return group;
+    return structuredClone(data.groupedRanks).map((surveyGroups) => {
+      surveyGroups.groups = surveyGroups.groups.map((group) => {
+        if (!search) return group;
 
-            if (group.pickLists?.length) {
-              group.pickLists = group.pickLists.filter((pl) =>
-                pl.name.toLowerCase().replaceAll(" ", "").includes(search),
-              );
-              if (group.pickLists.length) return group;
-            }
+        if (group.pickLists?.length) {
+          group.pickLists = group.pickLists.filter((pl) => pl.name.toLowerCase().replaceAll(" ", "").includes(search));
+        }
 
-            if (group.expressions?.length) {
-              group.expressions = group.expressions.filter((e) =>
-                e.name.toLowerCase().replaceAll(" ", "").includes(search),
-              );
-              if (group.expressions.length) return group;
-            }
+        if (group.expressions?.length) {
+          group.expressions = group.expressions.filter((e) =>
+            e.name.toLowerCase().replaceAll(" ", "").includes(search),
+          ) as SurveyExpression[] | EntryExpression[];
+        }
 
-            if (group.fields?.length) {
-              group.fields = group.fields.filter((f) =>
-                f.detailedName.toLowerCase().replaceAll(" ", "").includes(search),
-              );
-              if (group.fields.length) return group;
-            }
-          })
-          .filter((group) => group !== undefined);
-        return surveyGroups;
-      })
-      .filter((surveyGroups) => surveyGroups.groups.length);
+        if (group.fields?.length) {
+          group.fields = group.fields.filter((f) => f.detailedName.toLowerCase().replaceAll(" ", "").includes(search));
+        }
+
+        return group;
+      });
+      return surveyGroups;
+    });
   }
 
   function onsearchinput(value: string) {
@@ -85,15 +74,11 @@
     }
   }
 
-  function tabClass(matching: string) {
-    return $newTab == matching ? "font-bold" : "font-light";
-  }
-
   function newExpression(
     surveyRecord: MatchSurvey,
     orderedSingleFields: SingleFieldWithDetails[],
-    groupedExpressions: any,
-    constrain: { scope: "entry" | "survey"; input: "fields" | "tba" | "expressions" },
+    groupedExpressions: { entry: EntryExpression[]; survey: SurveyExpression[] },
+    constrain: { scope: "entry" | "survey" },
   ) {
     openDialog(NewExpressionDialog, {
       surveyRecord,
@@ -154,144 +139,69 @@
             <span class="text-xs font-light">{group.category}</span>
 
             <div class="flex flex-wrap gap-2 text-sm">
-              {#each group.pickLists || [] as pickList}
-                <Anchor route="{path}&picklist={encodeURIComponent(pickList.name)}">{pickList.name}</Anchor>
-              {/each}
+              {#if group.category != "Fields"}
+                <Button
+                  onclick={() => {
+                    if (group.category == "Pick Lists") {
+                      openDialog(NewPickListDialog, {
+                        surveyRecord: survey,
+                        expressions: groupedExpressions,
+                        oncreate(pickList) {
+                          idb.put(
+                            "surveys",
+                            $state.snapshot({
+                              ...survey,
+                              pickLists: [...survey.pickLists, pickList],
+                              modified: new Date(),
+                            }),
+                          ).onsuccess = () => {
+                            const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`;
+                            goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { invalidateAll: true });
+                          };
+                        },
+                      });
+                    } else if (group.category == "Aggregate Expressions") {
+                      newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, { scope: "survey" });
+                    } else if (group.category == "Entry Expressions") {
+                      newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, { scope: "entry" });
+                    }
+                  }}
+                  disabled={group.category == "Pick Lists" && !sortedExpressions.length}
+                  class="size-9 justify-center p-1!"
+                >
+                  <PlusIcon class="text-theme" />
+                </Button>
+              {/if}
 
-              {#each group.expressions || [] as expression}
-                <Anchor route="{path}&expression={encodeURIComponent(expression.name)}">{expression.name}</Anchor>
-              {/each}
+              {#if group.category == "Pick Lists"}
+                {#each group.pickLists as pickList}
+                  <Anchor route="{path}&picklist={encodeURIComponent(pickList.name)}">{pickList.name}</Anchor>
+                {/each}
+              {/if}
 
-              {#each group.fields || [] as field}
-                <Anchor route="{path}&field={encodeURIComponent(field.field.id)}">{field.detailedName}</Anchor>
-              {/each}
+              {#if group.category == "Aggregate Expressions" || group.category == "Entry Expressions"}
+                {#each group.expressions as expression}
+                  <Anchor route="{path}&expression={encodeURIComponent(expression.name)}">{expression.name}</Anchor>
+                {/each}
+              {/if}
+
+              {#if group.category == "Fields"}
+                {#each group.fields as field}
+                  <Anchor route="{path}&field={encodeURIComponent(field.field.id)}">{field.detailedName}</Anchor>
+                {/each}
+              {/if}
             </div>
           </div>
         {/each}
-
-        <div class="flex w-80 max-w-full flex-col gap-2 self-start border border-neutral-500 p-2 text-xs">
-          <div class="flex flex-wrap justify-stretch gap-2">
-            <Button onclick={() => ($newTab = "entry")} class={tabClass("entry")}>Entry</Button>
-            <Button onclick={() => ($newTab = "survey")} class={tabClass("survey")}>Aggregate</Button>
-            <Button onclick={() => ($newTab = "picklist")} class={tabClass("picklist")}>Pick List</Button>
-          </div>
-
-          <div class="flex flex-col">
-            {#if $newTab == "entry"}
-              <span>Entry Expression</span>
-
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "entry",
-                      input: "fields",
-                    });
-                  }}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  Fields
-                </Button>
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "entry",
-                      input: "tba",
-                    });
-                  }}
-                  disabled={!survey.tbaMetrics?.length}
-                  class="text-xs"
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  TBA
-                </Button>
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "entry",
-                      input: "expressions",
-                    });
-                  }}
-                  disabled={!sortedExpressions.some((e) => e.scope == "entry")}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  Expressions
-                </Button>
-              </div>
-            {:else if $newTab == "survey"}
-              <span>Aggregate Expression</span>
-
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "survey",
-                      input: "fields",
-                    });
-                  }}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  Fields
-                </Button>
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "survey",
-                      input: "tba",
-                    });
-                  }}
-                  disabled={!survey.tbaMetrics?.length}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  TBA
-                </Button>
-                <Button
-                  onclick={() => {
-                    newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, {
-                      scope: "survey",
-                      input: "expressions",
-                    });
-                  }}
-                  disabled={!sortedExpressions.length}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  Expressions
-                </Button>
-              </div>
-            {:else if $newTab == "picklist"}
-              <span>New</span>
-
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  onclick={() => {
-                    openDialog(NewPickListDialog, {
-                      surveyRecord: survey,
-                      expressions: groupedExpressions,
-                      oncreate(pickList) {
-                        idb.put(
-                          "surveys",
-                          $state.snapshot({
-                            ...survey,
-                            pickLists: [...survey.pickLists, pickList],
-                            modified: new Date(),
-                          }),
-                        ).onsuccess = () => {
-                          const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`;
-                          goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { invalidateAll: true });
-                        };
-                      },
-                    });
-                  }}
-                  disabled={!sortedExpressions.length}
-                >
-                  <PlusIcon class="text-theme size-5" />
-                  Pick list
-                </Button>
-              </div>
-            {/if}
-          </div>
-        </div>
       </div>
     {/each}
+
+    <div class="flex flex-col gap-2 text-sm font-light">
+      <span>
+        Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
+      </span>
+      <span>Aggregate expressions combine data across matches, e.g. getting a team's highest point contribution.</span>
+      <span>Pick lists couple selected expressions with percentage weights.</span>
+    </div>
   {/if}
 </div>

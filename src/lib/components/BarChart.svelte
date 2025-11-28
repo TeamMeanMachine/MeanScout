@@ -75,17 +75,44 @@
     ).orderedSingle,
   );
 
+  const legacyInputNames = $derived.by(() => {
+    if (rankData.type == "expression") {
+      const inputs: string[] = [];
+      if (rankData.expression.input.from == "expressions") {
+        inputs.push(...rankData.expression.input.expressionNames);
+      } else if (rankData.expression.input.from == "fields") {
+        inputs.push(
+          ...rankData.expression.input.fieldIds
+            .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+            .filter((f) => f !== undefined),
+        );
+      }
+      return inputs;
+    }
+    return [];
+  });
+
   const inputNames = $derived.by(() => {
     if (rankData.type == "picklist") {
       return rankData.pickList.weights.map((w) => w.expressionName);
     } else if (rankData.type == "expression") {
-      if (rankData.expression.input.from == "expressions") {
-        return rankData.expression.input.expressionNames;
-      } else if (rankData.expression.input.from == "fields") {
-        return rankData.expression.input.fieldIds
-          .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
-          .filter((f) => f !== undefined);
+      const inputs = $state.snapshot(legacyInputNames);
+      if (rankData.expression.inputs?.length) {
+        inputs.push(
+          ...rankData.expression.inputs
+            .map((i) => {
+              if (i.from == "expression") {
+                return i.expressionName;
+              } else if (i.from == "tba") {
+                return i.tbaMetric;
+              } else {
+                return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+              }
+            })
+            .filter((i) => i != undefined),
+        );
       }
+      return inputs;
     }
     return [];
   });
@@ -119,7 +146,14 @@
     if (rankData.type == "picklist") {
       return `${path}&expression=${encodeURIComponent(name)}`;
     } else if (rankData.type == "expression") {
-      if (rankData.expression.input.from == "expressions") {
+      if (i >= legacyInputNames.length && rankData.expression.inputs?.length) {
+        const input = rankData.expression.inputs.at(i - legacyInputNames.length);
+        if (input?.from == "expression") {
+          return `${path}&expression=${encodeURIComponent(name)}`;
+        } else if (input?.from == "field") {
+          return `${path}&field=${encodeURIComponent(input.fieldId)}`;
+        }
+      } else if (rankData.expression.input.from == "expressions") {
         return `${path}&expression=${encodeURIComponent(name)}`;
       } else if (rankData.expression.input.from == "fields") {
         return `${path}&field=${encodeURIComponent(rankData.expression.input.fieldIds[i])}`;

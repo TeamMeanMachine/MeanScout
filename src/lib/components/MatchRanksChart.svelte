@@ -83,18 +83,46 @@
     ).orderedSingle;
   });
 
+  const legacyInputNames = $derived.by(() => {
+    if (!selectedRanking) return [];
+    if (selectedRanking.rankData.type == "expression") {
+      const inputs: string[] = [];
+      if (selectedRanking.rankData.expression.input.from == "expressions") {
+        inputs.push(...selectedRanking.rankData.expression.input.expressionNames);
+      } else if (selectedRanking.rankData.expression.input.from == "fields") {
+        inputs.push(
+          ...selectedRanking.rankData.expression.input.fieldIds
+            .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+            .filter((f) => f !== undefined),
+        );
+      }
+      return inputs;
+    }
+    return [];
+  });
+
   const inputNames = $derived.by(() => {
     if (!selectedRanking) return [];
     if (selectedRanking.rankData.type == "picklist") {
       return selectedRanking.rankData.pickList.weights.map((w) => w.expressionName);
     } else if (selectedRanking.rankData.type == "expression") {
-      if (selectedRanking.rankData.expression.input.from == "expressions") {
-        return selectedRanking.rankData.expression.input.expressionNames;
-      } else if (selectedRanking.rankData.expression.input.from == "fields") {
-        return selectedRanking.rankData.expression.input.fieldIds
-          .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
-          .filter((f) => f !== undefined);
+      const inputs = $state.snapshot(legacyInputNames);
+      if (selectedRanking.rankData.expression.inputs?.length) {
+        inputs.push(
+          ...selectedRanking.rankData.expression.inputs
+            .map((i) => {
+              if (i.from == "expression") {
+                return i.expressionName;
+              } else if (i.from == "tba") {
+                return i.tbaMetric;
+              } else {
+                return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+              }
+            })
+            .filter((i) => i !== undefined),
+        );
       }
+      return inputs;
     }
     return [];
   });
@@ -343,16 +371,40 @@
               onclick={() => {
                 if (!selectedRanking) return;
                 if ("pickList" in selectedRanking) {
-                  selectedRanking = switchRanking({
-                    survey: selectedRanking.survey,
-                    expression: selectedRanking.survey.expressions.find((e) => e.name == name)!,
-                  });
+                  const expression = selectedRanking.survey.expressions.find((e) => e.name == name);
+                  if (expression) {
+                    selectedRanking = switchRanking({ survey: selectedRanking.survey, expression });
+                  }
                 } else if ("expression" in selectedRanking) {
-                  if (selectedRanking.expression.input.from == "expressions") {
-                    selectedRanking = switchRanking({
-                      survey: selectedRanking.survey,
-                      expression: selectedRanking.survey.expressions.find((e) => e.name == name)!,
-                    });
+                  if (i >= legacyInputNames.length && selectedRanking.expression.inputs?.length) {
+                    const input = selectedRanking.expression.inputs.at(i - legacyInputNames.length);
+                    if (input?.from == "expression") {
+                      const expression = selectedRanking.survey.expressions.find((e) => e.name == input.expressionName);
+                      if (expression) {
+                        selectedRanking = switchRanking({ survey: selectedRanking.survey, expression });
+                        return;
+                      }
+                    } else if (input?.from == "field") {
+                      const fieldWithDetails = getFieldsWithDetails(
+                        selectedRanking.survey,
+                        pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.survey.id),
+                      ).orderedSingle.find((f) => f.field.id == input.fieldId);
+
+                      if (!fieldWithDetails) {
+                        return;
+                      }
+
+                      selectedRanking = switchRanking({
+                        survey: selectedRanking.survey,
+                        field: fieldWithDetails,
+                      });
+                      return;
+                    }
+                  } else if (selectedRanking.expression.input.from == "expressions") {
+                    const expression = selectedRanking.survey.expressions.find((e) => e.name == name);
+                    if (expression) {
+                      selectedRanking = switchRanking({ survey: selectedRanking.survey, expression });
+                    }
                   } else if (selectedRanking.expression.input.from == "fields") {
                     const fieldId = selectedRanking.expression.input.fieldIds[i];
                     const fieldWithDetails = getFieldsWithDetails(
@@ -451,12 +503,7 @@
 
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <div onclick={() => ($highlightedTeam = teamRank.team)} class="min-w-0">
-    <div
-      class={[
-        "border-neutral-700 p-0 transition-[border,padding]",
-        isHighlighted && "border-x-[4px] border-t-[4px] px-1",
-      ]}
-    >
+    <div class={["border-neutral-700 p-0 transition-[border,padding]", isHighlighted && "border-x-4 border-t-4 px-1"]}>
       <div class="flex items-end justify-between gap-3">
         <div class="flex flex-col truncate">
           <div class="font-bold" style="color:{color}">{teamRank.team}</div>

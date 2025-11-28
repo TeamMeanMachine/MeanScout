@@ -2,7 +2,7 @@
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { compareMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
+  import { compareMatches, getAllMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -138,50 +138,17 @@
       return entry.type == "match" && entry.team == team.number && entry.surveyId == params.survey.id;
     });
 
-    const matches = pageData.compRecord.matches.filter((m) =>
-      [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
-    );
-
-    let allMatches: (Match & { extraTeams?: string[] })[] = [...matches];
-    for (const entry of entries) {
-      const entryMatchIdentifier: MatchIdentifier = {
-        number: entry.match,
-        level: entry.matchLevel,
-        set: entry.matchSet,
-      };
-      const existingMatch = allMatches.find((m) => compareMatches(m, entryMatchIdentifier) == 0);
-
-      if (existingMatch) {
-        const teams = [
-          existingMatch.red1,
-          existingMatch.red2,
-          existingMatch.red3,
-          existingMatch.blue1,
-          existingMatch.blue2,
-          existingMatch.blue3,
-          ...(existingMatch.extraTeams || []),
-        ];
-
-        if (!teams.includes(entry.team)) {
-          existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
-            a.localeCompare(b),
-          );
-        }
-      } else {
-        allMatches.push({
-          ...entryMatchIdentifier,
-          red1: "",
-          red2: "",
-          red3: "",
-          blue1: "",
-          blue2: "",
-          blue3: "",
-          extraTeams: [entry.team],
-        });
-      }
-    }
-
-    allMatches = allMatches.toSorted(compareMatches);
+    const allMatches = getAllMatches(pageData.compRecord, entries).matches.filter((match) => {
+      return [
+        match.red1,
+        match.red2,
+        match.red3,
+        match.blue1,
+        match.blue2,
+        match.blue3,
+        ...(match.extraTeams || []),
+      ].includes(team.number);
+    });
 
     const entriesPerMatch = allMatches.map((match) => ({
       match,
@@ -259,19 +226,39 @@
     const max = values.length ? Math.max(...values) : 0;
     const inputMaxes = data.map((d) => (d.inputs?.length ? Math.max(...d.inputs.map((i) => i.value)) : undefined));
 
-    let inputNames: string[] | undefined = undefined;
-    if (!("expression" in params)) {
-      inputNames = undefined;
-    } else if (params.expression.input.from == "expressions") {
-      inputNames = params.expression.input.expressionNames;
-    } else if (params.expression.input.from == "fields") {
-      inputNames = params.expression.input.fieldIds
-        .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
-        .filter((f) => f !== undefined);
+    let legacyInputNames: string[] = [];
+    let inputNames: string[] = [];
+
+    if ("expression" in params) {
+      if (params.expression.input.from == "expressions") {
+        legacyInputNames = params.expression.input.expressionNames;
+      } else if (params.expression.input.from == "fields") {
+        legacyInputNames = params.expression.input.fieldIds
+          .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+          .filter((f) => f !== undefined);
+      }
+      inputNames = $state.snapshot(legacyInputNames);
+      if (params.expression.inputs?.length) {
+        inputNames = [
+          ...(inputNames || []),
+          ...params.expression.inputs
+            .map((i) => {
+              if (i.from == "expression") {
+                return i.expressionName;
+              } else if (i.from == "tba") {
+                return i.tbaMetric;
+              } else {
+                return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+              }
+            })
+            .filter((i) => i !== undefined),
+        ];
+      }
     }
 
     return {
       ...params,
+      legacyInputNames,
       inputNames,
       max,
       min: values.length ? Math.min(...values) : 0,
@@ -411,7 +398,7 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      {#if selectedMetric.inputNames?.length}
+      {#if selectedMetric.inputNames.length}
         <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
           {#key selectedMetric.inputNames}
             {#each selectedMetric.inputNames as name, i}
@@ -425,26 +412,46 @@
               <Button
                 onclick={() => {
                   if (selectedMetric && "expression" in selectedMetric) {
-                    if (selectedMetric.expression.input.from == "expressions") {
-                      selectedMetric = switchMetric({
-                        survey: selectedMetric.survey,
-                        expression: selectedMetric.survey.expressions.find((e) => e.name == name)!,
-                      });
+                    if (i >= selectedMetric.legacyInputNames.length && selectedMetric.expression.inputs?.length) {
+                      const input = selectedMetric.expression.inputs.at(i - selectedMetric.legacyInputNames.length);
+                      if (input?.from == "expression") {
+                        const expression = selectedMetric.survey.expressions.find(
+                          (e) => e.name == input.expressionName,
+                        );
+                        if (expression) {
+                          selectedMetric = switchMetric({ survey: selectedMetric.survey, expression });
+                          return;
+                        }
+                      } else if (input?.from == "field") {
+                        const fieldWithDetails = getFieldsWithDetails(
+                          selectedMetric.survey,
+                          pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
+                        ).orderedSingle.find((f) => f.field.id == input.fieldId);
+
+                        if (!fieldWithDetails) {
+                          return;
+                        }
+
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, field: fieldWithDetails });
+                        return;
+                      }
+                    } else if (selectedMetric.expression.input.from == "expressions") {
+                      const expression = selectedMetric.survey.expressions.find((e) => e.name == name);
+                      if (expression) {
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, expression });
+                        return;
+                      }
                     } else if (selectedMetric.expression.input.from == "fields") {
                       const fieldId = selectedMetric.expression.input.fieldIds[i];
-                      const fieldWithDetails = getFieldsWithDetails(
+                      const field = getFieldsWithDetails(
                         selectedMetric.survey,
                         pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
                       ).orderedSingle.find((f) => f.field.id == fieldId);
 
-                      if (!fieldWithDetails) {
+                      if (field) {
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, field });
                         return;
                       }
-
-                      selectedMetric = switchMetric({
-                        survey: selectedMetric.survey,
-                        field: fieldWithDetails,
-                      });
                     }
                   }
                 }}

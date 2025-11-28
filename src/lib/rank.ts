@@ -142,6 +142,22 @@ export function getExpressionData(
       .filter((f) => f !== undefined);
   }
 
+  if (expression.inputs?.length) {
+    inputNames.push(
+      ...expression.inputs
+        .map((i) => {
+          if (i.from == "expression") {
+            return i.expressionName;
+          } else if (i.from == "tba") {
+            return i.tbaMetric;
+          } else {
+            return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+          }
+        })
+        .filter((name) => name !== undefined),
+    );
+  }
+
   const expressionData = calculateTeamData(expression, surveyRecord.expressions, entriesByTeam, orderedSingleFields);
   const values = Object.values(expressionData).map((v) => v.value);
   const maxValue = Math.max(...values);
@@ -211,7 +227,8 @@ export function getFieldData(
   const expressionData = getExpressionData(
     compRecord,
     {
-      input: { from: "fields", fieldIds: [singleField.field.id] },
+      input: { from: "fields", fieldIds: [] },
+      inputs: [{ from: "field", fieldId: singleField.field.id }],
       method: { type: "average" },
       name: singleField.detailedName,
       scope: "entry",
@@ -236,16 +253,13 @@ function calculateTeamData(
   entriesByTeam: Record<string, MatchEntry[]>,
   orderedSingleFields: SingleFieldWithDetails[],
 ) {
-  const { input, scope } = expression;
+  const { input, inputs, scope } = expression;
 
-  const inputNames =
-    input.from == "fields"
-      ? input.fieldIds
-      : input.from == "tba"
-        ? input.metrics
-        : input.from == "expressions"
-          ? input.expressionNames
-          : [];
+  let inputCount = 0;
+  if (input.from == "fields") inputCount = input.fieldIds.length;
+  if (input.from == "tba") inputCount = input.metrics.length;
+  if (input.from == "expressions") inputCount = input.expressionNames.length;
+  if (inputs?.length) inputCount += inputs.length;
 
   const teamData: Record<string, { value: number; inputs: Value[] }> = {};
 
@@ -270,7 +284,7 @@ function calculateTeamData(
 
       teamData[team] = {
         value: aggregate,
-        inputs: inputNames.map((_, i) => {
+        inputs: new Array(inputCount).fill(0).map((_, i) => {
           const inputValues = values.map((v) => Number(v.inputs[i]));
           return inputValues.reduce((prev, curr) => prev + curr, 0) / (inputValues.length || 1);
         }),
@@ -319,45 +333,68 @@ function runEntryExpression(
   orderedSingleFields: SingleFieldWithDetails[],
 ): { output: number | Value[]; inputs: Value[] } {
   const { input } = expression;
+  const inputs: Value[] = [];
 
   if (input.from == "fields") {
-    const inputs = input.fieldIds.map((id) => {
-      const field = orderedSingleFields.find((f) => f.field.id == id);
-      if (!field) throw new Error(`Could not find field with id ${id}`);
-      return entry.values[field.valueIndex];
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
+    inputs.push(
+      ...input.fieldIds.map((id) => {
+        const field = orderedSingleFields.find((f) => f.field.id == id);
+        if (!field) throw new Error(`Could not find field with id ${id}`);
+        return entry.values[field.valueIndex];
+      }),
+    );
+  } else if (input.from == "tba") {
+    inputs.push(
+      ...input.metrics.map((metric) => {
+        if (!entry.tbaMetrics?.length) return 0;
+        return entry.tbaMetrics.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
+      }),
+    );
+  } else if (input.from == "expressions") {
+    inputs.push(
+      ...input.expressionNames.map((expressionName) => {
+        const expression = expressions.find((e) => e.name == expressionName);
+        if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
+        if (expression.scope != "entry") throw new Error("Entry expression cannot reference an aggregate expression");
+        let { output } = runEntryExpression(entry, expression, expressions, orderedSingleFields);
+        if (Array.isArray(output)) {
+          output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+        }
+        return output;
+      }),
+    );
   }
 
-  if (input.from == "tba") {
-    const inputs = input.metrics.map((metric) => {
-      if (!entry.tbaMetrics?.length) return 0;
-      return entry.tbaMetrics.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
+  if (expression.inputs?.length) {
+    inputs.push(
+      ...expression.inputs.map((i) => {
+        if (i.from == "field") {
+          const field = orderedSingleFields.find((f) => f.field.id == i.fieldId);
+          if (!field) throw new Error(`Could not find field with id ${i.fieldId}`);
+          return entry.values[field.valueIndex];
+        } else if (i.from == "tba") {
+          if (!entry.tbaMetrics?.length) return 0;
+          return entry.tbaMetrics.find((m) => m.name.toLowerCase() == i.tbaMetric.toLowerCase())?.value ?? 0;
+        } else {
+          const expression = expressions.find((e) => e.name == i.expressionName);
+          if (!expression) throw new Error(`Could not find expression named ${i.expressionName}`);
+          if (expression.scope != "entry") throw new Error("Entry expression cannot reference an aggregate expression");
+          let { output } = runEntryExpression(entry, expression, expressions, orderedSingleFields);
+          if (Array.isArray(output)) {
+            output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+          }
+          return output;
+        }
+      }),
+    );
   }
 
-  if (input.from == "expressions") {
-    const inputs = input.expressionNames.map((expressionName) => {
-      const expression = expressions.find((e) => e.name == expressionName);
-      if (!expression) throw new Error(`Could not find expression named ${expressionName}`);
-      if (expression.scope != "entry") throw new Error("Entry expression cannot reference an aggregate expression");
-      let { output } = runEntryExpression(entry, expression, expressions, orderedSingleFields);
-      if (Array.isArray(output)) {
-        output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
-      }
-      return output;
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
+  if (!inputs.length) {
+    throw new Error("Invalid expression input");
   }
 
-  throw new Error("Invalid expression input");
+  const output = runExpressionMethod(expression.method, inputs);
+  return { output, inputs };
 }
 
 function runSurveyExpression(
@@ -367,84 +404,146 @@ function runSurveyExpression(
   orderedSingleFields: SingleFieldWithDetails[],
 ): { output: number | Value[]; inputs: Value[] } {
   const { input } = expression;
+  const inputs: Value[] = [];
 
   if (input.from == "fields") {
-    const inputs = input.fieldIds.map((id) => {
-      const field = orderedSingleFields.find((f) => f.field.id == id);
-      if (!field) throw new Error(`Could not find field with id ${id}`);
-      const entryValues = entries.map((entry) => entry.values[field.valueIndex]);
-      const valueOrValues = runExpressionMethod(expression.method, entryValues);
-      if (Array.isArray(valueOrValues)) {
-        return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
-      }
-      return valueOrValues;
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
-  }
-
-  if (input.from == "tba") {
-    const inputs = input.metrics.map((metric) => {
-      const entryValues = entries.map((entry) => {
-        return entry.tbaMetrics?.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
-      });
-      const valueOrValues = runExpressionMethod(expression.method, entryValues);
-      if (Array.isArray(valueOrValues)) {
-        return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
-      }
-      return valueOrValues;
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
-  }
-
-  if (input.from == "expressions") {
-    const inputs = input.expressionNames.map((expressionName) => {
-      const childExpression = expressions.find((e) => e.name == expressionName);
-      if (!childExpression) throw new Error(`Could not find expression named ${expressionName}`);
-
-      if (childExpression.scope == "entry") {
+    inputs.push(
+      ...input.fieldIds.map((id) => {
+        const field = orderedSingleFields.find((f) => f.field.id == id);
+        if (!field) throw new Error(`Could not find field with id ${id}`);
+        const entryValues = entries.map((entry) => entry.values[field.valueIndex]);
+        const valueOrValues = runExpressionMethod(expression.method, entryValues);
+        if (Array.isArray(valueOrValues)) {
+          return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+        }
+        return valueOrValues;
+      }),
+    );
+  } else if (input.from == "tba") {
+    inputs.push(
+      ...input.metrics.map((metric) => {
         const entryValues = entries.map((entry) => {
-          let { output, inputs } = runEntryExpression(entry, childExpression, expressions, orderedSingleFields);
+          return entry.tbaMetrics?.find((m) => m.name.toLowerCase() == metric.toLowerCase())?.value ?? 0;
+        });
+        const valueOrValues = runExpressionMethod(expression.method, entryValues);
+        if (Array.isArray(valueOrValues)) {
+          return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+        }
+        return valueOrValues;
+      }),
+    );
+  } else if (input.from == "expressions") {
+    inputs.push(
+      ...input.expressionNames.map((expressionName) => {
+        const childExpression = expressions.find((e) => e.name == expressionName);
+        if (!childExpression) throw new Error(`Could not find expression named ${expressionName}`);
+
+        if (childExpression.scope == "entry") {
+          const entryValues = entries.map((entry) => {
+            let { output, inputs } = runEntryExpression(entry, childExpression, expressions, orderedSingleFields);
+            if (Array.isArray(output)) {
+              output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+            }
+            return { output, inputs };
+          });
+          let output = runExpressionMethod(
+            expression.method,
+            entryValues.map((v) => v.output),
+          );
+          if (Array.isArray(output)) {
+            output = runExpressionMethod(expression.method, output);
+          }
           if (Array.isArray(output)) {
             output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
           }
-          return { output, inputs };
-        });
-        let output = runExpressionMethod(
-          expression.method,
-          entryValues.map((v) => v.output),
-        );
-        if (Array.isArray(output)) {
-          output = runExpressionMethod(expression.method, output);
+          return output;
         }
-        if (Array.isArray(output)) {
-          output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
-        }
-        return output;
-      }
 
-      if (childExpression.scope == "survey") {
-        let { output } = runSurveyExpression(entries, childExpression, expressions, orderedSingleFields);
-        if (Array.isArray(output)) {
-          output = runExpressionMethod(expression.method, output);
+        if (childExpression.scope == "survey") {
+          let { output } = runSurveyExpression(entries, childExpression, expressions, orderedSingleFields);
+          if (Array.isArray(output)) {
+            output = runExpressionMethod(expression.method, output);
+          }
+          if (Array.isArray(output)) {
+            output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+          }
+          return output;
         }
-        if (Array.isArray(output)) {
-          output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
-        }
-        return output;
-      }
 
-      throw new Error("Invalid expression scope");
-    });
-
-    const output = runExpressionMethod(expression.method, inputs);
-    return { output, inputs };
+        throw new Error("Invalid expression scope");
+      }),
+    );
   }
 
-  throw new Error("Invalid expression input");
+  if (expression.inputs?.length) {
+    inputs.push(
+      ...expression.inputs.map((i) => {
+        if (i.from == "field") {
+          const field = orderedSingleFields.find((f) => f.field.id == i.fieldId);
+          if (!field) throw new Error(`Could not find field with id ${i.fieldId}`);
+          const entryValues = entries.map((entry) => entry.values[field.valueIndex]);
+          const valueOrValues = runExpressionMethod(expression.method, entryValues);
+          if (Array.isArray(valueOrValues)) {
+            return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+          }
+          return valueOrValues;
+        } else if (i.from == "tba") {
+          const entryValues = entries.map((entry) => {
+            return entry.tbaMetrics?.find((m) => m.name.toLowerCase() == i.tbaMetric.toLowerCase())?.value ?? 0;
+          });
+          const valueOrValues = runExpressionMethod(expression.method, entryValues);
+          if (Array.isArray(valueOrValues)) {
+            return valueOrValues.map(Number).reduce((prev, curr) => prev + curr, 0) / valueOrValues.length;
+          }
+          return valueOrValues;
+        } else {
+          const childExpression = expressions.find((e) => e.name == i.expressionName);
+          if (!childExpression) throw new Error(`Could not find expression named ${i.expressionName}`);
+
+          if (childExpression.scope == "entry") {
+            const entryValues = entries.map((entry) => {
+              let { output, inputs } = runEntryExpression(entry, childExpression, expressions, orderedSingleFields);
+              if (Array.isArray(output)) {
+                output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+              }
+              return { output, inputs };
+            });
+            let output = runExpressionMethod(
+              expression.method,
+              entryValues.map((v) => v.output),
+            );
+            if (Array.isArray(output)) {
+              output = runExpressionMethod(expression.method, output);
+            }
+            if (Array.isArray(output)) {
+              output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+            }
+            return output;
+          }
+
+          if (childExpression.scope == "survey") {
+            let { output } = runSurveyExpression(entries, childExpression, expressions, orderedSingleFields);
+            if (Array.isArray(output)) {
+              output = runExpressionMethod(expression.method, output);
+            }
+            if (Array.isArray(output)) {
+              output = output.map(Number).reduce((prev, curr) => prev + curr, 0) / output.length;
+            }
+            return output;
+          }
+
+          throw new Error("Invalid expression scope");
+        }
+      }),
+    );
+  }
+
+  if (!inputs.length) {
+    throw new Error("Invalid expression input");
+  }
+
+  const output = runExpressionMethod(expression.method, inputs);
+  return { output, inputs };
 }
 
 function runExpressionMethod(method: ExpressionMethod, inputs: Value[]): number | Value[] {

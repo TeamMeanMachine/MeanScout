@@ -2,7 +2,7 @@
   import type { PickList } from "$lib/rank";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import type { Expression } from "$lib/expression";
+  import type { EntryExpression, Expression, SurveyExpression } from "$lib/expression";
   import { SquareCheckBigIcon, SquareIcon, Trash2Icon, Undo2Icon } from "@lucide/svelte";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
   import ResetPickListDialog from "./ResetPickListDialog.svelte";
@@ -19,12 +19,8 @@
   }: {
     surveyRecord: MatchSurvey;
     expressions: {
-      entryDerived: Expression[];
-      entryTba: Expression[];
-      entryPrimitive: Expression[];
-      surveyDerived: Expression[];
-      surveyTba: Expression[];
-      surveyPrimitive: Expression[];
+      entry: EntryExpression[];
+      survey: SurveyExpression[];
     };
     pickList: PickList;
     index: number;
@@ -137,50 +133,19 @@
 {/snippet}
 
 <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
-  {#if expressions.surveyDerived.length}
+  {#if expressions.survey.length}
     <div class="flex flex-col gap-2">
-      <span>Aggregate Expressions <span class="text-xs">(from expressions)</span></span>
-      {#each expressions.surveyDerived as exp}
+      <span>Aggregate Expressions</span>
+      {#each expressions.survey as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>
   {/if}
-  {#if expressions.surveyTba.length}
+
+  {#if expressions.entry.length}
     <div class="flex flex-col gap-2">
-      <span>Aggregate Expressions <span class="text-xs">(from TBA)</span></span>
-      {#each expressions.surveyTba as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.surveyPrimitive.length}
-    <div class="flex flex-col gap-2">
-      <span>Aggregate Expressions <span class="text-xs">(from fields)</span></span>
-      {#each expressions.surveyPrimitive as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.entryDerived.length}
-    <div class="flex flex-col gap-2">
-      <span>Entry Expressions <span class="text-xs">(from expressions)</span></span>
-      {#each expressions.entryDerived as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.entryTba.length}
-    <div class="flex flex-col gap-2">
-      <span>Entry Expressions <span class="text-xs">(from TBA)</span></span>
-      {#each expressions.entryTba as exp}
-        {@render expressionButton(exp)}
-      {/each}
-    </div>
-  {/if}
-  {#if expressions.entryPrimitive.length}
-    <div class="flex flex-col gap-2">
-      <span>Entry Expressions <span class="text-xs">(from fields)</span></span>
-      {#each expressions.entryPrimitive as exp}
+      <span>Entry Expressions</span>
+      {#each expressions.entry as exp}
         {@render expressionButton(exp)}
       {/each}
     </div>

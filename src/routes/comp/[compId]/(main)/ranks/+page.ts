@@ -21,12 +21,8 @@ export const load: PageLoad = async (event) => {
     const sortedExpressions = survey.expressions.toSorted(sortExpressions);
 
     const groupedExpressions = {
-      surveyDerived: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "expressions"),
-      surveyTba: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "tba"),
-      surveyPrimitive: sortedExpressions.filter((e) => e.scope == "survey" && e.input.from == "fields"),
-      entryDerived: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "expressions"),
-      entryTba: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "tba"),
-      entryPrimitive: sortedExpressions.filter((e) => e.scope == "entry" && e.input.from == "fields"),
+      survey: sortedExpressions.filter((e) => e.scope == "survey"),
+      entry: sortedExpressions.filter((e) => e.scope == "entry"),
     };
 
     return {
