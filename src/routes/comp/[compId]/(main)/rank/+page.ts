@@ -25,7 +25,10 @@ export const load: PageLoad = async (event) => {
   const sortedExpressions = surveyRecord.expressions.toSorted(sortExpressions);
 
   const usedExpressionNames = [
-    ...surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
+    ...surveyRecord.expressions.flatMap((e) => [
+      ...(e.input.from == "expressions" ? e.input.expressionNames : []),
+      ...(e.inputs || []).filter((i) => i.from == "expression").map((i) => i.expressionName),
+    ]),
     ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ];
 

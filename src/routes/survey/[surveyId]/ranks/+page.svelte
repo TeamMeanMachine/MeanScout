@@ -18,7 +18,10 @@
   const sortedExpressions = $derived(surveyRecord.expressions.toSorted(sortExpressions));
 
   const usedExpressionNames = $derived([
-    ...surveyRecord.expressions.flatMap((e) => (e.input.from == "expressions" ? e.input.expressionNames : [])),
+    ...surveyRecord.expressions.flatMap((e) => [
+      ...(e.input.from == "expressions" ? e.input.expressionNames : []),
+      ...(e.inputs || []).filter((i) => i.from == "expression").map((i) => i.expressionName),
+    ]),
     ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
   ]);
 
@@ -28,9 +31,20 @@
   });
 
   function expressionReferencesOther(e: Expression, other: Expression) {
-    if (e.input.from != "expressions") return false;
+    const expressionNames: string[] = [];
 
-    for (const expressionName of e.input.expressionNames) {
+    if (e.input.from == "expressions") {
+      expressionNames.push(...e.input.expressionNames);
+    }
+    if (e.inputs?.length) {
+      expressionNames.push(...e.inputs.filter((i) => i.from == "expression").map((i) => i.expressionName));
+    }
+
+    if (!expressionNames.length) {
+      return false;
+    }
+
+    for (const expressionName of expressionNames) {
       if (expressionName == other.name) {
         return true;
       }
@@ -134,24 +148,12 @@
     <div
       class="sticky bottom-3 z-20 flex max-w-full flex-col gap-2 self-start border border-neutral-500 bg-neutral-900 p-2 text-xs shadow-2xl"
     >
-      <Button
-        onclick={() => {
-          newExpression({
-            scope: "entry",
-          });
-        }}
-      >
+      <Button onclick={() => newExpression({ scope: "entry" })}>
         <PlusIcon class="text-theme size-5" />
         Entry Expression
       </Button>
 
-      <Button
-        onclick={() => {
-          newExpression({
-            scope: "survey",
-          });
-        }}
-      >
+      <Button onclick={() => newExpression({ scope: "survey" })}>
         <PlusIcon class="text-theme size-5" />
         Aggregate Expression
       </Button>
@@ -220,6 +222,14 @@
                     return expression.name;
                   }
                   return expressionName;
+                });
+              }
+              if (e.inputs?.length) {
+                e.inputs = e.inputs.map((i) => {
+                  if (i.from == "expression" && i.expressionName == previousName) {
+                    i.expressionName = expression.name;
+                  }
+                  return i;
                 });
               }
               return e;

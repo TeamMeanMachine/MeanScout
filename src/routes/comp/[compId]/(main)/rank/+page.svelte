@@ -117,6 +117,14 @@
                   return expressionName;
                 });
               }
+              if (e.inputs?.length) {
+                e.inputs = e.inputs.map((i) => {
+                  if (i.from == "expression" && i.expressionName == previousName) {
+                    i.expressionName = expression.name;
+                  }
+                  return i;
+                });
+              }
               return e;
             });
           }
@@ -156,9 +164,20 @@
   }
 
   function expressionReferencesOther(e: Expression, other: Expression) {
-    if (e.input.from != "expressions") return false;
+    const expressionNames: string[] = [];
 
-    for (const expressionName of e.input.expressionNames) {
+    if (e.input.from == "expressions") {
+      expressionNames.push(...e.input.expressionNames);
+    }
+    if (e.inputs?.length) {
+      expressionNames.push(...e.inputs.filter((i) => i.from == "expression").map((i) => i.expressionName));
+    }
+
+    if (!expressionNames.length) {
+      return false;
+    }
+
+    for (const expressionName of expressionNames) {
       if (expressionName == other.name) {
         return true;
       }
