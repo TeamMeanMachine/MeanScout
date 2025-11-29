@@ -350,7 +350,7 @@
                 return;
               }
 
-              let customRanks: Record<string, string> = $state.snapshot(rankData.pickList.customRanks || {});
+              let customRanks = $state.snapshot(rankData.pickList.customRanks || {});
 
               if (teamIndex < movingIndex) {
                 customRanks[movingTeam] = indexGen.keyBefore(teamIndex);
