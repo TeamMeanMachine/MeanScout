@@ -423,7 +423,7 @@
                   }
                 }
               }}
-              class="flex-col items-stretch {selectedRanking.rankData.type == 'picklist' ? 'gap-0!' : ''}"
+              class="h-12 flex-col items-stretch justify-between gap-0!"
             >
               <div class="flex items-start justify-between font-light">
                 <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>

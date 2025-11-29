@@ -3,7 +3,7 @@
   import type { PageProps } from "./$types";
   import { sessionStorageStore } from "$lib";
   import RaceChart from "$lib/components/RaceChart.svelte";
-  import { ClipboardCopy, EyeIcon, EyeOffIcon, Share2Icon, SquarePenIcon } from "@lucide/svelte";
+  import { ClipboardCopy, Share2Icon, SquarePenIcon } from "@lucide/svelte";
   import BarChart from "$lib/components/BarChart.svelte";
   import { type Expression } from "$lib/expression";
   import { openDialog } from "$lib/dialog";
@@ -11,24 +11,10 @@
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
   import { idb } from "$lib/idb";
   import { goto, invalidateAll } from "$app/navigation";
-  import { generateNJitteredKeysBetween } from "fractional-indexing-jittered";
 
   let { data }: PageProps = $props();
 
   const chartType = sessionStorageStore<"bar" | "race">("rank-chart-type", "bar");
-  const hideAlliances = sessionStorageStore<"true" | "">("rank-hide-alliances", "true");
-  const hideOmitted = sessionStorageStore<"true" | "">("rank-hide-omitted", "true");
-  const useCustomRanks = sessionStorageStore<"" | "true">("rank-show-custom", "");
-
-  const showAllianceToggle = $derived(data.compRecord.alliances?.some((a) => a.teams.length));
-  const showOmittedToggle = $derived(
-    data.output.type == "picklist" && Object.keys(data.output.pickList.omittedTeams || {}).length,
-  );
-  const showCustomRanksToggle = $derived(data.output.type == "picklist");
-
-  $effect(() => {
-    if ($useCustomRanks) setupCustom();
-  });
 
   function editRank() {
     if (data.output.type == "picklist") {
@@ -201,69 +187,16 @@
       ),
     };
   }
-
-  function setupCustom() {
-    if (data.output.type != "picklist") {
-      return;
-    }
-
-    const pickList = $state.snapshot(data.output.pickList);
-
-    if (Object.keys(pickList.customRanks || {}).length == data.output.teams.length) {
-      return;
-    }
-
-    if (!pickList.customRanks) {
-      pickList.customRanks = {};
-    }
-
-    // Really should prevent existing custom ranks from being erased, but this will do for now
-    const indexes = generateNJitteredKeysBetween(null, null, data.output.teams.length);
-
-    data.output.teams.forEach((teamRank, i) => {
-      pickList.customRanks![teamRank.team] = indexes[i];
-    });
-
-    const pickLists = $state.snapshot(data.output.survey.pickLists);
-    pickLists.find((pl) => pl.name == pickList.name)!.customRanks = pickList.customRanks;
-    idb.put("surveys", {
-      ...data.output.survey,
-      pickLists,
-      modified: new Date(),
-    }).onsuccess = invalidateAll;
-  }
 </script>
 
-<div class="@container flex flex-col gap-6">
-  <div class="flex flex-col gap-3">
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div class="flex flex-col">
-        <h2 class="font-bold">{data.title}</h2>
-        <span class="text-xs font-light">{data.surveyRecord.name}</span>
-      </div>
-
-      <div class="flex gap-2">
-        {#if "canShare" in navigator}
-          <Button onclick={() => navigator.share({ text: data.output.text })}>
-            <Share2Icon class="text-theme size-5" />
-          </Button>
-        {/if}
-
-        {#if "clipboard" in navigator}
-          <Button onclick={() => navigator.clipboard.writeText(data.output.text)}>
-            <ClipboardCopy class="text-theme size-5" />
-          </Button>
-        {/if}
-
-        {#if data.output.type != "field"}
-          <Button onclick={editRank}>
-            <SquarePenIcon class="text-theme size-5" />
-          </Button>
-        {/if}
-      </div>
+<div class="flex flex-col space-y-4">
+  <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+    <div class="flex grow flex-col">
+      <h2 class="font-bold">{data.title}</h2>
+      <span class="text-xs font-light">{data.surveyRecord.name}</span>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+    <div class="flex gap-x-4 gap-y-2 text-sm">
       <div class="flex gap-2 text-sm">
         <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
           Bar
@@ -273,47 +206,23 @@
         </Button>
       </div>
 
-      {#if $chartType == "bar" && (showAllianceToggle || showOmittedToggle)}
-        <div class="flex gap-2 text-sm tracking-tighter">
-          {#if showCustomRanksToggle}
-            <Button
-              onclick={() => ($useCustomRanks = $useCustomRanks ? "" : "true")}
-              class={$useCustomRanks ? "font-bold" : "font-light"}
-            >
-              {#if $useCustomRanks}
-                <EyeIcon class="text-theme size-5" />
-              {:else}
-                <EyeOffIcon class="text-theme size-5" />
-              {/if}
-              Custom
+      {#if "canShare" in navigator || "clipboard" in navigator || data.output.type != "field"}
+        <div class="flex gap-2">
+          {#if "canShare" in navigator}
+            <Button onclick={() => navigator.share({ text: data.output.text })}>
+              <Share2Icon class="text-theme size-5" />
             </Button>
           {/if}
 
-          {#if showAllianceToggle}
-            <Button
-              onclick={() => ($hideAlliances = $hideAlliances ? "" : "true")}
-              class={$hideAlliances ? "font-light" : "font-bold"}
-            >
-              {#if $hideAlliances}
-                <EyeOffIcon class="text-theme size-5" />
-              {:else}
-                <EyeIcon class="text-theme size-5" />
-              {/if}
-              Alliances
+          {#if "clipboard" in navigator}
+            <Button onclick={() => navigator.clipboard.writeText(data.output.text)}>
+              <ClipboardCopy class="text-theme size-5" />
             </Button>
           {/if}
 
-          {#if showOmittedToggle}
-            <Button
-              onclick={() => ($hideOmitted = $hideOmitted ? "" : "true")}
-              class={$hideOmitted ? "font-light" : "font-bold"}
-            >
-              {#if $hideOmitted}
-                <EyeOffIcon class="text-theme size-5" />
-              {:else}
-                <EyeIcon class="text-theme size-5" />
-              {/if}
-              Omitted
+          {#if data.output.type != "field"}
+            <Button onclick={editRank}>
+              <SquarePenIcon class="text-theme size-5" />
             </Button>
           {/if}
         </div>
@@ -322,13 +231,7 @@
   </div>
 
   {#if $chartType == "bar"}
-    <BarChart
-      pageData={data}
-      rankData={data.output}
-      hideAlliances={!!$hideAlliances}
-      hideOmitted={!!$hideOmitted && data.output.type == "picklist"}
-      useCustomRanks={!!$useCustomRanks && data.output.type == "picklist"}
-    />
+    <BarChart pageData={data} rankData={data.output} />
   {:else if $chartType == "race"}
     <RaceChart
       pageData={data}

@@ -257,7 +257,7 @@
   </div>
 </div>
 
-<div class="grid gap-x-3 gap-y-4" style="grid-template-columns:min-content auto">
+<div class="grid gap-x-2 gap-y-4" style="grid-template-columns:min-content auto">
   {#each currentRankData as teamRank, index (teamRank.team)}
     {@const color = `rgb(var(--theme-color) / ${teamRank.percentage.current.toFixed(2)}%)`}
 

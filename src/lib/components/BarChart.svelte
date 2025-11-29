@@ -10,6 +10,8 @@
     CornerDownRightIcon,
     CornerUpRightIcon,
     EraserIcon,
+    EyeIcon,
+    EyeOffIcon,
     MoveDownIcon,
     MoveUpIcon,
     MoveVerticalIcon,
@@ -24,24 +26,32 @@
   import { idb } from "$lib/idb";
   import { invalidateAll } from "$app/navigation";
   import OmitTeamFromPickListDialog from "$lib/dialogs/OmitTeamFromPickListDialog.svelte";
-  import { IndexGenerator } from "fractional-indexing-jittered";
+  import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
   import { untrack } from "svelte";
 
   let {
     pageData,
     rankData,
-    hideAlliances,
-    hideOmitted,
-    useCustomRanks,
   }: {
     pageData: CompPageData;
     rankData: RankData;
-    hideAlliances: boolean;
-    hideOmitted: boolean;
-    useCustomRanks: boolean;
   } = $props();
 
   const indexGen = new IndexGenerator([]);
+
+  const hideAlliancesStore = sessionStorageStore<"true" | "">("rank-hide-alliances", "true");
+  const hideOmittedStore = sessionStorageStore<"true" | "">("rank-hide-omitted", "true");
+  const useCustomRanksStore = sessionStorageStore<"" | "true">("rank-show-custom", "");
+
+  const hideAlliances = $derived(!!$hideAlliancesStore);
+  const hideOmitted = $derived(!!$hideOmittedStore && rankData.type == "picklist");
+  const useCustomRanks = $derived(!!$useCustomRanksStore && rankData.type == "picklist");
+
+  const showAllianceToggle = $derived(pageData.compRecord.alliances?.some((a) => a.teams.length));
+  const showOmittedToggle = $derived(
+    rankData.type == "picklist" && Object.keys(rankData.pickList.omittedTeams || {}).length,
+  );
+  const showCustomRanksToggle = $derived(rankData.type == "picklist");
 
   const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
   const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
@@ -133,11 +143,11 @@
   });
 
   $effect(() => {
-    if (!useCustomRanks) {
-      untrack(() => {
-        movingTeam = undefined;
-      });
-    }
+    if (!useCustomRanks) untrack(() => (movingTeam = undefined));
+  });
+
+  $effect(() => {
+    if ($useCustomRanksStore) setupCustom();
   });
 
   function inputUrl(name: string, i: number) {
@@ -194,24 +204,103 @@
       0
     );
   }
+
+  function setupCustom() {
+    if (rankData.type != "picklist") {
+      return;
+    }
+
+    const pickList = $state.snapshot(rankData.pickList);
+
+    if (Object.keys(pickList.customRanks || {}).length == rankData.teams.length) {
+      return;
+    }
+
+    if (!pickList.customRanks) {
+      pickList.customRanks = {};
+    }
+
+    // Really should prevent existing custom ranks from being erased, but this will do for now
+    const indexes = generateNJitteredKeysBetween(null, null, rankData.teams.length);
+
+    rankData.teams.forEach((teamRank, i) => {
+      pickList.customRanks![teamRank.team] = indexes[i];
+    });
+
+    const pickLists = $state.snapshot(rankData.survey.pickLists);
+    pickLists.find((pl) => pl.name == pickList.name)!.customRanks = pickList.customRanks;
+    idb.put("surveys", {
+      ...rankData.survey,
+      pickLists,
+      modified: new Date(),
+    }).onsuccess = invalidateAll;
+  }
 </script>
 
 {#if inputNames.length}
-  <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
-    {#key inputNames}
-      {#each inputNames as name, i}
-        {@const color = inputNames.length > 1 ? colors[i % colors.length] : "var(--color-theme)"}
-        <Anchor route={inputUrl(name, i)} class="flex-col items-stretch {rankData.type == 'picklist' ? 'gap-0!' : ''}">
-          <div class="flex items-start justify-between font-light">
-            <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
-            {#if rankData.type == "picklist"}
-              {rankData.pickList.weights[i].percentage}%
-            {/if}
-          </div>
-          <span class="text-nowrap">{name}</span>
-        </Anchor>
-      {/each}
-    {/key}
+  <div transition:slide>
+    <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
+      {#key inputNames}
+        {#each inputNames as name, i}
+          {@const color = inputNames.length > 1 ? colors[i % colors.length] : "var(--color-theme)"}
+          <Anchor route={inputUrl(name, i)} class="h-12 flex-col items-stretch justify-between gap-0!">
+            <div class="flex items-start justify-between font-light">
+              <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
+              {#if rankData.type == "picklist"}
+                {rankData.pickList.weights[i].percentage}%
+              {/if}
+            </div>
+            <span class="text-nowrap">{name}</span>
+          </Anchor>
+        {/each}
+      {/key}
+    </div>
+  </div>
+{/if}
+
+{#if showAllianceToggle || showOmittedToggle || showCustomRanksToggle}
+  <div class="flex gap-2 text-sm tracking-tighter">
+    {#if showCustomRanksToggle}
+      <Button
+        onclick={() => ($useCustomRanksStore = $useCustomRanksStore ? "" : "true")}
+        class={$useCustomRanksStore ? "font-bold" : "font-light"}
+      >
+        {#if $useCustomRanksStore}
+          <EyeIcon class="text-theme size-5" />
+        {:else}
+          <EyeOffIcon class="text-theme size-5" />
+        {/if}
+        Custom
+      </Button>
+    {/if}
+
+    {#if showAllianceToggle}
+      <Button
+        onclick={() => ($hideAlliancesStore = $hideAlliancesStore ? "" : "true")}
+        class={$hideAlliancesStore ? "font-light" : "font-bold"}
+      >
+        {#if $hideAlliancesStore}
+          <EyeOffIcon class="text-theme size-5" />
+        {:else}
+          <EyeIcon class="text-theme size-5" />
+        {/if}
+        Alliances
+      </Button>
+    {/if}
+
+    {#if showOmittedToggle}
+      <Button
+        onclick={() => ($hideOmittedStore = $hideOmittedStore ? "" : "true")}
+        class={$hideOmittedStore ? "font-light" : "font-bold"}
+      >
+        {#if $hideOmittedStore}
+          <EyeOffIcon class="text-theme size-5" />
+        {:else}
+          <EyeIcon class="text-theme size-5" />
+        {/if}
+        Omitted
+      </Button>
+    {/if}
   </div>
 {/if}
 
