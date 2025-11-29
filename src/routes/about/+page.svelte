@@ -46,6 +46,7 @@
         <li>Customizable fields: toggles, numbers, selectors, textfields, ratings, and timers</li>
         <li>Supports any number of match and non-match (pit) scouting forms</li>
         <li>Data-driven rankings (pick lists and expressions)</li>
+        <li>Editable pick lists: omit and reorder teams</li>
         <li>Optional scout names and match guessing game</li>
         <li>Stores data locally, in the browser</li>
         <li>Export/share survey configs and scouting data via QRF codes or files</li>
@@ -96,6 +97,12 @@
         <li>
           <a href="https://sortablejs.github.io/Sortable/" target="_blank">
             <span class="underline">SortableJS</span>
+            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/TMeerhof/fractional-indexing-jittered" target="_blank">
+            <span class="underline">fractional-indexing-jittered</span>
             <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
           </a>
         </li>
