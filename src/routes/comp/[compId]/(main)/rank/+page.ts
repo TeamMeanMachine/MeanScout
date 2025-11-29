@@ -29,7 +29,10 @@ export const load: PageLoad = async (event) => {
       ...(e.input.from == "expressions" ? e.input.expressionNames : []),
       ...(e.inputs || []).filter((i) => i.from == "expression").map((i) => i.expressionName),
     ]),
-    ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
+    ...surveyRecord.pickLists
+      .flatMap((p) => p.weights)
+      .filter((w) => w.from != "field")
+      .map((w) => w.expressionName),
   ];
 
   const expressions = {

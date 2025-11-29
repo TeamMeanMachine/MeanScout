@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { pickListSchema } from "./rank";
 import { expressionSchema, sortExpressions } from "./expression";
-import type { SingleFieldWithDetails } from "./field";
+import { isNumericField, type SingleFieldWithDetails } from "./field";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
@@ -46,10 +46,7 @@ export function groupRanks(survey: MatchSurvey, orderedSingleFields: SingleField
       { category: "Pick Lists" as const, pickLists: survey.pickLists },
       { category: "Aggregate Expressions" as const, expressions: expressions.survey },
       { category: "Entry Expressions" as const, expressions: expressions.entry },
-      {
-        category: "Fields" as const,
-        fields: orderedSingleFields.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type)),
-      },
+      { category: "Fields" as const, fields: orderedSingleFields.filter(isNumericField) },
     ],
   };
 }

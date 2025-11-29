@@ -145,6 +145,7 @@
                     if (group.category == "Pick Lists") {
                       openDialog(NewPickListDialog, {
                         surveyRecord: survey,
+                        orderedSingleFields: fieldsWithDetails.orderedSingle,
                         expressions: groupedExpressions,
                         oncreate(pickList) {
                           idb.put(
@@ -201,7 +202,7 @@
         Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
       </span>
       <span>Aggregate expressions combine data across matches, e.g. getting a team's highest point contribution.</span>
-      <span>Pick lists couple selected expressions with percentage weights.</span>
+      <span>Pick lists apply percentage weights to selected expressions/fields.</span>
     </div>
   {/if}
 </div>

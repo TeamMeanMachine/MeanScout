@@ -230,9 +230,9 @@
         <li>Create expressions that transform and aggregate your data</li>
         <li>Entry expressions act like derived/computed fields</li>
         <li>Aggregate expressions combine data across matches</li>
-        <li>Create pick lists that pull from expressions with given weights</li>
+        <li>Create pick lists that pull from expressions and fields with given weights</li>
         <li>Once you have data, you can view team rankings for pick lists and expressions</li>
-        <li>Rankings are also available for your numeric (number, toggle, rating, timer) fields</li>
+        <li>Rankings are also available for your numeric fields (numbers, toggles, ratings, timers)</li>
       </ul>
     </div>
 

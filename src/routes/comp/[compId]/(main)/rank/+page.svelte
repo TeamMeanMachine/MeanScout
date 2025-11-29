@@ -23,6 +23,7 @@
 
       openDialog(EditPickListDialog, {
         surveyRecord: data.surveyRecord,
+        orderedSingleFields: data.fieldsWithDetails.orderedSingle,
         expressions: data.expressions,
         pickList,
         index,
@@ -86,7 +87,7 @@
           if (expression.name != previousName) {
             pickLists = pickLists.map((pickList) => {
               pickList.weights = pickList.weights.map((weight) => {
-                if (weight.expressionName == previousName) {
+                if (weight.from != "field" && weight.expressionName == previousName) {
                   weight.expressionName = expression.name;
                 }
                 return weight;

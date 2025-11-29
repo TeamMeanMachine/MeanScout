@@ -104,7 +104,14 @@
 
   const inputNames = $derived.by(() => {
     if (rankData.type == "picklist") {
-      return rankData.pickList.weights.map((w) => w.expressionName);
+      return rankData.pickList.weights
+        .map((w) => {
+          if (w.from == "field") {
+            return orderedSingleFields.find((f) => f.field.id == w.fieldId)?.detailedName;
+          }
+          return w.expressionName;
+        })
+        .filter((i) => i != undefined);
     } else if (rankData.type == "expression") {
       const inputs = $state.snapshot(legacyInputNames);
       if (rankData.expression.inputs?.length) {
@@ -154,6 +161,9 @@
     const path = `comp/${pageData.compRecord.id}/rank?surveyId=${encodeURIComponent(rankData.survey.id)}`;
 
     if (rankData.type == "picklist") {
+      if (rankData.pickList.weights[i].from == "field") {
+        return `${path}&field=${encodeURIComponent(rankData.pickList.weights[i].fieldId)}`;
+      }
       return `${path}&expression=${encodeURIComponent(name)}`;
     } else if (rankData.type == "expression") {
       if (i >= legacyInputNames.length && rankData.expression.inputs?.length) {
@@ -551,24 +561,19 @@
                   >
                     {#if "value" in teamRank && rankData.type != "picklist"}
                       {#each teamRank.inputs as input, i}
-                        {@const inputName = rankData.inputs[i].name}
                         {@const divWidth = input.value * teamRank.percentage}
                         {#if divWidth}
-                          <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                            <div class="truncate">{inputName}</div>
+                          <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                            <div class="truncate">{inputNames[i]}</div>
                           </div>
                         {/if}
                       {/each}
                     {:else if !("value" in teamRank) && rankData.type == "picklist"}
-                      {#each rankData.pickList.weights as weight, i}
+                      {#each rankData.pickList.weights as _, i}
                         {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
                         {#if divWidth}
-                          <div
-                            title={weight.expressionName}
-                            class="overflow-hidden"
-                            style="width:{divWidth.toFixed(2)}%"
-                          >
-                            <div class="truncate">{weight.expressionName}</div>
+                          <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                            <div class="truncate">{inputNames[i]}</div>
                           </div>
                         {/if}
                       {/each}
@@ -606,7 +611,7 @@
                   {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
 
                   {#if divWidth}
-                    <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                    <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                       <div
                         class="border-x-2"
                         style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
@@ -641,7 +646,7 @@
               {#each rankData.pickList.weights as weight, i}
                 {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
                 {#if divWidth}
-                  <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                  <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                     <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed()}%</div>
                   </div>
                 {/if}

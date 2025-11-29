@@ -22,7 +22,10 @@
       ...(e.input.from == "expressions" ? e.input.expressionNames : []),
       ...(e.inputs || []).filter((i) => i.from == "expression").map((i) => i.expressionName),
     ]),
-    ...surveyRecord.pickLists.flatMap((p) => p.weights).map((w) => w.expressionName),
+    ...surveyRecord.pickLists
+      .flatMap((p) => p.weights)
+      .filter((w) => w.from != "field")
+      .map((w) => w.expressionName),
   ]);
 
   const expressions = $derived({
@@ -93,6 +96,7 @@
               onclick={() => {
                 openDialog(EditPickListDialog, {
                   surveyRecord,
+                  orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
                   pickList,
                   index,
@@ -162,6 +166,7 @@
         onclick={() => {
           openDialog(NewPickListDialog, {
             surveyRecord: data.surveyRecord,
+            orderedSingleFields: data.fieldsWithDetails.orderedSingle,
             expressions,
             oncreate(pickList) {
               surveyRecord.pickLists.push(pickList);
@@ -182,7 +187,7 @@
         Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
       </span>
       <span>Aggregate expressions combine data across matches, e.g. getting a team's highest point contribution.</span>
-      <span>Pick lists couple selected expressions with percentage weights.</span>
+      <span>Pick lists apply percentage weights to selected expressions/fields.</span>
     </div>
   {/if}
 </div>
@@ -207,7 +212,7 @@
           if (expression.name != previousName) {
             pickLists = pickLists.map((pickList) => {
               pickList.weights = pickList.weights.map((weight) => {
-                if (weight.expressionName == previousName) {
+                if (weight.from != "field" && weight.expressionName == previousName) {
                   weight.expressionName = expression.name;
                 }
                 return weight;

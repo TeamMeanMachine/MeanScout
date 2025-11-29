@@ -104,7 +104,14 @@
   const inputNames = $derived.by(() => {
     if (!selectedRanking) return [];
     if (selectedRanking.rankData.type == "picklist") {
-      return selectedRanking.rankData.pickList.weights.map((w) => w.expressionName);
+      return selectedRanking.rankData.pickList.weights
+        .map((w) => {
+          if (w.from == "field") {
+            return orderedSingleFields.find((f) => f.field.id == w.fieldId)?.detailedName;
+          }
+          return w.expressionName;
+        })
+        .filter((i) => i != undefined);
     } else if (selectedRanking.rankData.type == "expression") {
       const inputs = $state.snapshot(legacyInputNames);
       if (selectedRanking.rankData.expression.inputs?.length) {
@@ -371,9 +378,18 @@
               onclick={() => {
                 if (!selectedRanking) return;
                 if ("pickList" in selectedRanking) {
+                  if (selectedRanking.pickList.weights[i].from == "field") {
+                    const fieldId = selectedRanking.pickList.weights[i].fieldId;
+                    const field = orderedSingleFields.find((f) => f.field.id == fieldId);
+                    if (field) {
+                      selectedRanking = switchRanking({ survey: selectedRanking.survey, field });
+                      return;
+                    }
+                  }
                   const expression = selectedRanking.survey.expressions.find((e) => e.name == name);
                   if (expression) {
                     selectedRanking = switchRanking({ survey: selectedRanking.survey, expression });
+                    return;
                   }
                 } else if ("expression" in selectedRanking) {
                   if (i >= legacyInputNames.length && selectedRanking.expression.inputs?.length) {
@@ -385,41 +401,25 @@
                         return;
                       }
                     } else if (input?.from == "field") {
-                      const fieldWithDetails = getFieldsWithDetails(
-                        selectedRanking.survey,
-                        pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.survey.id),
-                      ).orderedSingle.find((f) => f.field.id == input.fieldId);
-
-                      if (!fieldWithDetails) {
+                      const field = orderedSingleFields.find((f) => f.field.id == input.fieldId);
+                      if (field) {
+                        selectedRanking = switchRanking({ survey: selectedRanking.survey, field });
                         return;
                       }
-
-                      selectedRanking = switchRanking({
-                        survey: selectedRanking.survey,
-                        field: fieldWithDetails,
-                      });
-                      return;
                     }
                   } else if (selectedRanking.expression.input.from == "expressions") {
                     const expression = selectedRanking.survey.expressions.find((e) => e.name == name);
                     if (expression) {
                       selectedRanking = switchRanking({ survey: selectedRanking.survey, expression });
+                      return;
                     }
                   } else if (selectedRanking.expression.input.from == "fields") {
                     const fieldId = selectedRanking.expression.input.fieldIds[i];
-                    const fieldWithDetails = getFieldsWithDetails(
-                      selectedRanking.survey,
-                      pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.survey.id),
-                    ).orderedSingle.find((f) => f.field.id == fieldId);
-
-                    if (!fieldWithDetails) {
+                    const field = orderedSingleFields.find((f) => f.field.id == fieldId);
+                    if (field) {
+                      selectedRanking = switchRanking({ survey: selectedRanking.survey, field });
                       return;
                     }
-
-                    selectedRanking = switchRanking({
-                      survey: selectedRanking.survey,
-                      field: fieldWithDetails,
-                    });
                   }
                 }
               }}
@@ -566,20 +566,19 @@
               <div class="flex text-center text-xs font-light tracking-tighter" style="width:{percentageStr}">
                 {#if "value" in teamRank && rankData.type != "picklist"}
                   {#each teamRank.inputs as input, i}
-                    {@const inputName = rankData.inputs[i].name}
                     {@const divWidth = input.value * teamRank.percentage}
                     {#if divWidth}
-                      <div title={inputName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                        <div class="truncate">{inputName}</div>
+                      <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                        <div class="truncate">{inputNames[i]}</div>
                       </div>
                     {/if}
                   {/each}
                 {:else if !("value" in teamRank) && rankData.type == "picklist"}
-                  {#each rankData.pickList.weights as weight, i}
+                  {#each rankData.pickList.weights as _, i}
                     {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
                     {#if divWidth}
-                      <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
-                        <div class="truncate">{weight.expressionName}</div>
+                      <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                        <div class="truncate">{inputNames[i]}</div>
                       </div>
                     {/if}
                   {/each}
@@ -617,7 +616,7 @@
               {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
 
               {#if divWidth}
-                <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+                <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                   <div
                     class="border-x-2"
                     style="background-color:{color};height:6px;opacity:{opacity}%;border-color:rgba(0,0,0,0.25)"
@@ -648,7 +647,7 @@
           {#each rankData.pickList.weights as weight, i}
             {@const divWidth = teamRank.inputs[i] * teamRank.percentage}
             {#if divWidth}
-              <div title={weight.expressionName} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
+              <div title={inputNames[i]} class="overflow-hidden" style="width:{divWidth.toFixed(2)}%">
                 <div>{((teamRank.inputs[i] / weight.percentage) * 100).toFixed()}%</div>
               </div>
             {/if}

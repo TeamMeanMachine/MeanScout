@@ -175,3 +175,8 @@ export function getFieldsWithDetails(surveyRecord: Survey, fieldRecords: Field[]
 
   return { topLevel, nested, orderedSingle };
 }
+
+export function isNumericField(field: Field | SingleFieldWithDetails | GroupFieldWithDetails) {
+  const type = "field" in field ? field.field.type : field.type;
+  return ["number", "toggle", "rating", "timer"].includes(type);
+}

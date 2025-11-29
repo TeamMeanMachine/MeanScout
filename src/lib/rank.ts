@@ -6,7 +6,10 @@ import type { MatchSurvey } from "./survey";
 import { type Value } from "./";
 import type { Comp } from "./comp";
 
-const weightSchema = z.object({ expressionName: z.string(), percentage: z.number() });
+const weightSchema = z.discriminatedUnion("from", [
+  z.object({ from: z.literal("expression").optional(), expressionName: z.string(), percentage: z.number() }),
+  z.object({ from: z.literal("field"), fieldId: z.string(), percentage: z.number() }),
+]);
 
 export const pickListSchema = z.object({
   name: z.string(),
@@ -82,12 +85,26 @@ export function getPickListData(
     weightsData[team] = [];
   }
 
-  for (const { percentage, expressionName } of pickList.weights) {
-    const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
-    if (!expression) continue;
+  for (const weight of pickList.weights) {
+    let expression: Expression;
+    if (weight.from == "field") {
+      const field = orderedSingleFields.find((f) => f.field.id == weight.fieldId);
+      if (!field) continue;
+      expression = {
+        input: { from: "fields", fieldIds: [] },
+        inputs: [{ from: "field", fieldId: field.field.id }],
+        method: { type: "average" },
+        name: field.detailedName,
+        scope: "entry",
+      };
+    } else {
+      const exp = surveyRecord.expressions.find((e) => e.name == weight.expressionName);
+      if (!exp) continue;
+      expression = exp;
+    }
 
     const teamData = calculateTeamData(expression, surveyRecord.expressions, entriesByTeam, orderedSingleFields);
-    const normalizedTeamData = normalizeTeamData(teamData, percentage);
+    const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
 
     for (const team in normalizedTeamData) {
       pickListData[team].value += normalizedTeamData[team];
