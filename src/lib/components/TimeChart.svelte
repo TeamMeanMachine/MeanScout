@@ -456,7 +456,7 @@
                   }
                 }}
                 {disabled}
-                class="h-12 flex-col items-stretch justify-between gap-0!"
+                class="h-12 flex-col items-stretch justify-between gap-0! text-nowrap"
               >
                 <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
                 {name}
