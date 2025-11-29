@@ -36,17 +36,45 @@ export const matchSchema = z.object({
 });
 export type Match = z.infer<typeof matchSchema>;
 
+type EntryMatchIdentifier = {
+  match: number;
+  matchSet?: number | undefined;
+  matchLevel?: MatchLevel | undefined;
+};
+
 /**
   Ascending comparison. Returns:
   - 0, if matches share identifiers
   - less than 0, if match a is BEFORE match b
   - greater than 0, if match a is AFTER match b
  */
-export function compareMatches(a: MatchIdentifier, b: MatchIdentifier) {
+export function compareMatches(
+  a: MatchIdentifier | EntryMatchIdentifier | number,
+  b: MatchIdentifier | EntryMatchIdentifier | number,
+) {
+  let aTransformed: MatchIdentifier;
+  let bTransformed: MatchIdentifier;
+
+  if (typeof a == "number") {
+    aTransformed = { number: a };
+  } else if ("match" in a) {
+    aTransformed = { number: a.match, set: a.matchSet, level: a.matchLevel };
+  } else {
+    aTransformed = a;
+  }
+
+  if (typeof b == "number") {
+    bTransformed = { number: b };
+  } else if ("match" in b) {
+    bTransformed = { number: b.match, set: b.matchSet, level: b.matchLevel };
+  } else {
+    bTransformed = b;
+  }
+
   return (
-    matchLevels.indexOf(a.level || "qm") - matchLevels.indexOf(b.level || "qm") ||
-    (a.set || 1) - (b.set || 1) ||
-    a.number - b.number
+    matchLevels.indexOf(aTransformed.level || "qm") - matchLevels.indexOf(bTransformed.level || "qm") ||
+    (aTransformed.set || 1) - (bTransformed.set || 1) ||
+    aTransformed.number - bTransformed.number
   );
 }
 

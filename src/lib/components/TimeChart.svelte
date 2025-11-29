@@ -2,7 +2,7 @@
   import type { CompPageData } from "$lib/comp";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import { sortExpressions, type Expression } from "$lib/expression";
-  import { compareMatches, matchUrl, sessionStorageStore, type Match, type MatchIdentifier, type Team } from "$lib";
+  import { compareMatches, getAllMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
   import { z } from "zod";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import type { Entry, MatchEntry } from "$lib/entry";
@@ -11,14 +11,13 @@
   import {
     ArrowRightIcon,
     ChartColumnBigIcon,
-    ChartColumnStackedIcon,
     ChevronDownIcon,
-    ChevronUpIcon,
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
   import Anchor from "./Anchor.svelte";
   import { goto } from "$app/navigation";
+  import { slide } from "svelte/transition";
 
   let {
     pageData,
@@ -28,32 +27,36 @@
     team: Team;
   } = $props();
 
-  const showInputs = sessionStorageStore<"true" | "">("metric-show-inputs", "true");
-
   const matchSurveys = $derived(
     pageData.surveyRecords.filter((survey) => survey.type == "match").toSorted((a, b) => a.name.localeCompare(b.name)),
   );
 
   const groupedRanks = $derived(
     matchSurveys
-      .flatMap((survey) => {
+      .map((survey) => {
         const fieldsWithDetails = getFieldsWithDetails(
           survey,
           pageData.fieldRecords.filter((f) => f.surveyId == survey.id),
         );
-        return groupRanks(survey, fieldsWithDetails.orderedSingle);
+
+        const surveyGroups = groupRanks(survey, fieldsWithDetails.orderedSingle);
+
+        return {
+          survey: surveyGroups.survey,
+          groups: surveyGroups.groups.filter((group) => {
+            if (group.pickLists?.length) {
+              return false;
+            }
+
+            if (group.expressions?.length) {
+              return !group.expressions.some((e) => e.scope == "survey");
+            }
+
+            return true;
+          }),
+        };
       })
-      .filter((group) => {
-        if (group.pickLists?.length) {
-          return false;
-        }
-
-        if (group.expressions?.length) {
-          return !group.expressions.some((e) => e.scope == "survey");
-        }
-
-        return true;
-      }),
+      .filter((group) => group.groups.length),
   );
 
   const metricViewSchema = z
@@ -135,55 +138,22 @@
       return entry.type == "match" && entry.team == team.number && entry.surveyId == params.survey.id;
     });
 
-    const matches = pageData.compRecord.matches.filter((m) =>
-      [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
-    );
-
-    let allMatches: (Match & { extraTeams?: string[] })[] = [...matches];
-    for (const entry of entries) {
-      const entryMatchIdentifier: MatchIdentifier = {
-        number: entry.match,
-        level: entry.matchLevel,
-        set: entry.matchSet,
-      };
-      const existingMatch = allMatches.find((m) => compareMatches(m, entryMatchIdentifier) == 0);
-
-      if (existingMatch) {
-        const teams = [
-          existingMatch.red1,
-          existingMatch.red2,
-          existingMatch.red3,
-          existingMatch.blue1,
-          existingMatch.blue2,
-          existingMatch.blue3,
-          ...(existingMatch.extraTeams || []),
-        ];
-
-        if (!teams.includes(entry.team)) {
-          existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
-            a.localeCompare(b),
-          );
-        }
-      } else {
-        allMatches.push({
-          ...entryMatchIdentifier,
-          red1: "",
-          red2: "",
-          red3: "",
-          blue1: "",
-          blue2: "",
-          blue3: "",
-          extraTeams: [entry.team],
-        });
-      }
-    }
-
-    allMatches = allMatches.toSorted(compareMatches);
+    const allMatches = getAllMatches(pageData.compRecord, entries).matches.filter((match) => {
+      return [
+        match.red1,
+        match.red2,
+        match.red3,
+        match.blue1,
+        match.blue2,
+        match.blue3,
+        ...(match.extraTeams || []),
+      ].includes(team.number);
+    });
 
     const entriesPerMatch = allMatches.map((match) => ({
       match,
       entries: entries
-        .filter((e) => compareMatches({ number: e.match, level: e.matchLevel, set: e.matchSet }, match) == 0)
+        .filter((e) => compareMatches(e, match) == 0)
         .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
     }));
 
@@ -229,6 +199,7 @@
 
   function switchMetric(params: Parameters<typeof getMetric>[0]) {
     selecting = false;
+    scrollTo(0, 0);
     const metric = getMetric(params);
     if (metric) {
       if ("expression" in metric) {
@@ -255,19 +226,39 @@
     const max = values.length ? Math.max(...values) : 0;
     const inputMaxes = data.map((d) => (d.inputs?.length ? Math.max(...d.inputs.map((i) => i.value)) : undefined));
 
-    let inputNames: string[] | undefined = undefined;
-    if (!("expression" in params)) {
-      inputNames = undefined;
-    } else if (params.expression.input.from == "expressions") {
-      inputNames = params.expression.input.expressionNames;
-    } else if (params.expression.input.from == "fields") {
-      inputNames = params.expression.input.fieldIds
-        .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
-        .filter((f) => f !== undefined);
+    let legacyInputNames: string[] = [];
+    let inputNames: string[] = [];
+
+    if ("expression" in params) {
+      if (params.expression.input.from == "expressions") {
+        legacyInputNames = params.expression.input.expressionNames;
+      } else if (params.expression.input.from == "fields") {
+        legacyInputNames = params.expression.input.fieldIds
+          .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+          .filter((f) => f !== undefined);
+      }
+      inputNames = $state.snapshot(legacyInputNames);
+      if (params.expression.inputs?.length) {
+        inputNames = [
+          ...(inputNames || []),
+          ...params.expression.inputs
+            .map((i) => {
+              if (i.from == "expression") {
+                return i.expressionName;
+              } else if (i.from == "tba") {
+                return i.tbaMetric;
+              } else {
+                return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+              }
+            })
+            .filter((i) => i !== undefined),
+        ];
+      }
     }
 
     return {
       ...params,
+      legacyInputNames,
       inputNames,
       max,
       min: values.length ? Math.min(...values) : 0,
@@ -306,28 +297,74 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <Button onclick={() => (selecting = !selecting)} class="text-sm">
-    <ChartColumnBigIcon class="text-theme size-5" />
-    {#if selectedMetric}
-      <span class="grow">
-        {#if "expression" in selectedMetric}
-          {selectedMetric.expression.name}
-        {:else if "field" in selectedMetric}
-          {selectedMetric.field.detailedName}
-        {/if}
-      </span>
-    {:else}
-      <span class="grow">Select</span>
-    {/if}
+  <div class="flex flex-col">
+    <Button onclick={() => (selecting = !selecting)} class="text-sm">
+      <ChartColumnBigIcon class="text-theme size-5" />
+      {#if selectedMetric}
+        <span class="grow">
+          {#if "expression" in selectedMetric}
+            {selectedMetric.expression.name}
+          {:else if "field" in selectedMetric}
+            {selectedMetric.field.detailedName}
+          {/if}
+        </span>
+      {:else}
+        <span class="grow">Select</span>
+      {/if}
 
-    {#if !selecting && selectedMetric}
-      <ChevronDownIcon class="text-theme size-5" />
-    {:else}
-      <ChevronUpIcon class="text-theme size-5" />
-    {/if}
-  </Button>
+      <ChevronDownIcon
+        class="text-theme size-5 transition-[rotate] {selecting || !selectedMetric ? 'rotate-180' : ''}"
+      />
+    </Button>
 
-  {#if !selecting && selectedMetric}
+    {#if selecting || !selectedMetric}
+      <div class="flex flex-col gap-4 border-2 border-t-0 border-neutral-800 p-3 pt-0" transition:slide>
+        {#each groupedRanks as { survey, groups }}
+          <div class="flex flex-col gap-3 first:mt-3">
+            <h2 class="text-sm font-bold">{survey.name}</h2>
+
+            {#each groups as group}
+              <div class="flex flex-col">
+                <span class="text-xs font-light">{group.category}</span>
+
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {#each group.expressions || [] as expression}
+                    {@const selected =
+                      selectedMetric &&
+                      "expression" in selectedMetric &&
+                      selectedMetric.expression.name == expression.name}
+
+                    <Button
+                      onclick={() => (selectedMetric = switchMetric({ survey, expression }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {expression.name}
+                    </Button>
+                  {/each}
+
+                  {#each group.fields || [] as field}
+                    {@const selected =
+                      selectedMetric &&
+                      "field" in selectedMetric &&
+                      selectedMetric.field.valueIndex == field.valueIndex}
+
+                    <Button
+                      onclick={() => (selectedMetric = switchMetric({ survey, field }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {field.detailedName}
+                    </Button>
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  {#if selectedMetric}
     {@const expressionParam =
       "expression" in selectedMetric && "expression=" + encodeURIComponent(selectedMetric.expression.name)}
     {@const fieldParam = "field" in selectedMetric && "field=" + encodeURIComponent(selectedMetric.field.field.id)}
@@ -361,58 +398,71 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      {#if selectedMetric.inputNames?.length}
-        <div class="flex flex-wrap gap-x-3 gap-y-2 text-xs">
-          <Button
-            onclick={() => ($showInputs = $showInputs ? "" : "true")}
-            disabled={selectedMetric.inputNames.length <= 1}
-            class="py-1 {$showInputs ? 'font-bold' : 'font-light'}"
-          >
-            {#if $showInputs && selectedMetric.inputNames.length > 1}
-              <ChartColumnStackedIcon class="text-theme size-5" />
-            {:else}
-              <ChartColumnBigIcon class="text-theme size-5" />
-            {/if}
-          </Button>
+      {#if selectedMetric.inputNames.length}
+        <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
+          {#key selectedMetric.inputNames}
+            {#each selectedMetric.inputNames as name, i}
+              {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
+              {@const color = disabled
+                ? "var(--color-neutral-500)"
+                : selectedMetric.inputNames.length > 1
+                  ? colors[i % colors.length]
+                  : "var(--color-theme)"}
 
-          {#each selectedMetric.inputNames as name, i}
-            {@const disabled = selectedMetric.data.every((d) => !d.inputs?.[i].value)}
-            {@const color = disabled ? "var(--color-neutral-500)" : colors[i % colors.length]}
+              <Button
+                onclick={() => {
+                  if (selectedMetric && "expression" in selectedMetric) {
+                    if (i >= selectedMetric.legacyInputNames.length && selectedMetric.expression.inputs?.length) {
+                      const input = selectedMetric.expression.inputs.at(i - selectedMetric.legacyInputNames.length);
+                      if (input?.from == "expression") {
+                        const expression = selectedMetric.survey.expressions.find(
+                          (e) => e.name == input.expressionName,
+                        );
+                        if (expression) {
+                          selectedMetric = switchMetric({ survey: selectedMetric.survey, expression });
+                          return;
+                        }
+                      } else if (input?.from == "field") {
+                        const fieldWithDetails = getFieldsWithDetails(
+                          selectedMetric.survey,
+                          pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
+                        ).orderedSingle.find((f) => f.field.id == input.fieldId);
 
-            <Button
-              onclick={() => {
-                if (selectedMetric && "expression" in selectedMetric) {
-                  if (selectedMetric.expression.input.from == "expressions") {
-                    selectedMetric = switchMetric({
-                      survey: selectedMetric.survey,
-                      expression: selectedMetric.survey.expressions.find((e) => e.name == name)!,
-                    });
-                  } else if (selectedMetric.expression.input.from == "fields") {
-                    const fieldId = selectedMetric.expression.input.fieldIds[i];
-                    const fieldWithDetails = getFieldsWithDetails(
-                      selectedMetric.survey,
-                      pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
-                    ).orderedSingle.find((f) => f.field.id == fieldId);
+                        if (!fieldWithDetails) {
+                          return;
+                        }
 
-                    if (!fieldWithDetails) {
-                      return;
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, field: fieldWithDetails });
+                        return;
+                      }
+                    } else if (selectedMetric.expression.input.from == "expressions") {
+                      const expression = selectedMetric.survey.expressions.find((e) => e.name == name);
+                      if (expression) {
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, expression });
+                        return;
+                      }
+                    } else if (selectedMetric.expression.input.from == "fields") {
+                      const fieldId = selectedMetric.expression.input.fieldIds[i];
+                      const field = getFieldsWithDetails(
+                        selectedMetric.survey,
+                        pageData.fieldRecords.filter((f) => f.surveyId == selectedMetric!.survey.id),
+                      ).orderedSingle.find((f) => f.field.id == fieldId);
+
+                      if (field) {
+                        selectedMetric = switchMetric({ survey: selectedMetric.survey, field });
+                        return;
+                      }
                     }
-
-                    selectedMetric = switchMetric({
-                      survey: selectedMetric.survey,
-                      field: fieldWithDetails,
-                    });
                   }
-                }
-              }}
-              {disabled}
-            >
-              {#if $showInputs && selectedMetric.inputNames.length > 1}
+                }}
+                {disabled}
+                class="h-12 flex-col items-stretch justify-between gap-0!"
+              >
                 <div class="inline-block" style="background-color:{color};height:6px;width:20px"></div>
-              {/if}
-              {name}
-            </Button>
-          {/each}
+                {name}
+              </Button>
+            {/each}
+          {/key}
         </div>
       {/if}
 
@@ -421,8 +471,16 @@
           {@const color = `rgb(var(--theme-color) / ${(percentage * 100).toFixed(2)}%)`}
 
           <div class="flex shrink-0 grow basis-8 flex-col">
-            <div>{value ?? "_"}</div>
-            {#if $showInputs && inputs && inputs.length > 1}
+            <div
+              title={"expression" in selectedMetric
+                ? selectedMetric.expression.name
+                : "field" in selectedMetric
+                  ? selectedMetric.field.detailedName
+                  : undefined}
+            >
+              {value ?? "_"}
+            </div>
+            {#if inputs && inputs.length > 1}
               {@const totalHeightPixels = percentage * 256}
 
               <div class="flex flex-col" style="height:{totalHeightPixels}px">
@@ -432,6 +490,7 @@
                     {@const heightPercent = (input.value / (value || 0)) * 100}
 
                     <div
+                      title={selectedMetric.inputNames?.[i]}
                       class="flex flex-col justify-center overflow-hidden border-y text-xs text-black"
                       style="background-color:{color};height:{heightPercent}%;border-color:rgba(0,0,0,0.25)"
                     >
@@ -468,37 +527,5 @@
       View rank
       <ArrowRightIcon class="text-theme size-5" />
     </Anchor>
-  {:else}
-    {#each groupedRanks as group}
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-col">
-          <h2 class="text-sm">{group.survey.name}</h2>
-          <span class="text-xs font-light">{group.category}</span>
-        </div>
-
-        <div class="flex flex-wrap gap-2 text-sm">
-          {#each group.expressions || [] as expression}
-            <Button
-              onclick={() => {
-                scrollTo(0, 0);
-                selectedMetric = switchMetric({ survey: group.survey, expression });
-              }}
-            >
-              {expression.name}
-            </Button>
-          {/each}
-          {#each group.fields || [] as field}
-            <Button
-              onclick={() => {
-                scrollTo(0, 0);
-                selectedMetric = switchMetric({ survey: group.survey, field });
-              }}
-            >
-              {field.detailedName}
-            </Button>
-          {/each}
-        </div>
-      </div>
-    {/each}
   {/if}
 </div>

@@ -14,6 +14,7 @@ Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for f
 - [node-qrcode](https://github.com/soldair/node-qrcode)
 - [Zod](https://zod.dev/)
 - [SortableJS](https://sortablejs.github.io/Sortable/)
+- [fractiona-indexing-jittered](https://github.com/TMeerhof/fractional-indexing-jittered)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide](https://lucide.dev/)
 - [Fira Code](https://github.com/tonsky/FiraCode)

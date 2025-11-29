@@ -89,10 +89,7 @@
 
           for (const { team, tbaMetrics } of breakdowns) {
             const entries = pageData.entryRecords.filter(
-              (e) =>
-                e.team == team &&
-                e.type == "match" &&
-                compareMatches(match, { number: e.match, set: e.matchSet, level: e.matchLevel }) == 0,
+              (e) => e.team == team && e.type == "match" && compareMatches(match, e) == 0,
             );
             for (const entry of entries) {
               entryStore.put({ ...$state.snapshot(entry), tbaMetrics });

@@ -20,13 +20,7 @@
     show: "expressions" | "raw";
   } = $props();
 
-  const sortedEntryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
-  const entryExpressions = Object.groupBy(sortedEntryExpressions, (e) => {
-    if (e.input.from == "expressions") return "derived";
-    if (e.input.from == "tba") return "tba";
-    if (e.input.from == "fields") return "primitive";
-    return "";
-  });
+  const entryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
 
   const leftStickColumnName = "left-16";
 
@@ -79,7 +73,7 @@
   const entriesPerMatch = allMatches.map((match) => ({
     match,
     entries: entries
-      .filter((e) => compareMatches({ number: e.match, level: e.matchLevel, set: e.matchSet }, match) == 0)
+      .filter((e) => compareMatches(e, match) == 0)
       .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
   }));
 
@@ -90,7 +84,7 @@
   function getExpressionValues(entry: MatchEntry) {
     const values: Record<string, Value> = {};
 
-    for (const expression of sortedEntryExpressions) {
+    for (const expression of entryExpressions) {
       const value = getExpressionData(
         pageData.compRecord,
         expression,
@@ -151,26 +145,13 @@
         {/if}
 
         {#if show == "expressions"}
-          {#each ["derived", "tba", "primitive"] as const as input}
-            {#if entryExpressions[input]?.length}
-              <th
-                colspan={entryExpressions[input]?.length}
-                class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
-              >
-                <div class="sticky right-2 {leftStickColumnName} inline">
-                  From
-                  {#if input == "derived"}
-                    expressions
-                  {:else if input == "tba"}
-                    TBA
-                  {:else if input == "primitive"}
-                    fields
-                  {/if}
-                </div>
-              </th>
-              <td class="border-t border-r border-neutral-700"></td>
-            {/if}
-          {/each}
+          <th
+            colspan={entryExpressions.length}
+            class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
+          >
+            <div class="sticky right-2 {leftStickColumnName} inline">Expressions</div>
+          </th>
+          <td class="border-t border-r border-neutral-700"></td>
         {:else}
           {#if surveyRecord.tbaMetrics?.length}
             <th
@@ -210,23 +191,19 @@
         {/if}
 
         {#if show == "expressions"}
-          {#each ["derived", "tba", "primitive"] as const as input}
-            {#if entryExpressions[input]?.length}
-              {#each entryExpressions[input] as entryExpression}
-                <th class="border-b border-neutral-700 p-1">
-                  <Anchor
-                    route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
-                      surveyRecord.id,
-                    )}&expression={encodeURIComponent(entryExpression.name)}"
-                    class="justify-center p-1! text-center!"
-                  >
-                    {entryExpression.name}
-                  </Anchor>
-                </th>
-              {/each}
-              <td class="border-r border-b border-neutral-700"></td>
-            {/if}
+          {#each entryExpressions as entryExpression}
+            <th class="border-b border-neutral-700 p-1">
+              <Anchor
+                route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
+                  surveyRecord.id,
+                )}&expression={encodeURIComponent(entryExpression.name)}"
+                class="justify-center p-1! text-center!"
+              >
+                {entryExpression.name}
+              </Anchor>
+            </th>
           {/each}
+          <td class="border-r border-b border-neutral-700"></td>
         {:else}
           {#if surveyRecord.tbaMetrics?.length}
             {#each surveyRecord.tbaMetrics as tbaMetric}
@@ -320,17 +297,12 @@
 
             {#if show == "expressions"}
               {@const values = getExpressionValues(entry)}
-              {#each ["derived", "tba", "primitive"] as const as input}
-                {#if entryExpressions[input]?.length}
-                  {#each entryExpressions[input] as entryExpression}
-                    {@const value = values[entryExpression.name]}
-                    <td class="border-b border-neutral-800 p-2">
-                      {(!entry.absent && value) || ""}
-                    </td>
-                  {/each}
-                  <td class="border-r border-neutral-800"></td>
-                {/if}
+
+              {#each entryExpressions as entryExpression}
+                {@const value = values[entryExpression.name]}
+                <td class="border-b border-neutral-800 p-2">{(!entry.absent && value) || ""}</td>
               {/each}
+              <td class="border-r border-neutral-800"></td>
             {:else}
               {#if surveyRecord.tbaMetrics?.length}
                 {@const tbaMetrics = surveyRecord.tbaMetrics.map(
@@ -389,14 +361,10 @@
             {/if}
 
             {#if show == "expressions"}
-              {#each ["derived", "tba", "primitive"] as const as input}
-                {#if entryExpressions[input]?.length}
-                  {#each entryExpressions[input]}
-                    <td class="border-b border-neutral-800 p-2"></td>
-                  {/each}
-                  <td class="border-r border-neutral-800"></td>
-                {/if}
+              {#each entryExpressions}
+                <td class="border-b border-neutral-800 p-2"></td>
               {/each}
+              <td class="border-r border-neutral-800"></td>
             {:else}
               {#if surveyRecord.tbaMetrics?.length}
                 {#each surveyRecord.tbaMetrics}

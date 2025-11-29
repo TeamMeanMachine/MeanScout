@@ -2,6 +2,15 @@
   import type { PageProps } from "./$types";
   import Anchor from "$lib/components/Anchor.svelte";
   import { goto } from "$app/navigation";
+  import Button from "$lib/components/Button.svelte";
+  import { PlusIcon } from "@lucide/svelte";
+  import { openDialog } from "$lib/dialog";
+  import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
+  import type { MatchSurvey } from "$lib/survey";
+  import { type SingleFieldWithDetails } from "$lib/field";
+  import { idb } from "$lib/idb";
+  import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
+  import type { EntryExpression, SurveyExpression } from "$lib/expression";
 
   let { data }: PageProps = $props();
 
@@ -17,28 +26,28 @@
   });
 
   function filterGroupedRanks(search: string) {
-    return structuredClone(data.groupedRanks)
-      .map((group) => {
+    return structuredClone(data.groupedRanks).map((surveyGroups) => {
+      surveyGroups.groups = surveyGroups.groups.map((group) => {
         if (!search) return group;
 
         if (group.pickLists?.length) {
           group.pickLists = group.pickLists.filter((pl) => pl.name.toLowerCase().replaceAll(" ", "").includes(search));
-          if (group.pickLists.length) return group;
         }
 
         if (group.expressions?.length) {
           group.expressions = group.expressions.filter((e) =>
             e.name.toLowerCase().replaceAll(" ", "").includes(search),
-          );
-          if (group.expressions.length) return group;
+          ) as SurveyExpression[] | EntryExpression[];
         }
 
         if (group.fields?.length) {
           group.fields = group.fields.filter((f) => f.detailedName.toLowerCase().replaceAll(" ", "").includes(search));
-          if (group.fields.length) return group;
         }
-      })
-      .filter((group) => group !== undefined);
+
+        return group;
+      });
+      return surveyGroups;
+    });
   }
 
   function onsearchinput(value: string) {
@@ -52,8 +61,9 @@
 
   function onsearchenter() {
     if (filteredGroupedRanks.length) {
-      const group = filteredGroupedRanks[0];
-      const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(group.survey.id)}`;
+      const group = filteredGroupedRanks[0].groups[0];
+      const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(filteredGroupedRanks[0].survey.id)}`;
+
       if (group.pickLists?.length) {
         goto(`${path}&picklist=${encodeURIComponent(group.pickLists[0].name)}`);
       } else if (group.expressions?.length) {
@@ -62,6 +72,33 @@
         goto(`${path}&field=${encodeURIComponent(group.fields[0].field.id)}`);
       }
     }
+  }
+
+  function newExpression(
+    surveyRecord: MatchSurvey,
+    orderedSingleFields: SingleFieldWithDetails[],
+    groupedExpressions: { entry: EntryExpression[]; survey: SurveyExpression[] },
+    constrain: { scope: "entry" | "survey" },
+  ) {
+    openDialog(NewExpressionDialog, {
+      surveyRecord,
+      orderedSingleFields,
+      expressions: groupedExpressions,
+      constrain,
+      oncreate(expression) {
+        idb.put(
+          "surveys",
+          $state.snapshot({
+            ...surveyRecord,
+            expressions: [...surveyRecord.expressions, expression],
+            modified: new Date(),
+          }),
+        ).onsuccess = () => {
+          const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(surveyRecord.id)}`;
+          goto(`${path}&expression=${encodeURIComponent(expression.name)}`, { invalidateAll: true });
+        };
+      },
+    });
   }
 </script>
 
@@ -91,43 +128,81 @@
       </label>
     </div>
 
-    {#each filteredGroupedRanks as group}
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-col">
-          <h2 class="text-sm">{group.survey.name}</h2>
-          <span class="text-xs font-light">{group.category}</span>
-        </div>
+    {#each filteredGroupedRanks as { survey, fieldsWithDetails, sortedExpressions, groupedExpressions, groups }}
+      {@const path = `comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`}
 
-        <div class="flex flex-wrap gap-2 text-sm">
-          {#each group.pickLists || [] as pickList}
-            <Anchor
-              route="comp/{data.compRecord.id}/rank?surveyId={encodeURIComponent(
-                group.survey.id,
-              )}&picklist={encodeURIComponent(pickList.name)}"
-            >
-              {pickList.name}
-            </Anchor>
-          {/each}
-          {#each group.expressions || [] as expression}
-            <Anchor
-              route="comp/{data.compRecord.id}/rank?surveyId={encodeURIComponent(
-                group.survey.id,
-              )}&expression={encodeURIComponent(expression.name)}"
-            >
-              {expression.name}
-            </Anchor>
-          {/each}
-          {#each group.fields || [] as field}
-            <Anchor
-              route="comp/{data.compRecord.id}/rank?surveyId={encodeURIComponent(
-                group.survey.id,
-              )}&field={encodeURIComponent(field.field.id)}"
-            >
-              {field.detailedName}
-            </Anchor>
-          {/each}
-        </div>
+      <div class="flex flex-col gap-3">
+        <h2 class="text-sm font-bold">{survey.name}</h2>
+
+        {#each groups as group}
+          <div class="flex flex-col">
+            <span class="text-xs font-light">{group.category}</span>
+
+            <div class="flex flex-wrap gap-2 text-sm">
+              {#if group.category != "Fields"}
+                <Button
+                  onclick={() => {
+                    if (group.category == "Pick Lists") {
+                      openDialog(NewPickListDialog, {
+                        surveyRecord: survey,
+                        orderedSingleFields: fieldsWithDetails.orderedSingle,
+                        expressions: groupedExpressions,
+                        oncreate(pickList) {
+                          idb.put(
+                            "surveys",
+                            $state.snapshot({
+                              ...survey,
+                              pickLists: [...survey.pickLists, pickList],
+                              modified: new Date(),
+                            }),
+                          ).onsuccess = () => {
+                            const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`;
+                            goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { invalidateAll: true });
+                          };
+                        },
+                      });
+                    } else if (group.category == "Aggregate Expressions") {
+                      newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, { scope: "survey" });
+                    } else if (group.category == "Entry Expressions") {
+                      newExpression(survey, fieldsWithDetails.orderedSingle, groupedExpressions, { scope: "entry" });
+                    }
+                  }}
+                  disabled={group.category == "Pick Lists" && !sortedExpressions.length}
+                  class="size-9 justify-center p-1!"
+                >
+                  <PlusIcon class="text-theme" />
+                </Button>
+              {/if}
+
+              {#if group.category == "Pick Lists"}
+                {#each group.pickLists as pickList}
+                  <Anchor route="{path}&picklist={encodeURIComponent(pickList.name)}">{pickList.name}</Anchor>
+                {/each}
+              {/if}
+
+              {#if group.category == "Aggregate Expressions" || group.category == "Entry Expressions"}
+                {#each group.expressions as expression}
+                  <Anchor route="{path}&expression={encodeURIComponent(expression.name)}">{expression.name}</Anchor>
+                {/each}
+              {/if}
+
+              {#if group.category == "Fields"}
+                {#each group.fields as field}
+                  <Anchor route="{path}&field={encodeURIComponent(field.field.id)}">{field.detailedName}</Anchor>
+                {/each}
+              {/if}
+            </div>
+          </div>
+        {/each}
       </div>
     {/each}
+
+    <div class="flex flex-col gap-2 text-sm font-light">
+      <span>
+        Entry expressions act like derived/computed fields, e.g. getting a team's point contribution every match.
+      </span>
+      <span>Aggregate expressions combine data across matches, e.g. getting a team's highest point contribution.</span>
+      <span>Pick lists apply percentage weights to selected expressions/fields.</span>
+    </div>
   {/if}
 </div>

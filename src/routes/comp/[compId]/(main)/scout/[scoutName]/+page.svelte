@@ -45,9 +45,7 @@
       </div>
 
       {#each data.entries as entry}
-        {@const winner = data.predictionsPerMatch.find(
-          (m) => compareMatches(m, { number: entry.match, set: entry.matchSet, level: entry.matchLevel }) == 0,
-        )?.winner}
+        {@const winner = data.predictionsPerMatch.find((m) => compareMatches(m, entry) == 0)?.winner}
         {@const predictionWeight = winner && winner == entry.prediction}
         {@const predictionColor =
           entry.prediction == "red" ? "text-red" : entry.prediction == "blue" ? "text-blue" : ""}

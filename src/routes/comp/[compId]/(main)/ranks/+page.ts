@@ -1,3 +1,4 @@
+import { sortExpressions } from "$lib/expression";
 import { getFieldsWithDetails } from "$lib/field";
 import { groupRanks } from "$lib/survey";
 import type { PageLoad } from "./$types";
@@ -11,12 +12,25 @@ export const load: PageLoad = async (event) => {
 
   const showRanking = data.fieldRecords.length && data.entryRecords.length;
 
-  const groupedRanks = matchSurveys.flatMap((survey) => {
+  const groupedRanks = matchSurveys.map((survey) => {
     const fieldsWithDetails = getFieldsWithDetails(
       survey,
       data.fieldRecords.filter((f) => f.surveyId == survey.id),
     );
-    return groupRanks(survey, fieldsWithDetails.orderedSingle);
+
+    const sortedExpressions = survey.expressions.toSorted(sortExpressions);
+
+    const groupedExpressions = {
+      survey: sortedExpressions.filter((e) => e.scope == "survey"),
+      entry: sortedExpressions.filter((e) => e.scope == "entry"),
+    };
+
+    return {
+      fieldsWithDetails,
+      sortedExpressions,
+      groupedExpressions,
+      ...groupRanks(survey, fieldsWithDetails.orderedSingle),
+    };
   });
 
   return { title: "Ranks", showRanking, groupedRanks };

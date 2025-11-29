@@ -1,12 +1,19 @@
 <script lang="ts">
   import { parseValueFromString } from "$lib";
-  import { mapExpressionTypes, reduceExpressionTypes, type Expression } from "$lib/expression";
+  import {
+    mapExpressionTypes,
+    reduceExpressionTypes,
+    type EntryExpression,
+    type Expression,
+    type SurveyExpression,
+  } from "$lib/expression";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
-  import { PenSquareIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
+  import DeleteExpressionDialog from "./DeleteExpressionDialog.svelte";
 
   let {
     surveyRecord,
@@ -21,12 +28,8 @@
     surveyRecord: MatchSurvey;
     orderedSingleFields: SingleFieldWithDetails[];
     expressions: {
-      entryDerived: Expression[];
-      entryTba: Expression[];
-      entryPrimitive: Expression[];
-      surveyDerived: Expression[];
-      surveyTba: Expression[];
-      surveyPrimitive: Expression[];
+      entry: EntryExpression[];
+      survey: SurveyExpression[];
     };
     expression: Expression;
     index: number;
@@ -35,7 +38,7 @@
     ondelete: () => void;
   } = $props();
 
-  let { name, scope, input, method } = $state(structuredClone($state.snapshot(expression)));
+  let { name, scope, input, inputs, method } = $state(structuredClone($state.snapshot(expression)));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -57,12 +60,17 @@
         return;
       }
 
-      if (input.from == "fields" && input.fieldIds.length == 0) {
+      if (input.from == "fields" && input.fieldIds.length == 0 && !inputs?.length) {
         error = "no inputs selected!";
         return;
       }
 
-      if (input.from == "expressions" && input.expressionNames.length == 0) {
+      if (input.from == "tba" && input.metrics.length == 0 && !inputs?.length) {
+        error = "no inputs selected!";
+        return;
+      }
+
+      if (input.from == "expressions" && input.expressionNames.length == 0 && !inputs?.length) {
         error = "no inputs selected!";
         return;
       }
@@ -74,7 +82,7 @@
         }));
       }
 
-      onupdate({ name, scope, input, method });
+      onupdate({ name, scope, input, inputs, method });
       closeDialog();
     },
   };
@@ -86,8 +94,12 @@
   <Button
     disabled={usedExpressionNames?.includes(expression.name)}
     onclick={() => {
-      ondelete();
-      closeDialog();
+      openDialog(DeleteExpressionDialog, {
+        ondelete() {
+          ondelete();
+          closeDialog();
+        },
+      });
     }}
   >
     <Trash2Icon class="text-theme size-5" />
@@ -172,7 +184,7 @@
       });
     }}
   >
-    <PenSquareIcon class="text-theme" />
+    <SquarePenIcon class="text-theme" />
     Edit Converters
   </Button>
 {:else if method.type == "multiply"}
@@ -187,97 +199,107 @@
   </label>
 {/if}
 
-{#if input.from == "expressions"}
-  {#snippet expressionButton(exp: Expression)}
-    {@const inputIndex = input.expressionNames.findIndex((expressionName) => expressionName == exp.name)}
+{#snippet expressionButton(exp: Expression)}
+  {@const isLegacySelected =
+    input.from == "expressions" ? input.expressionNames.some((name) => name == exp.name) : false}
+  {@const isSelected = isLegacySelected || inputs?.some((i) => i.from == "expression" && i.expressionName == exp.name)}
 
-    <Button
-      onclick={() => {
-        if (inputIndex != -1) {
-          input.expressionNames = input.expressionNames.toSpliced(inputIndex, 1);
-        } else {
-          input.expressionNames = [...input.expressionNames, exp.name];
-        }
-      }}
-    >
-      {#if inputIndex != -1}
-        <SquareCheckBigIcon class="text-theme" />
-        <span class="text-base font-bold">{exp.name}</span>
-      {:else}
-        <SquareIcon class="text-theme" />
-        {exp.name}
-      {/if}
-    </Button>
-  {/snippet}
+  <Button
+    onclick={() => {
+      if (input.from == "expressions") {
+        input.expressionNames = input.expressionNames.filter((name) => name != exp.name);
+      }
 
-  <div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
-    {#if scope == "survey"}
-      {#if input.from == "expressions" && expressions.surveyDerived.length}
-        <div class="flex flex-col gap-2">
-          <span>Aggregate Expressions <span class="text-xs">(from expressions)</span></span>
-          {#each expressions.surveyDerived as exp}
-            {@render expressionButton(exp)}
-          {/each}
-        </div>
-      {/if}
-      {#if expressions.surveyTba.length}
-        <div class="flex flex-col gap-2">
-          <span>Aggregate Expressions <span class="text-xs">(from TBA)</span></span>
-          {#each expressions.surveyTba as exp}
-            {@render expressionButton(exp)}
-          {/each}
-        </div>
-      {/if}
-      {#if expressions.surveyPrimitive.length}
-        <div class="flex flex-col gap-2">
-          <span>Aggregate Expressions <span class="text-xs">(from fields)</span></span>
-          {#each expressions.surveyPrimitive as exp}
-            {@render expressionButton(exp)}
-          {/each}
-        </div>
-      {/if}
+      if (isSelected) {
+        inputs = inputs?.filter((i) => !(i.from == "expression" && i.expressionName == exp.name));
+      } else {
+        inputs = [...(inputs || []), { from: "expression", expressionName: exp.name }];
+      }
+    }}
+  >
+    {#if isSelected}
+      <SquareCheckBigIcon class="text-theme" />
+      <span class="text-base font-bold">{exp.name}</span>
+    {:else}
+      <SquareIcon class="text-theme" />
+      {exp.name}
     {/if}
-    {#if (scope == "survey" || input.from == "expressions") && expressions.entryDerived.length}
-      <div class="flex flex-col gap-2">
-        <span>Entry Expressions <span class="text-xs">(from expressions)</span></span>
-        {#each expressions.entryDerived as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
-    {#if expressions.entryTba.length}
-      <div class="flex flex-col gap-2">
-        <span>Entry Expressions <span class="text-xs">(from TBA)</span></span>
-        {#each expressions.entryTba as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
-    {#if expressions.entryPrimitive.length}
-      <div class="flex flex-col gap-2">
-        <span>Entry Expressions <span class="text-xs">(from fields)</span></span>
-        {#each expressions.entryPrimitive as exp}
-          {@render expressionButton(exp)}
-        {/each}
-      </div>
-    {/if}
-  </div>
-{:else if input.from == "fields"}
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1 text-sm">
+  </Button>
+{/snippet}
+
+<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
+  {#if scope == "survey" && expressions.survey.length}
+    <div class="flex flex-col gap-2">
+      <span>Aggregate Expressions</span>
+      {#each expressions.survey as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
+
+  {#if expressions.entry.length}
+    <div class="flex flex-col gap-2">
+      <span>Entry Expressions</span>
+      {#each expressions.entry as exp}
+        {@render expressionButton(exp)}
+      {/each}
+    </div>
+  {/if}
+
+  {#if surveyRecord.tbaMetrics?.length}
+    <div class="flex flex-col gap-2">
+      <span>TBA metrics</span>
+
+      {#each surveyRecord.tbaMetrics as tbaMetric}
+        {@const isLegacySelected = input.from == "tba" ? input.metrics.some((metric) => metric == tbaMetric) : false}
+        {@const isSelected = isLegacySelected || inputs?.some((i) => i.from == "tba" && i.tbaMetric == tbaMetric)}
+
+        <Button
+          onclick={() => {
+            if (input.from == "tba") {
+              input.metrics = input.metrics.filter((m) => m != tbaMetric);
+            }
+
+            if (isSelected) {
+              inputs = inputs?.filter((i) => !(i.from == "tba" && i.tbaMetric == tbaMetric));
+            } else {
+              inputs = [...(inputs || []), { from: "tba", tbaMetric }];
+            }
+          }}
+        >
+          {#if isSelected}
+            <SquareCheckBigIcon class="text-theme" />
+            <span class="text-base font-bold">{tbaMetric}</span>
+          {:else}
+            <SquareIcon class="text-theme" />
+            {tbaMetric}
+          {/if}
+        </Button>
+      {/each}
+    </div>
+  {/if}
+
+  <div class="flex flex-col gap-2">
     <span>Fields</span>
+
     {#each orderedSingleFields as field (field.field.id)}
-      {@const inputIndex = input.fieldIds.findIndex((fieldId) => fieldId == field.field.id)}
+      {@const isLegacySelected = input.from == "fields" ? input.fieldIds.some((id) => id == field.field.id) : false}
+      {@const isSelected = isLegacySelected || inputs?.some((i) => i.from == "field" && i.fieldId == field.field.id)}
 
       <Button
         onclick={() => {
-          if (inputIndex != -1) {
-            input.fieldIds = input.fieldIds.toSpliced(inputIndex, 1);
+          if (input.from == "fields") {
+            input.fieldIds = input.fieldIds.filter((id) => id != field.field.id);
+          }
+
+          if (isSelected) {
+            inputs = inputs?.filter((i) => !(i.from == "field" && i.fieldId == field.field.id));
           } else {
-            input.fieldIds = [...input.fieldIds, field.field.id];
+            inputs = [...(inputs || []), { from: "field", fieldId: field.field.id }];
           }
         }}
       >
-        {#if inputIndex != -1}
+        {#if isSelected}
           <SquareCheckBigIcon class="text-theme" />
           <span class="text-base font-bold">{field.detailedName}</span>
         {:else}
@@ -287,30 +309,7 @@
       </Button>
     {/each}
   </div>
-{:else if input.from == "tba" && surveyRecord.tbaMetrics?.length}
-  <div class="flex max-h-[500px] flex-col gap-2 overflow-auto p-1 text-sm">
-    <span>TBA metrics</span>
-    {#each surveyRecord.tbaMetrics as tbaMetric}
-      <Button
-        onclick={() => {
-          if (input.metrics.includes(tbaMetric)) {
-            input.metrics = input.metrics.filter((m) => m != tbaMetric);
-          } else {
-            input.metrics = [...input.metrics, tbaMetric];
-          }
-        }}
-      >
-        {#if input.metrics.includes(tbaMetric)}
-          <SquareCheckBigIcon class="text-theme" />
-          <span class="text-base font-bold">{tbaMetric}</span>
-        {:else}
-          <SquareIcon class="text-theme" />
-          {tbaMetric}
-        {/if}
-      </Button>
-    {/each}
-  </div>
-{/if}
+</div>
 
 {#if error}
   <span>Error: {error}</span>

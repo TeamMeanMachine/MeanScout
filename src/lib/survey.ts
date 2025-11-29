@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { pickListSchema } from "./rank";
 import { expressionSchema, sortExpressions } from "./expression";
-import type { SingleFieldWithDetails } from "./field";
+import { isNumericField, type SingleFieldWithDetails } from "./field";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
@@ -35,56 +35,18 @@ export type Survey = z.infer<typeof surveySchema>;
 
 export function groupRanks(survey: MatchSurvey, orderedSingleFields: SingleFieldWithDetails[]) {
   const sortedExpressions = survey.expressions.toSorted(sortExpressions);
-  const expressions = Object.groupBy(sortedExpressions, (e) => {
-    if (e.scope == "entry" && e.input.from == "expressions") return "entryDerived";
-    if (e.scope == "entry" && e.input.from == "tba") return "entryTba";
-    if (e.scope == "entry" && e.input.from == "fields") return "entryPrimitive";
-    if (e.scope == "survey" && e.input.from == "expressions") return "surveyDerived";
-    if (e.scope == "survey" && e.input.from == "tba") return "surveyTba";
-    if (e.scope == "survey" && e.input.from == "fields") return "surveyPrimitive";
-    return "";
-  });
+  const expressions = {
+    survey: sortedExpressions.filter((e) => e.scope == "survey"),
+    entry: sortedExpressions.filter((e) => e.scope == "entry"),
+  };
 
-  return [
-    {
-      survey,
-      category: "Pick Lists",
-      pickLists: survey.pickLists,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from expressions",
-      expressions: expressions.surveyDerived,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from TBA",
-      expressions: expressions.surveyTba,
-    },
-    {
-      survey,
-      category: "Aggregate Expressions from fields",
-      expressions: expressions.surveyPrimitive,
-    },
-    {
-      survey,
-      category: "Entry Expressions from expressions",
-      expressions: expressions.entryDerived,
-    },
-    {
-      survey,
-      category: "Entry Expressions from TBA",
-      expressions: expressions.entryTba,
-    },
-    {
-      survey,
-      category: "Entry Expressions from fields",
-      expressions: expressions.entryPrimitive,
-    },
-    {
-      survey,
-      category: "Fields",
-      fields: orderedSingleFields.filter((f) => ["number", "toggle", "rating", "timer"].includes(f.field.type)),
-    },
-  ].filter((group) => group.pickLists?.length || group.expressions?.length || group.fields?.length);
+  return {
+    survey,
+    groups: [
+      { category: "Pick Lists" as const, pickLists: survey.pickLists },
+      { category: "Aggregate Expressions" as const, expressions: expressions.survey },
+      { category: "Entry Expressions" as const, expressions: expressions.entry },
+      { category: "Fields" as const, fields: orderedSingleFields.filter(isNumericField) },
+    ],
+  };
 }

@@ -39,14 +39,17 @@
   const isExpressionInput =
     surveyRecord.type == "match" &&
     surveyRecord.expressions.some((e) => {
-      if (e.input.from != "fields") return false;
-      return e.input.fieldIds.some((id) => {
-        if (field.type == "group") {
-          return field.fieldIds.includes(id);
-        } else {
-          return id == field.id;
-        }
-      });
+      return (
+        (e.input.from == "fields" &&
+          e.input.fieldIds.some((id) => {
+            if (field.type == "group") {
+              return field.fieldIds.includes(id);
+            } else {
+              return id == field.id;
+            }
+          })) ||
+        e.inputs?.some((i) => i.from == "field" && i.fieldId == field.id)
+      );
     });
 
   let changes = $state(structuredClone($state.snapshot(field)));
