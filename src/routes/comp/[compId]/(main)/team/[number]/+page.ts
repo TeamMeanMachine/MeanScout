@@ -21,7 +21,6 @@ export const load: PageLoad = async (event) => {
         name: data.compRecord.teams.find((t) => t.number == team)?.name || "",
       }),
     )
-    .filter((team) => data.entryRecords.some((e) => e.team == team.number))
     .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
   const team = teams.find((t) => t.number == event.params.number);

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
-  import { SquareArrowOutUpRightIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import { allianceTeamLabels, sessionStorageStore } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
@@ -9,7 +9,8 @@
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { idb } from "$lib/idb";
-  import { invalidateAll } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
+  import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
 
   let { data }: PageProps = $props();
 
@@ -56,6 +57,44 @@
         {:else}
           <UserPlusIcon class="text-theme size-5" />
         {/if}
+      </Button>
+
+      <Button
+        onclick={() => {
+          openDialog(EditTeamDialog, {
+            team: data.team,
+            onedit(name) {
+              const teams = $state.snapshot(data.compRecord.teams);
+              let teamToEdit = teams.find((t) => t.number == data.team.number);
+              if (teamToEdit) {
+                teamToEdit.name = name;
+              } else {
+                teamToEdit = { number: data.team.number, name };
+                teams.push(teamToEdit);
+                teams.sort((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+              }
+              data = {
+                ...data,
+                compRecord: { ...data.compRecord, teams, modified: new Date() },
+              };
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            },
+            ondelete() {
+              idb.put(
+                "comps",
+                $state.snapshot({
+                  ...data.compRecord,
+                  teams: data.compRecord.teams.filter((t) => t.number != data.team.number),
+                  modified: new Date(),
+                }),
+              ).onsuccess = () => {
+                goto(`#/comp/${data.compRecord.id}/teams`, { replaceState: true, invalidateAll: true });
+              };
+            },
+          });
+        }}
+      >
+        <SquarePenIcon class="text-theme size-5" />
       </Button>
     </div>
   </div>

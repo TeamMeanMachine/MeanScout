@@ -10,7 +10,7 @@
     ondelete,
   }: {
     team: Team;
-    onedit(number: string): void;
+    onedit(name: string): void;
     ondelete(): void;
   } = $props();
 

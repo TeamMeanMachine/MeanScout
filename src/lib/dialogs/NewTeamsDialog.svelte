@@ -27,6 +27,8 @@
         teamInputs = teamInput.split(",").map((team) => team.trim());
       }
 
+      teamInputs = [...new Set(teamInputs)];
+
       for (const team of teamInputs) {
         if (teams.some((teamData) => teamData.number == team)) {
           error = `Team ${team} already exists`;
