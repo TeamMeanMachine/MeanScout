@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, matchIdentifierSchema, sessionStorageStore } from "$lib";
+  import { compareMatches, getTeamName, matchIdentifierSchema, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { entryStatuses, groupEntries, type Entry } from "$lib/entry";
@@ -180,7 +180,7 @@
         {#if groupedEntries.by != "team"}
           <div class="flex w-32 max-w-full flex-col">
             <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-              {data.teamNames.get(entry.team) || "Team"}
+              {getTeamName(entry.team, data.compRecord.teams) || "Team"}
             </span>
             <span>{entry.team}</span>
           </div>

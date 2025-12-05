@@ -1,4 +1,4 @@
-import { type Team } from "$lib";
+import { getTeamName, type Team } from "$lib";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
@@ -18,7 +18,7 @@ export const load: PageLoad = async (event) => {
     .map(
       (team: string): Team => ({
         number: team,
-        name: data.compRecord.teams.find((t) => t.number == team)?.name || "",
+        name: getTeamName(team, data.compRecord.teams) || "",
       }),
     )
     .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));

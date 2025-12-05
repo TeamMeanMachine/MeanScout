@@ -3,7 +3,7 @@ import type { MatchEntry } from "./entry";
 import type { SingleFieldWithDetails } from "./field";
 import { type Expression, type ExpressionMethod } from "./expression";
 import type { MatchSurvey } from "./survey";
-import { type Value } from "./";
+import { getTeamName, type Value } from "./";
 import type { Comp } from "./comp";
 
 const weightSchema = z.discriminatedUnion("from", [
@@ -118,7 +118,7 @@ export function getPickListData(
     .map(
       (team): PickListTeamRank => ({
         team,
-        teamName: compRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: getTeamName(team, compRecord.teams) || "",
         percentage: normalizedPickListData[team],
         inputs: weightsData[team],
         rank: 0,
@@ -184,7 +184,7 @@ export function getExpressionData(
     .map(
       (team): ExpressionTeamRank => ({
         team,
-        teamName: compRecord.teams.find((t) => t.number == team)?.name || "",
+        teamName: getTeamName(team, compRecord.teams) || "",
         value: expressionData[team].value,
         percentage: Math.abs(
           ((expressionData[team].value - Math.min(minValue, 0)) /

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     compareMatches,
+    getTeamName,
     isValidTeam,
     matchIdentifierSchema,
     matchLevels,
@@ -39,7 +40,6 @@
     pageData: CompPageData & {
       matches: (Match & { extraTeams?: string[] })[];
       lastCompletedMatch?: MatchIdentifier | undefined;
-      teamNames: Map<string, string>;
     };
   } = $props();
 
@@ -220,8 +220,8 @@
     }
 
     return [...teamSet]
-      .map((team): Team => pageData.compRecord.teams.find((t) => t.number == team) || { number: team, name: "" })
-      .toSorted((a, b) => parseInt(a.number) - parseInt(b.number));
+      .map((team): Team => ({ number: team, name: getTeamName(team, pageData.compRecord.teams) || "" }))
+      .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
   });
 
   function onconfirm() {
@@ -666,7 +666,7 @@
             >
               <div class="flex flex-col truncate {teamBold(red1)}">
                 <span class="text-red {teamUnderline(red1)}">{red1}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(red1)}</span>
+                <span class="truncate text-xs">{getTeamName(red1, pageData.compRecord.teams)}</span>
               </div>
             </Button>
             <Button
@@ -678,7 +678,7 @@
             >
               <div class="flex flex-col truncate {teamBold(red2)}">
                 <span class="text-red {teamUnderline(red2)}">{red2}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(red2)}</span>
+                <span class="truncate text-xs">{getTeamName(red2, pageData.compRecord.teams)}</span>
               </div>
             </Button>
             <Button
@@ -690,7 +690,7 @@
             >
               <div class="flex flex-col truncate {teamBold(red3)}">
                 <span class="text-red {teamUnderline(red3)}">{red3}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(red3)}</span>
+                <span class="truncate text-xs">{getTeamName(red3, pageData.compRecord.teams)}</span>
               </div>
             </Button>
 
@@ -703,7 +703,7 @@
             >
               <div class="flex flex-col truncate {teamBold(blue1)}">
                 <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(blue1)}</span>
+                <span class="truncate text-xs">{getTeamName(blue1, pageData.compRecord.teams)}</span>
               </div>
             </Button>
             <Button
@@ -715,7 +715,7 @@
             >
               <div class="flex flex-col truncate {teamBold(blue2)}">
                 <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(blue2)}</span>
+                <span class="truncate text-xs">{getTeamName(blue2, pageData.compRecord.teams)}</span>
               </div>
             </Button>
             <Button
@@ -727,7 +727,7 @@
             >
               <div class="flex flex-col truncate {teamBold(blue3)}">
                 <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-                <span class="truncate text-xs">{pageData.teamNames.get(blue3)}</span>
+                <span class="truncate text-xs">{getTeamName(blue3, pageData.compRecord.teams)}</span>
               </div>
             </Button>
           </div>
@@ -756,7 +756,7 @@
               >
                 <div class="flex flex-col truncate {teamBold(extraTeam)}">
                   <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
-                  <span class="truncate text-xs">{pageData.teamNames.get(extraTeam)}</span>
+                  <span class="truncate text-xs">{getTeamName(extraTeam, pageData.compRecord.teams)}</span>
                 </div>
               </Button>
             {/each}
@@ -880,7 +880,7 @@
           {/if}
           <div class="flex w-32 max-w-full flex-col">
             <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-              {pageData.compRecord.teams.find((t) => t.number == entry.team)?.name || "Team"}
+              {getTeamName(entry.team, pageData.compRecord.teams) || "Team"}
             </span>
             <span>{entry.team}</span>
           </div>

@@ -1,4 +1,12 @@
-import { compareMatches, matchLevels, matchValueSchema, valueSchema, type Match, type MatchIdentifier } from "./";
+import {
+  compareMatches,
+  getTeamName,
+  matchLevels,
+  matchValueSchema,
+  valueSchema,
+  type Match,
+  type MatchIdentifier,
+} from "./";
 import { z } from "zod";
 import type { Comp } from "./comp";
 import type { Survey } from "./survey";
@@ -155,7 +163,7 @@ export function groupEntries(
 
   if (by == "team") {
     const teamSet = new Set(entries.map((entry) => entry.team));
-    const teams = [...teamSet].toSorted((a, b) => parseInt(a) - parseInt(b));
+    const teams = [...teamSet].toSorted((a, b) => a.localeCompare(b, "en", { numeric: true }));
 
     return {
       by: "team" as const,
@@ -163,7 +171,7 @@ export function groupEntries(
         .map((team) => {
           const entries = sortedEntries.filter((e) => e.team == team);
           if (entries.length) {
-            return { team, teamName: comp.teams.find((t) => t.number == team)?.name, entries };
+            return { team, teamName: getTeamName(team, comp.teams), entries };
           }
         })
         .filter((group) => group !== undefined),

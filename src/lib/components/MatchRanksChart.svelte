@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { allianceTeamLabels, getOrdinal, sessionStorageStore, type Match } from "$lib";
+  import { allianceTeamLabels, getOrdinal, getTeamName, sessionStorageStore, type Match } from "$lib";
   import {
     getExpressionData,
     getPickListData,
@@ -478,9 +478,7 @@
   <div class="col-span-2 truncate">
     <div class="font-bold" style="color:{color}">{team}</div>
     {#if anyTeamNames}
-      <div class="truncate text-xs font-light">
-        {pageData.compRecord.teams.find((t) => t.number == team)?.name || "--"}
-      </div>
+      <div class="truncate text-xs font-light">{getTeamName(team, pageData.compRecord.teams) || "--"}</div>
     {/if}
     <div class="bg-neutral-800" style="height:6px"></div>
   </div>

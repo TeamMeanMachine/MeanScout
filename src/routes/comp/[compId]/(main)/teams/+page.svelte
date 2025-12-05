@@ -37,7 +37,7 @@
     if (!cleanedSearch) return true;
 
     return (
-      team.number == parseInt(cleanedSearch).toString() ||
+      parseInt(team.number) == parseInt(cleanedSearch) ||
       team.name.toLowerCase().replaceAll(" ", "").includes(cleanedSearch)
     );
   }

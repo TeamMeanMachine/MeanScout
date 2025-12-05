@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Value } from "$lib";
+  import { getTeamName, type Value } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
@@ -31,7 +31,7 @@
   let entry = $state(structuredClone($state.snapshot(entryRecord)));
   let error = $state("");
 
-  let teamName = $derived(compRecord.teams.find((t) => t.number == entryRecord.team)?.name);
+  let teamName = $derived(getTeamName(entryRecord.team, compRecord.teams));
 
   function editEntry() {
     if (entry.status == "draft") {

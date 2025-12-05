@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, matchUrl, sessionStorageStore } from "$lib";
+  import { compareMatches, getTeamName, matchUrl, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { ArrowLeftIcon, ArrowRightIcon, SquarePenIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -136,7 +136,7 @@
       <div class="flex flex-col gap-2 sm:grid sm:grid-cols-2">
         {#each [data.match.red1, data.match.red2, data.match.red3] as team, index}
           {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
-          {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+          {@const teamName = getTeamName(team, data.compRecord.teams)}
 
           <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
             <div class="flex flex-col truncate {teamWonFontWeight(team)}">
@@ -150,7 +150,7 @@
 
         {#each [data.match.blue1, data.match.blue2, data.match.blue3] as team, index}
           {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
-          {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+          {@const teamName = getTeamName(team, data.compRecord.teams)}
 
           <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
             <div class="flex flex-col truncate {teamWonFontWeight(team)}">
@@ -164,7 +164,7 @@
       </div>
 
       {#each data.match.extraTeams || [] as team}
-        {@const teamName = data.compRecord.teams.find((t) => t.number == team)?.name}
+        {@const teamName = getTeamName(team, data.compRecord.teams)}
 
         <Anchor route="comp/{data.compRecord.id}/team/{team}">
           <div class="flex flex-col truncate {teamWonFontWeight(team)}">

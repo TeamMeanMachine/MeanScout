@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Team } from "$lib";
+  import { getTeamName, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { CircleCheckBigIcon, CircleIcon, Trash2Icon } from "@lucide/svelte";
@@ -64,9 +64,7 @@
 <label class="flex flex-col">
   <div class="flex items-baseline justify-between gap-x-3">
     <span>Team</span>
-    <span class="truncate text-xs font-light">
-      {teams.find((t) => t.number == editingTeam)?.name}
-    </span>
+    <span class="truncate text-xs font-light">{getTeamName(editingTeam, teams)}</span>
   </div>
   <input bind:value={editingTeam} class="text-theme bg-neutral-800 p-2" />
 </label>

@@ -157,6 +157,10 @@ export function isValidTeam(team: string) {
   return /^\d{1,5}[A-Z]?$/.test(team);
 }
 
+export function getTeamName(team: string, teams: Team[]) {
+  return teams.find((t) => parseInt(team) == parseInt(t.number) && t.name)?.name;
+}
+
 export const allianceTeamLabels = ["Captain", "1st Pick", "2nd Pick"];
 
 export function parseValueFromString(value: any) {
