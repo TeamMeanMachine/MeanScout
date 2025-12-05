@@ -138,7 +138,7 @@
       </div>
     {/if}
 
-    {#if expressions.survey.length}
+    {#if expressions.entry.length}
       <div class="flex flex-col gap-3">
         <h2 class="font-bold">Entry Expressions</h2>
         <div class="flex flex-wrap gap-2">
