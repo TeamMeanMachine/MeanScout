@@ -23,6 +23,7 @@
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
+    UsersIcon,
   } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
@@ -33,6 +34,7 @@
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import { fly, type FlyParams, slide } from "svelte/transition";
   import { z } from "zod";
+  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
 
   let {
     pageData,
@@ -171,53 +173,38 @@
     pageData.matches.find((m) => newEntry.type == "match" && compareMatches(m, newEntry.state.match) == 0),
   );
 
-  const suggestedTeams = $derived.by(() => {
+  const allTeams = $derived.by(() => {
     const teamSet = new Set<string>();
 
-    if (matchData && newEntry.type == "match") {
-      switch ($targetStore) {
-        case "red 1":
-          teamSet.add(matchData.red1);
-          break;
-        case "red 2":
-          teamSet.add(matchData.red2);
-          break;
-        case "red 3":
-          teamSet.add(matchData.red3);
-          break;
-        case "blue 1":
-          teamSet.add(matchData.blue1);
-          break;
-        case "blue 2":
-          teamSet.add(matchData.blue2);
-          break;
-        case "blue 3":
-          teamSet.add(matchData.blue3);
-          break;
-      }
+    pageData.compRecord.teams.forEach((t) => teamSet.add(t.number));
 
-      for (const team of pageData.compRecord.teams) {
-        if (
-          !pageData.compRecord.matches
-            .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
-            .includes(team.number)
-        ) {
-          teamSet.add(team.number);
-        }
-      }
-    } else {
-      for (const team of pageData.compRecord.teams) {
-        if (
-          pageData.entryRecords.find(
-            (e) => e.type == "pit" && e.surveyId == newEntry.survey.id && e.team == team.number,
-          )
-        ) {
-          continue;
-        }
-
-        teamSet.add(team.number);
-      }
+    if (newEntry.type == "match") {
+      pageData.matches.forEach((m) => {
+        [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3, ...(m.extraTeams || [])].forEach((t) => {
+          if (t) teamSet.add(t);
+        });
+      });
     }
+
+    if (matchData && newEntry.type == "match") {
+      [
+        matchData.red1,
+        matchData.red2,
+        matchData.red3,
+        matchData.blue1,
+        matchData.blue2,
+        matchData.blue3,
+        ...(matchData.extraTeams || []),
+      ].forEach((t) => {
+        if (t) teamSet.add(t);
+      });
+    }
+
+    pageData.entryRecords.forEach((e) => {
+      if (e.surveyId == newEntry.survey.id) {
+        teamSet.add(e.team);
+      }
+    });
 
     return [...teamSet]
       .map((team): Team => ({ number: team, name: getTeamName(team, pageData.compRecord.teams) || "" }))
@@ -236,18 +223,8 @@
       return;
     }
 
-    if (suggestedTeams.length && !suggestedTeams.some((t) => t.number == newEntry.state.team)) {
-      error = "team is not listed";
-      return;
-    }
-
     if (pageData.compRecord.scouts && !newEntry.state.scout) {
       error = "scout name missing";
-      return;
-    }
-
-    if (newEntry.type == "match" && !/\d{1,3}/.test(`${newEntry.state.match.number}`)) {
-      error = "invalid value for match";
       return;
     }
 
@@ -325,7 +302,7 @@
 
   function selectTargetTeamFromMatch(identifier: MatchIdentifier) {
     const match = pageData.matches.find((m) => compareMatches(m, identifier) == 0);
-    if (!match) return "";
+    if (!match) return newEntry.state.team || "";
     switch ($targetStore) {
       case "red 1":
         return match.red1;
@@ -340,7 +317,7 @@
       case "blue 3":
         return match.blue3;
     }
-    return "";
+    return newEntry.state.team || "";
   }
 
   function teamUnderline(teamNumber?: string) {
@@ -524,76 +501,85 @@
   <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
     <div class="flex flex-col">
       Match
-      <Button
-        onclick={() => {
-          if (newEntry.type != "match") return;
-          openDialog(SelectMatchDialog, {
-            matches: pageData.matches,
-            lastCompletedMatch: pageData.lastCompletedMatch,
-            prefilled: newEntry.state.match,
-            onselect(match) {
+
+      <div class="flex gap-2">
+        {#if pageData.matches.length}
+          <Button
+            onclick={() => {
               if (newEntry.type != "match") return;
-              newEntry.state.match = $state.snapshot(match);
-              newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-              closeDialog();
-            },
-          });
-        }}
-        class="text-sm"
-      >
-        <ListOrderedIcon class="text-theme" />
-        Select
-      </Button>
-    </div>
+              openDialog(SelectMatchDialog, {
+                matches: pageData.matches,
+                lastCompletedMatch: pageData.lastCompletedMatch,
+                prefilled: newEntry.state.match,
+                onselect(match) {
+                  if (newEntry.type != "match") return;
+                  newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
+                  newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                  closeDialog();
+                },
+              });
+            }}
+            class="text-sm mr-2"
+          >
+            <ListOrderedIcon class="text-theme" />
+            Select
+          </Button>
+        {/if}
 
-    <div class="flex items-end gap-2">
-      <Button
-        disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
-        onclick={() => {
-          if (newEntry.type != "match") return;
-          window.clearTimeout(teamMoveAnimReset);
-          teamsMoveAnim = { x: -12, opacity: 1 };
+        <Button
+          disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
+          onclick={() => {
+            if (newEntry.type != "match") return;
+            window.clearTimeout(teamMoveAnimReset);
+            teamsMoveAnim = { x: -12, opacity: 1 };
 
-          if (
-            !adjacentMatches.previous ||
-            (newEntry.state.match.set == adjacentMatches.previous.set &&
-              newEntry.state.match.level == adjacentMatches.previous.level)
-          ) {
-            newEntry.state.match.number--;
-          } else {
-            newEntry.state.match = structuredClone(adjacentMatches.previous);
-          }
+            if (
+              !adjacentMatches.previous ||
+              (newEntry.state.match.set == adjacentMatches.previous.set &&
+                newEntry.state.match.level == adjacentMatches.previous.level)
+            ) {
+              newEntry.state.match.number--;
+            } else {
+              newEntry.state.match = structuredClone({
+                ...adjacentMatches.previous,
+                level: adjacentMatches.previous.level || "qm",
+              });
+            }
 
-          newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
-        }}
-        class="active:translate-y-0! enabled:active:-translate-x-0.5!"
-      >
-        <ArrowLeftIcon class="text-theme" />
-      </Button>
-      <Button
-        onclick={() => {
-          if (newEntry.type != "match") return;
-          window.clearTimeout(teamMoveAnimReset);
-          teamsMoveAnim = { x: 12, opacity: 1 };
+            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+            teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+          }}
+          class="active:translate-y-0! enabled:active:-translate-x-0.5!"
+        >
+          <ArrowLeftIcon class="text-theme" />
+        </Button>
+        <Button
+          onclick={() => {
+            if (newEntry.type != "match") return;
+            window.clearTimeout(teamMoveAnimReset);
+            teamsMoveAnim = { x: 12, opacity: 1 };
 
-          if (
-            !adjacentMatches.next ||
-            (newEntry.state.match.set == adjacentMatches.next.set &&
-              newEntry.state.match.level == adjacentMatches.next.level)
-          ) {
-            newEntry.state.match.number++;
-          } else {
-            newEntry.state.match = structuredClone(adjacentMatches.next);
-          }
+            if (
+              !adjacentMatches.next ||
+              (newEntry.state.match.set == adjacentMatches.next.set &&
+                newEntry.state.match.level == adjacentMatches.next.level)
+            ) {
+              newEntry.state.match.number++;
+            } else {
+              newEntry.state.match = structuredClone({
+                ...adjacentMatches.next,
+                level: adjacentMatches.next.level || "qm",
+              });
+            }
 
-          newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-          teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
-        }}
-        class="active:translate-y-0! enabled:active:translate-x-0.5!"
-      >
-        <ArrowRightIcon class="text-theme" />
-      </Button>
+            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+            teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+          }}
+          class="active:translate-y-0! enabled:active:translate-x-0.5!"
+        >
+          <ArrowRightIcon class="text-theme" />
+        </Button>
+      </div>
     </div>
 
     <div class="flex items-end gap-2">
@@ -643,106 +629,99 @@
 {/if}
 
 {#if matchData && newEntry.type == "match"}
-  {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
-
   <div class="flex flex-col" transition:slide>
     {#key matchData}
+      {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
+
       <div class="flex flex-col" in:fly={teamsMoveAnim}>
-        <div class="flex items-end justify-between">
-          <span>Team</span>
-          {#if $targetStore != "pit"}
-            <span class="text-theme text-sm font-bold capitalize">{$targetStore}</span>
-          {/if}
-        </div>
-
-        {#if red1 && red2 && red3 && blue1 && blue2 && blue3}
+        {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
           <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-            <Button
-              onclick={() => {
-                newEntry.state.team = red1;
-                $targetStore = "red 1";
-              }}
-              class="w-full max-sm:order-1"
-            >
-              <div class="flex flex-col truncate {teamBold(red1)}">
-                <span class="text-red {teamUnderline(red1)}">{red1}</span>
-                <span class="truncate text-xs">{getTeamName(red1, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
-            <Button
-              onclick={() => {
-                newEntry.state.team = red2;
-                $targetStore = "red 2";
-              }}
-              class="w-full max-sm:order-3"
-            >
-              <div class="flex flex-col truncate {teamBold(red2)}">
-                <span class="text-red {teamUnderline(red2)}">{red2}</span>
-                <span class="truncate text-xs">{getTeamName(red2, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
-            <Button
-              onclick={() => {
-                newEntry.state.team = red3;
-                $targetStore = "red 3";
-              }}
-              class="w-full max-sm:order-5"
-            >
-              <div class="flex flex-col truncate {teamBold(red3)}">
-                <span class="text-red {teamUnderline(red3)}">{red3}</span>
-                <span class="truncate text-xs">{getTeamName(red3, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
+            {#if red1}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = red1;
+                  $targetStore = "red 1";
+                }}
+                class="w-full max-sm:order-1"
+              >
+                <div class="flex flex-col truncate {teamBold(red1)}">
+                  <span class="text-red {teamUnderline(red1)}">{red1}</span>
+                  <span class="truncate text-xs">{getTeamName(red1, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
+            {#if red2}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = red2;
+                  $targetStore = "red 2";
+                }}
+                class="w-full max-sm:order-3"
+              >
+                <div class="flex flex-col truncate {teamBold(red2)}">
+                  <span class="text-red {teamUnderline(red2)}">{red2}</span>
+                  <span class="truncate text-xs">{getTeamName(red2, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
+            {#if red3}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = red3;
+                  $targetStore = "red 3";
+                }}
+                class="w-full max-sm:order-5"
+              >
+                <div class="flex flex-col truncate {teamBold(red3)}">
+                  <span class="text-red {teamUnderline(red3)}">{red3}</span>
+                  <span class="truncate text-xs">{getTeamName(red3, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
 
-            <Button
-              onclick={() => {
-                newEntry.state.team = blue1;
-                $targetStore = "blue 1";
-              }}
-              class="w-full max-sm:order-2"
-            >
-              <div class="flex flex-col truncate {teamBold(blue1)}">
-                <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-                <span class="truncate text-xs">{getTeamName(blue1, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
-            <Button
-              onclick={() => {
-                newEntry.state.team = blue2;
-                $targetStore = "blue 2";
-              }}
-              class="w-full max-sm:order-4"
-            >
-              <div class="flex flex-col truncate {teamBold(blue2)}">
-                <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-                <span class="truncate text-xs">{getTeamName(blue2, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
-            <Button
-              onclick={() => {
-                newEntry.state.team = blue3;
-                $targetStore = "blue 3";
-              }}
-              class="w-full max-sm:order-6"
-            >
-              <div class="flex flex-col truncate {teamBold(blue3)}">
-                <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-                <span class="truncate text-xs">{getTeamName(blue3, pageData.compRecord.teams)}</span>
-              </div>
-            </Button>
+            {#if blue1}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = blue1;
+                  $targetStore = "blue 1";
+                }}
+                class="w-full max-sm:order-2"
+              >
+                <div class="flex flex-col truncate {teamBold(blue1)}">
+                  <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
+                  <span class="truncate text-xs">{getTeamName(blue1, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
+            {#if blue2}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = blue2;
+                  $targetStore = "blue 2";
+                }}
+                class="w-full max-sm:order-4"
+              >
+                <div class="flex flex-col truncate {teamBold(blue2)}">
+                  <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
+                  <span class="truncate text-xs">{getTeamName(blue2, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
+            {#if blue3}
+              <Button
+                onclick={() => {
+                  newEntry.state.team = blue3;
+                  $targetStore = "blue 3";
+                }}
+                class="w-full max-sm:order-6"
+              >
+                <div class="flex flex-col truncate {teamBold(blue3)}">
+                  <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
+                  <span class="truncate text-xs">{getTeamName(blue3, pageData.compRecord.teams)}</span>
+                </div>
+              </Button>
+            {/if}
           </div>
-        {:else if suggestedTeams.length}
-          <label class="flex flex-col">
-            <select bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2">
-              {#each suggestedTeams as team}
-                <option value={team.number}>{team.number} {team.name}</option>
-              {/each}
-            </select>
-          </label>
-        {:else}
-          <label class="flex flex-col">
-            <input bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2" />
-          </label>
         {/if}
 
         {#if matchData.extraTeams}
@@ -763,7 +742,7 @@
           </div>
         {/if}
 
-        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)} class="mt-6">
+        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)} class="mt-4">
           <ListOrderedIcon class="text-theme" />
           <div class="flex grow flex-col">
             Match
@@ -779,21 +758,33 @@
       </div>
     {/key}
   </div>
-{:else if suggestedTeams.length}
-  <label class="flex flex-col">
-    Team
-    <select bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2">
-      {#each suggestedTeams as team}
-        <option value={team.number}>{team.number} {team.name}</option>
-      {/each}
-    </select>
-  </label>
-{:else}
-  <label class="flex flex-col">
-    Team
-    <input bind:value={newEntry.state.team} class="text-theme bg-neutral-800 p-2" />
-  </label>
 {/if}
+
+<div class="flex flex-col">
+  Team
+  <Button
+    onclick={() => {
+      openDialog(SelectTeamDialog, {
+        teams: allTeams,
+        prefilled: newEntry.state.team,
+        onselect(team) {
+          newEntry.state.team = team;
+        },
+      });
+    }}
+    class="text-sm flex-nowrap!"
+  >
+    <UsersIcon class="text-theme shrink-0" />
+    <div class="flex flex-col truncate">
+      {#if newEntry.state.team}
+        <span class="font-bold">{newEntry.state.team}</span>
+        <span class="text-xs font-light truncate">{getTeamName(newEntry.state.team, allTeams)}</span>
+      {:else}
+        Select
+      {/if}
+    </div>
+  </Button>
+</div>
 
 {#if newEntry.type == "match" && pageData.compRecord.scouts}
   <div class="flex flex-col" transition:slide>

@@ -22,5 +22,11 @@ export const load: LayoutLoad = async (event) => {
     localStorage.setItem("home", event.url.hash);
   }
 
-  return { compRecord, surveyRecords, fieldRecords, entryRecords };
+  return {
+    otherComps: all.comps.filter((c) => c.id != compRecord.id),
+    compRecord,
+    surveyRecords,
+    fieldRecords,
+    entryRecords,
+  };
 };

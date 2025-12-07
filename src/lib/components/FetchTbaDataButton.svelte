@@ -118,11 +118,13 @@
     if (response) {
       const teams = structuredClone($state.snapshot(pageData.compRecord.teams));
       for (const team of response) {
-        const teamIndex = teams.findIndex((t) => t.number == team.number);
-        if (teamIndex == -1) {
+        const existingTeam = teams.find((t) => t.number == team.number);
+        if (!existingTeam) {
           teams.push(team);
         } else {
-          teams[teamIndex] = team;
+          if (team.name && !existingTeam.name) {
+            existingTeam.name = team.name;
+          }
         }
       }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import type { CompPageData } from "$lib/comp";
+  import { closeDialog, openDialog } from "$lib/dialog";
+  import type { Comp, CompPageData } from "$lib/comp";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -11,6 +11,7 @@
     Settings2Icon,
     SettingsIcon,
     ShareIcon,
+    XIcon,
   } from "@lucide/svelte";
   import BulkExportDialog from "./BulkExportDialog.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
@@ -21,20 +22,23 @@
   let {
     pageData,
   }: {
-    pageData: CompPageData;
+    pageData: CompPageData & { otherComps: Comp[] };
   } = $props();
 </script>
 
-<div class="flex flex-col gap-1">
+<div class="flex flex-wrap gap-2 items-center justify-between">
   <div class="flex flex-col">
     <h2 class="font-bold">{pageData.compRecord.name}</h2>
     <span class="text-xs font-light">{pageData.compRecord.id}</span>
   </div>
-
-  {#if pageData.compRecord.tbaEventKey}
-    <FetchTbaDataButton {pageData} />
-  {/if}
+  <Button onclick={closeDialog}>
+    <XIcon class="text-theme" />
+  </Button>
 </div>
+
+{#if pageData.compRecord.tbaEventKey}
+  <FetchTbaDataButton {pageData} />
+{/if}
 
 <div class="flex flex-col gap-1">
   <Button
@@ -76,6 +80,11 @@
 </div>
 
 <div class="flex flex-col gap-1">
+  <div class="flex flex-col">
+    <h2 class="font-bold">Manage</h2>
+    <span class="text-xs font-light">Comp, surveys</span>
+  </div>
+
   <Anchor route="comp/{pageData.compRecord.id}/admin">
     <Settings2Icon class="text-theme" />
     <div class="flex grow flex-col">
@@ -102,6 +111,24 @@
     <div class="flex flex-col">New survey</div>
   </Button>
 </div>
+
+{#if pageData.otherComps.length}
+  <div class="flex flex-col gap-1">
+    <div class="flex flex-col">
+      <h2 class="font-bold">Other Comps</h2>
+    </div>
+
+    {#each pageData.otherComps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
+      <Anchor route="comp/{comp.id}">
+        <div class="flex grow flex-col">
+          <span>{comp.name}</span>
+          <span class="text-xs font-light">{comp.id}</span>
+        </div>
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    {/each}
+  </div>
+{/if}
 
 <div class="flex flex-col gap-1">
   <div class="flex flex-col">
