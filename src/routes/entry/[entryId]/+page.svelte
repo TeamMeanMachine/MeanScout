@@ -44,7 +44,7 @@
   title="{data.title} - {data.surveyRecord.name} - {data.compRecord.name} - MeanScout"
   heading={data.title}
   subheading="{data.surveyRecord.name} Draft"
-  backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
+  backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
 <div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">

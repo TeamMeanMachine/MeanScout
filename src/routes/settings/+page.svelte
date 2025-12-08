@@ -19,7 +19,7 @@
   } from "@lucide/svelte";
   import { onMount } from "svelte";
 
-  const backLink = localStorage.getItem("home") || "";
+  const backLink = sessionStorage.getItem("home") || "";
 
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);

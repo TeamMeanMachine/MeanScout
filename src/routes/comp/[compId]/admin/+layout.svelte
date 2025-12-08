@@ -18,7 +18,7 @@
   title="Admin - {data.compRecord.name} - MeanScout"
   heading="Admin"
   subheading={data.compRecord.name}
-  backLink={localStorage.getItem("home") || `comp/${data.compRecord.id}`}
+  backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
 >
   <div class="hidden gap-2 text-sm text-nowrap lg:flex">
     {@render links()}

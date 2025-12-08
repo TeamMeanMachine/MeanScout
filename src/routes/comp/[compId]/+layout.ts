@@ -19,7 +19,7 @@ export const load: LayoutLoad = async (event) => {
   const entryRecords = all.entries.filter((entry) => surveyIds.includes(entry.surveyId));
 
   if (!event.url.hash.includes("/admin")) {
-    localStorage.setItem("home", event.url.hash);
+    sessionStorage.setItem("home", event.url.hash);
   }
 
   return {
