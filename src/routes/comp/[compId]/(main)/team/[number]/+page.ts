@@ -9,14 +9,16 @@ export const load: PageLoad = async (event) => {
     .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
     .filter((t) => t);
 
-  const teams = [...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches])]
-    .map(
-      (team: string): Team => ({
-        number: team,
-        name: getTeamName(team, data.compRecord.teams) || "",
-      }),
-    )
-    .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+  const teamsFromEntries = data.entryRecords.map((e) => e.team);
+
+  const teams = [
+    ...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches, ...teamsFromEntries]),
+  ].map(
+    (team: string): Team => ({
+      number: team,
+      name: getTeamName(team, data.compRecord.teams) || "",
+    }),
+  );
 
   const team = teams.find((t) => t.number == event.params.number);
 
@@ -24,11 +26,7 @@ export const load: PageLoad = async (event) => {
     error(404, `Team not found with number ${event.params.number}`);
   }
 
-  const hasExpressions = data.surveyRecords.some(
-    (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
-  );
-
   sessionStorage.setItem("team-highlight", team.number);
 
-  return { title: `Team ${team.number}`, teams, team, hasExpressions };
+  return { title: `Team ${team.number}`, team, anyData: teamsFromEntries.includes(team.number) };
 };

@@ -8,18 +8,21 @@ export const load: PageLoad = async (event) => {
     .flatMap((match) => [match.red1, match.red2, match.red3, match.blue1, match.blue2, match.blue3])
     .filter((t) => t);
 
-  const teams = [...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches])]
+  const teamsFromEntries = data.entryRecords.map((e) => e.team);
+
+  const teams = [
+    ...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches, ...teamsFromEntries]),
+  ]
     .map(
       (team: string): Team => ({
         number: team,
         name: getTeamName(team, data.compRecord.teams) || "",
       }),
     )
-    .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+    .toSorted((a, b) => {
+      const hasDataSort = Number(teamsFromEntries.includes(b.number)) - Number(teamsFromEntries.includes(a.number));
+      return hasDataSort || a.number.localeCompare(b.number, "en", { numeric: true });
+    });
 
-  const hasExpressions = data.surveyRecords.some(
-    (s) => s.type == "match" && s.expressions.some((e) => e.scope == "entry"),
-  );
-
-  return { title: "Teams", teams, hasExpressions };
+  return { title: "Teams", teams };
 };

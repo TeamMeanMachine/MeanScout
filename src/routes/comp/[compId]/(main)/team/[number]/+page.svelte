@@ -99,54 +99,58 @@
     </div>
   </div>
 
-  <TimeChart pageData={data} team={data.team} />
+  {#if !data.anyData}
+    <span class="text-sm">No data available.</span>
+  {:else}
+    <TimeChart pageData={data} team={data.team} />
 
-  {#each data.surveyRecords
-    .filter((survey) => survey.type == "match")
-    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col gap-1">
-      <div class="flex flex-wrap items-center justify-between">
-        <h2 class="text-sm">{surveyRecord.name}</h2>
+    {#each data.surveyRecords
+      .filter((survey) => survey.type == "match")
+      .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+      <div class="flex flex-col gap-1">
+        <div class="flex flex-wrap items-center justify-between">
+          <h2 class="text-sm">{surveyRecord.name}</h2>
 
-        <div class="flex flex-wrap gap-2 text-sm">
-          <Button
-            onclick={() => {
-              $showData = "expressions";
-            }}
-            class={$showData == "expressions" ? "font-bold" : "font-light"}
-          >
-            Derived
-          </Button>
-          <Button
-            onclick={() => {
-              $showData = "raw";
-            }}
-            class={$showData == "raw" ? "font-bold" : "font-light"}
-          >
-            Raw
-          </Button>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <Button
+              onclick={() => {
+                $showData = "expressions";
+              }}
+              class={$showData == "expressions" ? "font-bold" : "font-light"}
+            >
+              Derived
+            </Button>
+            <Button
+              onclick={() => {
+                $showData = "raw";
+              }}
+              class={$showData == "raw" ? "font-bold" : "font-light"}
+            >
+              Raw
+            </Button>
+          </div>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+          {#key data.team}
+            <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
+          {/key}
         </div>
       </div>
+    {/each}
 
-      <div class="w-full overflow-x-auto">
+    {#each data.surveyRecords
+      .filter((s) => s.type == "pit")
+      .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
+      <div class="flex flex-col items-start gap-1 overflow-x-auto">
+        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
+
         {#key data.team}
-          <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
+          <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
         {/key}
       </div>
-    </div>
-  {/each}
-
-  {#each data.surveyRecords
-    .filter((s) => s.type == "pit")
-    .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col items-start gap-1 overflow-x-auto">
-      <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-      {#key data.team}
-        <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
-      {/key}
-    </div>
-  {/each}
+    {/each}
+  {/if}
 
   <div class="flex flex-wrap gap-x-4">
     {#if data.compRecord.tbaEventKey}
