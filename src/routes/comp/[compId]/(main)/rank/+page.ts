@@ -42,7 +42,7 @@ export const load: PageLoad = async (event) => {
 
   const entriesByTeam: Record<string, MatchEntry[]> = {};
   for (const entry of data.entryRecords.filter(
-    (e): e is MatchEntry => e.surveyId == surveyRecord.id && e.type == "match",
+    (e): e is MatchEntry => e.surveyId == surveyRecord.id && e.type == "match" && e.status != "draft",
   )) {
     if (entry.team in entriesByTeam) {
       entriesByTeam[entry.team].push(entry);

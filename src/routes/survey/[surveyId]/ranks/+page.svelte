@@ -175,7 +175,6 @@
             },
           });
         }}
-        disabled={!sortedExpressions.length}
       >
         <PlusIcon class="text-theme size-5" />
         Pick List
