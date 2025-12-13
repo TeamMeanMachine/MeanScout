@@ -158,7 +158,10 @@ export function isValidTeam(team: string) {
 }
 
 export function getTeamName(team: string, teams: Team[]) {
-  return teams.find((t) => parseInt(team) == parseInt(t.number) && t.name)?.name;
+  return (
+    teams.find((t) => t.number == team && t.name)?.name ||
+    teams.find((t) => parseInt(t.number) == parseInt(team) && t.name)?.name
+  );
 }
 
 export const allianceTeamLabels = ["Captain", "1st Pick", "2nd Pick"];
