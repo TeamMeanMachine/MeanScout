@@ -19,10 +19,13 @@
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
+    CircleCheckBigIcon,
+    CircleIcon,
     ListOrderedIcon,
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
+    SquarePenIcon,
     UsersIcon,
   } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
@@ -429,7 +432,10 @@
   }
 </script>
 
-<label class="mt-3 flex flex-col">
+<span class="mt-3 font-bold">New Entry</span>
+
+<label class="flex flex-col">
+  Survey
   <select
     value={newEntry.survey.id}
     onchange={(e) => {
@@ -449,7 +455,7 @@
         newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
       }
     }}
-    class="text-theme grow bg-neutral-800 p-2"
+    class="text-theme bg-neutral-800 p-2"
   >
     {#each pageData.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
       <option value={surveyRecord.id}>{surveyRecord.name}</option>
@@ -498,7 +504,7 @@
 {/if}
 
 {#if newEntry.type == "match"}
-  <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
+  <div class="flex flex-wrap gap-x-4 gap-y-3 items-end" transition:slide>
     <div class="flex flex-col">
       Match
 
@@ -625,6 +631,19 @@
         </select>
       </label>
     </div>
+
+    <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)}>
+      <div class="flex grow flex-col">
+        Match
+        {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
+          {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
+        {:else}
+          {newEntry.state.match.number}
+        {/if}
+        <span class="text-xs font-light">View data</span>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Anchor>
   </div>
 {/if}
 
@@ -634,6 +653,8 @@
       {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
 
       <div class="flex flex-col" in:fly={teamsMoveAnim}>
+        <span class="text-sm font-light">Teams playing</span>
+
         {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
           <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
             {#if red1}
@@ -642,8 +663,13 @@
                   newEntry.state.team = red1;
                   $targetStore = "red 1";
                 }}
-                class="w-full max-sm:order-1"
+                class="w-full max-sm:order-1 flex-nowrap!"
               >
+                {#if newEntry.state.team == red1}
+                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-red size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(red1)}">
                   <span class="text-red {teamUnderline(red1)}">{red1}</span>
                   <span class="truncate text-xs">{getTeamName(red1, pageData.compRecord.teams)}</span>
@@ -656,8 +682,13 @@
                   newEntry.state.team = red2;
                   $targetStore = "red 2";
                 }}
-                class="w-full max-sm:order-3"
+                class="w-full max-sm:order-3 flex-nowrap!"
               >
+                {#if newEntry.state.team == red2}
+                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-red size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(red2)}">
                   <span class="text-red {teamUnderline(red2)}">{red2}</span>
                   <span class="truncate text-xs">{getTeamName(red2, pageData.compRecord.teams)}</span>
@@ -670,8 +701,13 @@
                   newEntry.state.team = red3;
                   $targetStore = "red 3";
                 }}
-                class="w-full max-sm:order-5"
+                class="w-full max-sm:order-5 flex-nowrap!"
               >
+                {#if newEntry.state.team == red3}
+                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-red size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(red3)}">
                   <span class="text-red {teamUnderline(red3)}">{red3}</span>
                   <span class="truncate text-xs">{getTeamName(red3, pageData.compRecord.teams)}</span>
@@ -685,8 +721,13 @@
                   newEntry.state.team = blue1;
                   $targetStore = "blue 1";
                 }}
-                class="w-full max-sm:order-2"
+                class="w-full max-sm:order-2 flex-nowrap!"
               >
+                {#if newEntry.state.team == blue1}
+                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-blue size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(blue1)}">
                   <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
                   <span class="truncate text-xs">{getTeamName(blue1, pageData.compRecord.teams)}</span>
@@ -699,8 +740,13 @@
                   newEntry.state.team = blue2;
                   $targetStore = "blue 2";
                 }}
-                class="w-full max-sm:order-4"
+                class="w-full max-sm:order-4 flex-nowrap!"
               >
+                {#if newEntry.state.team == blue2}
+                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-blue size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(blue2)}">
                   <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
                   <span class="truncate text-xs">{getTeamName(blue2, pageData.compRecord.teams)}</span>
@@ -713,8 +759,13 @@
                   newEntry.state.team = blue3;
                   $targetStore = "blue 3";
                 }}
-                class="w-full max-sm:order-6"
+                class="w-full max-sm:order-6 flex-nowrap!"
               >
+                {#if newEntry.state.team == blue3}
+                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="text-blue size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(blue3)}">
                   <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
                   <span class="truncate text-xs">{getTeamName(blue3, pageData.compRecord.teams)}</span>
@@ -724,15 +775,21 @@
           </div>
         {/if}
 
-        {#if matchData.extraTeams}
-          <div class="mt-2 grid grid-cols-3 gap-2">
+        {#if matchData.extraTeams?.length}
+          <span class="mt-4 text-sm font-light">Other teams</span>
+          <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
             {#each matchData.extraTeams || [] as extraTeam}
               <Button
                 onclick={() => {
                   newEntry.state.team = extraTeam;
                 }}
-                class="w-full"
+                class="w-full flex-nowrap!"
               >
+                {#if newEntry.state.team == extraTeam}
+                  <CircleCheckBigIcon class="size-5 shrink-0" />
+                {:else}
+                  <CircleIcon class="size-5 shrink-0" />
+                {/if}
                 <div class="flex flex-col truncate {teamBold(extraTeam)}">
                   <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
                   <span class="truncate text-xs">{getTeamName(extraTeam, pageData.compRecord.teams)}</span>
@@ -741,27 +798,13 @@
             {/each}
           </div>
         {/if}
-
-        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)} class="mt-4">
-          <ListOrderedIcon class="text-theme" />
-          <div class="flex grow flex-col">
-            Match
-            {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
-              {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
-            {:else}
-              {newEntry.state.match.number}
-            {/if}
-            <span class="text-xs font-light">Analyze existing data</span>
-          </div>
-          <ArrowRightIcon class="text-theme" />
-        </Anchor>
       </div>
     {/key}
   </div>
 {/if}
 
 <div class="flex flex-col">
-  Team
+  Selected team
   <Button
     onclick={() => {
       openDialog(SelectTeamDialog, {
@@ -772,10 +815,10 @@
         },
       });
     }}
-    class="text-sm flex-nowrap!"
+    class="flex-nowrap! max-w-full"
   >
     <UsersIcon class="text-theme shrink-0" />
-    <div class="flex flex-col truncate">
+    <div class="flex grow flex-col truncate">
       {#if newEntry.state.team}
         <span class="font-bold">{newEntry.state.team}</span>
         <span class="text-xs font-light truncate">{getTeamName(newEntry.state.team, allTeams)}</span>
@@ -783,6 +826,7 @@
         Select
       {/if}
     </div>
+    <SquarePenIcon class="text-theme shrink-0" />
   </Button>
 </div>
 
