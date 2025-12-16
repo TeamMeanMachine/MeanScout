@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { compareMatches, sessionStorageStore, type Match, type MatchIdentifier } from "$lib";
+  import { compareMatches, matchLevels, type Match, type MatchIdentifier } from "$lib";
   import Button from "$lib/components/Button.svelte";
-  import { ChevronDownIcon, ChevronRightIcon, ListOrderedIcon } from "@lucide/svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
     matches,
@@ -23,42 +23,57 @@
     ? matches.filter((match) => compareMatches(match, lastCompletedMatch!) <= 0).toReversed()
     : [];
 
-  let matchesTab = $state<"upcoming" | "previous">("upcoming");
-
   let selectedMatch = $state($state.snapshot(prefilled));
+
+  export const { onconfirm }: DialogExports = {
+    onconfirm() {
+      onselect(selectedMatch);
+      closeDialog();
+    },
+  };
 </script>
 
-<span>Select {upcomingMatches.length && previousMatches.length ? matchesTab : ""} match</span>
-
-{#if upcomingMatches.length && previousMatches.length}
-  <div class="flex gap-2 text-sm">
-    <Button
-      onclick={() => (matchesTab = "upcoming")}
-      class="grow basis-0 {matchesTab == 'upcoming' ? 'font-bold' : 'font-light'}"
-    >
-      Upcoming
-    </Button>
-
-    <Button
-      onclick={() => (matchesTab = "previous")}
-      class="grow basis-0 {matchesTab == 'previous' ? 'font-bold' : 'font-light'}"
-    >
-      Previous
-    </Button>
+<div class="flex flex-col gap-1">
+  <span>Input match</span>
+  <div class="flex items-end gap-2">
+    <label class="flex basis-32 grow flex-col">
+      <span class="text-xs font-light">Number</span>
+      <input type="number" bind:value={selectedMatch.number} min="1" class="text-theme w-full bg-neutral-800 p-2" />
+    </label>
+    <label class="flex basis-28 flex-col">
+      <span class="text-xs font-light">Set</span>
+      <input type="number" bind:value={selectedMatch.set} min="1" class="text-theme w-full bg-neutral-800 p-2" />
+    </label>
+    <label class="flex flex-col">
+      <span class="text-xs font-light">Level</span>
+      <select bind:value={selectedMatch.level} class="text-theme bg-neutral-800 p-2">
+        {#each matchLevels as level}
+          <option value={level}>{level}</option>
+        {/each}
+      </select>
+    </label>
   </div>
-{/if}
+</div>
 
-<div class="@container -m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
-  {#if upcomingMatches.length && matchesTab == "upcoming"}
+<span class="text-sm">Or, select a match below</span>
+
+<div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
+  {#if upcomingMatches.length}
+    <span class="text-xs font-light">Upcoming matches</span>
     {#each upcomingMatches as match}
       {@render matchRow(match)}
     {/each}
-  {:else}
+  {/if}
+
+  {#if previousMatches.length}
+    <span class="text-xs font-light">Previous matches</span>
     {#each previousMatches as match}
       {@render matchRow(match)}
-    {:else}
-      <span class="text-sm">No matches.</span>
     {/each}
+  {/if}
+
+  {#if !upcomingMatches.length && !previousMatches.length}
+    <span class="text-sm">No matches.</span>
   {/if}
 </div>
 
@@ -66,7 +81,13 @@
   {@const selected = compareMatches(match, selectedMatch) == 0}
   {@const font = selected ? "font-bold" : "font-light"}
 
-  <Button onclick={() => onselect($state.snapshot(match))} class="flex-nowrap! text-center! {font}">
+  <Button
+    onclick={() => {
+      onselect(match);
+      closeDialog();
+    }}
+    class="flex-nowrap! text-center! {font}"
+  >
     <div class="flex flex-col truncate">
       <div class="flex flex-wrap items-center gap-x-4">
         {#if match.red1 || match.red2 || match.red3}

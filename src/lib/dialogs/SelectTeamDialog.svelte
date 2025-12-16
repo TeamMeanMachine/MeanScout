@@ -2,7 +2,6 @@
   import { getTeamName, isValidTeam, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
 
   let {
@@ -67,23 +66,19 @@
       <div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
         {#each teams as team}
           {@const selected = team.number == selectedTeam}
-          {@const font = selected ? "font-bold" : "font-light"}
 
           <Button
             onclick={() => {
-              selectedTeam = team.number;
-              error = "";
+              onselect(team.number);
+              closeDialog();
             }}
-            class="flex-nowrap! {font}"
+            class="flex-nowrap!"
           >
-            {#if selected}
-              <CircleCheckBigIcon class="text-theme size-5 shrink-0" />
-            {:else}
-              <CircleIcon class="text-theme size-5 shrink-0" />
-            {/if}
             <div class="flex flex-col truncate">
-              <span>{team.number}</span>
-              <span class="truncate text-xs">{team.name || getTeamName(team.number, teams)}</span>
+              <span class={[selected && "font-bold underline"]}>{team.number}</span>
+              <span class={["truncate text-xs", selected ? "font-bold" : "font-light"]}>
+                {team.name || getTeamName(team.number, teams)}
+              </span>
             </div>
           </Button>
         {:else}

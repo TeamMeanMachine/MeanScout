@@ -4,7 +4,6 @@
     getTeamName,
     isValidTeam,
     matchIdentifierSchema,
-    matchLevels,
     matchUrl,
     type Match,
     type MatchIdentifier,
@@ -19,14 +18,13 @@
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
+    ChartBarBigIcon,
     CircleCheckBigIcon,
     CircleIcon,
-    ListOrderedIcon,
     PlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
     SquarePenIcon,
-    UsersIcon,
   } from "@lucide/svelte";
   import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
@@ -504,146 +502,100 @@
 {/if}
 
 {#if newEntry.type == "match"}
-  <div class="flex flex-wrap gap-x-4 gap-y-3 items-end" transition:slide>
-    <div class="flex flex-col">
-      Match
+  <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
+    <div class="flex flex-col grow">
+      Selected match
 
-      <div class="flex gap-2">
-        {#if pageData.matches.length}
+      <div class="flex gap-x-4 gap-y-3 grow flex-wrap">
+        <div class="flex gap-2">
+          <Button
+            disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
+            onclick={() => {
+              if (newEntry.type != "match") return;
+              window.clearTimeout(teamMoveAnimReset);
+              teamsMoveAnim = { x: -12, opacity: 1 };
+
+              if (
+                !adjacentMatches.previous ||
+                (newEntry.state.match.set == adjacentMatches.previous.set &&
+                  newEntry.state.match.level == adjacentMatches.previous.level)
+              ) {
+                newEntry.state.match.number--;
+              } else {
+                newEntry.state.match = structuredClone({
+                  ...adjacentMatches.previous,
+                  level: adjacentMatches.previous.level || "qm",
+                });
+              }
+
+              newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+              teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+            }}
+            class="active:translate-y-0! enabled:active:-translate-x-0.5!"
+          >
+            <ArrowLeftIcon class="text-theme" />
+          </Button>
           <Button
             onclick={() => {
               if (newEntry.type != "match") return;
-              openDialog(SelectMatchDialog, {
-                matches: pageData.matches,
-                lastCompletedMatch: pageData.lastCompletedMatch,
-                prefilled: newEntry.state.match,
-                onselect(match) {
-                  if (newEntry.type != "match") return;
-                  newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
-                  newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-                  closeDialog();
-                },
-              });
+              window.clearTimeout(teamMoveAnimReset);
+              teamsMoveAnim = { x: 12, opacity: 1 };
+
+              if (
+                !adjacentMatches.next ||
+                (newEntry.state.match.set == adjacentMatches.next.set &&
+                  newEntry.state.match.level == adjacentMatches.next.level)
+              ) {
+                newEntry.state.match.number++;
+              } else {
+                newEntry.state.match = structuredClone({
+                  ...adjacentMatches.next,
+                  level: adjacentMatches.next.level || "qm",
+                });
+              }
+
+              newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+              teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
             }}
-            class="text-sm mr-2"
+            class="active:translate-y-0! enabled:active:translate-x-0.5!"
           >
-            <ListOrderedIcon class="text-theme" />
-            Select
+            <ArrowRightIcon class="text-theme" />
           </Button>
-        {/if}
+        </div>
 
-        <Button
-          disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
-          onclick={() => {
-            if (newEntry.type != "match") return;
-            window.clearTimeout(teamMoveAnimReset);
-            teamsMoveAnim = { x: -12, opacity: 1 };
-
-            if (
-              !adjacentMatches.previous ||
-              (newEntry.state.match.set == adjacentMatches.previous.set &&
-                newEntry.state.match.level == adjacentMatches.previous.level)
-            ) {
-              newEntry.state.match.number--;
-            } else {
-              newEntry.state.match = structuredClone({
-                ...adjacentMatches.previous,
-                level: adjacentMatches.previous.level || "qm",
-              });
-            }
-
-            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-            teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
-          }}
-          class="active:translate-y-0! enabled:active:-translate-x-0.5!"
-        >
-          <ArrowLeftIcon class="text-theme" />
-        </Button>
         <Button
           onclick={() => {
             if (newEntry.type != "match") return;
-            window.clearTimeout(teamMoveAnimReset);
-            teamsMoveAnim = { x: 12, opacity: 1 };
-
-            if (
-              !adjacentMatches.next ||
-              (newEntry.state.match.set == adjacentMatches.next.set &&
-                newEntry.state.match.level == adjacentMatches.next.level)
-            ) {
-              newEntry.state.match.number++;
-            } else {
-              newEntry.state.match = structuredClone({
-                ...adjacentMatches.next,
-                level: adjacentMatches.next.level || "qm",
-              });
-            }
-
-            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-            teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+            openDialog(SelectMatchDialog, {
+              matches: pageData.matches,
+              lastCompletedMatch: pageData.lastCompletedMatch,
+              prefilled: newEntry.state.match,
+              onselect(match) {
+                if (newEntry.type != "match") return;
+                newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
+                newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                closeDialog();
+              },
+            });
           }}
-          class="active:translate-y-0! enabled:active:translate-x-0.5!"
+          class="grow"
         >
-          <ArrowRightIcon class="text-theme" />
+          <SquarePenIcon class="text-theme" />
+          <div class="flex grow flex-col font-bold">
+            {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
+              {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
+            {:else}
+              {newEntry.state.match.number}
+            {/if}
+          </div>
         </Button>
+
+        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)}>
+          <ChartBarBigIcon class="text-theme" />
+          <span class="hidden sm:block text-sm">Data</span>
+        </Anchor>
       </div>
     </div>
-
-    <div class="flex items-end gap-2">
-      <label class="flex basis-32 flex-col">
-        <span class="text-xs font-light">Number</span>
-        <input
-          type="number"
-          bind:value={newEntry.state.match.number}
-          oninput={() => {
-            if (newEntry.type != "match") return;
-            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-          }}
-          min="1"
-          class="text-theme w-full bg-neutral-800 p-2"
-        />
-      </label>
-      <label class="flex basis-28 flex-col">
-        <span class="text-xs font-light">Set</span>
-        <input
-          type="number"
-          bind:value={newEntry.state.match.set}
-          oninput={() => {
-            if (newEntry.type != "match") return;
-            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-          }}
-          min="1"
-          class="text-theme w-full bg-neutral-800 p-2"
-        />
-      </label>
-      <label class="flex flex-col">
-        <span class="text-xs font-light">Level</span>
-        <select
-          bind:value={newEntry.state.match.level}
-          onchange={() => {
-            if (newEntry.type != "match") return;
-            newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-          }}
-          class="text-theme bg-neutral-800 p-2"
-        >
-          {#each matchLevels as level}
-            <option value={level}>{level}</option>
-          {/each}
-        </select>
-      </label>
-    </div>
-
-    <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)}>
-      <div class="flex grow flex-col">
-        Match
-        {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
-          {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
-        {:else}
-          {newEntry.state.match.number}
-        {/if}
-        <span class="text-xs font-light">View data</span>
-      </div>
-      <ArrowRightIcon class="text-theme" />
-    </Anchor>
   </div>
 {/if}
 
@@ -817,7 +769,7 @@
     }}
     class="flex-nowrap! max-w-full"
   >
-    <UsersIcon class="text-theme shrink-0" />
+    <SquarePenIcon class="text-theme shrink-0" />
     <div class="flex grow flex-col truncate">
       {#if newEntry.state.team}
         <span class="font-bold">{newEntry.state.team}</span>
@@ -826,7 +778,6 @@
         Select
       {/if}
     </div>
-    <SquarePenIcon class="text-theme shrink-0" />
   </Button>
 </div>
 
