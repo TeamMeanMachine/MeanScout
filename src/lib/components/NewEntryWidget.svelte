@@ -36,6 +36,7 @@
   import { fly, type FlyParams, slide } from "svelte/transition";
   import { z } from "zod";
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
+  import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
 
   let {
     pageData,
@@ -333,6 +334,7 @@
     const prefills: MatchPrefills = {
       match: { number: 1 },
       team: "",
+      scout: localStorage.getItem("scout") || undefined,
     };
 
     let lastScoutedMatch: MatchIdentifier | undefined = undefined;
@@ -387,22 +389,6 @@
       }
     }
 
-    for (const entry of entries) {
-      if (
-        entry.scout &&
-        pageData.compRecord.matches.some(
-          (m) => compareMatches(m, entry) == 0 && m[$targetStore.replace(" ", "") as keyof Match] == entry.team,
-        )
-      ) {
-        prefills.scout = entry.scout;
-        break;
-      }
-    }
-
-    if (!prefills.scout && entries[0] && entries[0].scout) {
-      prefills.scout = entries[0].scout;
-    }
-
     if (prefills.match?.number && !prefills.match.level) {
       prefills.match.level = "qm";
     }
@@ -413,6 +399,7 @@
   function getNewPitEntryPrefills(entries: PitEntry[]) {
     const prefills: PitPrefills = {
       team: "",
+      scout: localStorage.getItem("scout") || undefined,
     };
 
     const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
@@ -422,17 +409,11 @@
 
     prefills.team = unscoutedTeams[0]?.number || scoutedTeams?.[0] || "";
 
-    if (!prefills.scout && entries[0] && entries[0].scout) {
-      prefills.scout = entries[0].scout;
-    }
-
     return prefills;
   }
 </script>
 
-<span class="mt-3 font-bold">New Entry</span>
-
-<label class="flex flex-col">
+<label class="flex mt-3 flex-col">
   Survey
   <select
     value={newEntry.survey.id}
@@ -464,40 +445,27 @@
 {#if pageData.compRecord.scouts}
   <div class="flex flex-col">
     Your name
-    <div class="flex flex-wrap gap-x-4 gap-y-2">
-      {#if suggestedScouts.length}
-        <select bind:value={newEntry.state.scout} class="text-theme grow bg-neutral-800 p-2">
-          {#each suggestedScouts as scout}
-            <option>{scout}</option>
-          {/each}
-        </select>
-      {/if}
-      <Button
-        onclick={() => {
-          openDialog(NewScoutDialog, {
-            scouts: pageData.compRecord.scouts || [],
-            onadd(newScout) {
-              pageData = {
-                ...pageData,
-                compRecord: {
-                  ...pageData.compRecord,
-                  scouts: [...(pageData.compRecord.scouts || []), newScout],
-                  modified: new Date(),
-                },
-              };
-              idb.put("comps", $state.snapshot(pageData.compRecord)).onsuccess = invalidateAll;
-              newEntry.state.scout = newScout;
-            },
-          });
-        }}
-        class={suggestedScouts.length ? "" : "w-full"}
-      >
+    <Button
+      onclick={() => {
+        openDialog(SelectScoutDialog, {
+          scouts: suggestedScouts,
+          prefilled: newEntry.state.scout || "",
+          onselect(scout) {
+            newEntry.state.scout = scout;
+            localStorage.setItem("scout", scout);
+          },
+        });
+      }}
+      class="flex-nowrap!"
+    >
+      {#if newEntry.state.scout}
+        <SquarePenIcon class="text-theme shrink-0" />
+        {newEntry.state.scout}
+      {:else}
         <PlusIcon class="text-theme" />
-        {#if !suggestedScouts.length}
-          New scout
-        {/if}
-      </Button>
-    </div>
+        Add
+      {/if}
+    </Button>
   </div>
 {/if}
 
@@ -507,6 +475,33 @@
       Selected match
 
       <div class="flex gap-x-4 gap-y-3 grow flex-wrap">
+        <Button
+          onclick={() => {
+            if (newEntry.type != "match") return;
+            openDialog(SelectMatchDialog, {
+              matches: pageData.matches,
+              lastCompletedMatch: pageData.lastCompletedMatch,
+              prefilled: newEntry.state.match,
+              onselect(match) {
+                if (newEntry.type != "match") return;
+                newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
+                newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                closeDialog();
+              },
+            });
+          }}
+          class="grow"
+        >
+          <SquarePenIcon class="text-theme" />
+          <div class="flex grow flex-col font-bold">
+            {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
+              {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
+            {:else}
+              {newEntry.state.match.number}
+            {/if}
+          </div>
+        </Button>
+
         <div class="flex gap-2">
           <Button
             disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
@@ -561,39 +556,12 @@
           >
             <ArrowRightIcon class="text-theme" />
           </Button>
+
+          <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)} class="ml-2">
+            <ChartBarBigIcon class="text-theme" />
+            <span class="hidden sm:block text-sm">Data</span>
+          </Anchor>
         </div>
-
-        <Button
-          onclick={() => {
-            if (newEntry.type != "match") return;
-            openDialog(SelectMatchDialog, {
-              matches: pageData.matches,
-              lastCompletedMatch: pageData.lastCompletedMatch,
-              prefilled: newEntry.state.match,
-              onselect(match) {
-                if (newEntry.type != "match") return;
-                newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
-                newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-                closeDialog();
-              },
-            });
-          }}
-          class="grow"
-        >
-          <SquarePenIcon class="text-theme" />
-          <div class="flex grow flex-col font-bold">
-            {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
-              {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
-            {:else}
-              {newEntry.state.match.number}
-            {/if}
-          </div>
-        </Button>
-
-        <Anchor route={matchUrl(newEntry.state.match, pageData.compRecord.id)}>
-          <ChartBarBigIcon class="text-theme" />
-          <span class="hidden sm:block text-sm">Data</span>
-        </Anchor>
       </div>
     </div>
   </div>
