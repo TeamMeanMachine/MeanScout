@@ -1,4 +1,4 @@
-import { getTeamName, type Value } from "$lib";
+import { type Value } from "$lib";
 import type { Comp } from "$lib/comp";
 import type { Entry, MatchEntry, PitEntry } from "$lib/entry";
 import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
@@ -12,7 +12,6 @@ type EntryPageData = {
   compRecord: Comp;
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
   defaultValues: Value[];
-  teamName: string | undefined;
   thisCompEntries: Entry[];
 } & (
   | { surveyType: "match"; entryRecord: MatchEntry; surveyRecord: MatchSurvey }
@@ -43,7 +42,6 @@ export const load: PageLoad = async (event) => {
 
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
   const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
-  const teamName = getTeamName(entryRecord.team, compRecord.teams);
 
   const thisCompSurveys = all.surveys.filter((survey) => survey.compId == compRecord.id);
   const thisCompEntries = all.entries.filter((entry) => thisCompSurveys.some((survey) => survey.id == entry.surveyId));
@@ -70,7 +68,6 @@ export const load: PageLoad = async (event) => {
     compRecord,
     fieldsWithDetails,
     defaultValues,
-    teamName,
     thisCompEntries,
     surveyType: surveyRecord.type,
     entryRecord,

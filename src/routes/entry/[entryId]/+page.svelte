@@ -2,20 +2,54 @@
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { openDialog } from "$lib/dialog";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
   import type { PageData, PageProps } from "./$types";
-  import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
-  import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
+  import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { goto, invalidateAll } from "$app/navigation";
+  import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
+  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
+  import { compareMatches, getAllMatches, getTeamName, type MatchIdentifier, type Team } from "$lib";
+  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
+  import { slide } from "svelte/transition";
 
   let { data }: PageProps = $props();
 
   let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
 
   let error = $state("");
+
+  const { matches, lastCompletedMatch } = $derived(getAllMatches(data.compRecord, data.thisCompEntries));
+
+  const matchIdentifier = $derived<MatchIdentifier | undefined>(
+    entry.type == "match" ? { number: entry.match, set: entry.matchSet, level: entry.matchLevel } : undefined,
+  );
+
+  const allTeams = $derived.by(() => {
+    const teamSet = new Set<string>();
+
+    data.compRecord.teams.forEach((t) => teamSet.add(t.number));
+
+    if (entry.type == "match") {
+      matches.forEach((m) => {
+        [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3, ...(m.extraTeams || [])].forEach((t) => {
+          if (t) teamSet.add(t);
+        });
+      });
+    }
+
+    data.thisCompEntries.forEach((e) => {
+      if (e.surveyId == data.compRecord.id) {
+        teamSet.add(e.team);
+      }
+    });
+
+    return [...teamSet]
+      .map((team): Team => ({ number: team, name: getTeamName(team, data.compRecord.teams) || "" }))
+      .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+  });
 
   const suggestedScouts = $derived(
     new Set([
@@ -34,88 +68,107 @@
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
       compRecord: { ...data.compRecord, modified: new Date() },
     } as PageData;
-    idb.put("entries", $state.snapshot(data.entryRecord));
-    idb.put("surveys", $state.snapshot(data.surveyRecord));
-    idb.put("comps", $state.snapshot(data.compRecord));
+    const changeTx = idb.transaction(["entries", "surveys", "comps"], "readwrite");
+    changeTx.objectStore("entries").put($state.snapshot(data.entryRecord));
+    changeTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
+    changeTx.objectStore("comps").put($state.snapshot(data.compRecord));
+    changeTx.oncomplete = invalidateAll;
   }
 </script>
 
 <Header
   title="{data.title} - {data.surveyRecord.name} - {data.compRecord.name} - MeanScout"
-  heading={data.title}
-  subheading="{data.surveyRecord.name} Draft"
+  heading="Entry"
+  subheading={data.surveyRecord.name}
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
-  <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
-    {#if data.surveyType == "match"}
-      <div class="flex flex-col">
-        <span class="text-xs">Match</span>
-        <span class="font-bold">
-          {#if data.entryRecord.matchLevel && data.entryRecord.matchLevel != "qm"}
-            {data.entryRecord.matchLevel}{data.entryRecord.matchSet || 1}-{data.entryRecord.match}
-          {:else}
-            {data.entryRecord.match}
-          {/if}
-        </span>
-      </div>
-    {/if}
-    <div class="flex flex-col">
-      <span class="text-xs text-wrap">{data.teamName || "Team"}</span>
-      <span class="font-bold">{data.entryRecord.team}</span>
-    </div>
-
-    {#if data.compRecord.scouts && entry.scout && data.surveyType == "match" && data.entryRecord.prediction}
-      <div class="flex flex-col">
-        <span class="text-xs">Guess</span>
-        <span class="font-bold capitalize text-{data.entryRecord.prediction}">
-          {data.entryRecord.prediction} wins
-        </span>
-      </div>
-    {/if}
-  </div>
-
-  {#if data.compRecord.scouts}
-    <div class="flex flex-wrap items-end gap-2">
-      {#if suggestedScouts.length}
-        <label class="flex flex-col">
-          <span class="text-sm">Scout</span>
-          <select bind:value={entry.scout} {onchange} class="text-theme bg-neutral-800 p-2">
-            {#each suggestedScouts as scout}
-              <option>{scout}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
+<div class="mx-auto my-3 w-full max-w-(--breakpoint-lg) p-3">
+  <div class="flex gap-4 mb-6 max-sm:flex-col">
+    {#if entry.type == "match" && matchIdentifier}
       <Button
         onclick={() => {
-          openDialog(NewScoutDialog, {
-            scouts: data.compRecord.scouts ?? [],
-            onadd(newScout) {
-              data = {
-                ...data,
-                compRecord: {
-                  ...data.compRecord,
-                  scouts: [...(data.compRecord.scouts || []), newScout],
-                },
-              };
-              idb.put("comps", $state.snapshot(data.compRecord));
-              entry.scout = newScout;
+          if (!matchIdentifier) return;
+          openDialog(SelectMatchDialog, {
+            matches,
+            lastCompletedMatch,
+            prefilled: matchIdentifier,
+            onselect(match) {
+              entry.match = match.number;
+              entry.matchSet = match.set;
+              entry.matchLevel = match.level || "qm";
               onchange();
+              closeDialog();
             },
           });
         }}
+        class="flex-nowrap! justify-between"
       >
-        <PlusIcon class="text-theme" />
+        <div class="flex flex-col">
+          <span class="text-xs font-light">Match</span>
+          <span class="font-bold text-nowrap">
+            {#if entry.matchLevel && entry.matchLevel != "qm"}
+              {entry.matchLevel}{entry.matchSet || 1}-{entry.match}
+            {:else}
+              {entry.match}
+            {/if}
+          </span>
+        </div>
+        <SquarePenIcon class="text-theme size-5 shrink-0" />
       </Button>
-    </div>
-  {:else if entry.scout}
-    <div class="flex flex-col">
-      <span class="text-xs">Scout</span>
-      <span class="font-bold">{entry.scout}</span>
-    </div>
-  {/if}
+    {/if}
+
+    <Button
+      onclick={() => {
+        openDialog(SelectTeamDialog, {
+          teams: allTeams,
+          prefilled: entry.team,
+          onselect(team) {
+            entry.team = team;
+            onchange();
+          },
+        });
+      }}
+      class="flex-nowrap! truncate max-sm:grow"
+    >
+      <div class="flex grow flex-col truncate sm:max-w-32">
+        <span class="text-xs font-light truncate">{getTeamName(entry.team, allTeams) || "Team"}</span>
+        <span class="font-bold">{entry.team}</span>
+      </div>
+      <SquarePenIcon class="text-theme shrink-0 size-5" />
+    </Button>
+
+    {#if data.compRecord.scouts || entry.scout}
+      <Button
+        onclick={() => {
+          openDialog(SelectScoutDialog, {
+            scouts: suggestedScouts,
+            prefilled: entry.scout || "",
+            onselect(scout) {
+              entry.scout = scout;
+              onchange();
+              localStorage.setItem("scout", scout);
+            },
+          });
+        }}
+        class="flex-nowrap! max-sm:grow truncate"
+      >
+        {#if entry.scout}
+          <div class="flex flex-col grow truncate sm:max-w-32">
+            <span class="text-xs font-light">Scout</span>
+            <span class="truncate">{entry.scout}</span>
+          </div>
+          <SquarePenIcon class="text-theme shrink-0 size-5" />
+        {:else}
+          <div class="flex flex-col grow">
+            <span class="text-xs font-light">Scout</span>
+            Add
+          </div>
+          <PlusIcon class="text-theme size-5 shrink-0" />
+        {/if}
+      </Button>
+    {/if}
+  </div>
 
   {#if entry.type == "match"}
     <Button
@@ -123,7 +176,7 @@
         entry.absent = !entry.absent;
         onchange();
       }}
-      class="self-start"
+      class="self-start mb-6"
     >
       {#if entry.absent}
         <SquareCheckBigIcon class="text-theme" />
@@ -137,8 +190,8 @@
     </Button>
   {/if}
 
-  {#if entry.type == "match" && entry.absent}{:else}
-    <div class="flex flex-col flex-wrap gap-3">
+  {#if entry.type != "match" || !entry.absent}
+    <div class="flex flex-col gap-6 mb-6" transition:slide>
       {#each data.fieldsWithDetails.topLevel as fieldDetails (fieldDetails.field.id)}
         {#if fieldDetails.type == "group"}
           {@const nestedFields = fieldDetails.field.fieldIds
@@ -148,7 +201,7 @@
           <div class="flex w-full flex-col gap-2">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
-            <div class="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
+            <div class="flex mb-2 flex-wrap items-end gap-x-6 gap-y-3">
               {#each nestedFields as nestedFieldDetails (nestedFieldDetails.field.id)}
                 <FieldValueEditor
                   field={nestedFieldDetails.field}
@@ -186,6 +239,7 @@
           },
         });
       }}
+      class="font-bold"
     >
       <SaveIcon class="text-theme" />
       Submit

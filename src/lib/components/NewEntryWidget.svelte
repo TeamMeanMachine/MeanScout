@@ -26,7 +26,6 @@
     SquareIcon,
     SquarePenIcon,
   } from "@lucide/svelte";
-  import NewScoutDialog from "$lib/dialogs/NewScoutDialog.svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
