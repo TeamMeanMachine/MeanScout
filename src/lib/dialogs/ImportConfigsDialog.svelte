@@ -205,7 +205,7 @@
         scouts.add(scout);
       }
 
-      if (scouts.size) {
+      if (compRecord.scouts != undefined || jsonComp.scouts != undefined) {
         comp.scouts = scouts
           .values()
           .toArray()

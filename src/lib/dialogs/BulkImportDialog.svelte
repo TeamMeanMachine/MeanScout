@@ -247,7 +247,7 @@
           break;
       }
 
-      if ("tip" in field && "tip" in jsonField && jsonField.tip) {
+      if (field.type != "group" && jsonField.type != "group" && jsonField.tip) {
         field.tip = jsonField.tip;
       }
 
