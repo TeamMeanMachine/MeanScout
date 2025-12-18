@@ -7,11 +7,19 @@
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
   import type { PageData, PageProps } from "./$types";
-  import { PlusIcon, SaveIcon, SquareCheckBigIcon, SquareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import {
+    ListOrderedIcon,
+    SaveIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    Trash2Icon,
+    UserSearchIcon,
+    UsersIcon,
+  } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
-  import { compareMatches, getAllMatches, getTeamName, type MatchIdentifier, type Team } from "$lib";
+  import { getAllMatches, getTeamName, type MatchIdentifier, type Team } from "$lib";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import { slide } from "svelte/transition";
 
@@ -62,9 +70,10 @@
   );
 
   async function onchange() {
+    entry.modified = new Date();
     data = {
       ...data,
-      entryRecord: { ...entry, modified: new Date() },
+      entryRecord: $state.snapshot(entry),
       surveyRecord: { ...data.surveyRecord, modified: new Date() },
       compRecord: { ...data.compRecord, modified: new Date() },
     } as PageData;
@@ -72,7 +81,6 @@
     changeTx.objectStore("entries").put($state.snapshot(data.entryRecord));
     changeTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
     changeTx.objectStore("comps").put($state.snapshot(data.compRecord));
-    changeTx.oncomplete = invalidateAll;
   }
 </script>
 
@@ -85,6 +93,36 @@
 
 <div class="mx-auto my-3 w-full max-w-(--breakpoint-lg) p-3">
   <div class="flex gap-4 mb-6 max-sm:flex-col">
+    {#if data.compRecord.scouts || entry.scout}
+      <Button
+        onclick={() => {
+          openDialog(SelectScoutDialog, {
+            scouts: suggestedScouts,
+            prefilled: entry.scout || "",
+            onselect(scout) {
+              entry.scout = scout;
+              onchange();
+              localStorage.setItem("scout", scout);
+            },
+          });
+        }}
+        class="flex-nowrap! grow truncate"
+      >
+        <UserSearchIcon class="text-theme shrink-0" />
+        {#if entry.scout}
+          <div class="flex flex-col grow truncate sm:w-32">
+            <span class="text-xs font-light">Scout</span>
+            <span class="truncate">{entry.scout}</span>
+          </div>
+        {:else}
+          <div class="flex flex-col grow">
+            <span class="text-xs font-light">Scout</span>
+            Add
+          </div>
+        {/if}
+      </Button>
+    {/if}
+
     {#if entry.type == "match" && matchIdentifier}
       <Button
         onclick={() => {
@@ -102,9 +140,10 @@
             },
           });
         }}
-        class="flex-nowrap! justify-between"
+        class="flex-nowrap! grow"
       >
-        <div class="flex flex-col">
+        <ListOrderedIcon class="text-theme shrink-0" />
+        <div class="flex flex-col sm:w-16">
           <span class="text-xs font-light">Match</span>
           <span class="font-bold text-nowrap">
             {#if entry.matchLevel && entry.matchLevel != "qm"}
@@ -114,7 +153,6 @@
             {/if}
           </span>
         </div>
-        <SquarePenIcon class="text-theme size-5 shrink-0" />
       </Button>
     {/if}
 
@@ -129,66 +167,35 @@
           },
         });
       }}
-      class="flex-nowrap! truncate max-sm:grow"
+      class="flex-nowrap! truncate grow"
     >
-      <div class="flex grow flex-col truncate sm:max-w-32">
+      <UsersIcon class="text-theme shrink-0" />
+      <div class="flex grow flex-col truncate sm:w-32">
         <span class="text-xs font-light truncate">{getTeamName(entry.team, allTeams) || "Team"}</span>
         <span class="font-bold">{entry.team}</span>
       </div>
-      <SquarePenIcon class="text-theme shrink-0 size-5" />
     </Button>
 
-    {#if data.compRecord.scouts || entry.scout}
+    {#if entry.type == "match"}
       <Button
         onclick={() => {
-          openDialog(SelectScoutDialog, {
-            scouts: suggestedScouts,
-            prefilled: entry.scout || "",
-            onselect(scout) {
-              entry.scout = scout;
-              onchange();
-              localStorage.setItem("scout", scout);
-            },
-          });
+          entry.absent = !entry.absent;
+          onchange();
         }}
-        class="flex-nowrap! max-sm:grow truncate"
+        class="flex-nowrap! grow"
       >
-        {#if entry.scout}
-          <div class="flex flex-col grow truncate sm:max-w-32">
-            <span class="text-xs font-light">Scout</span>
-            <span class="truncate">{entry.scout}</span>
-          </div>
-          <SquarePenIcon class="text-theme shrink-0 size-5" />
+        {#if entry.absent}
+          <SquareCheckBigIcon class="text-theme" />
         {:else}
-          <div class="flex flex-col grow">
-            <span class="text-xs font-light">Scout</span>
-            Add
-          </div>
-          <PlusIcon class="text-theme size-5 shrink-0" />
+          <SquareIcon class="text-theme" />
         {/if}
+        <div class="flex flex-col sm:w-28">
+          <span class={entry.absent ? "font-bold" : "font-light"}>Absent</span>
+          <span class="text-xs font-light">Robot no-showed</span>
+        </div>
       </Button>
     {/if}
   </div>
-
-  {#if entry.type == "match"}
-    <Button
-      onclick={() => {
-        entry.absent = !entry.absent;
-        onchange();
-      }}
-      class="self-start mb-6"
-    >
-      {#if entry.absent}
-        <SquareCheckBigIcon class="text-theme" />
-      {:else}
-        <SquareIcon class="text-theme" />
-      {/if}
-      <div class="flex flex-col">
-        <span class:font-bold={entry.absent}>Absent</span>
-        <span class="text-xs font-light">Robot no-showed</span>
-      </div>
-    </Button>
-  {/if}
 
   {#if entry.type != "match" || !entry.absent}
     <div class="flex flex-col gap-6 mb-6" transition:slide>
@@ -231,11 +238,14 @@
 
         openDialog(SubmitEntryDialog, {
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
-          entryRecord: data.entryRecord,
+          entryRecord: entry,
           onsubmit() {
-            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
-            goto(`#/comp/${data.compRecord.id}`);
+            const tx = idb.transaction(["comps", "surveys"], "readwrite");
+            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            tx.oncomplete = () => {
+              goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true });
+            };
           },
         });
       }}
@@ -249,10 +259,13 @@
       onclick={() =>
         openDialog(DeleteEntryDialog, {
           entryRecord: data.entryRecord,
-          ondelete: () => {
-            idb.put("surveys", { ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() });
-            goto(`#/comp/${data.compRecord.id}`);
+          ondelete() {
+            const tx = idb.transaction(["comps", "surveys"], "readwrite");
+            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
+            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            tx.oncomplete = () => {
+              goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true, replaceState: true });
+            };
           },
         })}
     >

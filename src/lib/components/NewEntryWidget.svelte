@@ -14,7 +14,7 @@
   import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
-  import { targetStore } from "$lib/settings";
+  import { targetStore, type Target } from "$lib/settings";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -567,6 +567,28 @@
 {/if}
 
 {#if matchData && newEntry.type == "match"}
+  {#snippet teamMatchButton(team: string, target?: Target, color = "", order = "")}
+    {#if team}
+      <Button
+        onclick={() => {
+          newEntry.state.team = team;
+          if (target) $targetStore = target;
+        }}
+        class="w-full {order} flex-nowrap!"
+      >
+        {#if newEntry.state.team == team}
+          <CircleCheckBigIcon class="{color} size-5 shrink-0" />
+        {:else}
+          <CircleIcon class="{color} size-5 shrink-0" />
+        {/if}
+        <div class="flex flex-col truncate {teamBold(team)}">
+          <span class="{color} {teamUnderline(team)}">{team}</span>
+          <span class="truncate text-xs">{getTeamName(team, pageData.compRecord.teams)}</span>
+        </div>
+      </Button>
+    {/if}
+  {/snippet}
+
   <div class="flex flex-col" transition:slide>
     {#key matchData}
       {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
@@ -576,121 +598,12 @@
 
         {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
           <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-            {#if red1}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = red1;
-                  $targetStore = "red 1";
-                }}
-                class="w-full max-sm:order-1 flex-nowrap!"
-              >
-                {#if newEntry.state.team == red1}
-                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-red size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(red1)}">
-                  <span class="text-red {teamUnderline(red1)}">{red1}</span>
-                  <span class="truncate text-xs">{getTeamName(red1, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
-            {#if red2}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = red2;
-                  $targetStore = "red 2";
-                }}
-                class="w-full max-sm:order-3 flex-nowrap!"
-              >
-                {#if newEntry.state.team == red2}
-                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-red size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(red2)}">
-                  <span class="text-red {teamUnderline(red2)}">{red2}</span>
-                  <span class="truncate text-xs">{getTeamName(red2, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
-            {#if red3}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = red3;
-                  $targetStore = "red 3";
-                }}
-                class="w-full max-sm:order-5 flex-nowrap!"
-              >
-                {#if newEntry.state.team == red3}
-                  <CircleCheckBigIcon class="text-red size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-red size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(red3)}">
-                  <span class="text-red {teamUnderline(red3)}">{red3}</span>
-                  <span class="truncate text-xs">{getTeamName(red3, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
-
-            {#if blue1}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = blue1;
-                  $targetStore = "blue 1";
-                }}
-                class="w-full max-sm:order-2 flex-nowrap!"
-              >
-                {#if newEntry.state.team == blue1}
-                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-blue size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(blue1)}">
-                  <span class="text-blue {teamUnderline(blue1)}">{blue1}</span>
-                  <span class="truncate text-xs">{getTeamName(blue1, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
-            {#if blue2}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = blue2;
-                  $targetStore = "blue 2";
-                }}
-                class="w-full max-sm:order-4 flex-nowrap!"
-              >
-                {#if newEntry.state.team == blue2}
-                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-blue size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(blue2)}">
-                  <span class="text-blue {teamUnderline(blue2)}">{blue2}</span>
-                  <span class="truncate text-xs">{getTeamName(blue2, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
-            {#if blue3}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = blue3;
-                  $targetStore = "blue 3";
-                }}
-                class="w-full max-sm:order-6 flex-nowrap!"
-              >
-                {#if newEntry.state.team == blue3}
-                  <CircleCheckBigIcon class="text-blue size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="text-blue size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(blue3)}">
-                  <span class="text-blue {teamUnderline(blue3)}">{blue3}</span>
-                  <span class="truncate text-xs">{getTeamName(blue3, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
-            {/if}
+            {@render teamMatchButton(red1, "red 1", "text-red", "max-sm:order-1")}
+            {@render teamMatchButton(red2, "red 2", "text-red", "max-sm:order-3")}
+            {@render teamMatchButton(red3, "red 3", "text-red", "max-sm:order-5")}
+            {@render teamMatchButton(blue1, "blue 1", "text-blue", "max-sm:order-2")}
+            {@render teamMatchButton(blue2, "blue 2", "text-blue", "max-sm:order-4")}
+            {@render teamMatchButton(blue3, "blue 3", "text-blue", "max-sm:order-6")}
           </div>
         {/if}
 
@@ -698,22 +611,7 @@
           <span class="mt-4 text-sm font-light">Other teams</span>
           <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
             {#each matchData.extraTeams || [] as extraTeam}
-              <Button
-                onclick={() => {
-                  newEntry.state.team = extraTeam;
-                }}
-                class="w-full flex-nowrap!"
-              >
-                {#if newEntry.state.team == extraTeam}
-                  <CircleCheckBigIcon class="size-5 shrink-0" />
-                {:else}
-                  <CircleIcon class="size-5 shrink-0" />
-                {/if}
-                <div class="flex flex-col truncate {teamBold(extraTeam)}">
-                  <span class={teamUnderline(extraTeam)}>{extraTeam}</span>
-                  <span class="truncate text-xs">{getTeamName(extraTeam, pageData.compRecord.teams)}</span>
-                </div>
-              </Button>
+              {@render teamMatchButton(extraTeam)}
             {/each}
           </div>
         {/if}
