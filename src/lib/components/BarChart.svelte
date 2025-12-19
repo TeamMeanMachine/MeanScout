@@ -460,7 +460,7 @@
           {#if isHighlighted}
             <div transition:slide>
               <div class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
-                <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}">
+                <Anchor route="comp/{pageData.compRecord.id}/teams/{teamRank.team}">
                   View
                   <ArrowRightIcon class="text-theme size-5" />
                 </Anchor>

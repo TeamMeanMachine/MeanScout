@@ -138,7 +138,7 @@
           {@const order = ["sm:order-1", "sm:order-3", "sm:order-5"]}
           {@const teamName = getTeamName(team, data.compRecord.teams)}
 
-          <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
+          <Anchor route="comp/{data.compRecord.id}/teams/{team}" class={order[index]}>
             <div class="flex flex-col truncate {teamWonFontWeight(team)}">
               <span class="text-red">{team}</span>
               {#if teamName}
@@ -152,7 +152,7 @@
           {@const order = ["sm:order-2", "sm:order-4", "sm:order-6"]}
           {@const teamName = getTeamName(team, data.compRecord.teams)}
 
-          <Anchor route="comp/{data.compRecord.id}/team/{team}" class={order[index]}>
+          <Anchor route="comp/{data.compRecord.id}/teams/{team}" class={order[index]}>
             <div class="flex flex-col truncate {teamWonFontWeight(team)}">
               <span class="text-blue">{team}</span>
               {#if teamName}
@@ -166,7 +166,7 @@
       {#each data.match.extraTeams || [] as team}
         {@const teamName = getTeamName(team, data.compRecord.teams)}
 
-        <Anchor route="comp/{data.compRecord.id}/team/{team}">
+        <Anchor route="comp/{data.compRecord.id}/teams/{team}">
           <div class="flex flex-col truncate {teamWonFontWeight(team)}">
             <span>{team}</span>
             {#if teamName}

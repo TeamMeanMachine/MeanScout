@@ -265,7 +265,7 @@
       animate:flip={{ duration: changeDuration, delay: 0, easing: linear }}
       class="col-span-full grid grid-cols-subgrid"
     >
-      <Anchor route="comp/{pageData.compRecord.id}/team/{teamRank.team}" class="justify-center text-sm">
+      <Anchor route="comp/{pageData.compRecord.id}/teams/{teamRank.team}" class="justify-center text-sm">
         <div class="flex items-baseline">
           <span class="font-bold">{index + 1}</span>
           <span class="hidden text-xs font-light sm:inline">{getOrdinal(index + 1)}</span>

@@ -1,7 +1,7 @@
 import { getTeamName, type Team } from "$lib";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad } from "./$types";
 
-export const load: PageLoad = async (event) => {
+export const load: LayoutLoad = async (event) => {
   const data = await event.parent();
 
   const teamsFromMatches = data.compRecord.matches
@@ -21,11 +21,12 @@ export const load: PageLoad = async (event) => {
     )
     .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
-  const team = sessionStorage.getItem("team-highlight") || undefined;
+  const team = teams.find((t) => t.number == event.params.number);
 
   return {
     title: "Teams",
     teams,
-    team: team ? { number: team, name: getTeamName(team, teams) } : undefined,
+    team,
+    teamsFromEntries,
   };
 };

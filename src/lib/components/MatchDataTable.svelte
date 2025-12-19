@@ -235,7 +235,7 @@
         {#each entries as entry}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
+              <Anchor route="comp/{pageData.compRecord.id}/teams/{team}" class="w-13 {color} justify-center py-1.5">
                 {team}
               </Anchor>
             </th>
@@ -303,7 +303,7 @@
         {:else}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
+              <Anchor route="comp/{pageData.compRecord.id}/teams/{team}" class="w-13 {color} justify-center py-1.5">
                 {team}
               </Anchor>
             </th>
