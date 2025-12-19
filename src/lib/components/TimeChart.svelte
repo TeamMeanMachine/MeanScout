@@ -483,10 +483,10 @@
             {#if inputs && inputs.length > 1}
               {@const totalHeightPixels = percentage * 256}
 
-              <div class="flex flex-col" style="height:{totalHeightPixels}px">
-                {#each inputs.toReversed() as input, i}
+              <div class="flex flex-col-reverse" style="height:{totalHeightPixels}px">
+                {#each inputs as input, i}
                   {#if input.value}
-                    {@const color = colors[inputs.length - 1 - i]}
+                    {@const color = colors[i]}
                     {@const heightPercent = (input.value / (value || 0)) * 100}
 
                     <div
