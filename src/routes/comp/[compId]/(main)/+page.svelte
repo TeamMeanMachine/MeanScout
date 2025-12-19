@@ -76,7 +76,7 @@
   }
 </script>
 
-<div class="flex flex-col space-y-6">
+<div class="flex flex-col space-y-6 mx-auto max-w-(--breakpoint-lg) w-full mt-[57px] px-3 py-6 max-lg:mb-[65px]">
   <div class="flex flex-col gap-3">
     <div class="flex flex-col gap-1">
       <h2 class="font-bold">Entries</h2>

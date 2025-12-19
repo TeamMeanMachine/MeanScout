@@ -102,7 +102,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 mx-auto max-w-(--breakpoint-lg) w-full mt-[57px] px-3 py-6 max-lg:mb-[65px]">
   {#if !data.showRanking}
     <div class="flex flex-col gap-3">
       <h2 class="font-bold">Ranks</h2>
