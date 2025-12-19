@@ -152,9 +152,8 @@
               matchToggleState.push("upcoming");
             }
           }}
-          class="flex-nowrap!"
         >
-          <ChevronRightIcon class="text-theme shrink-0 transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
+          <ChevronRightIcon class="text-theme transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
           <div class="flex grow items-center justify-between">
             <span class={matchToggleState.includes("upcoming") ? "font-bold" : "font-light"}>Upcoming</span>
             <div class="flex gap-0.5 text-sm">
@@ -186,9 +185,8 @@
               matchToggleState.push("previous");
             }
           }}
-          class="flex-nowrap!"
         >
-          <ChevronRightIcon class="text-theme shrink-0 transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
+          <ChevronRightIcon class="text-theme transition-[rotate] {isToggled ? 'rotate-90' : 'rotate-0'}" />
           <div class="flex grow items-center justify-between">
             <span class={matchToggleState.includes("previous") ? "font-bold" : "font-light"}>Previous</span>
             <div class="flex gap-0.5 text-sm">
@@ -237,7 +235,7 @@
 </div>
 
 {#snippet matchRow(match: Match & { extraTeams?: string[] })}
-  <Anchor route={matchUrl(match, data.compRecord.id)} class="flex-nowrap! text-center!">
+  <Anchor route={matchUrl(match, data.compRecord.id)} class="text-center!">
     <div class="flex flex-wrap items-center gap-x-4">
       {#if match.red1 || match.red2 || match.red3}
         {@const redWon =

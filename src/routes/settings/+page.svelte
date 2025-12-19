@@ -154,7 +154,7 @@
       onclick={() => {
         useCompressionInput = useCompressionInput ? "" : "true";
       }}
-      class="w-full sm:w-fit {useCompressionInput == 'true' ? 'font-bold' : 'font-light'}"
+      class={["w-full sm:w-fit", useCompressionInput == "true" ? "font-bold" : "font-light"]}
     >
       {#if useCompressionInput == "true"}
         <SquareCheckBigIcon class="text-theme" />

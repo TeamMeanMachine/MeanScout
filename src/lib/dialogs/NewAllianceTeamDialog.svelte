@@ -34,11 +34,11 @@
   <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each teams as existingTeam}
       {@const font = team == existingTeam.number ? "font-bold" : "font-light"}
-      <Button onclick={() => (team = existingTeam.number)} class="flex-nowrap! {font}">
+      <Button onclick={() => (team = existingTeam.number)} class={font}>
         {#if team == existingTeam.number}
-          <CircleCheckBigIcon class="text-theme size-5 shrink-0" />
+          <CircleCheckBigIcon class="text-theme size-5" />
         {:else}
-          <CircleIcon class="text-theme size-5 shrink-0" />
+          <CircleIcon class="text-theme size-5" />
         {/if}
         <div class="flex flex-col truncate">
           <span>{existingTeam.number}</span>

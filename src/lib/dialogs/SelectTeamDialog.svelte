@@ -72,7 +72,6 @@
               onselect(team.number);
               closeDialog();
             }}
-            class="flex-nowrap!"
           >
             <div class="flex flex-col truncate">
               <span class={[selected && "font-bold underline"]}>{team.number}</span>

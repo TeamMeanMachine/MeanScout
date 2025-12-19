@@ -96,7 +96,7 @@
 
   {#if pageData.surveyRecords.length}
     {#each pageData.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
-      <Anchor route="survey/{survey.id}" class="flex-nowrap!">
+      <Anchor route="survey/{survey.id}">
         <div class="flex grow flex-col">
           <span>{survey.name}</span>
           <span class="text-xs font-light">Fields{survey.type == "match" ? ", ranks" : ""}</span>

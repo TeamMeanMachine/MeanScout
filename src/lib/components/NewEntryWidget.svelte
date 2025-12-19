@@ -455,10 +455,9 @@
           },
         });
       }}
-      class="flex-nowrap!"
     >
       {#if newEntry.state.scout}
-        <SquarePenIcon class="text-theme shrink-0" />
+        <SquarePenIcon class="text-theme" />
         {newEntry.state.scout}
       {:else}
         <PlusIcon class="text-theme" />
@@ -574,12 +573,12 @@
           newEntry.state.team = team;
           if (target) $targetStore = target;
         }}
-        class="w-full {order} flex-nowrap!"
+        class="w-full {order}"
       >
         {#if newEntry.state.team == team}
-          <CircleCheckBigIcon class="{color} size-5 shrink-0" />
+          <CircleCheckBigIcon class="{color} size-5" />
         {:else}
-          <CircleIcon class="{color} size-5 shrink-0" />
+          <CircleIcon class="{color} size-5" />
         {/if}
         <div class="flex flex-col truncate {teamBold(team)}">
           <span class="{color} {teamUnderline(team)}">{team}</span>
@@ -632,9 +631,8 @@
         },
       });
     }}
-    class="flex-nowrap! max-w-full"
   >
-    <SquarePenIcon class="text-theme shrink-0" />
+    <SquarePenIcon class="text-theme" />
     <div class="flex grow flex-col truncate">
       {#if newEntry.state.team}
         <span class="font-bold">{newEntry.state.team}</span>
@@ -655,7 +653,10 @@
           if (newEntry.type != "match") return;
           newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
         }}
-        class="text-red grow basis-[150px] {newEntry.state.prediction == 'red' ? 'font-bold uppercase' : 'font-light'}"
+        class={[
+          "text-red grow basis-[150px]",
+          newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
+        ]}
       >
         {#if newEntry.state.prediction == "red"}
           <SquareCheckBigIcon />
@@ -669,9 +670,10 @@
           if (newEntry.type != "match") return;
           newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
         }}
-        class="text-blue grow basis-[150px] {newEntry.state.prediction == 'blue'
-          ? 'font-bold uppercase'
-          : 'font-light'}"
+        class={[
+          "text-blue grow basis-[150px]",
+          newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
+        ]}
       >
         {#if newEntry.state.prediction == "blue"}
           <SquareCheckBigIcon />

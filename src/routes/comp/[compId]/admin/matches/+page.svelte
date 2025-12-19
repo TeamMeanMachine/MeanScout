@@ -49,7 +49,7 @@
                 },
               });
             }}
-            class="grow flex-nowrap! justify-center text-center!"
+            class="grow justify-center text-center!"
           >
             <div class="flex flex-wrap items-center gap-x-4">
               {#if match.red1 || match.red2 || match.red3}

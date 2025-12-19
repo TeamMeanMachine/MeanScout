@@ -67,11 +67,11 @@
   <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
     {#each events as { name, key }}
       {@const font = event == key ? "font-bold" : "font-light"}
-      <Button onclick={() => (event = key)} class="flex-nowrap! {font}">
+      <Button onclick={() => (event = key)} class={font}>
         {#if event == key}
-          <CircleCheckBigIcon class="text-theme size-5 shrink-0" />
+          <CircleCheckBigIcon class="text-theme size-5" />
         {:else}
-          <CircleIcon class="text-theme size-5 shrink-0" />
+          <CircleIcon class="text-theme size-5" />
         {/if}
         <span class="text-sm">{name}</span>
       </Button>

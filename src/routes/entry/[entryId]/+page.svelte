@@ -106,9 +106,9 @@
             },
           });
         }}
-        class="flex-nowrap! grow truncate"
+        class="grow truncate"
       >
-        <UserSearchIcon class="text-theme shrink-0" />
+        <UserSearchIcon class="text-theme" />
         {#if entry.scout}
           <div class="flex flex-col grow truncate sm:w-32">
             <span class="text-xs font-light">Scout</span>
@@ -140,9 +140,9 @@
             },
           });
         }}
-        class="flex-nowrap! grow"
+        class="grow"
       >
-        <ListOrderedIcon class="text-theme shrink-0" />
+        <ListOrderedIcon class="text-theme" />
         <div class="flex flex-col sm:w-16">
           <span class="text-xs font-light">Match</span>
           <span class="font-bold text-nowrap">
@@ -167,9 +167,9 @@
           },
         });
       }}
-      class="flex-nowrap! truncate grow"
+      class="truncate grow"
     >
-      <UsersIcon class="text-theme shrink-0" />
+      <UsersIcon class="text-theme" />
       <div class="flex grow flex-col truncate sm:w-32">
         <span class="text-xs font-light truncate">{getTeamName(entry.team, allTeams) || "Team"}</span>
         <span class="font-bold">{entry.team}</span>
@@ -182,7 +182,7 @@
           entry.absent = !entry.absent;
           onchange();
         }}
-        class="flex-nowrap! grow"
+        class="grow"
       >
         {#if entry.absent}
           <SquareCheckBigIcon class="text-theme" />

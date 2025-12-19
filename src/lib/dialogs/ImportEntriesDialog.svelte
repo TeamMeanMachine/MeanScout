@@ -302,7 +302,7 @@
       <div class="flex flex-wrap gap-2">
         <Button
           onclick={() => ($duplicateFixMethod = "overwrite")}
-          class="grow basis-52 {$duplicateFixMethod == 'overwrite' ? 'font-bold' : 'font-light'}"
+          class={["grow basis-52", $duplicateFixMethod == "overwrite" ? "font-bold" : "font-light"]}
         >
           {#if $duplicateFixMethod == "overwrite"}
             <CircleCheckBigIcon class="text-theme" />
@@ -313,7 +313,7 @@
         </Button>
         <Button
           onclick={() => ($duplicateFixMethod = "ignore")}
-          class="grow basis-52 {$duplicateFixMethod == 'ignore' ? 'font-bold' : 'font-light'}"
+          class={["grow basis-52", $duplicateFixMethod == "ignore" ? "font-bold" : "font-light"]}
         >
           {#if $duplicateFixMethod == "ignore"}
             <CircleCheckBigIcon class="text-theme" />

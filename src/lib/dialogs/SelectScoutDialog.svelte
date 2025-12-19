@@ -63,7 +63,6 @@
               onselect(scout);
               closeDialog();
             }}
-            class="flex-nowrap!"
           >
             <div class="flex flex-col">
               <span class={[selected && "font-bold underline"]}>{scout}</span>

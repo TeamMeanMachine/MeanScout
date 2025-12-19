@@ -87,7 +87,7 @@
             newEntry = !newEntry;
             if (!newEntry) sessionStorage.removeItem("new-entry");
           }}
-          class="w-20 flex-col gap-1! {newEntry ? 'font-bold' : ''}"
+          class={["w-20 flex-col gap-1!", newEntry ? "font-bold" : ""]}
         >
           <PlusIcon class="text-theme transition-[rotate] {newEntry ? 'rotate-45' : 'rotate-0'}" />
           {newEntry ? "Cancel" : "New"}
@@ -218,11 +218,9 @@
                     toggleStates.survey.push(surveyId);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class={toggled ? "font-bold" : "font-light"}>{surveyName}</span>
                   <div class="flex gap-0.5 text-sm">
@@ -267,11 +265,9 @@
                     toggleStates.match.push(match);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class={toggled ? "font-bold" : "font-light"}>
                     {#if match.level && match.level != "qm"}
@@ -322,11 +318,9 @@
                     toggleStates.scout.push(scout);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class={toggled ? "font-bold" : "font-light"}>{scout || "No name"}</span>
                   <div class="flex gap-0.5 text-sm">
@@ -371,11 +365,9 @@
                     toggleStates.target.push(target);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{target}</span>
                   <div class="flex gap-0.5 text-sm">
@@ -419,11 +411,9 @@
                     toggleStates.team.push(team);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between gap-x-1">
                   <div class="flex flex-col">
                     <span class="font-bold">{team}</span>
@@ -472,11 +462,9 @@
                     toggleStates.absent.push(absent);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{absent}</span>
                   <div class="flex gap-0.5 text-sm">
@@ -521,11 +509,9 @@
                     toggleStates.status.push(status);
                   }
                 }}
-                class="grow flex-nowrap!"
+                class="grow"
               >
-                <ChevronRightIcon
-                  class="text-theme shrink-0 transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}"
-                />
+                <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
                 <div class="flex grow items-center justify-between">
                   <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{status}</span>
                   <div class="flex gap-0.5 text-sm">

@@ -75,7 +75,7 @@
           ?.map((a, i) => ({ ...a, i }))
           .find((a) => a.teams.includes(team.number))}
 
-        <Anchor route="comp/{data.compRecord.id}/team/{team.number}" class="flex-nowrap! justify-between">
+        <Anchor route="comp/{data.compRecord.id}/team/{team.number}" class="justify-between">
           <div class="flex flex-col">
             <span class="font-bold">{team.number}</span>
             {#if team.name}

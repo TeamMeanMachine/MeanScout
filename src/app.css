@@ -83,6 +83,10 @@
     @apply outline-none;
   }
 
+  .lucide {
+    @apply shrink-0;
+  }
+
   * {
     scrollbar-width: thin;
   }

@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import type { HTMLAnchorAttributes } from "svelte/elements";
 
   let {
     route = "",
-    class: classes = "",
-    style,
+    // Extracting class prevents overriding the combined class prop
+    class: classes,
+    // Extracting href prevents overriding the custom hash route prop
+    href,
     children,
+    ...args
   }: {
     route?: string;
-    class?: string;
-    style?: string;
-    children: Snippet;
-  } = $props();
+  } & HTMLAnchorAttributes = $props();
 </script>
 
-<a href="/#/{route.replace('#/', '')}" class="flex flex-wrap items-center gap-2 bg-neutral-800 p-2 {classes}" {style}>
-  {@render children()}
+<a href="/#/{route.replace('#/', '')}" class={["flex items-center gap-2 bg-neutral-800 p-2", classes]} {...args}>
+  {@render children?.()}
 </a>

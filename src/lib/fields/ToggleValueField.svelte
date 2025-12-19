@@ -20,11 +20,11 @@
 </script>
 
 <div class="flex flex-col">
-  <Button onclick={toggle} class="self-start flex-nowrap!">
+  <Button onclick={toggle} class="self-start">
     {#if value}
-      <SquareCheckBigIcon class="text-theme shrink-0" />
+      <SquareCheckBigIcon class="text-theme" />
     {:else}
-      <SquareIcon class="text-theme shrink-0" />
+      <SquareIcon class="text-theme" />
     {/if}
     <div class="flex flex-col">
       <span class:font-bold={value}>{field.name}</span>

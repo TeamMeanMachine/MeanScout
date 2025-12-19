@@ -123,13 +123,13 @@
             selection.push(team.number);
           }
         }}
-        class="flex-nowrap! {font} justify-between"
+        class="{font} justify-between"
       >
         <div class="flex items-center gap-2 truncate">
           {#if selected}
-            <SquareCheckBigIcon class="text-theme size-5 shrink-0" />
+            <SquareCheckBigIcon class="text-theme size-5" />
           {:else}
-            <SquareIcon class="text-theme size-5 shrink-0" />
+            <SquareIcon class="text-theme size-5" />
           {/if}
           <div class="flex flex-col truncate">
             <span>{team.number}</span>

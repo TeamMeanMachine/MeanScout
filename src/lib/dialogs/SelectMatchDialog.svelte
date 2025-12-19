@@ -86,7 +86,7 @@
       onselect(match);
       closeDialog();
     }}
-    class="flex-nowrap! text-center! {font}"
+    class="text-center! {font}"
   >
     <div class="flex flex-col truncate">
       <div class="flex flex-wrap items-center gap-x-4">
