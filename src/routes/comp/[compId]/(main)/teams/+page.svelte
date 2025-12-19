@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageProps } from "./$types";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { afterNavigate, goto, invalidateAll } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
   import { allianceTeamLabels, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
@@ -41,63 +41,17 @@
       team.name.toLowerCase().replaceAll(" ", "").includes(cleanedSearch)
     );
   }
+
+  afterNavigate(({ from, to }) => {
+    if (data.team && from?.route.id != to?.route.id) {
+      document.getElementById(data.team.number)?.scrollIntoView({ block: "center", inline: "center" });
+    }
+  });
 </script>
 
-<div class="flex flex-col gap-6">
-  {#if !data.teams.length}
-    <div class="flex flex-col gap-3">
-      <h2 class="font-bold">Teams</h2>
-      <span class="text-sm">No data on any teams.</span>
-    </div>
-  {:else}
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Teams</h2>
-      <label class="flex flex-col text-sm">
-        Search
-        <input
-          {@attach (input) => {
-            if (sessionStorage.getItem("team-search")) {
-              input.focus();
-              input.select();
-            }
-          }}
-          value={debouncedSearch}
-          oninput={(e) => onsearchinput(e.currentTarget.value)}
-          onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-          class="text-theme bg-neutral-800 p-2"
-        />
-      </label>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      {#each filteredTeams as team}
-        {@const allianceWithIndex = data.compRecord.alliances
-          ?.map((a, i) => ({ ...a, i }))
-          .find((a) => a.teams.includes(team.number))}
-
-        <Anchor route="comp/{data.compRecord.id}/team/{team.number}" class="justify-between">
-          <div class="flex flex-col">
-            <span class="font-bold">{team.number}</span>
-            {#if team.name}
-              <span class="text-xs font-light text-balance">{team.name}</span>
-            {/if}
-          </div>
-          <div class="flex flex-col text-end">
-            {#if allianceWithIndex}
-              <div class="truncate text-xs tracking-tighter">
-                Alliance {allianceWithIndex.i + 1}<br />
-                {allianceTeamLabels[allianceWithIndex.teams.indexOf(team.number)] || "Backup"}
-              </div>
-            {/if}
-          </div>
-        </Anchor>
-      {/each}
-    </div>
-  {/if}
-
-  <div
-    class="sticky bottom-20 lg:bottom-8 z-20 mr-2 flex flex-col self-end border border-neutral-500 bg-neutral-900 p-2 shadow-2xl"
-  >
+<div class="flex flex-col sticky gap-3 top-0 p-3 pt-6 bg-neutral-900 z-20">
+  <div class="flex justify-between flex-wrap items-center">
+    <h2 class="font-bold">Teams</h2>
     <Button
       onclick={() => {
         openDialog(NewTeamsDialog, {
@@ -114,10 +68,57 @@
           },
         });
       }}
-      class="text-sm"
     >
       <PlusIcon class="text-theme size-5" />
-      <span class="hidden sm:block">New team(s)</span>
     </Button>
   </div>
+
+  {#if !data.teams.length}
+    <span class="text-sm">No data on any teams.</span>
+  {:else}
+    <label class="flex flex-col">
+      <span class="text-xs">Search</span>
+      <input
+        {@attach (input) => {
+          if (sessionStorage.getItem("team-search")) {
+            input.focus();
+            input.select();
+          }
+        }}
+        value={debouncedSearch}
+        oninput={(e) => onsearchinput(e.currentTarget.value)}
+        onkeypress={(e) => e.key == "Enter" && onsearchenter()}
+        class="text-theme bg-neutral-800 p-2 text-sm"
+      />
+    </label>
+  {/if}
 </div>
+
+{#if data.teams.length}
+  <div class="flex flex-col gap-2 p-3">
+    {#each filteredTeams as team}
+      {@const viewing = team.number == data.team?.number}
+
+      {@const allianceWithIndex = data.compRecord.alliances
+        ?.map((a, i) => ({ ...a, i }))
+        .find((a) => a.teams.includes(team.number))}
+
+      <Anchor route="comp/{data.compRecord.id}/team/{team.number}" class="justify-between">
+        <div id={team.number} class="flex flex-col">
+          <span class="font-bold {viewing ? 'underline' : ''}">{team.number}</span>
+          {#if team.name}
+            <span class="text-xs {viewing ? 'font-bold underline' : 'font-light'} text-balance">{team.name}</span>
+          {/if}
+        </div>
+        <div class="flex flex-col text-end">
+          {#if allianceWithIndex}
+            <div class="truncate text-xs tracking-tighter">
+              Alliance {allianceWithIndex.i + 1}<br />
+              {allianceTeamLabels[allianceWithIndex.teams.indexOf(team.number)] || "Backup"}
+            </div>
+          {/if}
+        </div>
+      </Anchor>
+    {/each}
+  </div>
+{/if}

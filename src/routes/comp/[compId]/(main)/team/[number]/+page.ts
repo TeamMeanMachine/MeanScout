@@ -13,12 +13,14 @@ export const load: PageLoad = async (event) => {
 
   const teams = [
     ...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches, ...teamsFromEntries]),
-  ].map(
-    (team: string): Team => ({
-      number: team,
-      name: getTeamName(team, data.compRecord.teams) || "",
-    }),
-  );
+  ]
+    .map(
+      (team: string): Team => ({
+        number: team,
+        name: getTeamName(team, data.compRecord.teams) || "",
+      }),
+    )
+    .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
   const team = teams.find((t) => t.number == event.params.number);
 
@@ -28,5 +30,5 @@ export const load: PageLoad = async (event) => {
 
   sessionStorage.setItem("team-highlight", team.number);
 
-  return { title: `Team ${team.number}`, team, anyData: teamsFromEntries.includes(team.number) };
+  return { title: `Team ${team.number}`, teams, team, anyData: teamsFromEntries.includes(team.number) };
 };

@@ -11,6 +11,7 @@
   import { idb } from "$lib/idb";
   import { goto, invalidateAll } from "$app/navigation";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
+  import TeamsPage from "../../teams/+page.svelte";
 
   let { data }: PageProps = $props();
 
@@ -21,7 +22,14 @@
   const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 </script>
 
-<div class="flex flex-col gap-6">
+<div
+  class="overflow-y-auto w-80 fixed top-[57px] border-r border-neutral-600 max-lg:hidden"
+  style="height:calc(100vh - 57px)"
+>
+  <TeamsPage params={{ compId: data.compRecord.id }} {data} />
+</div>
+
+<div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-80 p-3 py-6 mt-[57px]">
   <div class="flex items-start justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">Team {data.team.number}</h2>
@@ -102,7 +110,9 @@
   {#if !data.anyData}
     <span class="text-sm">No data available.</span>
   {:else}
-    <TimeChart pageData={data} team={data.team} />
+    {#key data.team.number}
+      <TimeChart pageData={data} team={data.team} />
+    {/key}
 
     {#each data.surveyRecords
       .filter((survey) => survey.type == "match")

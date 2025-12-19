@@ -19,10 +19,13 @@ export const load: PageLoad = async (event) => {
         name: getTeamName(team, data.compRecord.teams) || "",
       }),
     )
-    .toSorted((a, b) => {
-      const hasDataSort = Number(teamsFromEntries.includes(b.number)) - Number(teamsFromEntries.includes(a.number));
-      return hasDataSort || a.number.localeCompare(b.number, "en", { numeric: true });
-    });
+    .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
-  return { title: "Teams", teams };
+  const team = sessionStorage.getItem("team-highlight") || undefined;
+
+  return {
+    title: "Teams",
+    teams,
+    team: team ? { number: team, name: getTeamName(team, teams) } : undefined,
+  };
 };

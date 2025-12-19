@@ -27,7 +27,7 @@
   <Button onclick={() => ($tab = "qrfcode")} class="text-nowrap {getTabClass('qrfcode')}">QRF Codes</Button>
 {/snippet}
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 text-pretty">
+<div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 text-pretty">
   <div class="flex flex-wrap gap-2 text-sm md:hidden">
     {@render links()}
   </div>

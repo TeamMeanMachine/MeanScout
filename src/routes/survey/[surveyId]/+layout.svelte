@@ -25,7 +25,7 @@
   </div>
 </Header>
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
+<div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
   <div class="-m-1 flex gap-2 overflow-x-auto p-1 text-sm text-nowrap lg:hidden">
     {@render links()}
   </div>

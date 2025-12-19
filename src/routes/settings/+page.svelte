@@ -91,7 +91,7 @@
 
 <Header title="Settings - MeanScout" heading="Settings" {backLink} />
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
+<div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <label class="flex flex-wrap items-center gap-2">
     <CrosshairIcon class="text-theme" />
     <div class="flex grow flex-col">
