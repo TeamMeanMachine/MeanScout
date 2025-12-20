@@ -7,16 +7,13 @@ import { sortExpressions } from "$lib/expression";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();
-  const searchParams = new URLSearchParams(event.url.hash.split("?")[1]);
-
-  const surveyId = searchParams.get("surveyId");
-  if (!surveyId) {
+  if (!data.surveyId) {
     error(404, "No survey id given");
   }
 
-  const surveyRecord = data.surveyRecords.find((s) => s.id == surveyId);
+  const surveyRecord = data.surveyRecords.find((s) => s.id == data.surveyId);
   if (!surveyRecord) {
-    error(404, `Survey not found with id ${surveyId}`);
+    error(404, `Survey not found with id ${data.surveyId}`);
   }
   if (surveyRecord.type != "match") {
     error(404, `${surveyRecord.name} (${surveyRecord.id}) is not a match survey`);
@@ -56,14 +53,10 @@ export const load: PageLoad = async (event) => {
     data.fieldRecords.filter((field) => field.surveyId == surveyRecord.id),
   );
 
-  const pickListName = searchParams.get("picklist");
-  const expressionName = searchParams.get("expression");
-  const fieldId = searchParams.get("field");
-
-  if (pickListName) {
-    const pickList = surveyRecord.pickLists.find((pl) => pl.name == pickListName);
+  if (data.pickListName) {
+    const pickList = surveyRecord.pickLists.find((pl) => pl.name == data.pickListName);
     if (!pickList) {
-      error(404, `Pick list not found with name ${pickListName}`);
+      error(404, `Pick list not found with name ${data.pickListName}`);
     }
 
     const output = getPickListData(
@@ -77,7 +70,7 @@ export const load: PageLoad = async (event) => {
       error(500, `Something went wrong generating an output for pick list ${pickList.name}`);
     }
 
-    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, pickList: pickListName }));
+    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, pickList: data.pickListName }));
 
     return {
       title: pickList.name,
@@ -90,10 +83,10 @@ export const load: PageLoad = async (event) => {
     };
   }
 
-  if (expressionName) {
-    const expression = surveyRecord.expressions.find((e) => e.name == expressionName);
+  if (data.expressionName) {
+    const expression = surveyRecord.expressions.find((e) => e.name == data.expressionName);
     if (!expression) {
-      error(404, `Expression not found with name ${expressionName}`);
+      error(404, `Expression not found with name ${data.expressionName}`);
     }
 
     const output = getExpressionData(
@@ -107,7 +100,7 @@ export const load: PageLoad = async (event) => {
       error(500, `Something went wrong generating an output for expression ${expression.name}`);
     }
 
-    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, expression: expressionName }));
+    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, expression: data.expressionName }));
 
     return {
       title: expression.name,
@@ -120,10 +113,10 @@ export const load: PageLoad = async (event) => {
     };
   }
 
-  if (fieldId) {
-    const field = fieldsWithDetails.orderedSingle.find((f) => f.field.id == fieldId);
+  if (data.fieldId) {
+    const field = fieldsWithDetails.orderedSingle.find((f) => f.field.id == data.fieldId);
     if (!field) {
-      error(404, `Field not found with id ${fieldId}`);
+      error(404, `Field not found with id ${data.fieldId}`);
     }
 
     const output = getFieldData(data.compRecord, field, surveyRecord, entriesByTeam, fieldsWithDetails.orderedSingle);
@@ -131,7 +124,7 @@ export const load: PageLoad = async (event) => {
       error(500, `Something went wrong generating an output for field ${field.detailedName}`);
     }
 
-    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, field: fieldId }));
+    sessionStorage.setItem("rank-view", JSON.stringify({ surveyId: surveyRecord.id, field: data.fieldId }));
 
     return {
       title: field.detailedName,
