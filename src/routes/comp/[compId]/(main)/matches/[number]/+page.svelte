@@ -35,7 +35,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-6 mx-auto max-w-(--breakpoint-lg) w-full mt-[57px] px-3 py-6 max-lg:mb-[65px]">
+<div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-72 2xl:ml-[512px] px-3 py-6 mt-[57px] max-lg:mb-[65px]">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">{data.title}</h2>
