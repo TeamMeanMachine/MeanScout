@@ -116,8 +116,8 @@
       {#if !data.showRanking}
         <span class="text-sm">No rankings available.</span>
       {:else}
-        <label class="flex flex-col text-sm">
-          Search
+        <label class="flex flex-col">
+          <span class="text-xs">Search</span>
           <input
             {@attach (input) => {
               if (sessionStorage.getItem("rank-search")) {
@@ -128,7 +128,7 @@
             value={debouncedSearch}
             oninput={(e) => onsearchinput(e.currentTarget.value)}
             onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-            class="text-theme bg-neutral-800 p-2"
+            class="text-theme bg-neutral-800 p-2 text-sm"
           />
         </label>
       {/if}

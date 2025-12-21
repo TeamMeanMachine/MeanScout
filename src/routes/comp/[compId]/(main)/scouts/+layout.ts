@@ -1,7 +1,7 @@
 import { getPredictionsPerMatch, getPredictionsPerScout } from "$lib/prediction";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad } from "./$types";
 
-export const load: PageLoad = async (event) => {
+export const load: LayoutLoad = async (event) => {
   const data = await event.parent();
 
   const predictionsPerScout = getPredictionsPerScout(
@@ -13,5 +13,7 @@ export const load: PageLoad = async (event) => {
     data.entryRecords.filter((e) => e.type == "match"),
   );
 
-  return { title: "Scouts", ...predictionsPerScout, predictionsPerMatch };
+  const scout = event.params.name;
+
+  return { title: "Scouts", scout, ...predictionsPerScout, predictionsPerMatch };
 };
