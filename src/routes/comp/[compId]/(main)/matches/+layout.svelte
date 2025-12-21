@@ -115,8 +115,8 @@
   afterNavigate(({ from, to }) => {
     if (!data.match) return;
     const [fromId, toId] = [from?.route.id, to?.route.id];
-    if (fromId == toId) return;
-    if (fromId?.startsWith("/comp/[compId]/(main)/teams") && toId?.startsWith("/comp/[compId]/(main)/teams")) return;
+    const baseRouteId = "/comp/[compId]/(main)/matches";
+    if (fromId == toId || (fromId?.startsWith(baseRouteId) && toId?.startsWith(baseRouteId))) return;
 
     document
       .getElementById([data.match.level || "qm", data.match.set || 1, data.match.number].join("-"))
@@ -256,7 +256,7 @@
   <Anchor
     route={matchUrl(match, data.compRecord.id)}
     id={[match.level || "qm", match.set || 1, match.number].join("-")}
-    class="text-center! justify-center"
+    class="text-center! justify-center flex-col gap-1!"
   >
     <div class="flex flex-wrap items-center gap-x-4">
       {#if match.red1 || match.red2 || match.red3}
@@ -335,14 +335,14 @@
           {/if}
         </div>
       {/if}
-
-      {#if match.extraTeams?.length}
-        <div class={["flex flex-col gap-x-2 2xl:flex-row", !data.match && "sm:flex-row lg:flex-col"]}>
-          {#each match.extraTeams as extraTeam}
-            <div class="min-w-13 {teamSearchFontWeight(extraTeam)}">{extraTeam}</div>
-          {/each}
-        </div>
-      {/if}
     </div>
+
+    {#if match.extraTeams?.length}
+      <div class="flex flex-wrap gap-x-2 text-sm font-light">
+        {#each match.extraTeams as extraTeam}
+          <div class="min-w-13 {teamSearchFontWeight(extraTeam)}">{extraTeam}</div>
+        {/each}
+      </div>
+    {/if}
   </Anchor>
 {/snippet}
