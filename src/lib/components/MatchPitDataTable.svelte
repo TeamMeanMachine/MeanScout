@@ -59,7 +59,7 @@
 {#if !entriesPerTeam.length}
   <span class="sticky left-0 text-sm">No data available.</span>
 {:else}
-  <table class="border-separate border-spacing-0 text-center max-md:text-sm">
+  <table class="border-separate border-spacing-0 text-center text-sm">
     <thead class="sticky top-0 z-10 w-full bg-neutral-800 align-bottom text-sm">
       <tr>
         <th
@@ -68,10 +68,6 @@
         >
           Team
         </th>
-
-        {#if someScout}
-          <td class="border-t border-r border-neutral-700"></td>
-        {/if}
 
         {#if someDraft}
           <td class="border-t border-r border-neutral-700"></td>
@@ -83,18 +79,18 @@
               colspan={topLevelField.field.fieldIds.length}
               class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
             >
-              <div class="sticky right-2 {leftStickColumnName} inline">{topLevelField.field.name}</div>
+              <div class="sticky right-0 {leftStickColumnName} inline">{topLevelField.field.name}</div>
             </th>
           {/if}
           <td class="border-t border-r border-neutral-700"></td>
         {/each}
+
+        {#if someScout}
+          <td class="border-t border-r border-neutral-700"></td>
+        {/if}
       </tr>
 
       <tr>
-        {#if someScout}
-          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
-        {/if}
-
         {#if someDraft}
           <th class="border-r border-b border-neutral-700 p-2">Draft</th>
         {/if}
@@ -124,6 +120,10 @@
             </th>
           {/if}
         {/each}
+
+        {#if someScout}
+          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
+        {/if}
       </tr>
     </thead>
 
@@ -132,16 +132,10 @@
         {#each entries as entry}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
+              <Anchor route="comp/{pageData.compRecord.id}/teams/{team}" class="w-13 {color} justify-center py-1.5">
                 {team}
               </Anchor>
             </th>
-
-            {#if someScout}
-              <td class="border-r border-b border-neutral-800 p-2 text-left">
-                <div class="w-24 truncate">{entry.scout}</div>
-              </td>
-            {/if}
 
             {#if someDraft}
               <td class="border-r border-b border-neutral-800 p-2 capitalize">
@@ -168,18 +162,23 @@
                 </td>
               {/if}
             {/each}
+
+            {#if someScout}
+              <td class="border-r border-b border-neutral-800 p-2 text-left">
+                <div class="w-24 truncate">{entry.scout}</div>
+              </td>
+            {/if}
           </tr>
         {:else}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route="comp/{pageData.compRecord.id}/team/{team}" class="w-13 {color} justify-center py-1.5">
+              <Anchor
+                route="comp/{pageData.compRecord.id}/teams/{team}"
+                class="w-13 {color} justify-center py-1.5 font-light"
+              >
                 {team}
               </Anchor>
             </th>
-
-            {#if someScout}
-              <td class="border-r border-b border-neutral-800 p-2"></td>
-            {/if}
 
             {#if someDraft}
               <td class="border-r border-b border-neutral-800 p-2"></td>
@@ -199,6 +198,10 @@
                 <td class="border-r border-b border-neutral-800 p-2"></td>
               {/if}
             {/each}
+
+            {#if someScout}
+              <td class="border-r border-b border-neutral-800 p-2"></td>
+            {/if}
           </tr>
         {/each}
       {/each}

@@ -91,7 +91,7 @@
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
 />
 
-<div class="mx-auto my-3 w-full max-w-(--breakpoint-lg) p-3">
+<div class="mx-auto mt-[57px] w-full max-w-(--breakpoint-lg) px-3 py-6">
   <div class="flex gap-4 mb-6 max-sm:flex-col">
     {#if data.compRecord.scouts || entry.scout}
       <Button

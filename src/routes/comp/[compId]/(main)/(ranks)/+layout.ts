@@ -1,10 +1,16 @@
 import { sortExpressions } from "$lib/expression";
 import { getFieldsWithDetails } from "$lib/field";
 import { groupRanks } from "$lib/survey";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad } from "./$types";
 
-export const load: PageLoad = async (event) => {
+export const load: LayoutLoad = async (event) => {
   const data = await event.parent();
+  const searchParams = new URLSearchParams(event.url.hash.split("?")[1]);
+
+  const surveyId = searchParams.get("surveyId");
+  const pickListName = searchParams.get("picklist");
+  const expressionName = searchParams.get("expression");
+  const fieldId = searchParams.get("field");
 
   const matchSurveys = data.surveyRecords
     .filter((survey) => survey.type == "match")
@@ -33,5 +39,13 @@ export const load: PageLoad = async (event) => {
     };
   });
 
-  return { title: "Ranks", showRanking, groupedRanks };
+  return {
+    title: "Ranks",
+    showRanking,
+    groupedRanks,
+    surveyId,
+    pickListName,
+    expressionName,
+    fieldId,
+  };
 };

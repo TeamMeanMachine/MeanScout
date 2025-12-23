@@ -26,7 +26,7 @@
   <title>{title}</title>
 </svelte:head>
 
-<header class="sticky top-0 left-0 z-20 flex flex-col border-b border-neutral-600 bg-neutral-900 py-2 transition-[top]">
+<header class="fixed top-0 left-0 right-0 z-20 w-full flex flex-col border-b border-neutral-600 bg-neutral-900 py-2">
   <div class="mx-auto flex min-h-10 w-full items-center justify-between gap-3 px-3">
     <div class="flex grow basis-60 gap-2">
       <img src="./logo.svg" alt="" width="25" height="25" />

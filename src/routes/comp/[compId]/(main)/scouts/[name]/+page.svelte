@@ -9,7 +9,7 @@
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-120 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
   <div class="flex flex-wrap gap-x-6 gap-y-3">
     <h2 class="w-full font-bold">{data.scout}</h2>
 

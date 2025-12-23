@@ -90,13 +90,13 @@ export function matchUrl(match: MatchIdentifier, compId: string) {
   const describeSet = match.set && match.set != 1;
 
   if (!describeLevel && !describeSet) {
-    return `comp/${compId}/match/${match.number}`;
+    return `comp/${compId}/matches/${match.number}`;
   } else if (describeLevel && !describeSet) {
-    return `comp/${compId}/match/${match.number}?level=${match.level}`;
+    return `comp/${compId}/matches/${match.number}?level=${match.level}`;
   } else if (!describeLevel && describeSet) {
-    return `comp/${compId}/match/${match.number}?set=${match.set}`;
+    return `comp/${compId}/matches/${match.number}?set=${match.set}`;
   } else {
-    return `comp/${compId}/match/${match.number}?level=${match.level}&set=${match.set}`;
+    return `comp/${compId}/matches/${match.number}?level=${match.level}&set=${match.set}`;
   }
 }
 

@@ -51,10 +51,6 @@
   }
 </script>
 
-<svelte:head>
-  <title>{title} - MeanScout</title>
-</svelte:head>
-
 <Header
   title="{title} - MeanScout"
   heading={data.compRecord.name}
@@ -72,12 +68,10 @@
   </div>
 </Header>
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-lg) grow flex-col gap-6 p-3">
-  {@render children()}
-</div>
+{@render children()}
 
 <div
-  class="sticky bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-nowrap transition-[bottom] lg:hidden"
+  class="fixed bottom-0 left-0 right-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-nowrap lg:hidden"
   style="scrollbar-width:none"
 >
   <div class="mx-auto flex max-w-lg gap-0 p-1 text-xs md:text-sm">

@@ -13,7 +13,7 @@
 
 <Header />
 
-<div class="mx-auto my-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
+<div class="mx-auto flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 mt-[69px] mb-3">
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Comps</h2>
 
