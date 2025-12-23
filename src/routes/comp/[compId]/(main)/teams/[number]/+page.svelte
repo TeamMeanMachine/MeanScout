@@ -2,7 +2,7 @@
   import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
-  import { allianceTeamLabels, sessionStorageStore } from "$lib";
+  import { allianceTeamLabels } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
   import TimeChart from "$lib/components/TimeChart.svelte";
@@ -17,8 +17,6 @@
   const allianceWithIndex = $derived(
     data.compRecord.alliances?.map((a, i) => ({ ...a, i })).find((a) => a.teams.includes(data.team.number)),
   );
-
-  const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 </script>
 
 <div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-80 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
@@ -109,42 +107,19 @@
     {#each data.surveyRecords
       .filter((survey) => survey.type == "match")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col gap-1">
-        <div class="flex flex-wrap items-center justify-between">
-          <h2 class="text-sm">{surveyRecord.name}</h2>
+      <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+        <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
-          <div class="flex flex-wrap gap-2 text-sm">
-            <Button
-              onclick={() => {
-                $showData = "expressions";
-              }}
-              class={$showData == "expressions" ? "font-bold" : "font-light"}
-            >
-              Derived
-            </Button>
-            <Button
-              onclick={() => {
-                $showData = "raw";
-              }}
-              class={$showData == "raw" ? "font-bold" : "font-light"}
-            >
-              Raw
-            </Button>
-          </div>
-        </div>
-
-        <div class="w-full overflow-x-auto">
-          {#key data.team}
-            <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} show={$showData} />
-          {/key}
-        </div>
+        {#key data.team}
+          <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} />
+        {/key}
       </div>
     {/each}
 
     {#each data.surveyRecords
       .filter((s) => s.type == "pit")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto">
+      <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
         {#key data.team}

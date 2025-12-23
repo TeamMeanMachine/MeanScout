@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, getTeamName, matchUrl, sessionStorageStore } from "$lib";
+  import { compareMatches, getTeamName, matchUrl } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { ArrowLeftIcon, ArrowRightIcon, SquarePenIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -15,8 +15,6 @@
   let { data }: PageProps = $props();
 
   const showRanks = $derived(data.fieldRecords.length && data.entryRecords.length);
-
-  const showData = sessionStorageStore<"expressions" | "raw">("entry-view-show-data", "expressions");
 
   function teamWonFontWeight(team: string) {
     if (!data.redWon || !data.blueWon) {
@@ -183,42 +181,19 @@
   {#each data.surveyRecords
     .filter((survey) => survey.type == "match")
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col gap-1">
-      <div class="flex flex-wrap items-center justify-between">
-        <h2 class="text-sm">{surveyRecord.name}</h2>
+    <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+      <h2 class="text-sm">{surveyRecord.name}</h2>
 
-        <div class="flex flex-wrap gap-2 text-sm">
-          <Button
-            onclick={() => {
-              $showData = "expressions";
-            }}
-            class={$showData == "expressions" ? "font-bold" : "font-light"}
-          >
-            Derived
-          </Button>
-          <Button
-            onclick={() => {
-              $showData = "raw";
-            }}
-            class={$showData == "raw" ? "font-bold" : "font-light"}
-          >
-            Raw
-          </Button>
-        </div>
-      </div>
-
-      <div class="w-full overflow-x-auto">
-        {#key data.match}
-          <MatchDataTable pageData={data} {surveyRecord} match={data.match} show={$showData} />
-        {/key}
-      </div>
+      {#key data.match}
+        <MatchDataTable pageData={data} {surveyRecord} match={data.match} />
+      {/key}
     </div>
   {/each}
 
   {#each data.surveyRecords
     .filter((survey) => survey.type == "pit")
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col items-start gap-1 overflow-x-auto">
+    <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
       <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
       {#key data.match}

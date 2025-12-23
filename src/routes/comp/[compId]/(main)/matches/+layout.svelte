@@ -2,7 +2,7 @@
   import { compareMatches, matchUrl, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
-  import { ChevronRightIcon, ListOrderedIcon, PlusIcon } from "@lucide/svelte";
+  import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
   import type { LayoutProps } from "./$types";
   import { z } from "zod";
   import { afterNavigate, goto, invalidateAll } from "$app/navigation";
@@ -132,49 +132,57 @@
   ]}
 >
   <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
-    <div class="flex justify-between flex-wrap items-center">
-      <h2 class="font-bold">Matches</h2>
-      <Button
-        onclick={() =>
-          openDialog(EditMatchDialog, {
-            comp: data.compRecord,
-            onupdate(match) {
-              let matches = $state.snapshot(data.compRecord.matches);
-              matches = matches.filter((m) => compareMatches(m, match) != 0);
-              matches.push(match);
-              matches = matches.toSorted(compareMatches);
+    <div class="flex gap-3 justify-between flex-wrap items-center">
+      <h2 class="font-bold grow">Matches</h2>
 
-              data = {
-                ...data,
-                compRecord: { ...data.compRecord, matches, modified: new Date() },
-              };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
-            },
-          })}
-      >
-        <PlusIcon class="text-theme size-5" />
-      </Button>
+      <div class="flex items-center gap-3">
+        {#if data.matches.length}
+          <label
+            class={[
+              "flex items-center gap-2 bg-neutral-800 p-2 text-sm text-theme cursor-text outline-neutral-300",
+              "focus-within:z-10 focus-within:outline-2",
+            ]}
+          >
+            <SearchIcon class="text-theme size-5" />
+            <input
+              {@attach (input) => {
+                if (sessionStorage.getItem("match-search")) {
+                  input.focus();
+                  input.select();
+                }
+              }}
+              value={debouncedSearch}
+              oninput={(e) => onsearchinput(e.currentTarget.value)}
+              onkeypress={(e) => e.key == "Enter" && onsearchenter()}
+              class="w-full min-w-8 max-w-32 outline-0 font-bold"
+            />
+          </label>
+        {:else}
+          <span class="text-xs">No matches.</span>
+        {/if}
+
+        <Button
+          onclick={() =>
+            openDialog(EditMatchDialog, {
+              comp: data.compRecord,
+              onupdate(match) {
+                let matches = $state.snapshot(data.compRecord.matches);
+                matches = matches.filter((m) => compareMatches(m, match) != 0);
+                matches.push(match);
+                matches = matches.toSorted(compareMatches);
+
+                data = {
+                  ...data,
+                  compRecord: { ...data.compRecord, matches, modified: new Date() },
+                };
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              },
+            })}
+        >
+          <PlusIcon class="text-theme size-5" />
+        </Button>
+      </div>
     </div>
-
-    {#if !data.matches.length}
-      <span class="text-sm">No matches.</span>
-    {:else}
-      <label class="flex flex-col">
-        <span class="text-xs">Search</span>
-        <input
-          {@attach (input) => {
-            if (sessionStorage.getItem("match-search")) {
-              input.focus();
-              input.select();
-            }
-          }}
-          value={debouncedSearch}
-          oninput={(e) => onsearchinput(e.currentTarget.value)}
-          onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-          class="text-theme bg-neutral-800 p-2 text-sm"
-        />
-      </label>
-    {/if}
   </div>
 
   {#if data.matches.length}
@@ -287,7 +295,7 @@
         {@const blueWon = match.blueScore > match.redScore}
 
         <div class="flex flex-col flex-wrap items-center gap-x-2 self-center">
-          <div class={["min-w-8", viewing && "font-bold underline"]}>
+          <div class={["min-w-8", viewing ? "font-bold underline underline-offset-4 italic" : "font-light"]}>
             {#if match.level && match.level != "qm"}
               {match.level}{match.set || 1}-{match.number}
             {:else}
@@ -295,10 +303,22 @@
             {/if}
           </div>
           <div class="flex items-center gap-x-2">
-            <div class="text-red min-w-8 {redWon ? 'font-bold' : 'text-sm font-light'}">
+            <div
+              class={[
+                "text-red min-w-8",
+                redWon || viewing ? "font-bold" : "text-sm font-light",
+                viewing && "underline underline-offset-4 italic",
+              ]}
+            >
               {match.redScore}
             </div>
-            <div class="text-blue min-w-8 {blueWon ? 'font-bold' : 'text-sm font-light'}">
+            <div
+              class={[
+                "text-blue min-w-8",
+                blueWon || viewing ? "font-bold" : "text-sm font-light",
+                viewing && "underline underline-offset-4 italic",
+              ]}
+            >
               {match.blueScore}
             </div>
           </div>

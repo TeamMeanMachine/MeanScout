@@ -12,12 +12,10 @@
     pageData,
     surveyRecord,
     team,
-    show,
   }: {
     pageData: CompPageData;
     surveyRecord: MatchSurvey;
     team: Team;
-    show: "expressions" | "raw";
   } = $props();
 
   const entryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
@@ -81,6 +79,9 @@
   const someDraft = entries.some((entry) => entry.status == "draft");
   const someAbsent = entries.some((entry) => entry.absent);
 
+  const somePrediction = entries.some((entry) => entry.prediction);
+  const somePredictionReason = entries.some((entry) => entry.predictionReason);
+
   function getExpressionValues(entry: MatchEntry) {
     const values: Record<string, Value> = {};
 
@@ -122,7 +123,7 @@
 {#if !entriesPerMatch.length}
   <span class="sticky left-0 text-sm">No data available.</span>
 {:else}
-  <table class="border-separate border-spacing-0 text-center max-md:text-sm">
+  <table class="border-separate border-spacing-0 text-center text-sm">
     <thead class="sticky top-0 z-10 w-full bg-neutral-800 align-bottom text-sm">
       <tr>
         <th
@@ -132,10 +133,6 @@
           #
         </th>
 
-        {#if show == "raw" && someScout}
-          <td class="border-t border-r border-neutral-700"></td>
-        {/if}
-
         {#if someDraft}
           <td class="border-t border-r border-neutral-700"></td>
         {/if}
@@ -144,44 +141,50 @@
           <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
-        {#if show == "expressions"}
+        {#if entryExpressions.length}
           <th
             colspan={entryExpressions.length}
             class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
           >
-            <div class="sticky right-2 {leftStickColumnName} inline">Expressions</div>
+            <div class="sticky right-0 {leftStickColumnName} inline">Expressions</div>
           </th>
           <td class="border-t border-r border-neutral-700"></td>
-        {:else}
-          {#if surveyRecord.tbaMetrics?.length}
-            <th
-              colspan={surveyRecord.tbaMetrics.length}
-              class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
-            >
-              <div class="sticky right-2 {leftStickColumnName} inline">TBA</div>
-            </th>
-            <td class="border-t border-r border-neutral-700"></td>
-          {/if}
+        {/if}
 
-          {#each fieldsWithDetails.topLevel as topLevelField}
-            {#if topLevelField.type == "group"}
-              <th
-                colspan={topLevelField.field.fieldIds.length}
-                class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
-              >
-                <div class="sticky right-2 {leftStickColumnName} inline">{topLevelField.field.name}</div>
-              </th>
-            {/if}
-            <td class="border-t border-r border-neutral-700"></td>
-          {/each}
+        {#if surveyRecord.tbaMetrics?.length}
+          <th
+            colspan={surveyRecord.tbaMetrics.length}
+            class="border-t border-neutral-700 px-2 pt-1 pb-0 text-center font-light"
+          >
+            <div class="sticky right-0 {leftStickColumnName} inline">TBA</div>
+          </th>
+          <td class="border-t border-r border-neutral-700"></td>
+        {/if}
+
+        {#each fieldsWithDetails.topLevel as topLevelField}
+          {#if topLevelField.type == "group"}
+            <th
+              colspan={topLevelField.field.fieldIds.length}
+              class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
+            >
+              <div class="sticky right-0 {leftStickColumnName} inline">{topLevelField.field.name}</div>
+            </th>
+          {/if}
+          <td class="border-t border-r border-neutral-700"></td>
+        {/each}
+
+        {#if someScout}
+          <th
+            colspan={1 + (somePrediction ? 1 : 0) + (somePredictionReason ? 1 : 0)}
+            class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
+          >
+            <div class="sticky right-0 {leftStickColumnName} inline">Scout</div>
+          </th>
+          <td class="border-t border-r border-neutral-700"></td>
         {/if}
       </tr>
 
       <tr>
-        {#if show == "raw" && someScout}
-          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
-        {/if}
-
         {#if someDraft}
           <th class="border-r border-b border-neutral-700 p-2">Draft</th>
         {/if}
@@ -190,7 +193,7 @@
           <th class="border-r border-b border-neutral-700 p-2">Absent</th>
         {/if}
 
-        {#if show == "expressions"}
+        {#if entryExpressions.length}
           {#each entryExpressions as entryExpression}
             <th class="border-b border-neutral-700 p-1">
               <Anchor
@@ -204,61 +207,77 @@
             </th>
           {/each}
           <td class="border-r border-b border-neutral-700"></td>
-        {:else}
-          {#if surveyRecord.tbaMetrics?.length}
-            {#each surveyRecord.tbaMetrics as tbaMetric}
-              <th class="border-b border-neutral-700 p-2">{tbaMetric}</th>
-            {/each}
-            <td class="border-r border-b border-neutral-700"></td>
-          {/if}
+        {/if}
 
-          {#each fieldsWithDetails.topLevel as topLevelField}
-            {#if topLevelField.type == "group"}
-              {@const nestedFields = topLevelField.field.fieldIds
-                .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
-                .filter((f) => f !== undefined)}
+        {#if surveyRecord.tbaMetrics?.length}
+          {#each surveyRecord.tbaMetrics as tbaMetric}
+            <th class="border-b border-neutral-700 p-2">{tbaMetric}</th>
+          {/each}
+          <td class="border-r border-b border-neutral-700"></td>
+        {/if}
 
-              {#each nestedFields as { name, id, type }}
-                <th class={["border-b border-neutral-700 p-1 text-nowrap", type == "text" && "p-2 text-left"]}>
-                  {#if type == "text"}
-                    <div class="sticky {leftStickColumnName} inline">{name}</div>
-                  {:else}
-                    <Anchor
-                      route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
-                        surveyRecord.id,
-                      )}&field={encodeURIComponent(id)}"
-                      class="justify-center p-1! text-center!"
-                    >
-                      {name}
-                    </Anchor>
-                  {/if}
-                </th>
-              {/each}
-              <td class="border-r border-b border-neutral-700"></td>
-            {:else}
-              <th
-                class={[
-                  "border-r border-b border-neutral-700 p-1 text-nowrap",
-                  topLevelField.field.type == "text" && "p-2 text-left",
-                ]}
-              >
-                {#if topLevelField.field.type == "text"}
-                  <div class="sticky ${leftStickColumnName} inline">
-                    {topLevelField.field.name}
-                  </div>
+        {#each fieldsWithDetails.topLevel as topLevelField}
+          {#if topLevelField.type == "group"}
+            {@const nestedFields = topLevelField.field.fieldIds
+              .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
+              .filter((f) => f !== undefined)}
+
+            {#each nestedFields as { name, id, type }}
+              <th class={["border-b border-neutral-700 p-1 text-nowrap", type == "text" && "p-2 text-left"]}>
+                {#if type == "text"}
+                  <div class="sticky {leftStickColumnName} inline">{name}</div>
                 {:else}
                   <Anchor
                     route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
                       surveyRecord.id,
-                    )}&field={encodeURIComponent(topLevelField.field.id)}"
+                    )}&field={encodeURIComponent(id)}"
                     class="justify-center p-1! text-center!"
                   >
-                    {topLevelField.field.name}
+                    {name}
                   </Anchor>
                 {/if}
               </th>
+            {/each}
+            <td class="border-r border-b border-neutral-700"></td>
+          {:else}
+            <th
+              class={[
+                "border-r border-b border-neutral-700 p-1 text-nowrap",
+                topLevelField.field.type == "text" && "p-2 text-left",
+              ]}
+            >
+              {#if topLevelField.field.type == "text"}
+                <div class="sticky ${leftStickColumnName} inline">
+                  {topLevelField.field.name}
+                </div>
+              {:else}
+                <Anchor
+                  route="comp/{pageData.compRecord.id}/rank?surveyId={encodeURIComponent(
+                    surveyRecord.id,
+                  )}&field={encodeURIComponent(topLevelField.field.id)}"
+                  class="justify-center p-1! text-center!"
+                >
+                  {topLevelField.field.name}
+                </Anchor>
+              {/if}
+            </th>
+          {/if}
+        {/each}
+
+        {#if someScout}
+          <th class="border-b border-neutral-700 p-2 text-left">Name</th>
+
+          {#if somePrediction}
+            <th class="border-b border-neutral-700 p-2 text-left">Guess</th>
+
+            {#if somePredictionReason}
+              <th class="border-b border-neutral-700 p-2 text-left">
+                <div class="sticky {leftStickColumnName} inline">Reason</div>
+              </th>
             {/if}
-          {/each}
+          {/if}
+
+          <td class="border-r border-b border-neutral-700"></td>
         {/if}
       </tr>
     </thead>
@@ -277,12 +296,6 @@
               </Anchor>
             </th>
 
-            {#if show == "raw" && someScout}
-              <td class="border-r border-b border-neutral-800 p-2 text-left">
-                <div class="w-24 truncate">{entry.scout}</div>
-              </td>
-            {/if}
-
             {#if someDraft}
               <td class="border-r border-b border-neutral-800 p-2">
                 {entry.status == "draft" ? "true" : ""}
@@ -295,7 +308,7 @@
               </td>
             {/if}
 
-            {#if show == "expressions"}
+            {#if entryExpressions.length}
               {@const values = getExpressionValues(entry)}
 
               {#each entryExpressions as entryExpression}
@@ -303,43 +316,67 @@
                 <td class="border-b border-neutral-800 p-2">{(!entry.absent && value) || ""}</td>
               {/each}
               <td class="border-r border-neutral-800"></td>
-            {:else}
-              {#if surveyRecord.tbaMetrics?.length}
-                {@const tbaMetrics = surveyRecord.tbaMetrics.map(
-                  (metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value,
-                )}
+            {/if}
 
-                {#each tbaMetrics as value}
-                  <td class="border-b border-neutral-800 p-2">{(!entry.absent && value) || ""}</td>
+            {#if surveyRecord.tbaMetrics?.length}
+              {@const tbaMetrics = surveyRecord.tbaMetrics.map(
+                (metric) => entry.tbaMetrics?.find((m) => m.name == metric)?.value,
+              )}
+
+              {#each tbaMetrics as value}
+                <td class="border-b border-neutral-800 p-2">{(!entry.absent && value) || ""}</td>
+              {/each}
+              <td class="border-r border-b border-neutral-800"></td>
+            {/if}
+
+            {#each getRawValues(entry) as valueOrValues}
+              {#if Array.isArray(valueOrValues)}
+                {#each valueOrValues as value}
+                  <td class={["border-b border-neutral-800 p-2", value.type == "text" && "min-w-xs text-left"]}>
+                    {(!entry.absent && value.value) || ""}
+                  </td>
                 {/each}
-                <td class="border-r border-b border-neutral-800"></td>
+                <td class="border-r border-neutral-800"></td>
+              {:else}
+                <td
+                  class={[
+                    "border-r border-b border-neutral-800 p-2",
+                    valueOrValues.type == "text" && "min-w-xs text-left",
+                  ]}
+                >
+                  {(!entry.absent && valueOrValues.value) || ""}
+                </td>
               {/if}
+            {/each}
 
-              {#each getRawValues(entry) as valueOrValues}
-                {#if Array.isArray(valueOrValues)}
-                  {#each valueOrValues as value}
-                    <td class={["border-b border-neutral-800 p-2", value.type == "text" && "min-w-xs text-left"]}>
-                      {(!entry.absent && value.value) || ""}
-                    </td>
-                  {/each}
-                  <td class="border-r border-neutral-800"></td>
-                {:else}
-                  <td
-                    class={[
-                      "border-r border-b border-neutral-800 p-2",
-                      valueOrValues.type == "text" && "min-w-xs text-left",
-                    ]}
-                  >
-                    {(!entry.absent && valueOrValues.value) || ""}
+            {#if someScout}
+              <td class="border-b border-neutral-800 p-2 text-left">
+                <div class="w-24 truncate">{entry.scout}</div>
+              </td>
+
+              {#if somePrediction}
+                <td class="border-b border-neutral-800 p-2 capitalize">
+                  <div class={entry.prediction == "red" ? "text-red" : entry.prediction == "blue" ? "text-blue" : ""}>
+                    {entry.prediction}
+                  </div>
+                </td>
+
+                {#if somePredictionReason}
+                  <td class="border-b border-neutral-800 p-2 min-w-xs text-left">
+                    {entry.predictionReason}
                   </td>
                 {/if}
-              {/each}
+              {/if}
+              <td class="border-r border-neutral-800"></td>
             {/if}
           </tr>
         {:else}
           <tr>
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
-              <Anchor route={matchUrl(match, pageData.compRecord.id)} class="w-13 justify-center py-1.5 text-nowrap!">
+              <Anchor
+                route={matchUrl(match, pageData.compRecord.id)}
+                class="w-13 justify-center py-1.5 text-nowrap! font-light"
+              >
                 {#if match.level && match.level != "qm"}
                   {match.level}{match.set || 1}-{match.number}
                 {:else}
@@ -347,10 +384,6 @@
                 {/if}
               </Anchor>
             </th>
-
-            {#if show == "raw" && someScout}
-              <td class="border-r border-b border-neutral-800 p-2 text-left"></td>
-            {/if}
 
             {#if someDraft}
               <td class="border-r border-b border-neutral-800 p-2"></td>
@@ -360,33 +393,47 @@
               <td class="border-r border-b border-neutral-800 p-2"></td>
             {/if}
 
-            {#if show == "expressions"}
+            {#if entryExpressions.length}
               {#each entryExpressions}
                 <td class="border-b border-neutral-800 p-2"></td>
               {/each}
               <td class="border-r border-neutral-800"></td>
-            {:else}
-              {#if surveyRecord.tbaMetrics?.length}
-                {#each surveyRecord.tbaMetrics}
+            {/if}
+
+            {#if surveyRecord.tbaMetrics?.length}
+              {#each surveyRecord.tbaMetrics}
+                <td class="border-b border-neutral-800 p-2"></td>
+              {/each}
+              <td class="border-r border-b border-neutral-800"></td>
+            {/if}
+
+            {#each fieldsWithDetails.topLevel as topLevelField}
+              {#if topLevelField.type == "group"}
+                {@const nestedFields = topLevelField.field.fieldIds
+                  .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
+                  .filter((f) => f !== undefined)}
+
+                {#each nestedFields}
                   <td class="border-b border-neutral-800 p-2"></td>
                 {/each}
                 <td class="border-r border-b border-neutral-800"></td>
+              {:else}
+                <td class="border-r border-b border-neutral-800 p-2"></td>
+              {/if}
+            {/each}
+
+            {#if someScout}
+              <td class="border-b border-neutral-800 p-2 text-left"></td>
+
+              {#if somePrediction}
+                <td class="border-b border-neutral-800 p-2 text-left"></td>
+
+                {#if somePredictionReason}
+                  <td class="border-b border-neutral-800 p-2 text-left"></td>
+                {/if}
               {/if}
 
-              {#each fieldsWithDetails.topLevel as topLevelField}
-                {#if topLevelField.type == "group"}
-                  {@const nestedFields = topLevelField.field.fieldIds
-                    .map((id) => fieldRecords.find((f) => f.id == id && f.type != "group"))
-                    .filter((f) => f !== undefined)}
-
-                  {#each nestedFields}
-                    <td class="border-b border-neutral-800 p-2"></td>
-                  {/each}
-                  <td class="border-r border-b border-neutral-800"></td>
-                {:else}
-                  <td class="border-r border-b border-neutral-800 p-2"></td>
-                {/if}
-              {/each}
+              <td class="border-r border-b border-neutral-800"></td>
             {/if}
           </tr>
         {/each}

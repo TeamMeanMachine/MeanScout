@@ -7,7 +7,7 @@
   import { openDialog } from "$lib/dialog";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
   import { idb } from "$lib/idb";
-  import { PlusIcon } from "@lucide/svelte";
+  import { PlusIcon, SearchIcon } from "@lucide/svelte";
 
   let { data, children }: LayoutProps = $props();
 
@@ -60,49 +60,57 @@
   ]}
 >
   <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
-    <div class="flex justify-between flex-wrap items-center">
-      <h2 class="font-bold">Teams</h2>
-      <Button
-        onclick={() => {
-          openDialog(NewTeamsDialog, {
-            teams: data.compRecord.teams,
-            onadd(newTeams) {
-              const teams = [
-                ...data.compRecord.teams,
-                ...newTeams.map((team) => ({ number: team, name: "" })),
-              ].toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
-              data = {
-                ...data,
-                compRecord: { ...data.compRecord, teams, modified: new Date() },
-              };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
-            },
-          });
-        }}
-      >
-        <PlusIcon class="text-theme size-5" />
-      </Button>
-    </div>
+    <div class="flex gap-3 justify-between flex-wrap items-center">
+      <h2 class="font-bold grow">Teams</h2>
 
-    {#if !data.teams.length}
-      <span class="text-sm">No data on any teams.</span>
-    {:else}
-      <label class="flex flex-col">
-        <span class="text-xs">Search</span>
-        <input
-          {@attach (input) => {
-            if (sessionStorage.getItem("team-search")) {
-              input.focus();
-              input.select();
-            }
+      <div class="flex items-center gap-3">
+        {#if data.teams.length}
+          <label
+            class={[
+              "flex items-center gap-2 bg-neutral-800 p-2 text-sm text-theme cursor-text outline-neutral-300",
+              "focus-within:z-10 focus-within:outline-2",
+            ]}
+          >
+            <SearchIcon class="text-theme size-5" />
+            <input
+              {@attach (input) => {
+                if (sessionStorage.getItem("team-search")) {
+                  input.focus();
+                  input.select();
+                }
+              }}
+              value={debouncedSearch}
+              oninput={(e) => onsearchinput(e.currentTarget.value)}
+              onkeypress={(e) => e.key == "Enter" && onsearchenter()}
+              class="w-full min-w-8 max-w-32 outline-0 font-bold"
+            />
+          </label>
+        {:else}
+          <span class="text-xs">No teams.</span>
+        {/if}
+
+        <Button
+          onclick={() => {
+            openDialog(NewTeamsDialog, {
+              teams: data.compRecord.teams,
+              onadd(newTeams) {
+                const teams = [
+                  ...data.compRecord.teams,
+                  ...newTeams.map((team) => ({ number: team, name: "" })),
+                ].toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+                data = {
+                  ...data,
+                  compRecord: { ...data.compRecord, teams, modified: new Date() },
+                };
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              },
+            });
           }}
-          value={debouncedSearch}
-          oninput={(e) => onsearchinput(e.currentTarget.value)}
-          onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-          class="text-theme bg-neutral-800 p-2 text-sm"
-        />
-      </label>
-    {/if}
+        >
+          <PlusIcon class="text-theme size-5" />
+        </Button>
+      </div>
+    </div>
   </div>
 
   {#if data.teams.length}

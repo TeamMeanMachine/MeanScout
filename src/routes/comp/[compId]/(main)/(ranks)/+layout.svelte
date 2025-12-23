@@ -3,7 +3,7 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
-  import { PlusIcon } from "@lucide/svelte";
+  import { PlusIcon, SearchIcon } from "@lucide/svelte";
   import { openDialog } from "$lib/dialog";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
   import type { MatchSurvey } from "$lib/survey";
@@ -110,14 +110,17 @@
   ]}
 >
   <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
-    <div class="flex flex-col gap-3">
+    <div class="flex gap-3 justify-between flex-wrap items-center">
       <h2 class="font-bold">Ranks</h2>
 
-      {#if !data.showRanking}
-        <span class="text-sm">No rankings available.</span>
-      {:else}
-        <label class="flex flex-col">
-          <span class="text-xs">Search</span>
+      {#if data.showRanking}
+        <label
+          class={[
+            "flex items-center gap-2 bg-neutral-800 p-2 text-sm text-theme cursor-text outline-neutral-300",
+            "focus-within:z-10 focus-within:outline-2",
+          ]}
+        >
+          <SearchIcon class="text-theme size-5" />
           <input
             {@attach (input) => {
               if (sessionStorage.getItem("rank-search")) {
@@ -128,9 +131,11 @@
             value={debouncedSearch}
             oninput={(e) => onsearchinput(e.currentTarget.value)}
             onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-            class="text-theme bg-neutral-800 p-2 text-sm"
+            class="w-full min-w-8 max-w-32 outline-0 font-bold"
           />
         </label>
+      {:else}
+        <span class="text-xs">No rankings.</span>
       {/if}
     </div>
   </div>

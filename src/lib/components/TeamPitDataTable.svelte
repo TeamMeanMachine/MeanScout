@@ -50,14 +50,10 @@
 {#if !entries.length}
   <span class="sticky left-0 text-sm">No data available.</span>
 {:else}
-  <table class="border-separate border-spacing-0 text-center max-md:text-sm">
+  <table class="border-separate border-spacing-0 text-center text-sm">
     <thead class="sticky top-0 z-10 w-full bg-neutral-800 align-bottom text-sm">
       <tr>
         <td class="border-t border-l border-neutral-700"></td>
-
-        {#if someScout}
-          <td class="border-t border-r border-neutral-700"></td>
-        {/if}
 
         {#if someDraft}
           <td class="border-t border-r border-neutral-700"></td>
@@ -69,19 +65,19 @@
               colspan={topLevelField.field.fieldIds.length}
               class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
             >
-              <div class="sticky right-2 {leftStickColumnName} inline">{topLevelField.field.name}</div>
+              <div class="sticky right-0 {leftStickColumnName} inline">{topLevelField.field.name}</div>
             </th>
           {/if}
           <td class="border-t border-r border-neutral-700"></td>
         {/each}
+
+        {#if someScout}
+          <td class="border-t border-r border-neutral-700"></td>
+        {/if}
       </tr>
 
       <tr>
         <td class="border-l border-neutral-700"></td>
-
-        {#if someScout}
-          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
-        {/if}
 
         {#if someDraft}
           <th class="border-r border-b border-neutral-700 p-2">Draft</th>
@@ -112,6 +108,10 @@
             </th>
           {/if}
         {/each}
+
+        {#if someScout}
+          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
+        {/if}
       </tr>
     </thead>
 
@@ -119,12 +119,6 @@
       {#each entries as entry}
         <tr>
           <td class="border-l border-neutral-800"></td>
-
-          {#if someScout}
-            <td class="border-r border-b border-neutral-800 p-2 text-left">
-              <div class="w-24 truncate">{entry.scout}</div>
-            </td>
-          {/if}
 
           {#if someDraft}
             <td class="border-r border-b border-neutral-800 p-2 capitalize">
@@ -151,6 +145,12 @@
               </td>
             {/if}
           {/each}
+
+          {#if someScout}
+            <td class="border-r border-b border-neutral-800 p-2 text-left">
+              <div class="w-24 truncate">{entry.scout}</div>
+            </td>
+          {/if}
         </tr>
       {/each}
     </tbody>
