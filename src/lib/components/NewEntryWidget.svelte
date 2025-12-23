@@ -14,7 +14,7 @@
   import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
-  import { targetStore, type Target } from "$lib/settings";
+  import { scoutStore, targetStore, type Target } from "$lib/settings";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -333,7 +333,7 @@
     const prefills: MatchPrefills = {
       match: { number: 1 },
       team: "",
-      scout: localStorage.getItem("scout") || undefined,
+      scout: $scoutStore || undefined,
     };
 
     let lastScoutedMatch: MatchIdentifier | undefined = undefined;
@@ -398,7 +398,7 @@
   function getNewPitEntryPrefills(entries: PitEntry[]) {
     const prefills: PitPrefills = {
       team: "",
-      scout: localStorage.getItem("scout") || undefined,
+      scout: $scoutStore || undefined,
     };
 
     const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
@@ -451,7 +451,7 @@
           prefilled: newEntry.state.scout || "",
           onselect(scout) {
             newEntry.state.scout = scout;
-            localStorage.setItem("scout", scout);
+            $scoutStore = scout;
           },
         });
       }}

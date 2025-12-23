@@ -55,6 +55,10 @@ export const targetStore = localStorageStore<Target>("target", "red 1", (target)
 
 export const cameraStore = localStorageStore<string>("camera", "");
 
+// Scout name setting
+
+export const scoutStore = localStorageStore<string>("scout", "");
+
 // Team setting
 
 export const teamStore = localStorageStore<string>("team", "");

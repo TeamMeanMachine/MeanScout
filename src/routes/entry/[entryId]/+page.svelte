@@ -22,6 +22,7 @@
   import { getAllMatches, getTeamName, type MatchIdentifier, type Team } from "$lib";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import { slide } from "svelte/transition";
+  import { scoutStore } from "$lib/settings";
 
   let { data }: PageProps = $props();
 
@@ -102,7 +103,7 @@
             onselect(scout) {
               entry.scout = scout;
               onchange();
-              localStorage.setItem("scout", scout);
+              $scoutStore = scout;
             },
           });
         }}

@@ -3,7 +3,15 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { supportsCompressionApi } from "$lib/compress";
-  import { cameraStore, targets, targetStore, tbaAuthKeyStore, teamStore, useCompressionStore } from "$lib/settings";
+  import {
+    cameraStore,
+    scoutStore,
+    targets,
+    targetStore,
+    tbaAuthKeyStore,
+    teamStore,
+    useCompressionStore,
+  } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
   import {
     CameraIcon,
@@ -14,6 +22,7 @@
     ShrinkIcon,
     SquareCheckBigIcon,
     SquareIcon,
+    UserSearchIcon,
     UsersIcon,
     XIcon,
   } from "@lucide/svelte";
@@ -23,6 +32,7 @@
 
   let targetInput = $state($targetStore);
   let cameraInput = $state($cameraStore);
+  let scoutInput = $state($scoutStore);
   let teamInput = $state($teamStore);
   let tbaAuthKeyInput = $state($tbaAuthKeyStore);
   let useCompressionInput = $state($useCompressionStore);
@@ -36,6 +46,7 @@
     return (
       targetInput != $targetStore ||
       cameraInput != $cameraStore ||
+      scoutInput.trim() != $scoutStore ||
       teamInput.trim() != $teamStore ||
       tbaAuthKeyInput.trim() != $tbaAuthKeyStore ||
       useCompressionInput != $useCompressionStore
@@ -65,6 +76,8 @@
   async function confirm() {
     error = "";
 
+    scoutInput = scoutInput.trim();
+
     teamInput = teamInput.trim();
     if (teamInput && !/^\d{1,5}[A-Z]?$/.test(teamInput)) {
       error = "Invalid team";
@@ -81,6 +94,7 @@
 
     $targetStore = targetInput;
     $cameraStore = cameraInput;
+    $scoutStore = scoutInput;
     $teamStore = teamInput;
     $tbaAuthKeyStore = tbaAuthKeyInput;
     $useCompressionStore = useCompressionInput;
@@ -123,6 +137,15 @@
     {:else}
       <LoaderIcon class="text-theme animate-spin" />
     {/if}
+  </label>
+
+  <label class="flex flex-wrap items-center gap-2">
+    <UserSearchIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Your name
+      <span class="text-xs font-light">Used in entries for guessing game</span>
+    </div>
+    <input bind:value={scoutInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-auto" />
   </label>
 
   <label class="flex flex-wrap items-center gap-2">
