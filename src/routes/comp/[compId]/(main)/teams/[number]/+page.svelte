@@ -2,14 +2,14 @@
   import type { PageProps } from "./$types";
   import Button from "$lib/components/Button.svelte";
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
-  import { allianceTeamLabels } from "$lib";
+  import { allianceTeamLabels, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
   import TimeChart from "$lib/components/TimeChart.svelte";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { idb } from "$lib/idb";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
 
   let { data }: PageProps = $props();
@@ -44,7 +44,7 @@
                 ...data,
                 compRecord: { ...data.compRecord, alliances: newAlliances, modified: new Date() },
               };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
           });
         }}
@@ -75,7 +75,7 @@
                 ...data,
                 compRecord: { ...data.compRecord, teams, modified: new Date() },
               };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
             ondelete() {
               idb.put(
@@ -86,6 +86,7 @@
                   modified: new Date(),
                 }),
               ).onsuccess = () => {
+                rerunOtherContextLoads();
                 goto(`#/comp/${data.compRecord.id}/teams`, { replaceState: true, invalidateAll: true });
               };
             },

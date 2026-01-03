@@ -3,14 +3,13 @@
   import type { PageProps } from "./$types";
   import { z } from "zod";
   import { entryStatuses, type Entry, type EntryStatus } from "$lib/entry";
-  import { compareMatches, getTeamName, matchIdentifierSchema, type MatchIdentifier } from "$lib";
+  import { compareMatches, getTeamName, matchIdentifierSchema, rerunAllContextLoads, type MatchIdentifier } from "$lib";
   import { targets, type Target } from "$lib/settings";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { invalidateAll } from "$app/navigation";
   import { idb } from "$lib/idb";
 
   let { data }: PageProps = $props();
@@ -66,11 +65,11 @@
       entryStore.put({ ...entry, status: "exported", modified: new Date() });
     }
     tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
-    tx.oncomplete = invalidateAll;
+    tx.oncomplete = rerunAllContextLoads;
   }
 
   function refresh() {
-    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = invalidateAll;
+    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
   }
 </script>
 

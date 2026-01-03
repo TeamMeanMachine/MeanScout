@@ -4,6 +4,21 @@ import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
 import type { Comp } from "./comp";
 import type { Entry } from "./entry";
+import { invalidateAll } from "$app/navigation";
+
+const bc = new BroadcastChannel("invalidate");
+bc.onmessage = () => invalidateAll();
+
+/** Reload data on other browsing contexts (assuming `invalidateAll` was already called on this one). */
+export function rerunOtherContextLoads() {
+  bc.postMessage(undefined);
+}
+
+/** Reloads data on all browsing contexts (including this one). */
+export function rerunAllContextLoads() {
+  bc.postMessage(undefined);
+  invalidateAll();
+}
 
 export const schemaVersion = 16;
 

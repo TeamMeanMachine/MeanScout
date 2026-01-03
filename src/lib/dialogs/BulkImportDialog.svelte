@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
-  import { schemaVersion, sessionStorageStore } from "$lib";
+  import { rerunAllContextLoads, schemaVersion, sessionStorageStore } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
@@ -43,7 +42,7 @@
       const entryStore = transaction.objectStore("entries");
 
       transaction.oncomplete = () => {
-        invalidateAll();
+        rerunAllContextLoads();
         closeDialog();
       };
 
@@ -75,7 +74,7 @@
         }
       }
 
-      invalidateAll();
+      rerunAllContextLoads();
       closeDialog();
     },
   };

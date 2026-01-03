@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/Button.svelte";
   import type { PageProps } from "./$types";
-  import { sessionStorageStore } from "$lib";
+  import { rerunAllContextLoads, rerunOtherContextLoads, sessionStorageStore } from "$lib";
   import RaceChart from "$lib/components/RaceChart.svelte";
   import { ClipboardCopy, Share2Icon, SquarePenIcon } from "@lucide/svelte";
   import BarChart from "$lib/components/BarChart.svelte";
@@ -10,7 +10,7 @@
   import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
   import { idb } from "$lib/idb";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
 
   let { data }: PageProps = $props();
 
@@ -38,6 +38,7 @@
               modified: new Date(),
             }),
           ).onsuccess = () => {
+            rerunOtherContextLoads();
             const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(data.surveyRecord.id)}`;
             goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { replaceState: true, invalidateAll: true });
           };
@@ -53,7 +54,7 @@
               pickLists,
               modified: new Date(),
             }),
-          ).onsuccess = invalidateAll;
+          ).onsuccess = rerunAllContextLoads;
         },
         ondelete() {
           idb.put(
@@ -64,6 +65,7 @@
               modified: new Date(),
             }),
           ).onsuccess = () => {
+            rerunOtherContextLoads();
             goto(`#/comp/${data.compRecord.id}/ranks`, { replaceState: true, invalidateAll: true });
           };
         },
@@ -127,6 +129,7 @@
               modified: new Date(),
             }),
           ).onsuccess = () => {
+            rerunOtherContextLoads();
             const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(data.surveyRecord.id)}`;
             goto(`${path}&expression=${encodeURIComponent(expression.name)}`, {
               replaceState: true,
@@ -143,6 +146,7 @@
               modified: new Date(),
             }),
           ).onsuccess = () => {
+            rerunOtherContextLoads();
             goto(`#/comp/${data.compRecord.id}/ranks`, { replaceState: true, invalidateAll: true });
           };
         },

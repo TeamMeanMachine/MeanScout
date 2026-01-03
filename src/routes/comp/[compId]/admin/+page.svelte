@@ -6,8 +6,8 @@
   import type { PageProps } from "./$types";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
-  import { invalidateAll } from "$app/navigation";
   import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 </script>
@@ -23,7 +23,7 @@
               ...data,
               compRecord: { ...data.compRecord, name, modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           },
         })}
     >
@@ -46,7 +46,7 @@
               ...data,
               compRecord: { ...data.compRecord, tbaEventKey, modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           },
         })}
     >

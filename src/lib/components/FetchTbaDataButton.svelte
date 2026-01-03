@@ -1,11 +1,10 @@
 <script lang="ts">
   import { CheckIcon, CloudDownloadIcon, LoaderIcon } from "@lucide/svelte";
   import Button from "./Button.svelte";
-  import { invalidateAll } from "$app/navigation";
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
-  import { compareMatches } from "$lib";
+  import { compareMatches, rerunAllContextLoads } from "$lib";
 
   let {
     pageData,
@@ -41,7 +40,7 @@
     }
 
     if (showCheck) {
-      invalidateAll();
+      rerunAllContextLoads();
       showCheckTimeout = window.setTimeout(() => (showCheck = false), 1000);
     } else {
       window.clearTimeout(showCheckTimeout);

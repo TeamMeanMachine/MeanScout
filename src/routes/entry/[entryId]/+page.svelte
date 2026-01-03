@@ -19,7 +19,7 @@
   import { goto } from "$app/navigation";
   import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
-  import { getAllMatches, getTeamName, type MatchIdentifier, type Team } from "$lib";
+  import { getAllMatches, getTeamName, rerunOtherContextLoads, type MatchIdentifier, type Team } from "$lib";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import { slide } from "svelte/transition";
   import { scoutStore } from "$lib/settings";
@@ -245,6 +245,7 @@
             tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             tx.oncomplete = () => {
+              rerunOtherContextLoads();
               goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true });
             };
           },
@@ -265,6 +266,7 @@
             tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             tx.oncomplete = () => {
+              rerunOtherContextLoads();
               goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true, replaceState: true });
             };
           },

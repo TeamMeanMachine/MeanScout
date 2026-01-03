@@ -5,7 +5,7 @@
   import { Trash2Icon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
   import DeleteCompDialog from "$lib/dialogs/DeleteCompDialog.svelte";
-  import { invalidateAll } from "$app/navigation";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -24,7 +24,7 @@
               ...data,
               compRecord: { ...data.compRecord, scouts: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -41,7 +41,7 @@
               ...data,
               compRecord: { ...data.compRecord, matches: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -58,7 +58,7 @@
               ...data,
               compRecord: { ...data.compRecord, teams: [], modified: new Date() },
             };
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
         >
           <Trash2Icon class="text-theme" />
@@ -72,7 +72,7 @@
         <Button
           onclick={() => {
             delete data.compRecord.alliances;
-            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
         >
           <Trash2Icon class="text-theme" />

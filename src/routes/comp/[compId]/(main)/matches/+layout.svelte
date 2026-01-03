@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { compareMatches, matchUrl, type Match } from "$lib";
+  import { compareMatches, matchUrl, rerunAllContextLoads, type Match } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { teamStore } from "$lib/settings";
   import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
   import type { LayoutProps } from "./$types";
   import { z } from "zod";
-  import { afterNavigate, goto, invalidateAll } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
   import { openDialog } from "$lib/dialog";
   import { idb } from "$lib/idb";
@@ -175,7 +175,7 @@
                   ...data,
                   compRecord: { ...data.compRecord, matches, modified: new Date() },
                 };
-                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
               },
             })}
         >

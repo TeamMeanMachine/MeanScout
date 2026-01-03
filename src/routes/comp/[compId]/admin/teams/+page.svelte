@@ -6,7 +6,7 @@
   import type { PageProps } from "./$types";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import { invalidateAll } from "$app/navigation";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 </script>
@@ -28,7 +28,7 @@
                     ...data,
                     compRecord: { ...data.compRecord, teams, modified: new Date() },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
                 ondelete() {
                   data = {
@@ -39,7 +39,7 @@
                       modified: new Date(),
                     },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
               });
             }}
@@ -79,7 +79,7 @@
                   modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
           });
         }}

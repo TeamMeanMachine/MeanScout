@@ -5,7 +5,7 @@
   import { openDialog } from "$lib/dialog";
   import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
   import { PlusIcon } from "@lucide/svelte";
-  import { invalidateAll } from "$app/navigation";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 </script>
@@ -23,7 +23,7 @@
               modified: new Date(),
             },
           };
-          idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+          idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
         }}
       >
         Enable scout names and guessing game
@@ -43,7 +43,7 @@
                   modified: new Date(),
                 },
               };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             }}
           >
             {scout}
@@ -70,7 +70,7 @@
                     modified: new Date(),
                   },
                 };
-                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
               },
             });
           }}

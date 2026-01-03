@@ -5,6 +5,8 @@
     isValidTeam,
     matchIdentifierSchema,
     matchUrl,
+    rerunAllContextLoads,
+    rerunOtherContextLoads,
     type MatchIdentifier,
     type Team,
   } from "$lib";
@@ -26,7 +28,7 @@
     SquarePenIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
@@ -281,6 +283,7 @@
     addRequest.onsuccess = () => {
       sessionStorage.removeItem("new-entry");
       idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: new Date() }).onsuccess = () => {
+        rerunOtherContextLoads();
         goto(`#/entry/${entry.id}`, { invalidateAll: true });
       };
     };
@@ -706,7 +709,7 @@
                 surveyRecord: newEntry.survey,
                 fieldRecords: data.fieldRecords,
                 entryRecord: entry,
-                onchange: invalidateAll,
+                onchange: rerunAllContextLoads,
               });
             }}
             class="gap-x-4"

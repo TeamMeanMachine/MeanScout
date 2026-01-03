@@ -1,6 +1,12 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
-  import { compareMatches, schemaVersion, sessionStorageStore, type Match, type Team } from "$lib";
+  import {
+    compareMatches,
+    rerunAllContextLoads,
+    schemaVersion,
+    sessionStorageStore,
+    type Match,
+    type Team,
+  } from "$lib";
   import { type Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
@@ -45,7 +51,7 @@
       };
 
       importTransaction.oncomplete = () => {
-        invalidateAll();
+        rerunAllContextLoads();
         closeDialog();
       };
 

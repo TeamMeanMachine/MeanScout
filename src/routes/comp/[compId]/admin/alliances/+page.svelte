@@ -4,10 +4,9 @@
   import type { PageProps } from "./$types";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
-  import { invalidateAll } from "$app/navigation";
   import EditAllianceTeamDialog from "$lib/dialogs/EditAllianceTeamDialog.svelte";
   import NewAllianceTeamDialog from "$lib/dialogs/NewAllianceTeamDialog.svelte";
-  import { allianceTeamLabels } from "$lib";
+  import { allianceTeamLabels, rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -51,7 +50,7 @@
                   if (compRecord.alliances == undefined) return;
                   compRecord.alliances[allianceIndex].teams[teamIndex] = newTeam;
                   compRecord.modified = new Date();
-                  idb.put("comps", $state.snapshot(compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
                 },
                 ondelete() {
                   if (compRecord.alliances == undefined) return;
@@ -61,7 +60,7 @@
                     compRecord.alliances[allianceIndex].teams.splice(teamIndex, 1);
                   }
                   compRecord.modified = new Date();
-                  idb.put("comps", $state.snapshot(compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
                 },
               });
             }}
@@ -85,7 +84,7 @@
                 if (compRecord.alliances == undefined) return;
                 compRecord.alliances[allianceIndex].teams.push(newTeam);
                 compRecord.modified = new Date();
-                idb.put("comps", $state.snapshot(compRecord)).onsuccess = invalidateAll;
+                idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
               },
             });
           }}
@@ -109,7 +108,7 @@
               compRecord.alliances.push({ teams: [newTeam] });
             }
             compRecord.modified = new Date();
-            idb.put("comps", $state.snapshot(compRecord)).onsuccess = invalidateAll;
+            idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
           },
         });
       }}

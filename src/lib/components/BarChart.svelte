@@ -1,6 +1,6 @@
 <script lang="ts">
   import { colors, type RankData, type TeamRank } from "$lib/rank";
-  import { allianceTeamLabels, getOrdinal, sessionStorageStore } from "$lib";
+  import { allianceTeamLabels, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import Anchor from "./Anchor.svelte";
   import { getFieldsWithDetails } from "$lib/field";
@@ -24,7 +24,6 @@
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { idb } from "$lib/idb";
-  import { invalidateAll } from "$app/navigation";
   import OmitTeamFromPickListDialog from "$lib/dialogs/OmitTeamFromPickListDialog.svelte";
   import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
   import { untrack } from "svelte";
@@ -243,7 +242,7 @@
       ...rankData.survey,
       pickLists,
       modified: new Date(),
-    }).onsuccess = invalidateAll;
+    }).onsuccess = rerunAllContextLoads;
   }
 </script>
 
@@ -364,7 +363,8 @@
 
               const pickLists = $state.snapshot(rankData.survey.pickLists);
               pickLists.find((pl) => pl.name == rankData.pickList.name)!.customRanks = customRanks;
-              idb.put("surveys", { ...rankData.survey, pickLists, modified: new Date() }).onsuccess = invalidateAll;
+              idb.put("surveys", { ...rankData.survey, pickLists, modified: new Date() }).onsuccess =
+                rerunAllContextLoads;
 
               movingTeam = undefined;
             } else if (isHighlighted) {
@@ -479,7 +479,7 @@
                               alliances: newAlliances,
                               modified: new Date(),
                             }),
-                          ).onsuccess = invalidateAll;
+                          ).onsuccess = rerunAllContextLoads;
                         },
                       });
                     }}
@@ -517,7 +517,7 @@
                             idb.put(
                               "surveys",
                               $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
-                            ).onsuccess = invalidateAll;
+                            ).onsuccess = rerunAllContextLoads;
                           },
                           onunomit() {
                             const omittedTeams = $state.snapshot(rankData.pickList.omittedTeams);
@@ -532,7 +532,7 @@
                             idb.put(
                               "surveys",
                               $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
-                            ).onsuccess = invalidateAll;
+                            ).onsuccess = rerunAllContextLoads;
                           },
                         });
                       }}

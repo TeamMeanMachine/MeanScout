@@ -7,7 +7,7 @@
   import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
   import { idb } from "$lib/idb";
   import type { PageProps } from "./$types";
-  import { invalidateAll } from "$app/navigation";
+  import type { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -108,7 +108,7 @@
     }
 
     surveyRecord.modified = new Date();
-    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
   }
 
   function onclickTopLevelField(field: Field) {

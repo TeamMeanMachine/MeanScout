@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compareMatches, getTeamName, matchUrl } from "$lib";
+  import { compareMatches, getTeamName, matchUrl, rerunOtherContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { ArrowLeftIcon, ArrowRightIcon, SquarePenIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
@@ -105,6 +105,7 @@
                   modified: new Date(),
                 }),
               ).onsuccess = () => {
+                rerunOtherContextLoads();
                 goto(`#/${matchUrl(match, data.compRecord.id)}`, { replaceState: true, invalidateAll: true });
               };
             },
@@ -117,6 +118,7 @@
                   modified: new Date(),
                 }),
               ).onsuccess = () => {
+                rerunOtherContextLoads();
                 goto(`#/comp/${data.compRecord.id}/matches`, { replaceState: true, invalidateAll: true });
               };
             },

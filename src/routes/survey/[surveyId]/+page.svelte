@@ -5,7 +5,7 @@
   import { idb } from "$lib/idb";
   import { PlusIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData, PageProps } from "./$types";
-  import { invalidateAll } from "$app/navigation";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -16,7 +16,7 @@
       ...data,
       survey: { ...data.survey, record: { ...data.survey.record, tbaMetrics: [], modified: new Date() } },
     };
-    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;
   }
 
   let tbaMetricInput = $state("");
@@ -38,7 +38,7 @@
         },
       },
     };
-    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;
 
     tbaMetricInput = "";
   }
@@ -55,7 +55,7 @@
         },
       },
     };
-    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
+    idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;
   }
 </script>
 
@@ -73,7 +73,7 @@
                 record: { ...data.survey.record, name, modified: new Date() },
               },
             } as PageData;
-            idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = invalidateAll;
+            idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;
           },
         })}
     >

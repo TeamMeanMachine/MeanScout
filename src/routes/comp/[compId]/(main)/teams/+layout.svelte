@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { LayoutProps } from "./$types";
-  import { afterNavigate, goto, invalidateAll } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import Anchor from "$lib/components/Anchor.svelte";
-  import { allianceTeamLabels, type Team } from "$lib";
+  import { allianceTeamLabels, rerunAllContextLoads, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
@@ -102,7 +102,7 @@
                   ...data,
                   compRecord: { ...data.compRecord, teams, modified: new Date() },
                 };
-                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
               },
             });
           }}

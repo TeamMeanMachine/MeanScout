@@ -9,7 +9,7 @@
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { invalidateAll } from "$app/navigation";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -77,7 +77,7 @@
       oncreate(expression) {
         surveyRecord.expressions.push(expression);
         surveyRecord.modified = new Date();
-        idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+        idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
       },
     });
   }
@@ -103,18 +103,18 @@
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                   onreset() {
                     delete surveyRecord.pickLists[index].customRanks;
                     delete surveyRecord.pickLists[index].omittedTeams;
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                   ondelete() {
                     surveyRecord.pickLists.splice(index, 1);
                     surveyRecord.modified = new Date();
-                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+                    idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                 });
               }}
@@ -171,7 +171,7 @@
             oncreate(pickList) {
               surveyRecord.pickLists.push(pickList);
               surveyRecord.modified = new Date();
-              idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+              idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
             },
           });
         }}
@@ -244,12 +244,12 @@
           surveyRecord.pickLists = pickLists;
           surveyRecord.expressions = expressions;
           surveyRecord.modified = new Date();
-          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
         },
         ondelete() {
           surveyRecord.expressions.splice(index, 1);
           surveyRecord.modified = new Date();
-          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = invalidateAll;
+          idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
         },
       });
     }}

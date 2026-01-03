@@ -4,12 +4,13 @@
   import { PlusIcon, ShareIcon, DownloadIcon } from "@lucide/svelte";
   import type { LayoutProps } from "./$types";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import type { Entry } from "$lib/entry";
   import { idb } from "$lib/idb";
   import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import { page } from "$app/state";
+  import { rerunAllContextLoads } from "$lib";
 
   let { data, children }: LayoutProps = $props();
 
@@ -25,11 +26,11 @@
       entryStore.put({ ...entry, status: "exported", modified: new Date() });
     }
     tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
-    tx.oncomplete = invalidateAll;
+    tx.oncomplete = rerunAllContextLoads;
   }
 
   function refresh() {
-    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = invalidateAll;
+    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
   }
 </script>
 

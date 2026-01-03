@@ -11,6 +11,7 @@
   import { idb } from "$lib/idb";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import type { EntryExpression, SurveyExpression } from "$lib/expression";
+  import { rerunOtherContextLoads } from "$lib";
 
   let { data, children }: LayoutProps = $props();
 
@@ -94,6 +95,7 @@
             modified: new Date(),
           }),
         ).onsuccess = () => {
+          rerunOtherContextLoads();
           const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(surveyRecord.id)}`;
           goto(`${path}&expression=${encodeURIComponent(expression.name)}`, { invalidateAll: true });
         };
@@ -170,6 +172,7 @@
                                 modified: new Date(),
                               }),
                             ).onsuccess = () => {
+                              rerunOtherContextLoads();
                               const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`;
                               goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { invalidateAll: true });
                             };

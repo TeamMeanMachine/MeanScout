@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { compareMatches, getMatchTeamFontWeight } from "$lib";
+  import { compareMatches, getMatchTeamFontWeight, rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeAllDialogs, openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "$lib/idb";
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { invalidateAll } from "$app/navigation";
 
   let { data }: PageProps = $props();
 </script>
@@ -31,7 +30,7 @@
                     ...data,
                     compRecord: { ...data.compRecord, matches, modified: new Date() },
                   };
-                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+                  idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
                 ondelete() {
                   data = {
@@ -44,7 +43,7 @@
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = () => {
                     closeAllDialogs();
-                    invalidateAll();
+                    rerunAllContextLoads();
                   };
                 },
               });
@@ -135,7 +134,7 @@
                 ...data,
                 compRecord: { ...data.compRecord, matches, modified: new Date() },
               };
-              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = invalidateAll;
+              idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
           })}
         class="text-sm"

@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { allianceTeamLabels, getOrdinal, getTeamName, sessionStorageStore, type Match } from "$lib";
+  import {
+    allianceTeamLabels,
+    getOrdinal,
+    getTeamName,
+    rerunAllContextLoads,
+    sessionStorageStore,
+    type Match,
+  } from "$lib";
   import {
     getExpressionData,
     getPickListData,
@@ -18,7 +25,6 @@
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
   import { z } from "zod";
-  import { invalidateAll } from "$app/navigation";
   import { slide } from "svelte/transition";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
@@ -545,7 +551,7 @@
                         alliances: newAlliances,
                         modified: new Date(),
                       }),
-                    ).onsuccess = invalidateAll;
+                    ).onsuccess = rerunAllContextLoads;
                   },
                 });
               }}
