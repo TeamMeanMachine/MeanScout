@@ -1,10 +1,4 @@
 <script lang="ts">
-  import { colors, type RankData, type TeamRank } from "$lib/rank";
-  import { allianceTeamLabels, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "$lib";
-  import type { CompPageData } from "$lib/comp";
-  import Anchor from "./Anchor.svelte";
-  import { getFieldsWithDetails } from "$lib/field";
-  import Button from "./Button.svelte";
   import {
     ArrowRightIcon,
     CornerDownRightIcon,
@@ -19,14 +13,20 @@
     UserPlusIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { slide } from "svelte/transition";
-  import { flip } from "svelte/animate";
+  import { allianceTeamLabels, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "$lib";
+  import type { CompPageData } from "$lib/comp";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
-  import { idb } from "$lib/idb";
   import OmitTeamFromPickListDialog from "$lib/dialogs/OmitTeamFromPickListDialog.svelte";
+  import { getFieldsWithDetails } from "$lib/field";
+  import { idb } from "$lib/idb";
+  import { colors, type RankData, type TeamRank } from "$lib/rank";
   import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
   import { untrack } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
+  import Anchor from "./Anchor.svelte";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -275,9 +275,9 @@
         class={$useCustomRanksStore ? "font-bold" : "font-light"}
       >
         {#if $useCustomRanksStore}
-          <EyeIcon class="text-theme size-5" />
+          <EyeIcon class="size-5 text-theme" />
         {:else}
-          <EyeOffIcon class="text-theme size-5" />
+          <EyeOffIcon class="size-5 text-theme" />
         {/if}
         Custom
       </Button>
@@ -289,9 +289,9 @@
         class={$hideAlliancesStore ? "font-light" : "font-bold"}
       >
         {#if $hideAlliancesStore}
-          <EyeOffIcon class="text-theme size-5" />
+          <EyeOffIcon class="size-5 text-theme" />
         {:else}
-          <EyeIcon class="text-theme size-5" />
+          <EyeIcon class="size-5 text-theme" />
         {/if}
         Alliances
       </Button>
@@ -303,9 +303,9 @@
         class={$hideOmittedStore ? "font-light" : "font-bold"}
       >
         {#if $hideOmittedStore}
-          <EyeOffIcon class="text-theme size-5" />
+          <EyeOffIcon class="size-5 text-theme" />
         {:else}
-          <EyeIcon class="text-theme size-5" />
+          <EyeIcon class="size-5 text-theme" />
         {/if}
         Omitted
       </Button>
@@ -462,7 +462,7 @@
               <div class="flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
                 <Anchor route="comp/{pageData.compRecord.id}/teams/{teamRank.team}">
                   View
-                  <ArrowRightIcon class="text-theme size-5" />
+                  <ArrowRightIcon class="size-5 text-theme" />
                 </Anchor>
 
                 <div class="flex gap-2">
@@ -485,9 +485,9 @@
                     }}
                   >
                     {#if allianceTeams.includes(teamRank.team)}
-                      <UserPenIcon class="text-theme size-5" />
+                      <UserPenIcon class="size-5 text-theme" />
                     {:else}
-                      <UserPlusIcon class="text-theme size-5" />
+                      <UserPlusIcon class="size-5 text-theme" />
                     {/if}
                   </Button>
 
@@ -537,7 +537,7 @@
                         });
                       }}
                     >
-                      <EraserIcon class="text-theme size-5" />
+                      <EraserIcon class="size-5 text-theme" />
                     </Button>
                   {/if}
                 </div>

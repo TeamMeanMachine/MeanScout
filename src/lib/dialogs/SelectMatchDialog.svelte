@@ -36,17 +36,17 @@
 <div class="flex flex-col gap-1">
   <span>Input match</span>
   <div class="flex items-end gap-2">
-    <label class="flex basis-32 grow flex-col">
+    <label class="flex grow basis-32 flex-col">
       <span class="text-xs font-light">Number</span>
-      <input type="number" bind:value={selectedMatch.number} min="1" class="text-theme w-full bg-neutral-800 p-2" />
+      <input type="number" bind:value={selectedMatch.number} min="1" class="w-full bg-neutral-800 p-2 text-theme" />
     </label>
     <label class="flex basis-28 flex-col">
       <span class="text-xs font-light">Set</span>
-      <input type="number" bind:value={selectedMatch.set} min="1" class="text-theme w-full bg-neutral-800 p-2" />
+      <input type="number" bind:value={selectedMatch.set} min="1" class="w-full bg-neutral-800 p-2 text-theme" />
     </label>
     <label class="flex flex-col">
       <span class="text-xs font-light">Level</span>
-      <select bind:value={selectedMatch.level} class="text-theme bg-neutral-800 p-2">
+      <select bind:value={selectedMatch.level} class="bg-neutral-800 p-2 text-theme">
         {#each matchLevels as level}
           <option value={level}>{level}</option>
         {/each}
@@ -91,7 +91,7 @@
     <div class="flex flex-col truncate">
       <div class="flex flex-wrap items-center gap-x-4">
         {#if match.red1 || match.red2 || match.red3}
-          <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+          <div class="flex flex-col gap-x-2 text-red @lg:flex-row @lg:flex-wrap">
             {#if match.red1}
               <div class="min-w-13">{match.red1}</div>
             {/if}
@@ -117,10 +117,10 @@
               {/if}
             </div>
             <div class="flex items-center gap-x-2">
-              <div class="text-red min-w-8 {redWon || selected ? 'font-bold' : 'text-sm font-light'}">
+              <div class="min-w-8 text-red {redWon || selected ? 'font-bold' : 'text-sm font-light'}">
                 {match.redScore}
               </div>
-              <div class="text-blue min-w-8 {blueWon || selected ? 'font-bold' : 'text-sm font-light'}">
+              <div class="min-w-8 text-blue {blueWon || selected ? 'font-bold' : 'text-sm font-light'}">
                 {match.blueScore}
               </div>
             </div>
@@ -136,7 +136,7 @@
         {/if}
 
         {#if match.blue1 || match.blue2 || match.blue3}
-          <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+          <div class="flex flex-col gap-x-2 text-blue @lg:flex-row @lg:flex-wrap">
             {#if match.blue1}
               <div class="min-w-13">{match.blue1}</div>
             {/if}

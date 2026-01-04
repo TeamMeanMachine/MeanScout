@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { PlusIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
+  import { rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import EditSurveyNameDialog from "$lib/dialogs/EditSurveyNameDialog.svelte";
   import { idb } from "$lib/idb";
-  import { PlusIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
   import type { PageData, PageProps } from "./$types";
-  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -91,7 +91,7 @@
 
       {#if data.survey.record.tbaMetrics}
         <div class="flex flex-wrap gap-2">
-          <input bind:value={tbaMetricInput} class="text-theme bg-neutral-800 p-2" />
+          <input bind:value={tbaMetricInput} class="bg-neutral-800 p-2 text-theme" />
           <Button onclick={addTbaMetric}>
             <PlusIcon class="text-theme" />
           </Button>
@@ -107,7 +107,7 @@
         <span class="text-sm font-light">
           <a href="https://www.thebluealliance.com/apidocs/v3" target="_blank">
             <span class="underline">Visit the TBA API docs</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
           </a>
           to view available metrics; you'll find them in the "Match_Score_Breakdown_[year]_Alliance" schemas.
         </span>

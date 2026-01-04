@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { teamStore } from "./settings";
-import { get, writable } from "svelte/store";
 import { browser } from "$app/environment";
+import { invalidateAll } from "$app/navigation";
+import { get, writable } from "svelte/store";
+import { z } from "zod";
 import type { Comp } from "./comp";
 import type { Entry } from "./entry";
-import { invalidateAll } from "$app/navigation";
+import { teamStore } from "./settings";
 
 const bc = new BroadcastChannel("invalidate");
 bc.onmessage = () => invalidateAll();

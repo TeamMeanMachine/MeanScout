@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 import { parseValueFromString, type Match, type Team, type Value } from "./";
-import { tbaAuthKeyStore } from "./settings";
-import type { TbaMetrics } from "./entry";
 import type { Alliance } from "./comp";
+import type { TbaMetrics } from "./entry";
+import { tbaAuthKeyStore } from "./settings";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "bLFDfOniJOVOziESwbhPHncaUu30iIj64I2IMIOg4FLeNE0D3LGgkWslxugJKFlL";

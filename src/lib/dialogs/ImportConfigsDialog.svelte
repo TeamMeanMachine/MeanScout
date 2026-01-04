@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Undo2Icon } from "@lucide/svelte";
   import {
     compareMatches,
     rerunAllContextLoads,
@@ -15,7 +16,6 @@
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { MatchSurvey, Survey } from "$lib/survey";
-  import { Undo2Icon } from "@lucide/svelte";
 
   let {
     compRecord,
@@ -315,7 +315,7 @@
     accept=".json,.txt"
     bind:files
     {onchange}
-    class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
+    class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
   />
 {/if}
 

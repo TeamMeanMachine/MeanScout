@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
+  import { rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
   import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
-  import type { PageProps } from "./$types";
   import { idb } from "$lib/idb";
-  import { PlusIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
@@ -85,7 +85,7 @@
         }}
         class="text-sm"
       >
-        <PlusIcon class="text-theme size-5" />
+        <PlusIcon class="size-5 text-theme" />
         New team(s)
       </Button>
     </div>

@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import type { DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
-  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
 
   let {
     compId,
@@ -94,13 +94,13 @@
 </div>
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <div class="flex flex-wrap items-end gap-2 text-sm">
   <label class="flex grow flex-col">
     ID
-    <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={id} class="bg-neutral-800 p-2 text-theme" />
   </label>
   <div class="flex gap-2">
     <Button onclick={() => (id = compId + "-" + type)}>

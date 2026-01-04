@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import { FountainEncoder } from "$lib/fountain";
-  import QRCode from "qrcode";
   import {
     ArrowBigRightDashIcon,
     ChevronRightIcon,
@@ -9,10 +6,13 @@
     SquareCheckBigIcon,
     SquareIcon,
   } from "@lucide/svelte";
-  import Button from "./Button.svelte";
   import { sessionStorageStore } from "$lib";
   import { compress, supportsCompressionApi } from "$lib/compress";
+  import { FountainEncoder } from "$lib/fountain";
   import { useCompressionStore } from "$lib/settings";
+  import QRCode from "qrcode";
+  import { onDestroy, onMount } from "svelte";
+  import Button from "./Button.svelte";
 
   let {
     data,

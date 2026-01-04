@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { ChartBarBigIcon, ListOrderedIcon, NotepadTextIcon, UserSearchIcon, UsersIcon } from "@lucide/svelte";
   import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
   import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
-  import { ChartBarBigIcon, ListOrderedIcon, NotepadTextIcon, UserSearchIcon, UsersIcon } from "@lucide/svelte";
 
   let { data, children } = $props();
 
@@ -71,7 +71,7 @@
 {@render children()}
 
 <div
-  class="fixed bottom-0 left-0 right-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-nowrap lg:hidden"
+  class="fixed right-0 bottom-0 left-0 z-20 w-full gap-0 overflow-x-auto border-t border-neutral-600 bg-neutral-800 text-nowrap lg:hidden"
   style="scrollbar-width:none"
 >
   <div class="mx-auto flex max-w-lg gap-0 p-1 text-xs md:text-sm">

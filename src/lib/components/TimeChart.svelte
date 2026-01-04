@@ -1,13 +1,4 @@
 <script lang="ts">
-  import type { CompPageData } from "$lib/comp";
-  import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
-  import { sortExpressions, type Expression } from "$lib/expression";
-  import { compareMatches, getAllMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
-  import { z } from "zod";
-  import { groupRanks, type MatchSurvey } from "$lib/survey";
-  import type { Entry, MatchEntry } from "$lib/entry";
-  import { colors, getExpressionData, getFieldData } from "$lib/rank";
-  import Button from "./Button.svelte";
   import {
     ArrowRightIcon,
     ChartColumnBigIcon,
@@ -15,9 +6,18 @@
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
-  import Anchor from "./Anchor.svelte";
   import { goto } from "$app/navigation";
+  import { compareMatches, getAllMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
+  import type { CompPageData } from "$lib/comp";
+  import type { Entry, MatchEntry } from "$lib/entry";
+  import { sortExpressions, type Expression } from "$lib/expression";
+  import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
+  import { colors, getExpressionData, getFieldData } from "$lib/rank";
+  import { groupRanks, type MatchSurvey } from "$lib/survey";
   import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import Anchor from "./Anchor.svelte";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -299,7 +299,7 @@
 <div class="flex flex-col gap-4">
   <div class="flex flex-col">
     <Button onclick={() => (selecting = !selecting)} class="text-sm">
-      <ChartColumnBigIcon class="text-theme size-5" />
+      <ChartColumnBigIcon class="size-5 text-theme" />
       {#if selectedMetric}
         <span class="grow">
           {#if "expression" in selectedMetric}
@@ -313,7 +313,7 @@
       {/if}
 
       <ChevronDownIcon
-        class="text-theme size-5 transition-[rotate] {selecting || !selectedMetric ? 'rotate-180' : ''}"
+        class="size-5 text-theme transition-[rotate] {selecting || !selectedMetric ? 'rotate-180' : ''}"
       />
     </Button>
 
@@ -525,7 +525,7 @@
 
     <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
       View rank
-      <ArrowRightIcon class="text-theme size-5" />
+      <ArrowRightIcon class="size-5 text-theme" />
     </Anchor>
   {/if}
 </div>

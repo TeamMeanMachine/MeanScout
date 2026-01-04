@@ -1,17 +1,17 @@
 <script lang="ts">
-  import type { LayoutProps } from "./$types";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import { goto } from "$app/navigation";
-  import Button from "$lib/components/Button.svelte";
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import { rerunOtherContextLoads } from "$lib";
+  import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
-  import type { MatchSurvey } from "$lib/survey";
-  import { type SingleFieldWithDetails } from "$lib/field";
-  import { idb } from "$lib/idb";
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import type { EntryExpression, SurveyExpression } from "$lib/expression";
-  import { rerunOtherContextLoads } from "$lib";
+  import { type SingleFieldWithDetails } from "$lib/field";
+  import { idb } from "$lib/idb";
+  import type { MatchSurvey } from "$lib/survey";
+  import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
@@ -106,23 +106,23 @@
 
 <div
   class={[
-    "lg:overflow-y-auto lg:overscroll-y-contain lg:w-72 lg:h-[calc(100vh-57px)] lg:fixed lg:top-[57px] lg:border-r lg:border-neutral-600",
-    "max-lg:max-w-(--breakpoint-lg) max-lg:w-full max-lg:mx-auto",
+    "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-72 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
+    "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
     data.surveyId ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >
-  <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
-    <div class="flex gap-3 justify-between flex-wrap items-center">
+  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="font-bold">Ranks</h2>
 
       {#if data.showRanking}
         <label
           class={[
-            "flex items-center gap-2 bg-neutral-800 p-2 text-sm text-theme cursor-text outline-neutral-300",
+            "flex cursor-text items-center gap-2 bg-neutral-800 p-2 text-sm text-theme outline-neutral-300",
             "focus-within:z-10 focus-within:outline-2",
           ]}
         >
-          <SearchIcon class="text-theme size-5" />
+          <SearchIcon class="size-5 text-theme" />
           <input
             {@attach (input) => {
               if (sessionStorage.getItem("rank-search")) {
@@ -133,7 +133,7 @@
             value={debouncedSearch}
             oninput={(e) => onsearchinput(e.currentTarget.value)}
             onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-            class="w-full min-w-8 max-w-32 outline-0 font-bold"
+            class="w-full max-w-32 min-w-8 font-bold outline-0"
           />
         </label>
       {:else}
@@ -143,7 +143,7 @@
   </div>
 
   {#if data.showRanking}
-    <div class="flex flex-col gap-6 px-3 mb-6 pt-1">
+    <div class="mb-6 flex flex-col gap-6 px-3 pt-1">
       {#each filteredGroupedRanks as { survey, fieldsWithDetails, sortedExpressions, groupedExpressions, groups }}
         {@const path = `comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`}
 

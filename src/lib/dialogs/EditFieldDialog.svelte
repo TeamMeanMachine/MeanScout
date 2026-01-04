@@ -1,9 +1,4 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { type Field, type GroupField } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import type { Survey } from "$lib/survey";
   import {
     ArrowDownIcon,
     ArrowLeftIcon,
@@ -15,6 +10,11 @@
     SquareIcon,
     Trash2Icon,
   } from "@lucide/svelte";
+  import Button from "$lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { type Field, type GroupField } from "$lib/field";
+  import { idb } from "$lib/idb";
+  import type { Survey } from "$lib/survey";
 
   let {
     surveyRecord,
@@ -213,9 +213,9 @@
   <div class="flex gap-2">
     <Button disabled={index <= 0} onclick={() => moveField(-1)}>
       {#if parentField}
-        <ArrowLeftIcon class="text-theme size-5" />
+        <ArrowLeftIcon class="size-5 text-theme" />
       {:else}
-        <ArrowUpIcon class="text-theme size-5" />
+        <ArrowUpIcon class="size-5 text-theme" />
       {/if}
     </Button>
     <Button
@@ -223,9 +223,9 @@
       onclick={() => moveField(1)}
     >
       {#if parentField}
-        <ArrowRightIcon class="text-theme size-5" />
+        <ArrowRightIcon class="size-5 text-theme" />
       {:else}
-        <ArrowDownIcon class="text-theme size-5" />
+        <ArrowDownIcon class="size-5 text-theme" />
       {/if}
     </Button>
   </div>
@@ -238,17 +238,17 @@
   </span>
   <div class="flex gap-2">
     <Button onclick={duplicateField}>
-      <CopyIcon class="text-theme size-5" />
+      <CopyIcon class="size-5 text-theme" />
     </Button>
     <Button onclick={deleteField} disabled={isExpressionInput}>
-      <Trash2Icon class="text-theme size-5" />
+      <Trash2Icon class="size-5 text-theme" />
     </Button>
   </div>
 </div>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={changes.name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={changes.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 {#if changes.type != "group"}
@@ -273,7 +273,7 @@
     Values
     {#each changes.values as _, i}
       <div class="flex gap-2">
-        <input bind:value={changes.values[i]} class="text-theme grow bg-neutral-800 p-2" />
+        <input bind:value={changes.values[i]} class="grow bg-neutral-800 p-2 text-theme" />
         <Button onclick={() => deleteSelectValue(i)}>
           <Trash2Icon class="text-theme" />
         </Button>
@@ -296,7 +296,7 @@
 
   <label class="flex flex-col">
     Tip
-    <input bind:value={changes.tip} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={changes.tip} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 

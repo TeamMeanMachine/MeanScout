@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import type { SelectField } from "$lib/field";
-  import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
 
   let {
     field,
@@ -39,7 +39,7 @@
     {#if field.tip}
       <span class="text-xs font-light">{field.tip}</span>
     {/if}
-    <select bind:value {onchange} class="text-theme bg-neutral-800 p-2 capitalize">
+    <select bind:value {onchange} class="bg-neutral-800 p-2 text-theme capitalize">
       {#each field.values as val}
         <option value={val}>{val}</option>
       {/each}

@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { PageProps } from "./$types";
+  import { CheckIcon } from "@lucide/svelte";
+  import { compareMatches } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { CheckIcon } from "@lucide/svelte";
-  import { compareMatches } from "$lib";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
 
-<div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-120 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
+<div class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-120">
   <div class="flex flex-wrap gap-x-6 gap-y-3">
     <h2 class="w-full font-bold">{data.scout}</h2>
 

@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import { allianceTeamLabels, isValidTeam } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
 
   let {
@@ -99,7 +99,7 @@
 <div class="flex flex-wrap items-center justify-between gap-2">
   <span>Select teams</span>
   <Button onclick={() => (selection = [])} disabled={!selection.length}>
-    <EraserIcon class="text-theme size-5" />
+    <EraserIcon class="size-5 text-theme" />
   </Button>
 </div>
 
@@ -127,9 +127,9 @@
       >
         <div class="flex items-center gap-2 truncate">
           {#if selected}
-            <SquareCheckBigIcon class="text-theme size-5" />
+            <SquareCheckBigIcon class="size-5 text-theme" />
           {:else}
-            <SquareIcon class="text-theme size-5" />
+            <SquareIcon class="size-5 text-theme" />
           {/if}
           <div class="flex flex-col truncate">
             <span>{team.number}</span>
@@ -162,7 +162,7 @@
         .split(",")
         .filter((s) => s);
     }}
-    class="text-theme bg-neutral-800 p-2"
+    class="bg-neutral-800 p-2 text-theme"
   />
   <span class="pt-1 text-xs font-light">Use commas to separate teams</span>
 </label>

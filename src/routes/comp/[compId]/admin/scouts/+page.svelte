@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { idb } from "$lib/idb";
-  import type { PageProps } from "./$types";
-  import { openDialog } from "$lib/dialog";
-  import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
   import { PlusIcon } from "@lucide/svelte";
   import { rerunAllContextLoads } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
+  import { idb } from "$lib/idb";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
@@ -76,7 +76,7 @@
           }}
           class="text-sm"
         >
-          <PlusIcon class="text-theme size-5" />
+          <PlusIcon class="size-5 text-theme" />
           New scout(s)
         </Button>
       </div>

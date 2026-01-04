@@ -1,8 +1,8 @@
 <script lang="ts" generics="Props extends Record<string, any>">
+  import { CheckIcon, XIcon } from "@lucide/svelte";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
   import { flushSync, mount, onDestroy, onMount, unmount, type Component } from "svelte";
   import Button from "./Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { CheckIcon, XIcon } from "@lucide/svelte";
 
   let {
     component,

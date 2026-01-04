@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Undo2Icon } from "@lucide/svelte";
   import { rerunAllContextLoads, schemaVersion, sessionStorageStore } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
@@ -9,7 +10,6 @@
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import { type Survey } from "$lib/survey";
-  import { Undo2Icon } from "@lucide/svelte";
 
   let imported = $state<{
     comps?: Comp[];
@@ -350,7 +350,7 @@
     accept=".json,.txt"
     bind:files
     {onchange}
-    class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
+    class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
   />
 {/if}
 

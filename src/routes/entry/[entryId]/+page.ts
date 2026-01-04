@@ -1,10 +1,10 @@
+import { error } from "@sveltejs/kit";
 import { type Value } from "$lib";
 import type { Comp } from "$lib/comp";
 import type { Entry, MatchEntry, PitEntry } from "$lib/entry";
 import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
 import { idb } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
-import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
 type EntryPageData = {

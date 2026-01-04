@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { PickList } from "$lib/rank";
+  import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { EntryExpression, Expression, SurveyExpression } from "$lib/expression";
-  import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import type { MatchSurvey } from "$lib/survey";
   import { isNumericField, type SingleFieldWithDetails } from "$lib/field";
+  import type { PickList } from "$lib/rank";
+  import type { MatchSurvey } from "$lib/survey";
 
   let {
     surveyRecord,
@@ -51,7 +51,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={pickList.name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={pickList.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 {#snippet expressionButton(expression: Expression)}
@@ -90,7 +90,7 @@
           max="100"
           step="1"
           bind:value={pickList.weights[weightIndex].percentage}
-          class="text-theme bg-neutral-800 p-2"
+          class="bg-neutral-800 p-2 text-theme"
         />
       </label>
     {/if}
@@ -150,7 +150,7 @@
             max="100"
             step="1"
             bind:value={pickList.weights[weightIndex].percentage}
-            class="text-theme bg-neutral-800 p-2"
+            class="bg-neutral-800 p-2 text-theme"
           />
         </label>
       {/if}

@@ -1,12 +1,4 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
-  import Header from "$lib/components/Header.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
-  import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
-  import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { idb } from "$lib/idb";
-  import type { PageData, PageProps } from "./$types";
   import {
     ListOrderedIcon,
     SaveIcon,
@@ -17,12 +9,20 @@
     UsersIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
+  import { getAllMatches, getTeamName, rerunOtherContextLoads, type MatchIdentifier, type Team } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
+  import Header from "$lib/components/Header.svelte";
+  import { closeDialog, openDialog } from "$lib/dialog";
+  import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
+  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
-  import { getAllMatches, getTeamName, rerunOtherContextLoads, type MatchIdentifier, type Team } from "$lib";
-  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
-  import { slide } from "svelte/transition";
+  import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
+  import { idb } from "$lib/idb";
   import { scoutStore } from "$lib/settings";
+  import { slide } from "svelte/transition";
+  import type { PageData, PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -93,7 +93,7 @@
 />
 
 <div class="mx-auto mt-[57px] w-full max-w-(--breakpoint-lg) px-3 py-6">
-  <div class="flex gap-4 mb-6 max-sm:flex-col">
+  <div class="mb-6 flex gap-4 max-sm:flex-col">
     {#if data.compRecord.scouts || entry.scout}
       <Button
         onclick={() => {
@@ -111,12 +111,12 @@
       >
         <UserSearchIcon class="text-theme" />
         {#if entry.scout}
-          <div class="flex flex-col grow truncate sm:w-32">
+          <div class="flex grow flex-col truncate sm:w-32">
             <span class="text-xs font-light">Scout</span>
             <span class="truncate">{entry.scout}</span>
           </div>
         {:else}
-          <div class="flex flex-col grow">
+          <div class="flex grow flex-col">
             <span class="text-xs font-light">Scout</span>
             Add
           </div>
@@ -168,11 +168,11 @@
           },
         });
       }}
-      class="truncate grow"
+      class="grow truncate"
     >
       <UsersIcon class="text-theme" />
       <div class="flex grow flex-col truncate sm:w-32">
-        <span class="text-xs font-light truncate">{getTeamName(entry.team, allTeams) || "Team"}</span>
+        <span class="truncate text-xs font-light">{getTeamName(entry.team, allTeams) || "Team"}</span>
         <span class="font-bold">{entry.team}</span>
       </div>
     </Button>
@@ -199,7 +199,7 @@
   </div>
 
   {#if entry.type != "match" || !entry.absent}
-    <div class="flex flex-col gap-6 mb-6" transition:slide>
+    <div class="mb-6 flex flex-col gap-6" transition:slide>
       {#each data.fieldsWithDetails.topLevel as fieldDetails (fieldDetails.field.id)}
         {#if fieldDetails.type == "group"}
           {@const nestedFields = fieldDetails.field.fieldIds
@@ -209,7 +209,7 @@
           <div class="flex w-full flex-col gap-2">
             <h2 class="font-bold">{fieldDetails.field.name}</h2>
 
-            <div class="flex mb-2 flex-wrap items-end gap-x-6 gap-y-3">
+            <div class="mb-2 flex flex-wrap items-end gap-x-6 gap-y-3">
               {#each nestedFields as nestedFieldDetails (nestedFieldDetails.field.id)}
                 <FieldValueEditor
                   field={nestedFieldDetails.field}

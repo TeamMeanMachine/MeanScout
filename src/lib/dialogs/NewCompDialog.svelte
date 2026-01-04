@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
+  import { type Match, type Team } from "$lib";
   import type { Alliance, Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
-  import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
-  import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
-  import { type Match, type Team } from "$lib";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 
   let name = $state("");
   let event = $state<string | undefined>();
@@ -87,7 +87,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <div class="flex flex-col">
@@ -113,7 +113,7 @@
       {/if}
     </div>
     {#if isLoadingTbaData}
-      <LoaderIcon class="text-theme animate-spin" />
+      <LoaderIcon class="animate-spin text-theme" />
     {/if}
   </Button>
 </div>
@@ -135,7 +135,7 @@
 <div class="flex flex-wrap items-end gap-2 text-sm">
   <label class="flex grow flex-col">
     ID
-    <input bind:value={id} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={id} class="bg-neutral-800 p-2 text-theme" />
   </label>
   <div class="flex gap-2">
     {#if event}

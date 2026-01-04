@@ -1,7 +1,4 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
-  import type { Comp, CompPageData } from "$lib/comp";
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
@@ -13,11 +10,14 @@
     ShareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import BulkExportDialog from "./BulkExportDialog.svelte";
+  import type { Comp, CompPageData } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
-  import NewSurveyDialog from "./NewSurveyDialog.svelte";
-  import ImportConfigsDialog from "./ImportConfigsDialog.svelte";
+  import Button from "$lib/components/Button.svelte";
   import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
+  import { closeDialog, openDialog } from "$lib/dialog";
+  import BulkExportDialog from "./BulkExportDialog.svelte";
+  import ImportConfigsDialog from "./ImportConfigsDialog.svelte";
+  import NewSurveyDialog from "./NewSurveyDialog.svelte";
 
   let {
     pageData,
@@ -26,7 +26,7 @@
   } = $props();
 </script>
 
-<div class="flex flex-wrap gap-2 items-center justify-between">
+<div class="flex flex-wrap items-center justify-between gap-2">
   <div class="flex flex-col">
     <h2 class="font-bold">{pageData.compRecord.name}</h2>
     <span class="text-xs font-light">{pageData.compRecord.id}</span>

@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { Trash2Icon } from "@lucide/svelte";
   import type { Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { Trash2Icon } from "@lucide/svelte";
 
   let {
     team,
@@ -32,11 +32,11 @@
       closeDialog();
     }}
   >
-    <Trash2Icon class="text-theme size-5" />
+    <Trash2Icon class="size-5 text-theme" />
   </Button>
 </div>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { decompress } from "$lib/compress";
   import { FountainDecoder } from "$lib/fountain";
   import { cameraStore } from "$lib/settings";
   import jsQR from "jsqr";
-  import { decompress } from "$lib/compress";
+  import { onDestroy, onMount } from "svelte";
 
   let {
     onread,

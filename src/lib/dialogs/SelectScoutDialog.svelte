@@ -34,7 +34,7 @@
 </script>
 
 <div class="flex flex-col">
-  <label class="flex flex-col mb-3">
+  <label class="mb-3 flex flex-col">
     <span>Input your name</span>
     <input
       bind:value={selectedScout}
@@ -42,7 +42,7 @@
         if (!selectedScout) error = "No name inputted";
         else error = "";
       }}
-      class="text-theme bg-neutral-800 p-2"
+      class="bg-neutral-800 p-2 text-theme"
     />
   </label>
 

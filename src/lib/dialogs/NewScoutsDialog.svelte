@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type DialogExports, closeDialog } from "$lib/dialog";
+  import { closeDialog, type DialogExports } from "$lib/dialog";
 
   let {
     scouts,
@@ -44,7 +44,7 @@
 
 <label class="flex flex-col">
   New scouts(s)
-  <input bind:value={scoutInput} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={scoutInput} class="bg-neutral-800 p-2 text-theme" />
   <span class="pt-1 text-xs font-light">Separate multiple scouts with commas</span>
 </label>
 

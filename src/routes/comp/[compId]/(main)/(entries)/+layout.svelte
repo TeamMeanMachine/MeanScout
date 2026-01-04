@@ -1,16 +1,16 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import { PlusIcon, ShareIcon, DownloadIcon } from "@lucide/svelte";
-  import type { LayoutProps } from "./$types";
-  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
+  import { DownloadIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import type { Entry } from "$lib/entry";
-  import { idb } from "$lib/idb";
-  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import Anchor from "$lib/components/Anchor.svelte";
   import { page } from "$app/state";
   import { rerunAllContextLoads } from "$lib";
+  import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
+  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
+  import type { Entry } from "$lib/entry";
+  import { idb } from "$lib/idb";
+  import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
@@ -36,8 +36,8 @@
 
 <div
   class={[
-    "lg:overflow-y-auto lg:overscroll-y-contain lg:w-80 lg:h-[calc(100vh-57px)] lg:fixed lg:top-[57px] lg:border-r lg:border-neutral-600",
-    "max-lg:max-w-(--breakpoint-lg) max-lg:w-full max-lg:mx-auto",
+    "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-80 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
+    "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
     data.groupBy || showingNewPage ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >

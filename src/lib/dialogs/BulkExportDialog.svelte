@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FileJsonIcon, Share2Icon } from "@lucide/svelte";
   import { download, schemaVersion, sessionStorageStore, share } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
@@ -7,7 +8,6 @@
   import type { Entry } from "$lib/entry";
   import type { Field } from "$lib/field";
   import type { Survey } from "$lib/survey";
-  import { FileJsonIcon, Share2Icon } from "@lucide/svelte";
 
   let {
     comps,

@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
   import { compareMatches, getMatchTeamFontWeight, rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeAllDialogs, openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "$lib/idb";
-  import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -52,7 +52,7 @@
           >
             <div class="flex flex-wrap items-center gap-x-4">
               {#if match.red1 || match.red2 || match.red3}
-                <div class="text-red flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+                <div class="flex flex-col gap-x-2 text-red @lg:flex-row @lg:flex-wrap">
                   {#if match.red1}
                     <div class="min-w-13 {getMatchTeamFontWeight(match.red1)}">{match.red1}</div>
                   {/if}
@@ -78,10 +78,10 @@
                     {/if}
                   </div>
                   <div class="flex items-center gap-x-2">
-                    <div class="text-red min-w-8 {redWon ? 'font-bold' : 'text-sm font-light'}">
+                    <div class="min-w-8 text-red {redWon ? 'font-bold' : 'text-sm font-light'}">
                       {match.redScore}
                     </div>
-                    <div class="text-blue min-w-8 {blueWon ? 'font-bold' : 'text-sm font-light'}">
+                    <div class="min-w-8 text-blue {blueWon ? 'font-bold' : 'text-sm font-light'}">
                       {match.blueScore}
                     </div>
                   </div>
@@ -97,7 +97,7 @@
               {/if}
 
               {#if match.blue1 || match.blue2 || match.blue3}
-                <div class="text-blue flex flex-col gap-x-2 @lg:flex-row @lg:flex-wrap">
+                <div class="flex flex-col gap-x-2 text-blue @lg:flex-row @lg:flex-wrap">
                   {#if match.blue1}
                     <div class="min-w-13 {getMatchTeamFontWeight(match.blue1)}">{match.blue1}</div>
                   {/if}
@@ -139,7 +139,7 @@
           })}
         class="text-sm"
       >
-        <PlusIcon class="text-theme size-5" />
+        <PlusIcon class="size-5 text-theme" />
         New match
       </Button>
     </div>

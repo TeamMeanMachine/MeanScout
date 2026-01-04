@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { CircleCheckBigIcon, CircleIcon, LoaderIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { teamStore } from "$lib/settings";
   import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
-  import { CircleCheckBigIcon, CircleIcon, LoaderIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   let {
@@ -59,7 +59,7 @@
 <div class="flex flex-wrap justify-between gap-2">
   <span>Choose TBA event</span>
   {#if isLoadingEvents}
-    <LoaderIcon class="text-theme animate-spin" />
+    <LoaderIcon class="animate-spin text-theme" />
   {/if}
 </div>
 
@@ -69,9 +69,9 @@
       {@const font = event == key ? "font-bold" : "font-light"}
       <Button onclick={() => (event = key)} class={font}>
         {#if event == key}
-          <CircleCheckBigIcon class="text-theme size-5" />
+          <CircleCheckBigIcon class="size-5 text-theme" />
         {:else}
-          <CircleIcon class="text-theme size-5" />
+          <CircleIcon class="size-5 text-theme" />
         {/if}
         <span class="text-sm">{name}</span>
       </Button>
@@ -82,7 +82,7 @@
 {#if !isLoadingEvents}
   <label class="flex flex-col">
     <span>Event key</span>
-    <input bind:value={event} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={event} class="bg-neutral-800 p-2 text-theme" />
     <span class="pt-1 text-xs">Tip: you can input any TBA event key.</span>
   </label>
 {/if}

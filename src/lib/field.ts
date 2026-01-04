@@ -1,15 +1,15 @@
-import { z } from "zod";
-import type { Survey } from "./survey";
 import {
+  CircleChevronDownIcon,
   GroupIcon,
   HashIcon,
   SquareCheckBigIcon,
-  CircleChevronDownIcon,
   StarIcon,
   TextCursorInputIcon,
   TimerIcon,
   type Icon,
 } from "@lucide/svelte";
+import { z } from "zod";
+import type { Survey } from "./survey";
 
 export const singleFieldTypes = ["toggle", "number", "select", "text", "rating", "timer"] as const;
 export type SingleFieldType = (typeof singleFieldTypes)[number];

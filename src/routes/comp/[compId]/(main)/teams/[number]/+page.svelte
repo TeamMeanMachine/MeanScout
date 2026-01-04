@@ -1,16 +1,16 @@
 <script lang="ts">
-  import type { PageProps } from "./$types";
-  import Button from "$lib/components/Button.svelte";
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import { allianceTeamLabels, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
+  import Button from "$lib/components/Button.svelte";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
   import TimeChart from "$lib/components/TimeChart.svelte";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
-  import { idb } from "$lib/idb";
-  import { goto } from "$app/navigation";
   import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
+  import { idb } from "$lib/idb";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -19,7 +19,7 @@
   );
 </script>
 
-<div class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-80 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
+<div class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
   <div class="flex items-start justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">Team {data.team.number}</h2>
@@ -51,9 +51,9 @@
         class="text-sm"
       >
         {#if allianceWithIndex}
-          <UserPenIcon class="text-theme size-5" />
+          <UserPenIcon class="size-5 text-theme" />
         {:else}
-          <UserPlusIcon class="text-theme size-5" />
+          <UserPlusIcon class="size-5 text-theme" />
         {/if}
       </Button>
 
@@ -93,7 +93,7 @@
           });
         }}
       >
-        <SquarePenIcon class="text-theme size-5" />
+        <SquarePenIcon class="size-5 text-theme" />
       </Button>
     </div>
   </div>
@@ -108,7 +108,7 @@
     {#each data.surveyRecords
       .filter((survey) => survey.type == "match")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+      <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
         {#key data.team}
@@ -120,7 +120,7 @@
     {#each data.surveyRecords
       .filter((s) => s.type == "pit")
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-      <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+      <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
         {#key data.team}
@@ -139,18 +139,18 @@
         target="_blank"
       >
         <span class="underline">TBA</span>
-        <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+        <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
       </a>
     {:else}
       <a href="https://www.thebluealliance.com/team/{parseInt(data.team.number)}" target="_blank">
         <span class="underline">TBA</span>
-        <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+        <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
       </a>
     {/if}
 
     <a href="https://www.statbotics.io/team/{parseInt(data.team.number)}" target="_blank">
       <span class="underline">Statbotics</span>
-      <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+      <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
     </a>
   </div>
 </div>

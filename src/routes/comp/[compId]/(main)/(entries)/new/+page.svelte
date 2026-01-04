@@ -1,22 +1,5 @@
 <script lang="ts">
   import {
-    compareMatches,
-    getTeamName,
-    isValidTeam,
-    matchIdentifierSchema,
-    matchUrl,
-    rerunAllContextLoads,
-    rerunOtherContextLoads,
-    type MatchIdentifier,
-    type Team,
-  } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
-  import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
-  import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import { scoutStore, targetStore, type Target } from "$lib/settings";
-  import {
     ArrowLeftIcon,
     ArrowRightIcon,
     ChartBarBigIcon,
@@ -29,14 +12,31 @@
     XIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import type { MatchSurvey, PitSurvey } from "$lib/survey";
-  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import {
+    compareMatches,
+    getTeamName,
+    isValidTeam,
+    matchIdentifierSchema,
+    matchUrl,
+    rerunAllContextLoads,
+    rerunOtherContextLoads,
+    type MatchIdentifier,
+    type Team,
+  } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import { closeDialog, openDialog } from "$lib/dialog";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
-  import { fly, type FlyParams, slide } from "svelte/transition";
-  import { z } from "zod";
-  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
   import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
+  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
+  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
+  import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
+  import { idb } from "$lib/idb";
+  import { scoutStore, targetStore, type Target } from "$lib/settings";
+  import type { MatchSurvey, PitSurvey } from "$lib/survey";
+  import { fly, slide, type FlyParams } from "svelte/transition";
+  import { z } from "zod";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -406,8 +406,8 @@
   }
 </script>
 
-<div class="flex flex-col space-y-4 grow overflow-x-hidden lg:ml-80 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
-  <div class="flex flex-wrap justify-between items-center gap-x-2">
+<div class="mt-[57px] flex grow flex-col space-y-4 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
+  <div class="flex flex-wrap items-center justify-between gap-x-2">
     <h2 class="font-bold">New entry</h2>
   </div>
 
@@ -432,7 +432,7 @@
           newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
         }
       }}
-      class="text-theme bg-neutral-800 p-2"
+      class="bg-neutral-800 p-2 text-theme"
     >
       {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
         <option value={surveyRecord.id}>{surveyRecord.name}</option>
@@ -468,10 +468,10 @@
 
   {#if newEntry.type == "match"}
     <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
-      <div class="flex flex-col grow">
+      <div class="flex grow flex-col">
         Selected match
 
-        <div class="flex gap-x-4 gap-y-3 grow flex-wrap">
+        <div class="flex grow flex-wrap gap-x-4 gap-y-3">
           <Button
             onclick={() => {
               if (newEntry.type != "match") return;
@@ -556,7 +556,7 @@
 
             <Anchor route={matchUrl(newEntry.state.match, data.compRecord.id)} class="ml-2">
               <ChartBarBigIcon class="text-theme" />
-              <span class="hidden sm:block text-sm">Data</span>
+              <span class="hidden text-sm sm:block">Data</span>
             </Anchor>
           </div>
         </div>
@@ -635,7 +635,7 @@
       <div class="flex grow flex-col truncate">
         {#if newEntry.state.team}
           <span class="font-bold">{newEntry.state.team}</span>
-          <span class="text-xs font-light truncate">{getTeamName(newEntry.state.team, allTeams)}</span>
+          <span class="truncate text-xs font-light">{getTeamName(newEntry.state.team, allTeams)}</span>
         {:else}
           Select
         {/if}
@@ -653,7 +653,7 @@
             newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
           }}
           class={[
-            "text-red grow basis-[150px]",
+            "grow basis-[150px] text-red",
             newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
           ]}
         >
@@ -670,7 +670,7 @@
             newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
           }}
           class={[
-            "text-blue grow basis-[150px]",
+            "grow basis-[150px] text-blue",
             newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
           ]}
         >
@@ -687,7 +687,7 @@
     {#if newEntry.state.prediction}
       <label class="flex flex-col" transition:slide>
         Reason
-        <input bind:value={newEntry.state.predictionReason} class="text-theme bg-neutral-800 p-2" />
+        <input bind:value={newEntry.state.predictionReason} class="bg-neutral-800 p-2 text-theme" />
       </label>
     {/if}
   {/if}
@@ -760,7 +760,7 @@
     <span transition:slide>Error: {error}</span>
   {/if}
 
-  <div class="flex flex-wrap gap-2 mt-2 justify-between items-center">
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
     <Button onclick={onconfirm} class="font-bold">
       <PlusIcon class="text-theme" />
       Create

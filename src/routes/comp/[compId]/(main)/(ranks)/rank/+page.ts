@@ -1,9 +1,9 @@
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
 import type { MatchEntry } from "$lib/entry";
+import { sortExpressions } from "$lib/expression";
 import { getFieldsWithDetails } from "$lib/field";
 import { getExpressionData, getFieldData, getPickListData } from "$lib/rank";
-import { sortExpressions } from "$lib/expression";
+import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();

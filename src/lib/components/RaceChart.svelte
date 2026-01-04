@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { getExpressionData, getFieldData, getPickListData, type RankData } from "$lib/rank";
+  import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
+  import { compareMatches, getOrdinal, sessionStorageStore } from "$lib";
+  import type { CompPageData } from "$lib/comp";
   import type { MatchEntry } from "$lib/entry";
+  import { getFieldsWithDetails } from "$lib/field";
+  import { getExpressionData, getFieldData, getPickListData, type RankData } from "$lib/rank";
+  import type { MatchSurvey } from "$lib/survey";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { linear } from "svelte/easing";
   import { Tween } from "svelte/motion";
-  import Button from "./Button.svelte";
-  import { compareMatches, getOrdinal, sessionStorageStore } from "$lib";
-  import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import type { MatchSurvey } from "$lib/survey";
-  import type { CompPageData } from "$lib/comp";
-  import { getFieldsWithDetails } from "$lib/field";
   import Anchor from "./Anchor.svelte";
+  import Button from "./Button.svelte";
 
   let {
     pageData,

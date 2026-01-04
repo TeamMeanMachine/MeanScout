@@ -1,10 +1,10 @@
 <script lang="ts">
   import { CheckIcon, CloudDownloadIcon, LoaderIcon } from "@lucide/svelte";
-  import Button from "./Button.svelte";
+  import { compareMatches, rerunAllContextLoads } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
-  import { compareMatches, rerunAllContextLoads } from "$lib";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -157,7 +157,7 @@
 
 <Button onclick={getDataFromTbaEvent}>
   {#if isLoadingTbaData}
-    <LoaderIcon class="text-theme animate-spin" />
+    <LoaderIcon class="animate-spin text-theme" />
   {:else if showCheck && !getTbaDataError}
     <CheckIcon class="text-theme" />
   {:else}

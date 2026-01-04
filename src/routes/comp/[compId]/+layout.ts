@@ -1,5 +1,5 @@
-import { idb } from "$lib/idb";
 import { error } from "@sveltejs/kit";
+import { idb } from "$lib/idb";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {

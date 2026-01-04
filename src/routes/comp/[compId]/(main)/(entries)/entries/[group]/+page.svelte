@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import type { PageProps } from "./$types";
-  import { z } from "zod";
-  import { entryStatuses, type Entry, type EntryStatus } from "$lib/entry";
+  import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
   import { compareMatches, getTeamName, matchIdentifierSchema, rerunAllContextLoads, type MatchIdentifier } from "$lib";
-  import { targets, type Target } from "$lib/settings";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
-  import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
+  import { entryStatuses, type Entry, type EntryStatus } from "$lib/entry";
   import { idb } from "$lib/idb";
+  import { targets, type Target } from "$lib/settings";
+  import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -73,7 +73,7 @@
   }
 </script>
 
-<div class="flex flex-col space-y-6 grow overflow-x-hidden lg:ml-80 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
+<div class="mt-[57px] flex grow flex-col space-y-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
   <div class="flex flex-col">
     <h2 class="font-bold">Entries</h2>
     <span class="text-xs font-light">Grouped by <span class="capitalize">{data.groupBy}</span></span>
@@ -202,7 +202,7 @@
           });
         }}
       >
-        <ShareIcon class="text-theme size-5" />
+        <ShareIcon class="size-5 text-theme" />
       </Button>
     </div>
 

@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { ListPlusIcon } from "@lucide/svelte";
   import type { Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { ListPlusIcon } from "@lucide/svelte";
 
   let {
     team,
@@ -41,7 +41,7 @@
       }}
       class="text-sm"
     >
-      <ListPlusIcon class="text-theme size-5" />
+      <ListPlusIcon class="size-5 text-theme" />
       Un-omit
     </Button>
   </div>
@@ -51,5 +51,5 @@
 
 <label class="flex flex-col">
   Reason
-  <input bind:value={omittedReasonChanges} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={omittedReasonChanges} class="bg-neutral-800 p-2 text-theme" />
 </label>

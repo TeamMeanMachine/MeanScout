@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
   import { sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
 
   const backLink = sessionStorage.getItem("home") || "";
 
@@ -54,7 +54,7 @@
           Pull matches/teams/alliances from
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>Or, manually set them up as needed</li>
@@ -67,61 +67,61 @@
         <li>
           <a href="https://svelte.dev/" target="_blank">
             <span class="underline">Svelte</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/cozmo/jsQR" target="_blank">
             <span class="underline">jsQR</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/soldair/node-qrcode" target="_blank">
             <span class="underline">node-qrcode</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://zod.dev/" target="_blank">
             <span class="underline">Zod</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://sortablejs.github.io/Sortable/" target="_blank">
             <span class="underline">SortableJS</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/TMeerhof/fractional-indexing-jittered" target="_blank">
             <span class="underline">fractional-indexing-jittered</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://tailwindcss.com/" target="_blank">
             <span class="underline">Tailwind CSS</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://lucide.dev/" target="_blank">
             <span class="underline">Lucide</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
           <a href="https://github.com/tonsky/FiraCode" target="_blank">
             <span class="underline">Fira Code</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
       </ul>
@@ -142,14 +142,14 @@
         However, you should read sections regarding end users in the
         <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">
           <span class="underline">privacy policy for Cloudflare</span>
-          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
         </a>, which is used to host and deploy MeanScout.
       </span>
       <span>
         This applies only to the version of MeanScout deployed at
         <a href="https://meanscout.team2471.org" target="_blank">
           <span class="underline">https://meanscout.team2471.org</span>
-          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
         </a>. Other versions/forks may have more or different online features.
       </span>
     </div>
@@ -160,7 +160,7 @@
         MeanScout is Free and Open Source Software.
         <a href="https://github.com/TeamMeanMachine/MeanScout" target="_blank">
           <span class="underline">Visit MeanScout's GitHub repository</span>
-          <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
         </a>
         to browse the source code, provide feedback, and/or contribute to the project.
       </span>
@@ -258,7 +258,7 @@
         <li>
           <a href="https://www.thebluealliance.com/account/login" target="_blank">
             <span class="underline">Create an account and Read API Key</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>
@@ -344,7 +344,7 @@
           QRF codes combine QR codes with a technology called
           <a href="https://en.wikipedia.org/wiki/Fountain_code" target="_blank">
             <span class="underline">fountain codes</span>
-            <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
         <li>Any amount of data can be transmitted from endlessly generating QR codes</li>
@@ -365,7 +365,7 @@
 
     <a href="https://aidunlin.com/qrfcodes" target="_blank" class="self-start">
       <span class="underline">Learn more</span>
-      <SquareArrowOutUpRightIcon class="text-theme inline h-4 w-4" strokeWidth={3} />
+      <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
     </a>
   {/if}
 </div>

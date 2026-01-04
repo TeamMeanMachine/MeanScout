@@ -1,25 +1,25 @@
 <script lang="ts">
-  import type { LayoutProps } from "./$types";
   import Anchor from "$lib/components/Anchor.svelte";
+  import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 </script>
 
 <div
   class={[
-    "lg:overflow-y-auto lg:overscroll-y-contain w-120 lg:h-[calc(100vh-57px)] lg:fixed lg:top-[57px] lg:border-r lg:border-neutral-600",
-    "max-lg:max-w-(--breakpoint-lg) max-lg:w-full max-lg:mx-auto",
+    "w-120 lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
+    "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
     data.scout ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >
-  <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
+  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
     <h2 class="font-bold">Scouts</h2>
   </div>
 
   {#if data.predictionsPerScout.length}
     <div class={[data.scout ? "" : "max-lg:px-3"]}>
       <div
-        class={["grid gap-x-3 gap-y-2 px-3 mb-3 max-lg:overflow-x-auto max-lg:-mx-3 max-lg:px-3"]}
+        class={["mb-3 grid gap-x-3 gap-y-2 px-3 max-lg:-mx-3 max-lg:overflow-x-auto max-lg:px-3"]}
         style="grid-template-columns: auto repeat(5, min-content);"
       >
         <div class="col-span-full grid grid-cols-subgrid items-end gap-x-4 px-2 text-center text-xs tracking-tighter">

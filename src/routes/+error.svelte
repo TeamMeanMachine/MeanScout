@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { HomeIcon } from "@lucide/svelte";
   import { page } from "$app/state";
   import Anchor from "$lib/components/Anchor.svelte";
-  import { HomeIcon } from "@lucide/svelte";
 </script>
 
 <header class="flex min-h-11 items-center gap-3">

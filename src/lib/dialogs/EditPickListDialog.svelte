@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { PickList } from "$lib/rank";
+  import { SquareCheckBigIcon, SquareIcon, Trash2Icon, Undo2Icon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { EntryExpression, Expression, SurveyExpression } from "$lib/expression";
-  import { SquareCheckBigIcon, SquareIcon, Trash2Icon, Undo2Icon } from "@lucide/svelte";
+  import { isNumericField, type SingleFieldWithDetails } from "$lib/field";
+  import type { PickList } from "$lib/rank";
+  import type { MatchSurvey } from "$lib/survey";
   import DeletePickListDialog from "./DeletePickListDialog.svelte";
   import ResetPickListDialog from "./ResetPickListDialog.svelte";
-  import type { MatchSurvey } from "$lib/survey";
-  import { isNumericField, type SingleFieldWithDetails } from "$lib/field";
 
   let {
     surveyRecord,
@@ -72,7 +72,7 @@
           });
         }}
       >
-        <Undo2Icon class="text-theme size-5" />
+        <Undo2Icon class="size-5 text-theme" />
       </Button>
     {/if}
 
@@ -86,7 +86,7 @@
         });
       }}
     >
-      <Trash2Icon class="text-theme size-5" />
+      <Trash2Icon class="size-5 text-theme" />
     </Button>
   </div>
 </div>
@@ -94,7 +94,7 @@
 <label class="flex flex-col">
   Name
   <!-- svelte-ignore a11y_autofocus -->
-  <input bind:value={changes.name} autofocus class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={changes.name} autofocus class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 {#snippet expressionButton(expression: Expression)}
@@ -133,7 +133,7 @@
           max="100"
           step="1"
           bind:value={changes.weights[weightIndex].percentage}
-          class="text-theme bg-neutral-800 p-2"
+          class="bg-neutral-800 p-2 text-theme"
         />
       </label>
     {/if}
@@ -193,7 +193,7 @@
             max="100"
             step="1"
             bind:value={changes.weights[weightIndex].percentage}
-            class="text-theme bg-neutral-800 p-2"
+            class="bg-neutral-800 p-2 text-theme"
           />
         </label>
       {/if}

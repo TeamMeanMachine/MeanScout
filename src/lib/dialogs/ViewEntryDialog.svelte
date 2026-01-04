@@ -1,16 +1,16 @@
 <script lang="ts">
+  import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import { getTeamName, type Value } from "$lib";
+  import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import { getFieldsWithDetails, type Field, type SingleField } from "$lib/field";
   import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
-  import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
-  import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
-  import { goto } from "$app/navigation";
-  import type { Comp } from "$lib/comp";
   import BulkExportDialog from "./BulkExportDialog.svelte";
+  import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
 
   let {
     compRecord,
@@ -82,7 +82,7 @@
         });
       }}
     >
-      <ShareIcon class="text-theme size-5" />
+      <ShareIcon class="size-5 text-theme" />
     </Button>
   {/if}
 
@@ -97,7 +97,7 @@
   {#if onchange}
     {#if entry.type != "match" || !entry.absent}
       <Button onclick={editEntry}>
-        <SquarePenIcon class="text-theme size-5" />
+        <SquarePenIcon class="size-5 text-theme" />
       </Button>
     {/if}
 
@@ -113,7 +113,7 @@
           },
         })}
     >
-      <Trash2Icon class="text-theme size-5" />
+      <Trash2Icon class="size-5 text-theme" />
     </Button>
   {/if}
 </div>

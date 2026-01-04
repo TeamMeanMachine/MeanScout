@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { CircleCheckBigIcon, CircleIcon, Trash2Icon } from "@lucide/svelte";
   import { getTeamName, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { CircleCheckBigIcon, CircleIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     teams,
@@ -38,7 +38,7 @@
       closeDialog();
     }}
   >
-    <Trash2Icon class="text-theme size-5" />
+    <Trash2Icon class="size-5 text-theme" />
   </Button>
 </div>
 
@@ -48,9 +48,9 @@
       {@const font = editingTeam == existingTeam.number ? "font-bold" : "font-light"}
       <Button onclick={() => (editingTeam = existingTeam.number)} class={font}>
         {#if editingTeam == existingTeam.number}
-          <CircleCheckBigIcon class="text-theme size-5" />
+          <CircleCheckBigIcon class="size-5 text-theme" />
         {:else}
-          <CircleIcon class="text-theme size-5" />
+          <CircleIcon class="size-5 text-theme" />
         {/if}
         <div class="flex flex-col truncate">
           <span>{existingTeam.number}</span>
@@ -66,5 +66,5 @@
     <span>Team</span>
     <span class="truncate text-xs font-light">{getTeamName(editingTeam, teams)}</span>
   </div>
-  <input bind:value={editingTeam} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={editingTeam} class="bg-neutral-800 p-2 text-theme" />
 </label>

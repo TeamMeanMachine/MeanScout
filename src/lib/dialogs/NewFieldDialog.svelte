@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import { type Field, type FieldType, type GroupField } from "$lib/field";
   import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
-  import { PlusIcon, SquareCheckBigIcon, SquareIcon, Trash2Icon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -126,13 +126,13 @@
     Group
     <div class="flex gap-3 text-sm">
       <div class="flex flex-wrap gap-2">
-        <Button onclick={() => (groupSelect = "")} class={groupSelect == "" ? "text-theme font-bold" : "font-light"}>
+        <Button onclick={() => (groupSelect = "")} class={groupSelect == "" ? "font-bold text-theme" : "font-light"}>
           --
         </Button>
         {#each groups as group}
           <Button
             onclick={() => (groupSelect = group.id)}
-            class={groupSelect == group.id ? "text-theme font-bold" : "font-light"}
+            class={groupSelect == group.id ? "font-bold text-theme" : "font-light"}
           >
             {group.name}
           </Button>
@@ -144,7 +144,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={field.name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={field.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 {#if field.type != "group"}
@@ -169,7 +169,7 @@
     Values
     {#each field.values as _, i}
       <div class="flex gap-2">
-        <input bind:value={field.values[i]} class="text-theme grow bg-neutral-800 p-2" />
+        <input bind:value={field.values[i]} class="grow bg-neutral-800 p-2 text-theme" />
         <Button onclick={() => deleteSelectValue(i)}>
           <Trash2Icon class="text-theme" />
         </Button>
@@ -192,14 +192,14 @@
 
   <label class="flex flex-col">
     Tip
-    <input bind:value={field.tip} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={field.tip} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 
 <div class="flex flex-wrap items-end gap-2 text-sm">
   <label class="flex grow flex-col">
     ID
-    <input bind:value={field.id} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={field.id} class="bg-neutral-800 p-2 text-theme" />
   </label>
   <Button onclick={() => (field.id = idb.generateId({ randomChars: 0 }))}>
     <span class="font-bold">Random</span>

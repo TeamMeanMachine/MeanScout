@@ -1,19 +1,19 @@
 <script lang="ts">
+  import { ArrowRightIcon, DownloadIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { openDialog } from "$lib/dialog";
-  import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
-  import { ArrowRightIcon, DownloadIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
-  import type { PageProps } from "./$types";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
+  import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
 
 <Header />
 
-<div class="mx-auto flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 mt-[69px] mb-3">
+<div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Comps</h2>
 

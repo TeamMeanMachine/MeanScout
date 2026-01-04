@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import { idb } from "$lib/idb";
   import { CalendarDaysIcon, SquarePenIcon } from "@lucide/svelte";
-  import type { PageProps } from "./$types";
+  import { rerunAllContextLoads } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
+  import { openDialog } from "$lib/dialog";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
-  import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
-  import { rerunAllContextLoads } from "$lib";
+  import { idb } from "$lib/idb";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>

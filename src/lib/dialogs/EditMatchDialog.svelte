@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { Trash2Icon } from "@lucide/svelte";
   import { compareMatches, isValidTeam, matchLevels, type Match } from "$lib";
+  import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import { Trash2Icon } from "@lucide/svelte";
-  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import type { Comp } from "$lib/comp";
-  import SelectTeamsDialog from "./SelectTeamsDialog.svelte";
   import { slide } from "svelte/transition";
+  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
+  import SelectTeamsDialog from "./SelectTeamsDialog.svelte";
 
   let {
     match,
@@ -108,7 +108,7 @@
 
   {#if match && ondelete}
     <Button onclick={() => openDialog(DeleteMatchDialog, { match, ondelete })}>
-      <Trash2Icon class="text-theme size-5" />
+      <Trash2Icon class="size-5 text-theme" />
     </Button>
   {/if}
 </div>
@@ -121,7 +121,7 @@
       pattern="[0-9]*"
       min="1"
       bind:value={changes.number}
-      class="text-theme w-full bg-neutral-800 p-2"
+      class="w-full bg-neutral-800 p-2 text-theme"
     />
   </label>
   <label class="flex w-full flex-col">
@@ -132,12 +132,12 @@
       min="1"
       bind:value={changes.set}
       placeholder="1"
-      class="text-theme w-full bg-neutral-800 p-2"
+      class="w-full bg-neutral-800 p-2 text-theme"
     />
   </label>
   <label class="flex w-full flex-col">
     Level
-    <select bind:value={changes.level} class="text-theme w-full bg-neutral-800 p-2">
+    <select bind:value={changes.level} class="w-full bg-neutral-800 p-2 text-theme">
       {#each matchLevels as level}
         <option value={level}>{level}</option>
       {/each}
@@ -182,7 +182,7 @@
 
     <label class="flex flex-col">
       Red Score
-      <input type="number" min="0" bind:value={changes.redScore} class="text-red w-full bg-neutral-800 p-2" />
+      <input type="number" min="0" bind:value={changes.redScore} class="w-full bg-neutral-800 p-2 text-red" />
     </label>
   </div>
 
@@ -222,7 +222,7 @@
 
     <label class="flex flex-col">
       Blue Score
-      <input type="number" min="0" bind:value={changes.blueScore} class="text-blue w-full bg-neutral-800 p-2" />
+      <input type="number" min="0" bind:value={changes.blueScore} class="w-full bg-neutral-800 p-2 text-blue" />
     </label>
   </div>
 </div>

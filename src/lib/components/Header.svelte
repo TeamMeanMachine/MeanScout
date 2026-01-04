@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { targetStore } from "$lib/settings";
   import { EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
+  import { targetStore } from "$lib/settings";
+  import type { Snippet } from "svelte";
   import Anchor from "./Anchor.svelte";
   import Button from "./Button.svelte";
-  import type { Snippet } from "svelte";
 
   let {
     title = "MeanScout",
@@ -26,7 +26,7 @@
   <title>{title}</title>
 </svelte:head>
 
-<header class="fixed top-0 left-0 right-0 z-20 w-full flex flex-col border-b border-neutral-600 bg-neutral-900 py-2">
+<header class="fixed top-0 right-0 left-0 z-20 flex w-full flex-col border-b border-neutral-600 bg-neutral-900 py-2">
   <div class="mx-auto flex min-h-10 w-full items-center justify-between gap-3 px-3">
     <div class="flex grow basis-60 gap-2">
       <img src="./logo.svg" alt="" width="25" height="25" />
@@ -42,7 +42,7 @@
     {@render children?.()}
 
     <div class="flex shrink grow basis-60 items-center gap-3">
-      <span class="text-theme grow truncate text-right text-sm font-bold capitalize">{$targetStore}</span>
+      <span class="grow truncate text-right text-sm font-bold text-theme capitalize">{$targetStore}</span>
 
       {#if onmenupressed}
         <Button onclick={onmenupressed}>

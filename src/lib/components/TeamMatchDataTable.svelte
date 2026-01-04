@@ -1,10 +1,10 @@
 <script lang="ts">
   import { compareMatches, matchUrl, type Match, type MatchIdentifier, type Team, type Value } from "$lib";
-  import { getExpressionData } from "$lib/rank";
+  import type { CompPageData } from "$lib/comp";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
-  import type { CompPageData } from "$lib/comp";
+  import { getExpressionData } from "$lib/rank";
   import type { MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";
 
@@ -362,7 +362,7 @@
                 </td>
 
                 {#if somePredictionReason}
-                  <td class="border-b border-neutral-800 p-2 min-w-xs text-left">
+                  <td class="min-w-xs border-b border-neutral-800 p-2 text-left">
                     {entry.predictionReason}
                   </td>
                 {/if}

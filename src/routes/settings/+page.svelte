@@ -1,4 +1,17 @@
 <script lang="ts">
+  import {
+    CameraIcon,
+    CheckIcon,
+    CrosshairIcon,
+    KeyIcon,
+    LoaderIcon,
+    ShrinkIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    UserSearchIcon,
+    UsersIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -13,19 +26,6 @@
     useCompressionStore,
   } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
-  import {
-    CameraIcon,
-    CheckIcon,
-    CrosshairIcon,
-    KeyIcon,
-    LoaderIcon,
-    ShrinkIcon,
-    SquareCheckBigIcon,
-    SquareIcon,
-    UserSearchIcon,
-    UsersIcon,
-    XIcon,
-  } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   const backLink = sessionStorage.getItem("home") || "";
@@ -112,7 +112,7 @@
       Target
       <span class="text-xs font-light">Which robot you're scouting</span>
     </div>
-    <select bind:value={targetInput} class="text-theme w-full bg-neutral-800 p-2 capitalize sm:w-auto">
+    <select bind:value={targetInput} class="w-full bg-neutral-800 p-2 text-theme capitalize sm:w-auto">
       {#each targets as target}
         <option>{target}</option>
       {/each}
@@ -126,7 +126,7 @@
       <span class="text-xs font-light">Used to scan QRF codes</span>
     </div>
     {#if cameras.length}
-      <select bind:value={cameraInput} class="text-theme w-full bg-neutral-800 p-2 capitalize sm:w-auto">
+      <select bind:value={cameraInput} class="w-full bg-neutral-800 p-2 text-theme capitalize sm:w-auto">
         <option value="">Select</option>
         {#each cameras as { id, name }}
           <option value={id}>{name}</option>
@@ -135,7 +135,7 @@
     {:else if noCamera}
       <span class="text-sm font-light">No camera</span>
     {:else}
-      <LoaderIcon class="text-theme animate-spin" />
+      <LoaderIcon class="animate-spin text-theme" />
     {/if}
   </label>
 
@@ -145,7 +145,7 @@
       Your name
       <span class="text-xs font-light">Used in entries for guessing game</span>
     </div>
-    <input bind:value={scoutInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-auto" />
+    <input bind:value={scoutInput} class="w-full bg-neutral-800 p-2 text-theme sm:w-auto" />
   </label>
 
   <label class="flex flex-wrap items-center gap-2">
@@ -154,7 +154,7 @@
       Your team
       <span class="text-xs font-light">Used w/ TBA data, upcoming match views</span>
     </div>
-    <input bind:value={teamInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-32" />
+    <input bind:value={teamInput} class="w-full bg-neutral-800 p-2 text-theme sm:w-32" />
   </label>
 
   <label class="flex flex-wrap items-center gap-2">
@@ -163,7 +163,7 @@
       Custom TBA auth key
       <span class="text-xs font-light">You may want to use your own</span>
     </div>
-    <input bind:value={tbaAuthKeyInput} class="text-theme w-full bg-neutral-800 p-2 sm:w-auto" />
+    <input bind:value={tbaAuthKeyInput} class="w-full bg-neutral-800 p-2 text-theme sm:w-auto" />
   </label>
 
   <div class="flex flex-wrap items-center gap-2">

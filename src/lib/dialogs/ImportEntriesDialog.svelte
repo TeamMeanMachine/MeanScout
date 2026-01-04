@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CircleCheckBigIcon, CircleIcon, Undo2Icon } from "@lucide/svelte";
   import { compareMatches, schemaVersion, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
@@ -7,7 +8,6 @@
   import { idb } from "$lib/idb";
   import { cameraStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
-  import { CircleCheckBigIcon, CircleIcon, Undo2Icon } from "@lucide/svelte";
 
   let {
     surveyRecords,
@@ -246,7 +246,7 @@
     accept=".json,.txt"
     bind:files
     {onchange}
-    class="file:text-theme file:mr-3 file:border-none file:bg-neutral-800 file:p-2"
+    class="file:mr-3 file:border-none file:bg-neutral-800 file:p-2 file:text-theme"
   />
 {/if}
 

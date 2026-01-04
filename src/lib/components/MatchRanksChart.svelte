@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import {
     allianceTeamLabels,
     getOrdinal,
@@ -7,28 +8,27 @@
     sessionStorageStore,
     type Match,
   } from "$lib";
-  import {
-    getExpressionData,
-    getPickListData,
-    type TeamRank,
-    type PickList,
-    getFieldData,
-    colors,
-    type RankData,
-  } from "$lib/rank";
+  import type { CompPageData } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
+  import { openDialog } from "$lib/dialog";
+  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { type MatchEntry } from "$lib/entry";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
-  import type { CompPageData } from "$lib/comp";
-  import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
-  import { groupRanks, type MatchSurvey } from "$lib/survey";
-  import Anchor from "./Anchor.svelte";
-  import { z } from "zod";
-  import { slide } from "svelte/transition";
-  import { openDialog } from "$lib/dialog";
-  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { idb } from "$lib/idb";
+  import {
+    colors,
+    getExpressionData,
+    getFieldData,
+    getPickListData,
+    type PickList,
+    type RankData,
+    type TeamRank,
+  } from "$lib/rank";
+  import { groupRanks, type MatchSurvey } from "$lib/survey";
+  import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,
@@ -280,7 +280,7 @@
 <div class="flex flex-col gap-4">
   <div class="flex flex-col">
     <Button onclick={() => (selecting = !selecting)} class="text-sm">
-      <ChartBarBigIcon class="text-theme size-5" />
+      <ChartBarBigIcon class="size-5 text-theme" />
       {#if selectedRanking}
         <span class="grow">
           {#if "pickList" in selectedRanking}
@@ -296,7 +296,7 @@
       {/if}
 
       <ChevronDownIcon
-        class="text-theme size-5 transition-[rotate] {selecting || !selectedRanking ? 'rotate-180' : ''}"
+        class="size-5 text-theme transition-[rotate] {selecting || !selectedRanking ? 'rotate-180' : ''}"
       />
     </Button>
 
@@ -475,7 +475,7 @@
 
     <Anchor route="comp/{pageData.compRecord.id}/rank?{rankLinkParams}" class="self-start text-sm">
       View rank
-      <ArrowRightIcon class="text-theme size-5" />
+      <ArrowRightIcon class="size-5 text-theme" />
     </Anchor>
   {/if}
 </div>
@@ -536,7 +536,7 @@
           <div class="col-span-full flex flex-wrap items-center justify-between gap-2 py-1 text-sm">
             <Anchor route="comp/{pageData.compRecord.id}/teams/{teamRank.team}">
               View team
-              <ArrowRightIcon class="text-theme size-5" />
+              <ArrowRightIcon class="size-5 text-theme" />
             </Anchor>
             <Button
               onclick={() => {
@@ -557,9 +557,9 @@
               }}
             >
               {#if allianceTeams.includes(teamRank.team)}
-                <UserPenIcon class="text-theme size-5" />
+                <UserPenIcon class="size-5 text-theme" />
               {:else}
-                <UserPlusIcon class="text-theme size-5" />
+                <UserPlusIcon class="size-5 text-theme" />
               {/if}
               Alliance
             </Button>

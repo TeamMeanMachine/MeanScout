@@ -1,16 +1,16 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import type { PageProps } from "./$types";
-  import { rerunAllContextLoads, rerunOtherContextLoads, sessionStorageStore } from "$lib";
-  import RaceChart from "$lib/components/RaceChart.svelte";
   import { ClipboardCopy, Share2Icon, SquarePenIcon } from "@lucide/svelte";
-  import BarChart from "$lib/components/BarChart.svelte";
-  import { type Expression } from "$lib/expression";
-  import { openDialog } from "$lib/dialog";
-  import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
-  import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
-  import { idb } from "$lib/idb";
   import { goto } from "$app/navigation";
+  import { rerunAllContextLoads, rerunOtherContextLoads, sessionStorageStore } from "$lib";
+  import BarChart from "$lib/components/BarChart.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import RaceChart from "$lib/components/RaceChart.svelte";
+  import { openDialog } from "$lib/dialog";
+  import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
+  import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
+  import { type Expression } from "$lib/expression";
+  import { idb } from "$lib/idb";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -194,7 +194,7 @@
   }
 </script>
 
-<div class="flex flex-col space-y-4 grow overflow-x-hidden lg:ml-72 px-3 py-6 mt-[57px] max-lg:mb-[65px]">
+<div class="mt-[57px] flex grow flex-col space-y-4 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-72">
   <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
     <div class="flex grow flex-col">
       <h2 class="font-bold">{data.title}</h2>
@@ -215,19 +215,19 @@
         <div class="flex gap-2">
           {#if "canShare" in navigator}
             <Button onclick={() => navigator.share({ text: data.output.text })}>
-              <Share2Icon class="text-theme size-5" />
+              <Share2Icon class="size-5 text-theme" />
             </Button>
           {/if}
 
           {#if "clipboard" in navigator}
             <Button onclick={() => navigator.clipboard.writeText(data.output.text)}>
-              <ClipboardCopy class="text-theme size-5" />
+              <ClipboardCopy class="size-5 text-theme" />
             </Button>
           {/if}
 
           {#if data.output.type != "field"}
             <Button onclick={editRank}>
-              <SquarePenIcon class="text-theme size-5" />
+              <SquarePenIcon class="size-5 text-theme" />
             </Button>
           {/if}
         </div>

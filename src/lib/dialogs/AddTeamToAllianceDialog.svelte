@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { PlusIcon, UserMinusIcon } from "@lucide/svelte";
   import { allianceTeamLabels, type Team } from "$lib";
   import type { Alliance } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { PlusIcon, UserMinusIcon } from "@lucide/svelte";
 
   let {
     team,
@@ -48,7 +48,7 @@
   {/if}
 
   <Button onclick={clearExistingOfThisTeam} disabled={alliances.every((a) => !a.teams.includes(team.number))}>
-    <UserMinusIcon class="text-theme size-5" />
+    <UserMinusIcon class="size-5 text-theme" />
   </Button>
 </div>
 

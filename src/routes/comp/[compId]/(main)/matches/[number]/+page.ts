@@ -1,5 +1,5 @@
-import { compareMatches } from "$lib";
 import { error } from "@sveltejs/kit";
+import { compareMatches } from "$lib";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {

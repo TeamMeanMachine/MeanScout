@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { compareMatches, matchUrl, rerunAllContextLoads, type Match } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { teamStore } from "$lib/settings";
   import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
-  import type { LayoutProps } from "./$types";
-  import { z } from "zod";
   import { afterNavigate, goto } from "$app/navigation";
+  import { compareMatches, matchUrl, rerunAllContextLoads, type Match } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
-  import { idb } from "$lib/idb";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
+  import { idb } from "$lib/idb";
+  import { teamStore } from "$lib/settings";
   import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
@@ -126,24 +126,24 @@
 
 <div
   class={[
-    "lg:overflow-y-auto lg:overscroll-y-contain lg:w-[280px] 2xl:w-lg lg:h-[calc(100vh-57px)] lg:fixed lg:top-[57px] lg:border-r lg:border-neutral-600",
-    "max-lg:max-w-(--breakpoint-lg) max-lg:w-full max-lg:mx-auto",
+    "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-[280px] lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600 2xl:w-lg",
+    "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
     data.match ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >
-  <div class={["flex flex-col gap-3 px-3 py-6 bg-neutral-900", "sticky top-[57px] lg:top-0 z-20", "max-lg:mt-[57px]"]}>
-    <div class="flex gap-3 justify-between flex-wrap items-center">
-      <h2 class="font-bold grow">Matches</h2>
+  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="grow font-bold">Matches</h2>
 
       <div class="flex items-center gap-3">
         {#if data.matches.length}
           <label
             class={[
-              "flex items-center gap-2 bg-neutral-800 p-2 text-sm text-theme cursor-text outline-neutral-300",
+              "flex cursor-text items-center gap-2 bg-neutral-800 p-2 text-sm text-theme outline-neutral-300",
               "focus-within:z-10 focus-within:outline-2",
             ]}
           >
-            <SearchIcon class="text-theme size-5" />
+            <SearchIcon class="size-5 text-theme" />
             <input
               {@attach (input) => {
                 if (sessionStorage.getItem("match-search")) {
@@ -154,7 +154,7 @@
               value={debouncedSearch}
               oninput={(e) => onsearchinput(e.currentTarget.value)}
               onkeypress={(e) => e.key == "Enter" && onsearchenter()}
-              class="w-full min-w-8 max-w-32 outline-0 font-bold"
+              class="w-full max-w-32 min-w-8 font-bold outline-0"
             />
           </label>
         {:else}
@@ -179,14 +179,14 @@
               },
             })}
         >
-          <PlusIcon class="text-theme size-5" />
+          <PlusIcon class="size-5 text-theme" />
         </Button>
       </div>
     </div>
   </div>
 
   {#if data.matches.length}
-    <div class="flex flex-col pt-1 px-3 gap-6 mb-6">
+    <div class="mb-6 flex flex-col gap-6 px-3 pt-1">
       {#if (!debouncedSearch || filteredMatches.length) && upcomingMatches.length}
         {@const isToggled = matchToggleState.includes("upcoming") || debouncedSearch}
 
@@ -264,7 +264,7 @@
   <Anchor
     route={matchUrl(match, data.compRecord.id)}
     id={[match.level || "qm", match.set || 1, match.number].join("-")}
-    class="text-center! justify-center flex-col gap-1!"
+    class="flex-col justify-center gap-1! text-center!"
   >
     <div class="flex flex-wrap items-center gap-x-4">
       {#if match.red1 || match.red2 || match.red3}
@@ -273,7 +273,7 @@
 
         <div
           class={[
-            "text-red flex flex-col gap-x-2 2xl:flex-row",
+            "flex flex-col gap-x-2 text-red 2xl:flex-row",
             allianceFontWeight(redWon),
             !data.match && "sm:flex-row lg:flex-col",
           ]}
@@ -295,7 +295,7 @@
         {@const blueWon = match.blueScore > match.redScore}
 
         <div class="flex flex-col flex-wrap items-center gap-x-2 self-center">
-          <div class={["min-w-8", viewing ? "font-bold underline underline-offset-4 italic" : "font-light"]}>
+          <div class={["min-w-8", viewing ? "font-bold italic underline underline-offset-4" : "font-light"]}>
             {#if match.level && match.level != "qm"}
               {match.level}{match.set || 1}-{match.number}
             {:else}
@@ -305,18 +305,18 @@
           <div class="flex items-center gap-x-2">
             <div
               class={[
-                "text-red min-w-8",
+                "min-w-8 text-red",
                 redWon || viewing ? "font-bold" : "text-sm font-light",
-                viewing && "underline underline-offset-4 italic",
+                viewing && "italic underline underline-offset-4",
               ]}
             >
               {match.redScore}
             </div>
             <div
               class={[
-                "text-blue min-w-8",
+                "min-w-8 text-blue",
                 blueWon || viewing ? "font-bold" : "text-sm font-light",
-                viewing && "underline underline-offset-4 italic",
+                viewing && "italic underline underline-offset-4",
               ]}
             >
               {match.blueScore}
@@ -339,7 +339,7 @@
 
         <div
           class={[
-            "text-blue flex flex-col gap-x-2 2xl:flex-row",
+            "flex flex-col gap-x-2 text-blue 2xl:flex-row",
             allianceFontWeight(blueWon),
             !data.match && "sm:flex-row lg:flex-col",
           ]}

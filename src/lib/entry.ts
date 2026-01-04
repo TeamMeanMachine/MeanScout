@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   compareMatches,
   getTeamName,
@@ -7,10 +8,9 @@ import {
   type Match,
   type MatchIdentifier,
 } from "./";
-import { z } from "zod";
 import type { Comp } from "./comp";
-import type { Survey } from "./survey";
 import { targets } from "./settings";
+import type { Survey } from "./survey";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];

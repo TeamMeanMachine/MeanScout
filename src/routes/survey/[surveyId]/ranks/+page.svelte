@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
+  import { rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
@@ -7,9 +9,7 @@
   import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { idb } from "$lib/idb";
-  import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { rerunAllContextLoads } from "$lib";
 
   let { data }: PageProps = $props();
 
@@ -153,12 +153,12 @@
       class="sticky bottom-3 z-20 flex max-w-full flex-col gap-2 self-start border border-neutral-500 bg-neutral-900 p-2 text-xs shadow-2xl"
     >
       <Button onclick={() => newExpression({ scope: "entry" })}>
-        <PlusIcon class="text-theme size-5" />
+        <PlusIcon class="size-5 text-theme" />
         Entry Expression
       </Button>
 
       <Button onclick={() => newExpression({ scope: "survey" })}>
-        <PlusIcon class="text-theme size-5" />
+        <PlusIcon class="size-5 text-theme" />
         Aggregate Expression
       </Button>
 
@@ -176,7 +176,7 @@
           });
         }}
       >
-        <PlusIcon class="text-theme size-5" />
+        <PlusIcon class="size-5 text-theme" />
         Pick List
       </Button>
     </div>

@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { SquareCheckBigIcon, SquareIcon, SquarePenIcon } from "@lucide/svelte";
   import { parseValueFromString } from "$lib";
+  import Button from "$lib/components/Button.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import {
     mapExpressionTypes,
     reduceExpressionTypes,
@@ -7,12 +10,9 @@
     type Expression,
     type SurveyExpression,
   } from "$lib/expression";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import { type SingleFieldWithDetails } from "$lib/field";
   import type { MatchSurvey } from "$lib/survey";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
-  import { SquarePenIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
 
   let {
     surveyRecord,
@@ -83,7 +83,7 @@
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="text-theme bg-neutral-800 p-2" />
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
 </label>
 
 <label class="flex flex-col">
@@ -126,7 +126,7 @@
           break;
       }
     }}
-    class="text-theme bg-neutral-800 p-2 capitalize"
+    class="bg-neutral-800 p-2 text-theme capitalize"
   >
     <optgroup label="Reducers">
       {#each reduceExpressionTypes as expressionType}
@@ -144,7 +144,7 @@
 {#if method.type == "count"}
   <label class="flex flex-col">
     Value to count
-    <input bind:value={method.valueToCount} class="text-theme bg-neutral-800 p-2" />
+    <input bind:value={method.valueToCount} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {:else if method.type == "convert"}
   <Button
@@ -164,12 +164,12 @@
 {:else if method.type == "multiply"}
   <label class="flex flex-col">
     Multiplier
-    <input type="number" bind:value={method.multiplier} class="text-theme bg-neutral-800 p-2" />
+    <input type="number" bind:value={method.multiplier} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {:else if method.type == "divide"}
   <label class="flex flex-col">
     Divisor
-    <input type="number" bind:value={method.divisor} class="text-theme bg-neutral-800 p-2" />
+    <input type="number" bind:value={method.divisor} class="bg-neutral-800 p-2 text-theme" />
   </label>
 {/if}
 

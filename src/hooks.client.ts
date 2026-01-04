@@ -1,5 +1,5 @@
-import { idb } from "$lib/idb";
 import type { ClientInit } from "@sveltejs/kit";
+import { idb } from "$lib/idb";
 
 export const init: ClientInit = async () => {
   if (!localStorage.getItem("init") && !location.hash.includes("about")) {

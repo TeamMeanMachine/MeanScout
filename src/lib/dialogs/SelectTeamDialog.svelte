@@ -40,10 +40,10 @@
 </script>
 
 <div class="flex flex-col">
-  <label class="flex flex-col mb-3">
-    <div class="flex justify-between items-end truncate gap-x-3">
+  <label class="mb-3 flex flex-col">
+    <div class="flex items-end justify-between gap-x-3 truncate">
       <span>Input team</span>
-      <span class="text-xs font-light truncate max-w-1/2">{getTeamName(selectedTeam, teams)}</span>
+      <span class="max-w-1/2 truncate text-xs font-light">{getTeamName(selectedTeam, teams)}</span>
     </div>
     <input
       bind:value={selectedTeam}
@@ -51,7 +51,7 @@
         if (isValidTeam(selectedTeam)) error = "";
         else error = "Invalid team";
       }}
-      class="text-theme bg-neutral-800 p-2"
+      class="bg-neutral-800 p-2 text-theme"
     />
   </label>
 

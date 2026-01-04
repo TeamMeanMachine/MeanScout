@@ -1,16 +1,16 @@
 <script lang="ts">
+  import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import { compareMatches, getTeamName, matchUrl, rerunOtherContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { ArrowLeftIcon, ArrowRightIcon, SquarePenIcon, SquareArrowOutUpRightIcon } from "@lucide/svelte";
-  import type { PageProps } from "./$types";
-  import MatchDataTable from "$lib/components/MatchDataTable.svelte";
-  import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
+  import Button from "$lib/components/Button.svelte";
+  import MatchDataTable from "$lib/components/MatchDataTable.svelte";
   import MatchPitDataTable from "$lib/components/MatchPitDataTable.svelte";
+  import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
   import { openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "$lib/idb";
-  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -34,7 +34,7 @@
 </script>
 
 <div
-  class="flex flex-col gap-6 grow overflow-x-hidden lg:ml-[280px] 2xl:ml-[512px] px-3 py-6 mt-[57px] max-lg:mb-[65px]"
+  class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-[280px] 2xl:ml-[512px]"
 >
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-col">
@@ -42,10 +42,10 @@
       {#if data.match.redScore !== undefined && data.match.blueScore !== undefined}
         <div class="text-xs">
           {#if data.redWon}
-            <span class="text-red font-bold">Red</span>
+            <span class="font-bold text-red">Red</span>
             won:
           {:else if data.blueWon}
-            <span class="text-blue font-bold">Blue</span>
+            <span class="font-bold text-blue">Blue</span>
             won:
           {:else}
             <span class="font-bold">Tied:</span>
@@ -65,11 +65,11 @@
           route={matchUrl(data.previousMatch, data.compRecord.id)}
           class="active:-translate-x-0.5! active:translate-y-0!"
         >
-          <ArrowLeftIcon class="text-theme size-5" />
+          <ArrowLeftIcon class="size-5 text-theme" />
         </Anchor>
       {:else}
         <Button disabled>
-          <ArrowLeftIcon class="text-theme size-5" />
+          <ArrowLeftIcon class="size-5 text-theme" />
         </Button>
       {/if}
 
@@ -78,11 +78,11 @@
           route={matchUrl(data.nextMatch, data.compRecord.id)}
           class="active:translate-x-0.5! active:translate-y-0!"
         >
-          <ArrowRightIcon class="text-theme size-5" />
+          <ArrowRightIcon class="size-5 text-theme" />
         </Anchor>
       {:else}
         <Button disabled>
-          <ArrowRightIcon class="text-theme size-5" />
+          <ArrowRightIcon class="size-5 text-theme" />
         </Button>
       {/if}
 
@@ -126,7 +126,7 @@
         }}
         class="ml-2"
       >
-        <SquarePenIcon class="text-theme size-5" />
+        <SquarePenIcon class="size-5 text-theme" />
       </Button>
     </div>
   </div>
@@ -183,7 +183,7 @@
   {#each data.surveyRecords
     .filter((survey) => survey.type == "match")
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+    <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
       <h2 class="text-sm">{surveyRecord.name}</h2>
 
       {#key data.match}
@@ -195,7 +195,7 @@
   {#each data.surveyRecords
     .filter((survey) => survey.type == "pit")
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
-    <div class="flex flex-col items-start gap-1 overflow-x-auto -mr-3 pr-3">
+    <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
       <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
 
       {#key data.match}
@@ -211,12 +211,12 @@
     <div class="flex flex-wrap gap-x-4">
       <a href="https://www.thebluealliance.com/match/{data.compRecord.tbaEventKey}_{identifier}" target="_blank">
         <span class="underline">TBA</span>
-        <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+        <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
       </a>
 
       <a href="https://www.statbotics.io/match/{data.compRecord.tbaEventKey}_{identifier}" target="_blank">
         <span class="underline">Statbotics</span>
-        <SquareArrowOutUpRightIcon class="text-theme inline size-4" strokeWidth={3} />
+        <SquareArrowOutUpRightIcon class="inline size-4 text-theme" strokeWidth={3} />
       </a>
     </div>
   {/if}

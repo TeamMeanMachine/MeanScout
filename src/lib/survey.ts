@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { pickListSchema } from "./rank";
 import { expressionSchema, sortExpressions } from "./expression";
 import { isNumericField, type SingleFieldWithDetails } from "./field";
+import { pickListSchema } from "./rank";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];
