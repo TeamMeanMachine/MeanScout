@@ -5,7 +5,7 @@ import type { TbaMetrics } from "./entry";
 import { tbaAuthKeyStore } from "./settings";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
-const TBA_AUTH_KEY = "bLFDfOniJOVOziESwbhPHncaUu30iIj64I2IMIOg4FLeNE0D3LGgkWslxugJKFlL";
+const TBA_AUTH_KEY = "QucqT0im61Z50YQnCpSdkifFqo2aoTKkQRyQSjlM1juuhLu6kr7jXlHjJsfIO78B";
 
 export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore) || TBA_AUTH_KEY) {
   const response = await fetch(`${API_URL}${endpoint}`, {
