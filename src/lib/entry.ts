@@ -9,6 +9,7 @@ import {
   type MatchIdentifier,
 } from "./";
 import type { Comp } from "./comp";
+import { getAllScouts } from "./prediction";
 import { targets } from "./settings";
 import type { Survey } from "./survey";
 
@@ -84,7 +85,10 @@ function getComparisons(a: Entry, b: Entry) {
   return {
     teamCompare: a.team.localeCompare(b.team, "en", { numeric: true }),
     matchCompare: compareEntryMatch(a, b),
-    scoutCompare: a.scout?.localeCompare(b.scout || "") || 0,
+    scoutCompare:
+      a.scoutTeam?.localeCompare(b.scoutTeam || "", "en", { numeric: true }) ||
+      a.scout?.localeCompare(b.scout || "") ||
+      0,
   };
 }
 
@@ -205,19 +209,15 @@ export function groupEntries(
   }
 
   if (by == "scout") {
-    const scouts = [
-      ...new Set([
-        "",
-        ...entries.map((entry) => entry.scout).filter((scout) => scout !== undefined),
-        ...(comp.scouts || []),
-      ]),
-    ].toSorted((a, b) => a.localeCompare(b));
+    const scouts = getAllScouts(comp, entries);
+    scouts.push({ name: "" });
+    scouts.sort((a, b) => a.team?.localeCompare(b.team || "", "en", { numeric: true }) || a.name.localeCompare(b.name));
 
     return {
       by: "scout" as const,
       groups: scouts
         .map((scout) => {
-          const entries = sortedEntries.filter((e) => (e.scout || "") == scout);
+          const entries = sortedEntries.filter((e) => (e.scout || "") == scout.name && e.scoutTeam == scout.team);
           if (entries.length) {
             return { scout, entries };
           }

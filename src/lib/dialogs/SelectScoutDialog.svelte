@@ -38,7 +38,7 @@
 
 <div class="flex flex-col">
   <div class="mb-3 flex gap-2">
-    <label class="flex flex-col">
+    <label class="flex grow flex-col">
       <span>Your name</span>
       <input
         bind:value={selectedScout}
@@ -46,12 +46,12 @@
           if (!selectedScout) error = "No name inputted";
           else error = "";
         }}
-        class="bg-neutral-800 p-2 text-theme"
+        class="w-full bg-neutral-800 p-2 text-theme"
       />
     </label>
-    <label class="flex flex-col">
+    <label class="flex shrink flex-col">
       Your team
-      <input bind:value={selectedScoutTeam} class="bg-neutral-800 p-2 text-theme" />
+      <input bind:value={selectedScoutTeam} class="w-24 bg-neutral-800 p-2 text-theme" />
     </label>
   </div>
 

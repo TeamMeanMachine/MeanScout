@@ -17,7 +17,7 @@
   type Group =
     | { by: "survey"; surveyId: string }
     | { by: "match"; match: MatchIdentifier }
-    | { by: "scout"; scout: string }
+    | { by: "scout"; scout: { name: string; team?: string | undefined } }
     | { by: "target"; target: Target }
     | { by: "team"; team: string; teamName?: string | undefined }
     | { by: "absent"; absent: boolean }
@@ -29,7 +29,7 @@
       survey: z.array(z.string()),
       match: z.array(matchIdentifierSchema),
       team: z.array(z.string()),
-      scout: z.array(z.string()),
+      scout: z.array(z.object({ name: z.string(), team: z.string().optional() })),
       target: z.array(z.union(targets.map((target) => z.literal(target)))),
       absent: z.array(z.boolean()),
     })
@@ -102,9 +102,12 @@
   {:else if data.groupedEntries.by == "scout"}
     <div class="flex flex-col space-y-6" in:slide={{ delay: 50 }}>
       {#each data.groupedEntries.groups as { scout, entries }}
-        {@const toggled = toggleStates.scout.includes(scout)}
+        {@const toggled = toggleStates.scout.some((s) => s.name == scout.name && s.team == scout.team)}
         {@render entryGroup({ by: "scout", scout }, entries, toggled, () => {
-          if (toggled) toggleStates.scout = toggleStates.scout.filter((val) => val != scout);
+          if (toggled)
+            toggleStates.scout = toggleStates.scout.filter(
+              (val) => !(val.name == scout.name && val.team == scout.team),
+            );
           else toggleStates.scout.push(scout);
         })}
       {/each}
@@ -172,7 +175,12 @@
               {/if}
             </span>
           {:else if group.by == "scout"}
-            <span class={toggled ? "font-bold" : "font-light"}>{group.scout || "No name"}</span>
+            <div class={["flex flex-col", toggled ? "font-bold" : "font-light"]}>
+              {group.scout.name || "No name"}
+              {#if group.scout.team}
+                <span class="text-xs font-light">{group.scout.team}</span>
+              {/if}
+            </div>
           {:else if group.by == "target"}
             <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{group.target}</span>
           {:else if group.by == "team"}
