@@ -33,7 +33,7 @@
   import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
-  import { scoutStore, targetStore, type Target } from "$lib/settings";
+  import { scoutStore, targetStore, teamStore, type Target } from "$lib/settings";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { fly, slide, type FlyParams } from "svelte/transition";
   import { z } from "zod";
@@ -44,18 +44,15 @@
   type MatchPrefills = {
     match: MatchIdentifier;
     team: string;
-    scout?: string | undefined;
   };
 
   type PitPrefills = {
     team: string;
-    scout?: string | undefined;
   };
 
   const newEntryStateSchema = z.object({
     match: matchIdentifierSchema.optional(),
     team: z.string(),
-    scout: z.string().optional(),
     prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
     predictionReason: z.string().optional(),
   });
@@ -209,7 +206,6 @@
 
   function onconfirm() {
     newEntry.state.team = newEntry.state.team.trim();
-    newEntry.state.scout = newEntry.state.scout?.trim();
     if (newEntry.type == "match") {
       newEntry.state.predictionReason = newEntry.state.predictionReason?.trim();
     }
@@ -219,8 +215,13 @@
       return;
     }
 
-    if (data.compRecord.scouts && !newEntry.state.scout) {
+    if (data.compRecord.scouts && !$scoutStore) {
       error = "scout name missing";
+      return;
+    }
+
+    if (data.compRecord.scouts && !isValidTeam($teamStore)) {
+      error = "invalid value for scout's team";
       return;
     }
 
@@ -249,8 +250,11 @@
         entry.matchLevel = newEntry.state.match.level;
       }
 
-      if (newEntry.state.scout) {
-        entry.scout = newEntry.state.scout;
+      if ($scoutStore) {
+        entry.scout = $scoutStore;
+        if ($teamStore) {
+          entry.scoutTeam = $teamStore;
+        }
         if (newEntry.state.prediction) {
           entry.prediction = newEntry.state.prediction;
           if (newEntry.state.predictionReason) {
@@ -270,8 +274,11 @@
         modified: new Date(),
       };
 
-      if (newEntry.state.scout) {
-        entry.scout = newEntry.state.scout;
+      if ($scoutStore) {
+        entry.scout = $scoutStore;
+        if ($teamStore) {
+          entry.scoutTeam = $teamStore;
+        }
       }
     }
 
@@ -329,7 +336,6 @@
     const prefills: MatchPrefills = {
       match: { number: 1 },
       team: "",
-      scout: $scoutStore || undefined,
     };
 
     let lastScoutedMatch: MatchIdentifier | undefined = undefined;
@@ -392,7 +398,6 @@
   function getNewPitEntryPrefills(entries: PitEntry[]) {
     const prefills: PitPrefills = {
       team: "",
-      scout: $scoutStore || undefined,
     };
 
     const scoutedTeams = entries.map((e) => e.team).toSorted((a, b) => Number(a) - Number(b));
@@ -406,374 +411,386 @@
   }
 </script>
 
-<div class="mt-[57px] flex grow flex-col space-y-4 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
-  <div class="flex flex-wrap items-center justify-between gap-x-2">
-    <h2 class="font-bold">New entry</h2>
-  </div>
+<div class="mt-[57px] grow overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
+  <div class="mx-auto flex max-w-(--breakpoint-lg) flex-col space-y-6">
+    <h2 class="mb-4 font-bold">New entry</h2>
 
-  <label class="flex flex-col">
-    Survey
-    <select
-      value={newEntry.survey.id}
-      onchange={(e) => {
-        const newSurveyId = e.currentTarget.value;
-        const surveyRecord = data.surveyRecords.find((s) => s.id == newSurveyId);
-        if (!surveyRecord || newSurveyId == newEntry.survey.id) return;
+    {#if data.compRecord.scouts}
+      <div class="flex flex-col">
+        Your name
+        <Button
+          onclick={() => {
+            openDialog(SelectScoutDialog, {
+              scouts: suggestedScouts,
+              prefilled: $scoutStore,
+              prefilledTeam: $teamStore,
+              onselect(scout, team) {
+                $scoutStore = scout;
+                $teamStore = team;
+              },
+            });
+          }}
+          class="w-full"
+        >
+          <SquarePenIcon class="size-5 text-theme" />
+          <div class="flex flex-col truncate">
+            {#if $scoutStore}
+              <span class="truncate font-bold">{$scoutStore}</span>
+            {:else}
+              Select
+            {/if}
 
-        if (surveyRecord.type == "match") {
-          const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
-          const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
-          newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-        }
+            {#if $teamStore}
+              <span class="text-xs font-light">{$teamStore}</span>
+            {/if}
+          </div>
+        </Button>
+      </div>
+    {/if}
 
-        if (surveyRecord.type == "pit") {
-          const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
-          const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
-          newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-        }
-      }}
-      class="bg-neutral-800 p-2 text-theme"
-    >
-      {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
-        <option value={surveyRecord.id}>{surveyRecord.name}</option>
-      {/each}
-    </select>
-  </label>
+    <label class="flex flex-col">
+      Survey
+      <select
+        value={newEntry.survey.id}
+        onchange={(e) => {
+          const newSurveyId = e.currentTarget.value;
+          const surveyRecord = data.surveyRecords.find((s) => s.id == newSurveyId);
+          if (!surveyRecord || newSurveyId == newEntry.survey.id) return;
 
-  {#if data.compRecord.scouts}
+          if (surveyRecord.type == "match") {
+            const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
+            const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
+            newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+          }
+
+          if (surveyRecord.type == "pit") {
+            const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
+            const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
+            newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+          }
+        }}
+        class="bg-neutral-800 p-2 text-theme"
+      >
+        {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+          <option value={surveyRecord.id}>{surveyRecord.name}</option>
+        {/each}
+      </select>
+    </label>
+
+    {#if newEntry.type == "match"}
+      <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
+        <div class="flex grow flex-col">
+          Selected match
+
+          <div class="flex grow flex-wrap gap-x-4 gap-y-3">
+            <Button
+              onclick={() => {
+                if (newEntry.type != "match") return;
+                openDialog(SelectMatchDialog, {
+                  matches: data.matches,
+                  lastCompletedMatch: data.lastCompletedMatch,
+                  prefilled: newEntry.state.match,
+                  onselect(match) {
+                    if (newEntry.type != "match") return;
+                    newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
+                    newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                    closeDialog();
+                  },
+                });
+              }}
+              class="grow"
+            >
+              <SquarePenIcon class="size-5 text-theme" />
+              <div class="flex grow flex-col font-bold">
+                {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
+                  {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
+                {:else}
+                  {newEntry.state.match.number}
+                {/if}
+              </div>
+            </Button>
+
+            <div class="flex gap-2">
+              <Button
+                disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
+                onclick={() => {
+                  if (newEntry.type != "match") return;
+                  window.clearTimeout(teamMoveAnimReset);
+                  teamsMoveAnim = { x: -12, opacity: 1 };
+
+                  if (
+                    !adjacentMatches.previous ||
+                    (newEntry.state.match.set == adjacentMatches.previous.set &&
+                      newEntry.state.match.level == adjacentMatches.previous.level)
+                  ) {
+                    newEntry.state.match.number--;
+                  } else {
+                    newEntry.state.match = structuredClone({
+                      ...adjacentMatches.previous,
+                      level: adjacentMatches.previous.level || "qm",
+                    });
+                  }
+
+                  newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                  teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+                }}
+                class="active:translate-y-0! enabled:active:-translate-x-0.5!"
+              >
+                <ArrowLeftIcon class="size-5 text-theme" />
+              </Button>
+              <Button
+                onclick={() => {
+                  if (newEntry.type != "match") return;
+                  window.clearTimeout(teamMoveAnimReset);
+                  teamsMoveAnim = { x: 12, opacity: 1 };
+
+                  if (
+                    !adjacentMatches.next ||
+                    (newEntry.state.match.set == adjacentMatches.next.set &&
+                      newEntry.state.match.level == adjacentMatches.next.level)
+                  ) {
+                    newEntry.state.match.number++;
+                  } else {
+                    newEntry.state.match = structuredClone({
+                      ...adjacentMatches.next,
+                      level: adjacentMatches.next.level || "qm",
+                    });
+                  }
+
+                  newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
+                  teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
+                }}
+                class="active:translate-y-0! enabled:active:translate-x-0.5!"
+              >
+                <ArrowRightIcon class="size-5 text-theme" />
+              </Button>
+
+              <Anchor route={matchUrl(newEntry.state.match, data.compRecord.id)} class="ml-2">
+                <ChartBarBigIcon class="size-5 text-theme" />
+                <span class="hidden text-sm sm:block">Data</span>
+              </Anchor>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    {#if matchData && newEntry.type == "match"}
+      {#snippet teamMatchButton(team: string, target?: Target, color = "", order = "")}
+        {#if team}
+          <Button
+            onclick={() => {
+              newEntry.state.team = team;
+              if (target) $targetStore = target;
+            }}
+            class="w-full {order}"
+          >
+            {#if newEntry.state.team == team}
+              <CircleCheckBigIcon class="{color} size-5" />
+            {:else}
+              <CircleIcon class="{color} size-5" />
+            {/if}
+            <div class="flex flex-col truncate {teamBold(team)}">
+              <span class="{color} {teamUnderline(team)}">{team}</span>
+              <span class="truncate text-xs">{getTeamName(team, data.compRecord.teams)}</span>
+            </div>
+          </Button>
+        {/if}
+      {/snippet}
+
+      <div class="flex flex-col" transition:slide>
+        {#key matchData}
+          {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
+
+          <div class="flex flex-col" in:fly={teamsMoveAnim}>
+            <span class="text-sm font-light">Teams playing</span>
+
+            {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
+              <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
+                {@render teamMatchButton(red1, "red 1", "text-red", "max-sm:order-1")}
+                {@render teamMatchButton(red2, "red 2", "text-red", "max-sm:order-3")}
+                {@render teamMatchButton(red3, "red 3", "text-red", "max-sm:order-5")}
+                {@render teamMatchButton(blue1, "blue 1", "text-blue", "max-sm:order-2")}
+                {@render teamMatchButton(blue2, "blue 2", "text-blue", "max-sm:order-4")}
+                {@render teamMatchButton(blue3, "blue 3", "text-blue", "max-sm:order-6")}
+              </div>
+            {/if}
+
+            {#if matchData.extraTeams?.length}
+              <span class="mt-4 text-sm font-light">Other teams</span>
+              <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
+                {#each matchData.extraTeams || [] as extraTeam}
+                  {@render teamMatchButton(extraTeam)}
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/key}
+      </div>
+    {/if}
+
     <div class="flex flex-col">
-      Your name
+      Selected team
       <Button
         onclick={() => {
-          openDialog(SelectScoutDialog, {
-            scouts: suggestedScouts,
-            prefilled: newEntry.state.scout || "",
-            onselect(scout) {
-              newEntry.state.scout = scout;
-              $scoutStore = scout;
+          openDialog(SelectTeamDialog, {
+            teams: allTeams,
+            prefilled: newEntry.state.team,
+            onselect(team) {
+              newEntry.state.team = team;
             },
           });
         }}
       >
-        {#if newEntry.state.scout}
-          <SquarePenIcon class="text-theme" />
-          {newEntry.state.scout}
-        {:else}
-          <PlusIcon class="text-theme" />
-          Add
-        {/if}
+        <SquarePenIcon class="size-5 text-theme" />
+        <div class="flex grow flex-col truncate">
+          {#if newEntry.state.team}
+            <span class="font-bold">{newEntry.state.team}</span>
+            <span class="truncate text-xs font-light">{getTeamName(newEntry.state.team, allTeams)}</span>
+          {:else}
+            Select
+          {/if}
+        </div>
       </Button>
     </div>
-  {/if}
 
-  {#if newEntry.type == "match"}
-    <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>
-      <div class="flex grow flex-col">
-        Selected match
-
-        <div class="flex grow flex-wrap gap-x-4 gap-y-3">
+    {#if newEntry.type == "match" && data.compRecord.scouts}
+      <div class="flex flex-col" transition:slide>
+        <span>Your guess</span>
+        <div class="flex flex-wrap gap-2">
           <Button
             onclick={() => {
               if (newEntry.type != "match") return;
-              openDialog(SelectMatchDialog, {
-                matches: data.matches,
-                lastCompletedMatch: data.lastCompletedMatch,
-                prefilled: newEntry.state.match,
-                onselect(match) {
-                  if (newEntry.type != "match") return;
-                  newEntry.state.match = $state.snapshot({ ...match, level: match.level || "qm" });
-                  newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-                  closeDialog();
-                },
-              });
+              newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
             }}
-            class="grow"
+            class={[
+              "grow basis-[150px] text-red",
+              newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
+            ]}
           >
-            <SquarePenIcon class="text-theme" />
-            <div class="flex grow flex-col font-bold">
-              {#if newEntry.state.match.level && newEntry.state.match.level != "qm"}
-                {newEntry.state.match.level}{newEntry.state.match.set || 1}-{newEntry.state.match.number}
-              {:else}
-                {newEntry.state.match.number}
-              {/if}
-            </div>
+            {#if newEntry.state.prediction == "red"}
+              <SquareCheckBigIcon class="size-5" />
+            {:else}
+              <SquareIcon class="size-5" />
+            {/if}
+            Red wins
           </Button>
-
-          <div class="flex gap-2">
-            <Button
-              disabled={!adjacentMatches.previous && newEntry.state.match.number <= 1}
-              onclick={() => {
-                if (newEntry.type != "match") return;
-                window.clearTimeout(teamMoveAnimReset);
-                teamsMoveAnim = { x: -12, opacity: 1 };
-
-                if (
-                  !adjacentMatches.previous ||
-                  (newEntry.state.match.set == adjacentMatches.previous.set &&
-                    newEntry.state.match.level == adjacentMatches.previous.level)
-                ) {
-                  newEntry.state.match.number--;
-                } else {
-                  newEntry.state.match = structuredClone({
-                    ...adjacentMatches.previous,
-                    level: adjacentMatches.previous.level || "qm",
-                  });
-                }
-
-                newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-                teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
-              }}
-              class="active:translate-y-0! enabled:active:-translate-x-0.5!"
-            >
-              <ArrowLeftIcon class="text-theme" />
-            </Button>
-            <Button
-              onclick={() => {
-                if (newEntry.type != "match") return;
-                window.clearTimeout(teamMoveAnimReset);
-                teamsMoveAnim = { x: 12, opacity: 1 };
-
-                if (
-                  !adjacentMatches.next ||
-                  (newEntry.state.match.set == adjacentMatches.next.set &&
-                    newEntry.state.match.level == adjacentMatches.next.level)
-                ) {
-                  newEntry.state.match.number++;
-                } else {
-                  newEntry.state.match = structuredClone({
-                    ...adjacentMatches.next,
-                    level: adjacentMatches.next.level || "qm",
-                  });
-                }
-
-                newEntry.state.team = selectTargetTeamFromMatch(newEntry.state.match);
-                teamMoveAnimReset = window.setTimeout(() => (teamsMoveAnim = defaultTeamsMove), 500);
-              }}
-              class="active:translate-y-0! enabled:active:translate-x-0.5!"
-            >
-              <ArrowRightIcon class="text-theme" />
-            </Button>
-
-            <Anchor route={matchUrl(newEntry.state.match, data.compRecord.id)} class="ml-2">
-              <ChartBarBigIcon class="text-theme" />
-              <span class="hidden text-sm sm:block">Data</span>
-            </Anchor>
-          </div>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  {#if matchData && newEntry.type == "match"}
-    {#snippet teamMatchButton(team: string, target?: Target, color = "", order = "")}
-      {#if team}
-        <Button
-          onclick={() => {
-            newEntry.state.team = team;
-            if (target) $targetStore = target;
-          }}
-          class="w-full {order}"
-        >
-          {#if newEntry.state.team == team}
-            <CircleCheckBigIcon class="{color} size-5" />
-          {:else}
-            <CircleIcon class="{color} size-5" />
-          {/if}
-          <div class="flex flex-col truncate {teamBold(team)}">
-            <span class="{color} {teamUnderline(team)}">{team}</span>
-            <span class="truncate text-xs">{getTeamName(team, data.compRecord.teams)}</span>
-          </div>
-        </Button>
-      {/if}
-    {/snippet}
-
-    <div class="flex flex-col" transition:slide>
-      {#key matchData}
-        {@const { red1, red2, red3, blue1, blue2, blue3 } = matchData}
-
-        <div class="flex flex-col" in:fly={teamsMoveAnim}>
-          <span class="text-sm font-light">Teams playing</span>
-
-          {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
-            <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-              {@render teamMatchButton(red1, "red 1", "text-red", "max-sm:order-1")}
-              {@render teamMatchButton(red2, "red 2", "text-red", "max-sm:order-3")}
-              {@render teamMatchButton(red3, "red 3", "text-red", "max-sm:order-5")}
-              {@render teamMatchButton(blue1, "blue 1", "text-blue", "max-sm:order-2")}
-              {@render teamMatchButton(blue2, "blue 2", "text-blue", "max-sm:order-4")}
-              {@render teamMatchButton(blue3, "blue 3", "text-blue", "max-sm:order-6")}
-            </div>
-          {/if}
-
-          {#if matchData.extraTeams?.length}
-            <span class="mt-4 text-sm font-light">Other teams</span>
-            <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-              {#each matchData.extraTeams || [] as extraTeam}
-                {@render teamMatchButton(extraTeam)}
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/key}
-    </div>
-  {/if}
-
-  <div class="flex flex-col">
-    Selected team
-    <Button
-      onclick={() => {
-        openDialog(SelectTeamDialog, {
-          teams: allTeams,
-          prefilled: newEntry.state.team,
-          onselect(team) {
-            newEntry.state.team = team;
-          },
-        });
-      }}
-    >
-      <SquarePenIcon class="text-theme" />
-      <div class="flex grow flex-col truncate">
-        {#if newEntry.state.team}
-          <span class="font-bold">{newEntry.state.team}</span>
-          <span class="truncate text-xs font-light">{getTeamName(newEntry.state.team, allTeams)}</span>
-        {:else}
-          Select
-        {/if}
-      </div>
-    </Button>
-  </div>
-
-  {#if newEntry.type == "match" && data.compRecord.scouts}
-    <div class="flex flex-col" transition:slide>
-      <span>Your guess</span>
-      <div class="flex flex-wrap gap-2">
-        <Button
-          onclick={() => {
-            if (newEntry.type != "match") return;
-            newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
-          }}
-          class={[
-            "grow basis-[150px] text-red",
-            newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
-          ]}
-        >
-          {#if newEntry.state.prediction == "red"}
-            <SquareCheckBigIcon />
-          {:else}
-            <SquareIcon />
-          {/if}
-          Red wins
-        </Button>
-        <Button
-          onclick={() => {
-            if (newEntry.type != "match") return;
-            newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
-          }}
-          class={[
-            "grow basis-[150px] text-blue",
-            newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
-          ]}
-        >
-          {#if newEntry.state.prediction == "blue"}
-            <SquareCheckBigIcon />
-          {:else}
-            <SquareIcon />
-          {/if}
-          Blue wins
-        </Button>
-      </div>
-    </div>
-
-    {#if newEntry.state.prediction}
-      <label class="flex flex-col" transition:slide>
-        Reason
-        <input bind:value={newEntry.state.predictionReason} class="bg-neutral-800 p-2 text-theme" />
-      </label>
-    {/if}
-  {/if}
-
-  {#if matchingEntries.length}
-    <div class="flex flex-col gap-2" transition:slide>
-      <div class="flex flex-col">
-        <h2 class="font-bold">Matching Entries</h2>
-        <span class="text-xs font-light">If you already have an existing draft, consider editing it.</span>
-        <span class="text-xs font-light">You can view, edit, or delete them (and other matching entries) here.</span>
-      </div>
-
-      {#each matchingEntries as entry (entry.id)}
-        <div class="flex flex-col" in:slide={{ delay: 50 }}>
           <Button
             onclick={() => {
-              openDialog(ViewEntryDialog, {
-                compRecord: data.compRecord,
-                surveyRecord: newEntry.survey,
-                fieldRecords: data.fieldRecords,
-                entryRecord: entry,
-                onchange: rerunAllContextLoads,
-              });
+              if (newEntry.type != "match") return;
+              newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
             }}
-            class="gap-x-4"
+            class={[
+              "grow basis-[150px] text-blue",
+              newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
+            ]}
           >
-            {#if entry.type == "match"}
-              <div class="flex w-9 flex-col text-nowrap">
-                <span class="text-xs font-light">Match</span>
-                <div>
-                  {#if entry.matchLevel && entry.matchLevel != "qm"}
-                    <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
-                  {:else}
-                    {entry.match}
-                  {/if}
-                </div>
-              </div>
-            {:else if entry.type == "pit"}
-              <div class="flex w-9 flex-col">
-                <span class="text-sm">Pit</span>
-              </div>
+            {#if newEntry.state.prediction == "blue"}
+              <SquareCheckBigIcon class="size-5" />
+            {:else}
+              <SquareIcon class="size-5" />
             {/if}
-            <div class="flex w-32 max-w-full flex-col">
-              <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
-                {getTeamName(entry.team, data.compRecord.teams) || "Team"}
-              </span>
-              <span>{entry.team}</span>
-            </div>
-            {#if entry.scout}
-              <div class="flex w-24 max-w-full flex-col">
-                <span class="text-xs font-light text-wrap">Scout</span>
-                <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
-              </div>
-            {/if}
-            <div class="flex flex-col">
-              {#if entry.type == "match" && entry.absent}
-                <span class="text-xs">Absent</span>
-              {/if}
-              {#if entry.status != "submitted"}
-                <span class="text-xs capitalize">{entry.status}</span>
-              {/if}
-            </div>
+            Blue wins
           </Button>
         </div>
-      {/each}
+      </div>
+
+      {#if newEntry.state.prediction}
+        <label class="flex flex-col" transition:slide>
+          Reason
+          <input bind:value={newEntry.state.predictionReason} class="bg-neutral-800 p-2 text-theme" />
+        </label>
+      {/if}
+    {/if}
+
+    {#if matchingEntries.length}
+      <div class="flex flex-col gap-2" transition:slide>
+        <div class="flex flex-col">
+          <h2 class="font-bold">Matching Entries</h2>
+          <span class="text-xs font-light">If you already have an existing draft, consider editing it.</span>
+          <span class="text-xs font-light">You can view, edit, or delete them (and other matching entries) here.</span>
+        </div>
+
+        {#each matchingEntries as entry (entry.id)}
+          <div class="flex flex-col" in:slide={{ delay: 50 }}>
+            <Button
+              onclick={() => {
+                openDialog(ViewEntryDialog, {
+                  compRecord: data.compRecord,
+                  surveyRecord: newEntry.survey,
+                  fieldRecords: data.fieldRecords,
+                  entryRecord: entry,
+                  onchange: rerunAllContextLoads,
+                });
+              }}
+              class="gap-x-4"
+            >
+              {#if entry.type == "match"}
+                <div class="flex w-9 flex-col text-nowrap">
+                  <span class="text-xs font-light">Match</span>
+                  <div>
+                    {#if entry.matchLevel && entry.matchLevel != "qm"}
+                      <span class="text-xs">{entry.matchLevel}{entry.matchSet || 1}-{entry.match}</span>
+                    {:else}
+                      {entry.match}
+                    {/if}
+                  </div>
+                </div>
+              {:else if entry.type == "pit"}
+                <div class="flex w-9 flex-col">
+                  <span class="text-sm">Pit</span>
+                </div>
+              {/if}
+              <div class="flex w-32 max-w-full flex-col">
+                <span class="overflow-hidden text-xs font-light text-nowrap text-ellipsis">
+                  {getTeamName(entry.team, data.compRecord.teams) || "Team"}
+                </span>
+                <span>{entry.team}</span>
+              </div>
+              {#if entry.scout}
+                <div class="flex w-24 max-w-full flex-col">
+                  <span class="text-xs font-light text-wrap">
+                    Scout
+                    {#if entry.scoutTeam}
+                      ({entry.scoutTeam})
+                    {/if}
+                  </span>
+                  <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
+                </div>
+              {/if}
+              <div class="flex flex-col">
+                {#if entry.type == "match" && entry.absent}
+                  <span class="text-xs">Absent</span>
+                {/if}
+                {#if entry.status != "submitted"}
+                  <span class="text-xs capitalize">{entry.status}</span>
+                {/if}
+              </div>
+            </Button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if error}
+      <span transition:slide>Error: {error}</span>
+    {/if}
+
+    <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+      <Button onclick={onconfirm} class="font-bold">
+        <PlusIcon class="text-theme" />
+        Create
+      </Button>
+
+      <Button
+        onclick={() => {
+          sessionStorage.removeItem("new-entry");
+          goto(`#/comp/${data.compRecord.id}`);
+        }}
+      >
+        <XIcon class="text-theme" />
+        Cancel
+      </Button>
     </div>
-  {/if}
-
-  {#if error}
-    <span transition:slide>Error: {error}</span>
-  {/if}
-
-  <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-    <Button onclick={onconfirm} class="font-bold">
-      <PlusIcon class="text-theme" />
-      Create
-    </Button>
-
-    <Button
-      onclick={() => {
-        sessionStorage.removeItem("new-entry");
-        goto(`#/comp/${data.compRecord.id}`);
-      }}
-    >
-      <XIcon class="text-theme" />
-      Cancel
-    </Button>
   </div>
 </div>

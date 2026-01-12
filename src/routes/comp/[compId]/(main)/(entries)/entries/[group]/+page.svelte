@@ -251,7 +251,12 @@
 
             {#if data.groupedEntries.by != "scout" && entry.scout}
               <div class="flex w-24 max-w-full flex-col">
-                <span class="text-xs font-light text-wrap">Scout</span>
+                <span class="text-xs font-light text-wrap">
+                  Scout
+                  {#if entry.scoutTeam}
+                    ({entry.scoutTeam})
+                  {/if}
+                </span>
                 <span class="overflow-hidden text-nowrap text-ellipsis">{entry.scout}</span>
               </div>
             {/if}

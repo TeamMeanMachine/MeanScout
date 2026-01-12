@@ -25,6 +25,7 @@ const baseEntrySchema = z.object({
   team: z.string(),
   values: z.array(valueSchema),
   scout: z.optional(z.string()),
+  scoutTeam: z.optional(z.string()),
   created: z.date(),
   modified: z.date(),
 });

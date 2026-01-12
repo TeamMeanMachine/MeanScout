@@ -11,7 +11,12 @@
 
 <div class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-120">
   <div class="flex flex-wrap gap-x-6 gap-y-3">
-    <h2 class="w-full font-bold">{data.scout}</h2>
+    <div class="flex w-full flex-col">
+      <h2 class="font-bold">{data.scout.name}</h2>
+      {#if data.scout.team}
+        <span class="text-xs font-light">{data.scout.team}</span>
+      {/if}
+    </div>
 
     <div class="flex flex-col">
       <span class="text-xs font-light">Adjusted</span>

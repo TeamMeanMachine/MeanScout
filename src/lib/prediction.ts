@@ -2,19 +2,34 @@ import { compareMatches } from "$lib";
 import type { Comp } from "./comp";
 import type { Entry, MatchEntry } from "./entry";
 
-export function getAllScoutNames(comp: Comp, entries: Entry[]) {
-  return [
-    ...new Set([...entries.map((entry) => entry.scout).filter((scout) => scout !== undefined), ...(comp.scouts || [])]),
-  ];
+export function getAllScouts(comp: Comp, entries: Entry[]) {
+  const scouts: { name: string; team?: string | undefined }[] = [];
+
+  for (const entry of entries) {
+    if (entry.scout && !scouts.some((s) => s.name == entry.scout && s.team == entry.scoutTeam)) {
+      scouts.push({ name: entry.scout, team: entry.scoutTeam });
+    }
+  }
+
+  for (const scout of comp.scouts || []) {
+    if (!scouts.some((s) => s.name == scout && !s.team)) {
+      scouts.push({ name: scout });
+    }
+  }
+
+  return scouts;
 }
 
 export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
-  const allScoutNames = getAllScoutNames(comp, entries);
+  const allScouts = getAllScouts(comp, entries);
 
-  const predictionsPerScout = allScoutNames
+  const predictionsPerScout = allScouts
     .map((scout) => {
       const scoutEntries = entries
-        .filter((entry) => entry.status != "draft" && entry.scout == scout && entry.prediction)
+        .filter(
+          (entry) =>
+            entry.status != "draft" && entry.scout == scout.name && entry.scoutTeam == scout.team && entry.prediction,
+        )
         .toSorted((a, b) => b.match - a.match);
 
       let correctGuesses = 0;
@@ -30,7 +45,11 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
           correctGuesses++;
 
           const otherCorrectEntriesCount = entries.filter(
-            (e) => e.scout != scout && compareMatches(match, e) == 0 && e.prediction == "red",
+            (e) =>
+              e.scout != scout.name &&
+              e.scoutTeam != scout.team &&
+              compareMatches(match, e) == 0 &&
+              e.prediction == "red",
           ).length;
           coopPoints += otherCorrectEntriesCount;
         }
@@ -39,7 +58,11 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
           correctGuesses++;
 
           const otherCorrectEntriesCount = entries.filter(
-            (e) => e.scout != scout && compareMatches(match, e) == 0 && e.prediction == "blue",
+            (e) =>
+              e.scout != scout.name &&
+              e.scoutTeam != scout.team &&
+              compareMatches(match, e) == 0 &&
+              e.prediction == "blue",
           ).length;
           coopPoints += otherCorrectEntriesCount;
         }

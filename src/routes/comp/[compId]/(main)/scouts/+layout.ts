@@ -13,7 +13,9 @@ export const load: LayoutLoad = async (event) => {
     data.entryRecords.filter((e) => e.type == "match"),
   );
 
-  const scout = event.params.name;
+  const scoutName = event.params.name;
+  const searchParams = new URLSearchParams(event.url.hash.split("?")[1]);
+  const scoutTeam = searchParams.get("team") || undefined;
 
-  return { title: "Scouts", scout, ...predictionsPerScout, predictionsPerMatch };
+  return { title: "Scouts", scoutName, scoutTeam, ...predictionsPerScout, predictionsPerMatch };
 };

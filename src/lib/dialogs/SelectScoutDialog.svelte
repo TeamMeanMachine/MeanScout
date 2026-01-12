@@ -6,14 +6,17 @@
   let {
     scouts,
     prefilled,
+    prefilledTeam,
     onselect,
   }: {
     scouts: string[];
     prefilled: string;
-    onselect(scout: string): void;
+    prefilledTeam: string;
+    onselect(scout: string, scoutTeam: string): void;
   } = $props();
 
   let selectedScout = $state($state.snapshot(prefilled));
+  let selectedScoutTeam = $state($state.snapshot(prefilledTeam));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -27,31 +30,37 @@
         return;
       }
 
-      onselect(selectedScout);
+      onselect(selectedScout, selectedScoutTeam);
       closeDialog();
     },
   };
 </script>
 
 <div class="flex flex-col">
-  <label class="mb-3 flex flex-col">
-    <span>Input your name</span>
-    <input
-      bind:value={selectedScout}
-      oninput={() => {
-        if (!selectedScout) error = "No name inputted";
-        else error = "";
-      }}
-      class="bg-neutral-800 p-2 text-theme"
-    />
-  </label>
+  <div class="mb-3 flex gap-2">
+    <label class="flex flex-col">
+      <span>Your name</span>
+      <input
+        bind:value={selectedScout}
+        oninput={() => {
+          if (!selectedScout) error = "No name inputted";
+          else error = "";
+        }}
+        class="bg-neutral-800 p-2 text-theme"
+      />
+    </label>
+    <label class="flex flex-col">
+      Your team
+      <input bind:value={selectedScoutTeam} class="bg-neutral-800 p-2 text-theme" />
+    </label>
+  </div>
 
   {#if scouts.length}
     <div class="flex flex-col gap-3">
       {#if error}
         <span class="text-sm font-bold">Error: {error}</span>
       {:else}
-        <span class="text-sm">Or, select your name below</span>
+        <span class="text-sm">Select your name below</span>
       {/if}
 
       <div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
@@ -60,8 +69,7 @@
 
           <Button
             onclick={() => {
-              onselect(scout);
-              closeDialog();
+              selectedScout = scout;
             }}
           >
             <div class="flex flex-col">

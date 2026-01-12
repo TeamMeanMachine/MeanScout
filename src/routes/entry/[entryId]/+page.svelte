@@ -20,7 +20,7 @@
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
-  import { scoutStore } from "$lib/settings";
+  import { scoutStore, teamStore } from "$lib/settings";
   import { slide } from "svelte/transition";
   import type { PageData, PageProps } from "./$types";
 
@@ -100,10 +100,13 @@
           openDialog(SelectScoutDialog, {
             scouts: suggestedScouts,
             prefilled: entry.scout || "",
-            onselect(scout) {
+            prefilledTeam: entry.scoutTeam || "",
+            onselect(scout, team) {
               entry.scout = scout;
+              entry.scoutTeam = team;
               onchange();
               $scoutStore = scout;
+              $teamStore = team;
             },
           });
         }}
@@ -112,7 +115,12 @@
         <UserSearchIcon class="text-theme" />
         {#if entry.scout}
           <div class="flex grow flex-col truncate sm:w-32">
-            <span class="text-xs font-light">Scout</span>
+            <span class="text-xs font-light">
+              Scout
+              {#if entry.scoutTeam}
+                ({entry.scoutTeam})
+              {/if}
+            </span>
             <span class="truncate">{entry.scout}</span>
           </div>
         {:else}

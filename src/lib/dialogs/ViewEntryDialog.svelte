@@ -154,6 +154,9 @@
     <div class="text-sm">Scout</div>
     <div class="font-bold">
       {entryRecord.scout}
+      {#if entryRecord.scoutTeam}
+        <div class="text-xs font-light">{entryRecord.scoutTeam}</div>
+      {/if}
     </div>
 
     {#if entryRecord.type == "match" && entryRecord.prediction}

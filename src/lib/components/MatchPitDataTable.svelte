@@ -40,6 +40,7 @@
     }));
 
   const someScout = entries.some((entry) => entry.scout);
+  const someScoutTeam = entries.some((entry) => entry.scoutTeam);
   const someDraft = entries.some((entry) => entry.status == "draft");
 
   function getValues(entry: Entry) {
@@ -86,6 +87,9 @@
         {/each}
 
         {#if someScout}
+          <th colspan={1 + (someScoutTeam ? 1 : 0)} class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light">
+            <div class="sticky right-0 {leftStickColumnName} inline">Scout</div>
+          </th>
           <td class="border-t border-r border-neutral-700"></td>
         {/if}
       </tr>
@@ -122,7 +126,13 @@
         {/each}
 
         {#if someScout}
-          <th class="border-r border-b border-neutral-700 p-2 text-left">Scout</th>
+          <th class="border-b border-neutral-700 p-2 text-left">Name</th>
+
+          {#if someScoutTeam}
+            <th class="border-b border-neutral-700 p-2">Team</th>
+          {/if}
+
+          <td class="border-r border-b border-neutral-700"></td>
         {/if}
       </tr>
     </thead>
@@ -164,9 +174,14 @@
             {/each}
 
             {#if someScout}
-              <td class="border-r border-b border-neutral-800 p-2 text-left">
+              <td class="border-b border-neutral-800 p-2 text-left">
                 <div class="w-24 truncate">{entry.scout}</div>
               </td>
+
+              {#if someScoutTeam}
+                <td class="border-b border-neutral-800 p-2">{entry.scoutTeam}</td>
+              {/if}
+              <td class="border-r border-neutral-800"></td>
             {/if}
           </tr>
         {:else}
@@ -200,7 +215,12 @@
             {/each}
 
             {#if someScout}
-              <td class="border-r border-b border-neutral-800 p-2"></td>
+              <td class="border-b border-neutral-800 p-2"></td>
+
+              {#if someScoutTeam}
+                <td class="border-b border-neutral-800 p-2"></td>
+              {/if}
+              <td class="border-r border-neutral-800"></td>
             {/if}
           </tr>
         {/each}

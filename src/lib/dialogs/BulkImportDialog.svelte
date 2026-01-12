@@ -303,6 +303,9 @@
 
       if (jsonEntry.scout) {
         entry.scout = jsonEntry.scout;
+        if (jsonEntry.scoutTeam) {
+          entry.scoutTeam = jsonEntry.scoutTeam;
+        }
       }
 
       return entry;

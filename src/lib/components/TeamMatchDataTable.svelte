@@ -76,6 +76,7 @@
   }));
 
   const someScout = entries.some((entry) => entry.scout);
+  const someScoutTeam = entries.some((entry) => entry.scoutTeam);
   const someDraft = entries.some((entry) => entry.status == "draft");
   const someAbsent = entries.some((entry) => entry.absent);
 
@@ -175,7 +176,7 @@
 
         {#if someScout}
           <th
-            colspan={1 + (somePrediction ? 1 : 0) + (somePredictionReason ? 1 : 0)}
+            colspan={1 + (someScoutTeam ? 1 : 0) + (somePrediction ? 1 : 0) + (somePredictionReason ? 1 : 0)}
             class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
           >
             <div class="sticky right-0 {leftStickColumnName} inline">Scout</div>
@@ -267,6 +268,10 @@
         {#if someScout}
           <th class="border-b border-neutral-700 p-2 text-left">Name</th>
 
+          {#if someScoutTeam}
+            <th class="border-b border-neutral-700 p-2">Team</th>
+          {/if}
+
           {#if somePrediction}
             <th class="border-b border-neutral-700 p-2 text-left">Guess</th>
 
@@ -354,6 +359,10 @@
                 <div class="w-24 truncate">{entry.scout}</div>
               </td>
 
+              {#if someScoutTeam}
+                <td class="border-b border-neutral-800 p-2">{entry.scoutTeam}</td>
+              {/if}
+
               {#if somePrediction}
                 <td class="border-b border-neutral-800 p-2 capitalize">
                   <div class={entry.prediction == "red" ? "text-red" : entry.prediction == "blue" ? "text-blue" : ""}>
@@ -424,6 +433,10 @@
 
             {#if someScout}
               <td class="border-b border-neutral-800 p-2 text-left"></td>
+
+              {#if someScoutTeam}
+                <td class="border-b border-neutral-800 p-2"></td>
+              {/if}
 
               {#if somePrediction}
                 <td class="border-b border-neutral-800 p-2 text-left"></td>
