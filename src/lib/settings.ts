@@ -73,3 +73,8 @@ export const useCompressionStore = localStorageStore<"true" | "">(
   "use-compression",
   supportsCompressionApi ? "true" : "",
 );
+
+// WebRTC settings
+
+export const webRtcActiveStore = localStorageStore<"" | "true">("webrtc-active", "");
+export const webRtcRoomIdStore = localStorageStore<string>("webrtc-room-id", "");

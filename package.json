@@ -33,9 +33,11 @@
   },
   "dependencies": {
     "@lucide/svelte": "^0.562.0",
+    "@types/simple-peer": "^9.11.9",
     "fractional-indexing-jittered": "^1.0.0",
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
+    "simple-peer": "^9.11.1",
     "sortablejs": "^1.15.6",
     "zod": "^4.0.13"
   }

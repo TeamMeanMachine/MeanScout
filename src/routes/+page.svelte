@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { ArrowRightIcon, DownloadIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
+  import {
+    ArrowRightIcon,
+    ChevronsLeftRightEllipsisIcon,
+    DownloadIcon,
+    InfoIcon,
+    PlusIcon,
+    SettingsIcon,
+  } from "@lucide/svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -53,6 +60,14 @@
         ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
       </span>
     </div>
+    <Anchor route="webrtc">
+      <ChevronsLeftRightEllipsisIcon class="text-theme" />
+      <div class="flex grow flex-col">
+        WebRTC
+        <span class="text-xs font-light">Online data transfers</span>
+      </div>
+      <ArrowRightIcon class="text-theme" />
+    </Anchor>
     <Anchor route="settings">
       <SettingsIcon class="text-theme" />
       <div class="flex grow flex-col">
