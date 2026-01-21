@@ -14,7 +14,7 @@
   }
 </script>
 
-<Header title="About - MeanScout" heading="About" {backLink}>
+<Header title="About - MeanScout" heading="About" {backLink} class="max-w-(--breakpoint-sm)">
   <div class="hidden gap-2 text-sm md:flex">
     {@render links()}
   </div>

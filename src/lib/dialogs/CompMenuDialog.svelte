@@ -2,6 +2,7 @@
   import {
     ArrowLeftIcon,
     ArrowRightIcon,
+    ChevronsLeftRightEllipsisIcon,
     DownloadIcon,
     InfoIcon,
     PlusIcon,
@@ -15,6 +16,7 @@
   import Button from "$lib/components/Button.svelte";
   import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import BulkExportDialog from "./BulkExportDialog.svelte";
   import ImportConfigsDialog from "./ImportConfigsDialog.svelte";
   import NewSurveyDialog from "./NewSurveyDialog.svelte";
@@ -142,6 +144,18 @@
   <Anchor route="">
     <ArrowLeftIcon class="text-theme" />
     <div class="flex grow flex-col">Main page</div>
+  </Anchor>
+
+  <Anchor route="webrtc">
+    <ChevronsLeftRightEllipsisIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      {#if onlineTransfer.signaling}
+        View room
+      {:else}
+        Join a room
+      {/if}
+    </div>
+    <ArrowRightIcon class="text-theme" />
   </Anchor>
 
   <Anchor route="settings">

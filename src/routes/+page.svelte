@@ -13,12 +13,13 @@
   import { openDialog } from "$lib/dialog";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
 
-<Header />
+<Header class="max-w-(--breakpoint-sm)" />
 
 <div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <div class="flex flex-col gap-2">
@@ -63,8 +64,12 @@
     <Anchor route="webrtc">
       <ChevronsLeftRightEllipsisIcon class="text-theme" />
       <div class="flex grow flex-col">
-        WebRTC
-        <span class="text-xs font-light">Online data transfers</span>
+        {#if onlineTransfer.signaling}
+          View room
+        {:else}
+          Join a room
+        {/if}
+        <span class="text-xs font-light">Send data over the internet</span>
       </div>
       <ArrowRightIcon class="text-theme" />
     </Anchor>
