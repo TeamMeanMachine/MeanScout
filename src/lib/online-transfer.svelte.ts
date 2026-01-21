@@ -1,40 +1,27 @@
 import { dev } from "$app/environment";
 // @ts-ignore
 import SP from "simple-peer/simplepeer.min.js";
+import { z } from "zod";
 
 type SimplePeer = import("simple-peer").Instance;
 type SimplePeerOptions = import("simple-peer").Options;
 
-type ClientInfo = { id: string; name?: string; team?: string };
+const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
+type ClientInfo = z.infer<typeof clientInfoSchema>;
 
-type InboundMessage =
-  | { type: "join"; id: string; clients: ClientInfo[] }
-  | { type: "clients"; clients: ClientInfo[] }
-  | { type: "info"; info: ClientInfo }
-  | { type: "signal"; from: string; data: any }
-  | { type: "leave"; id: string }
-  | { type: "error"; error: string };
+const inboundMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("join"), id: z.string(), clients: z.array(clientInfoSchema) }),
+  z.object({ type: z.literal("clients"), clients: z.array(clientInfoSchema) }),
+  z.object({ type: z.literal("info"), info: clientInfoSchema }),
+  z.object({ type: z.literal("signal"), from: z.string(), data: z.any() }),
+  z.object({ type: z.literal("leave"), id: z.string() }),
+  z.object({ type: z.literal("error"), error: z.string() }),
+]);
+
+type InboundMessage = z.infer<typeof inboundMessageSchema>;
 
 const SIGNALING_SERVER_URL = dev ? "http://localhost:8787" : "https://meanscout-webrtc.aidunlin.workers.dev";
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  {
-    urls: "turn:openrelay.metered.ca:80",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443?transport=tcp",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-];
+const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 class OnlineTransfer {
   ws: WebSocket | undefined = undefined;
@@ -55,15 +42,15 @@ class OnlineTransfer {
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log("websocket opened");
+      console.log("WebSocket was opened");
     };
 
     ws.onerror = (error) => {
-      console.error("websocket error", error);
+      console.error("WebSocket error", error);
     };
 
     ws.onclose = () => {
-      console.log("websocket was closed");
+      console.log("WebSocket was closed");
       ws.close();
       this.ws = undefined;
       this.signaling = undefined;
@@ -74,14 +61,14 @@ class OnlineTransfer {
   }
 
   leaveRoom() {
-    console.log("websocket closed manually");
+    console.log("WebSocket closed manually");
     this.ws?.close();
     this.ws = undefined;
     this.signaling = undefined;
     this.clearConnections();
   }
 
-  private handleMessage(ws: WebSocket, data: WebSocketEventMap["message"]["data"]) {
+  private handleMessage(ws: WebSocket, data: any) {
     if (typeof data !== "string") {
       console.error("Invalid message received: not a string");
       return;
@@ -90,23 +77,14 @@ class OnlineTransfer {
     let message: InboundMessage;
 
     try {
-      message = JSON.parse(data);
-    } catch {
-      console.error("Invalid message: could not be parsed");
+      data = JSON.parse(data);
+      message = z.parse(inboundMessageSchema, data);
+    } catch (error) {
+      console.error("Invalid message: could not be parsed", error);
       return;
     }
 
     console.log(message);
-
-    if (typeof message !== "object") {
-      console.error("Invalid message parsed: not an object");
-      return;
-    }
-
-    if (!message.type) {
-      console.error("Missing message 'type' prop");
-      return;
-    }
 
     if (message.type == "error") {
       console.error(`Error received: ${message.error}`);
@@ -120,8 +98,7 @@ class OnlineTransfer {
       for (const client of message.clients) {
         this.addClient(client);
         if (client.id == message.id) continue;
-        const newConnection = this.connectToClient(client.id, { initiator: true });
-        this.connections.set(client.id, newConnection);
+        this.connectToClient(client.id, { initiator: true });
       }
 
       return;
@@ -136,40 +113,35 @@ class OnlineTransfer {
       case "clients":
         for (const newClient of message.clients) {
           if (newClient.id == this.signaling.localId) continue;
-
           const existingClient = this.signaling.clients.find((c) => c.id == newClient.id);
-
           if (existingClient) {
             existingClient.id = newClient.id;
             existingClient.name = newClient.name;
             existingClient.team = newClient.team;
           } else {
             this.addClient(newClient);
-
             if (!this.connections.has(newClient.id)) {
-              const newConnection = this.connectToClient(newClient.id, { initiator: true });
-              this.connections.set(newClient.id, newConnection);
+              this.connectToClient(newClient.id, { initiator: true });
             }
           }
         }
         break;
       case "info":
-        // The new client will initiate a peer connection with us,
-        // so we just add the info.
         this.addClient(message.info);
+        if (!this.connections.has(message.info.id)) {
+          this.connectToClient(message.info.id);
+        }
         break;
       case "signal":
         let connection = this.connections.get(message.from);
         if (!connection) {
           connection = this.connectToClient(message.from);
-          this.connections.set(message.from, connection);
         }
         connection.signal(message.data);
         break;
       case "leave":
+        this.disconnectFromClient(message.id);
         this.removeClient(message.id);
-        this.connections.get(message.id)?.destroy();
-        this.connections.delete(message.id);
         break;
     }
   }
@@ -209,10 +181,30 @@ class OnlineTransfer {
     });
 
     newConnection.on("data", (data) => {
-      console.log(new TextDecoder().decode(data));
+      if (typeof data !== "string") {
+        try {
+          data = new TextDecoder().decode(data);
+        } catch (err) {
+          console.error("Could not decode connection data", err);
+          return;
+        }
+      }
+
+      if (typeof data !== "string") {
+        console.error("Could not decode connection data", data);
+        return;
+      }
+
+      console.log(data);
     });
 
+    this.connections.set(id, newConnection);
     return newConnection;
+  }
+
+  private disconnectFromClient(id: string) {
+    this.connections.get(id)?.destroy();
+    this.connections.delete(id);
   }
 
   private clearConnections() {

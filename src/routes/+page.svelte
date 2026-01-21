@@ -62,7 +62,7 @@
       </span>
     </div>
     <Anchor route="webrtc">
-      <ChevronsLeftRightEllipsisIcon class="text-theme" />
+      <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.signaling && "animate-pulse"]} />
       <div class="flex grow flex-col">
         {#if onlineTransfer.signaling}
           View room

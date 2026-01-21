@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { ArrowLeftIcon, ChevronsLeftRightEllipsisIcon, UnplugIcon } from "@lucide/svelte";
-  import Anchor from "$lib/components/Anchor.svelte";
+  import { ChevronsLeftRightEllipsisIcon, UnplugIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { scoutStore, teamStore, webRtcRoomIdStore } from "$lib/settings";
+  import { scoutStore, teamStore, webRtcActiveStore, webRtcRoomIdStore } from "$lib/settings";
+
+  const MAX_NAME_LENGTH = 32;
+  const MAX_TEAM_LENGTH = 6;
 
   const backLink = sessionStorage.getItem("home") || "";
 
@@ -19,20 +21,33 @@
       error = "No name";
       return;
     }
+    if (scoutInput.length > MAX_NAME_LENGTH) {
+      error = `Name is too long (>${MAX_NAME_LENGTH} characters)`;
+      return;
+    }
+
     teamInput = teamInput.trim();
+    if (teamInput.length > MAX_TEAM_LENGTH) {
+      error = `Team is too long (>${MAX_TEAM_LENGTH} characters)`;
+      return;
+    }
+
     roomIdInput = roomIdInput.trim();
     if (!roomIdInput) {
       error = "No room id";
       return;
     }
+
     $scoutStore = scoutInput;
     $teamStore = teamInput;
     $webRtcRoomIdStore = roomIdInput;
+    $webRtcActiveStore = "true";
 
     onlineTransfer.joinRoom({ room: roomIdInput, name: scoutInput, team: teamInput });
   }
 
   function leaveRoom() {
+    $webRtcActiveStore = "";
     onlineTransfer.leaveRoom();
   }
 </script>
@@ -46,7 +61,12 @@
 
 <div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   {#if onlineTransfer.signaling}
+    {@const clientCount = onlineTransfer.signaling.clients.length}
     {@const localClient = onlineTransfer.signaling.clients.find((c) => c.id == onlineTransfer.signaling?.localId)}
+
+    {#if clientCount}
+      <span>{clientCount} {clientCount == 1 ? "peer" : "peers"}</span>
+    {/if}
 
     {#if localClient}
       <div class="flex flex-col">
@@ -58,10 +78,6 @@
           {/if}
         </span>
       </div>
-    {/if}
-
-    {#if onlineTransfer.signaling.clients.length}
-      <span>{onlineTransfer.signaling.clients.length} clients</span>
     {/if}
 
     {#each onlineTransfer.signaling.clients.filter((c) => c.id !== onlineTransfer.signaling?.localId) as client (client.id)}
