@@ -1,10 +1,5 @@
 import { dev } from "$app/environment";
-// @ts-ignore
-import SP from "simple-peer/simplepeer.min.js";
 import { z } from "zod";
-
-type SimplePeer = import("simple-peer").Instance;
-type SimplePeerOptions = import("simple-peer").Options;
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -26,7 +21,7 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 class OnlineTransfer {
   ws: WebSocket | undefined = undefined;
   signaling = $state<{ clients: ClientInfo[]; localId: string } | undefined>();
-  connections = $state(new Map<string, SimplePeer>());
+  connections = $state(new Map<string, RTCPeerConnection>());
 
   joinRoom({ room, name, team }: { room: string; name: string; team: string }) {
     const url = new URL(SIGNALING_SERVER_URL);
@@ -98,7 +93,7 @@ class OnlineTransfer {
       for (const client of message.clients) {
         this.addClient(client);
         if (client.id == message.id) continue;
-        this.connectToClient(client.id, { initiator: true });
+        this.connectToClient(client.id);
       }
 
       return;
@@ -121,23 +116,35 @@ class OnlineTransfer {
           } else {
             this.addClient(newClient);
             if (!this.connections.has(newClient.id)) {
-              this.connectToClient(newClient.id, { initiator: true });
+              this.connectToClient(newClient.id);
             }
           }
         }
         break;
       case "info":
         this.addClient(message.info);
-        if (!this.connections.has(message.info.id)) {
-          this.connectToClient(message.info.id);
-        }
         break;
       case "signal":
+        if (message.data.offer) {
+          console.log("offer", message.data.offer);
+          this.connectToClient(message.from, message.data.offer);
+          break;
+        }
+
         let connection = this.connections.get(message.from);
         if (!connection) {
-          connection = this.connectToClient(message.from);
+          console.error("no connection on non-offer signal");
+          break;
         }
-        connection.signal(message.data);
+
+        if (message.data.answer) {
+          console.log("answer", message.data.answer);
+          connection.setRemoteDescription(message.data.answer).then(() => {
+            console.log("remote answer set");
+          });
+        } else if (message.data.candidate) {
+          console.log("candidate", message.data.candidate);
+        }
         break;
       case "leave":
         this.disconnectFromClient(message.id);
@@ -162,54 +169,47 @@ class OnlineTransfer {
     this.signaling.clients = this.signaling?.clients.filter((c) => c.id !== id);
   }
 
-  private connectToClient(id: string, options?: SimplePeerOptions) {
+  private connectToClient(id: string, offer?: any) {
     if (!this.signaling) throw new Error("Signaling server not initialized");
 
-    const newConnection: SimplePeer = new SP({
-      ...options,
-      config: { iceServers: ICE_SERVERS },
-    } satisfies SimplePeerOptions);
+    console.log("setting up rtc connection");
 
-    newConnection.on("signal", (data) => {
-      if (!this.ws) throw new Error("WebSocket not initialized");
-      this.ws.send(JSON.stringify({ type: "signal", to: id, data }));
-    });
+    const connection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
-    newConnection.on("connect", () => {
-      if (!this.signaling) throw new Error("Signaling server not initialized");
-      newConnection.send(`Hello from peer ${this.signaling.localId}`);
-    });
+    if (offer) {
+      connection.setRemoteDescription(offer).then(() => {
+        console.log("remote offer set");
+        connection.createAnswer().then((answer) => {
+          console.log("answer created");
+          connection.setLocalDescription(answer).then(() => {
+            console.log("local answer set");
+            this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { answer } }));
+          });
+        });
+      });
+    } else {
+      connection.createOffer().then((offer) => {
+        console.log("offer created");
+        connection.setLocalDescription(offer).then(() => {
+          console.log("local offer set");
+          this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { offer } }));
+        });
+      });
+    }
 
-    newConnection.on("data", (data) => {
-      if (typeof data !== "string") {
-        try {
-          data = new TextDecoder().decode(data);
-        } catch (err) {
-          console.error("Could not decode connection data", err);
-          return;
-        }
-      }
-
-      if (typeof data !== "string") {
-        console.error("Could not decode connection data", data);
-        return;
-      }
-
-      console.log(data);
-    });
-
-    this.connections.set(id, newConnection);
-    return newConnection;
+    this.connections.set(id, connection);
+    console.log("setup done");
+    return connection;
   }
 
   private disconnectFromClient(id: string) {
-    this.connections.get(id)?.destroy();
+    this.connections.get(id)?.close();
     this.connections.delete(id);
   }
 
   private clearConnections() {
     for (const [, connection] of this.connections) {
-      connection.destroy();
+      connection.close();
     }
     this.connections.clear();
   }
