@@ -22,6 +22,7 @@ export default defineConfig({
     process.env.NODE_ENV === "development"
       ? {
           allowedHosts: ["key-ostrich-sharp.ngrok-free.app"],
+          host: true,
         }
       : undefined,
 });

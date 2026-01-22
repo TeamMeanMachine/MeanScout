@@ -15,7 +15,12 @@ const inboundMessageSchema = z.discriminatedUnion("type", [
 
 type InboundMessage = z.infer<typeof inboundMessageSchema>;
 
-const SIGNALING_SERVER_URL = dev ? "http://localhost:8787" : "https://meanscout-webrtc.aidunlin.workers.dev";
+// Should maybe set up a developers settings page to control things like this.
+// Or maybe a way to use the web app's deployed location hostname.
+const LOCALHOST_SIGNALING_URL = new URL("http://" + location.hostname + ":8787");
+const DEPLOYED_SIGNALING_URL = new URL("https://meanscout-webrtc.aidunlin.workers.dev");
+
+const SIGNALING_SERVER_URL = dev ? LOCALHOST_SIGNALING_URL : DEPLOYED_SIGNALING_URL;
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 class OnlineTransfer {
@@ -126,7 +131,7 @@ class OnlineTransfer {
         break;
       case "signal":
         if (message.data.offer) {
-          console.log("offer", message.data.offer);
+          console.log("offer received", message.data.offer);
           this.connectToClient(message.from, message.data.offer);
           break;
         }
@@ -138,12 +143,13 @@ class OnlineTransfer {
         }
 
         if (message.data.answer) {
-          console.log("answer", message.data.answer);
+          console.log("answer received", message.data.answer);
           connection.setRemoteDescription(message.data.answer).then(() => {
             console.log("remote answer set");
           });
         } else if (message.data.candidate) {
-          console.log("candidate", message.data.candidate);
+          console.log("candidate received", message.data.candidate);
+          connection.addIceCandidate(message.data.candidate);
         }
         break;
       case "leave":
@@ -169,32 +175,87 @@ class OnlineTransfer {
     this.signaling.clients = this.signaling?.clients.filter((c) => c.id !== id);
   }
 
-  private connectToClient(id: string, offer?: any) {
+  private connectToClient(id: string, remoteOffer?: any) {
     if (!this.signaling) throw new Error("Signaling server not initialized");
 
     console.log("setting up rtc connection");
 
     const connection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
-    if (offer) {
-      connection.setRemoteDescription(offer).then(() => {
-        console.log("remote offer set");
+    connection.onconnectionstatechange = () => {
+      console.log("connection: on connection state change:", connection.connectionState);
+    };
+
+    connection.ondatachannel = ({ channel }) => {
+      console.log("connection: on data channel:", channel);
+      channel.onopen = () => {
+        console.log("data channel: on open");
+        channel.send(`hello from peer ${this.signaling?.localId}`);
+      };
+      channel.onmessage = ({ data }) => {
+        console.log("data channel: on message:", data);
+      };
+      channel.send(`hello from peer ${this.signaling?.localId}`);
+    };
+
+    connection.onicecandidate = (event) => {
+      console.log("connection: on ice candidate:", event.candidate);
+      if (event.candidate) {
+        this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { candidate: event.candidate } }));
+      }
+    };
+
+    connection.onicecandidateerror = (error) => {
+      console.log("connection: on ice candidate error:", error);
+    };
+
+    connection.oniceconnectionstatechange = () => {
+      console.log("connection: on ice connection state change:", connection.iceConnectionState);
+    };
+
+    connection.onicegatheringstatechange = () => {
+      console.log("connection: on ice gathering state change:", connection.iceGatheringState);
+    };
+
+    connection.onnegotiationneeded = () => {
+      console.log("connection: on negotiation needed:");
+      connection
+        .createOffer()
+        .then((offer) => connection.setLocalDescription(offer))
+        .then(() => {
+          console.log("connection: offer created");
+          this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { offer: connection.localDescription } }));
+        });
+    };
+
+    connection.onsignalingstatechange = () => {
+      console.log("connection: on signaling state change:", connection.signalingState);
+    };
+
+    connection.ontrack = (track) => {
+      console.log("connection: on track:", track);
+    };
+
+    if (remoteOffer) {
+      connection.setRemoteDescription(remoteOffer).then(() => {
+        console.log("connection: remote offer set");
         connection.createAnswer().then((answer) => {
-          console.log("answer created");
+          console.log("connection: answer created");
           connection.setLocalDescription(answer).then(() => {
-            console.log("local answer set");
+            console.log("connection: local answer set");
             this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { answer } }));
           });
         });
       });
     } else {
-      connection.createOffer().then((offer) => {
-        console.log("offer created");
-        connection.setLocalDescription(offer).then(() => {
-          console.log("local offer set");
-          this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { offer } }));
-        });
-      });
+      const dataChannel = connection.createDataChannel("data");
+      dataChannel.onopen = () => {
+        console.log("data channel: opened");
+        dataChannel.send(`hello from peer ${this.signaling?.localId}`);
+      };
+      dataChannel.onmessage = (event) => {
+        console.log("data channel: on message:", event.data);
+      };
     }
 
     this.connections.set(id, connection);
