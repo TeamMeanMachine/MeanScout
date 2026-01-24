@@ -45,9 +45,12 @@
     {@render children?.()}
 
     <div class="flex grow items-center justify-end gap-3">
-      {#if onlineTransfer.signaling}
-        <Anchor route="webrtc">
+      {#if onlineTransfer.localId}
+        <Anchor route="webrtc" class="relative">
           <ChevronsLeftRightEllipsisIcon class="animate-pulse" />
+          <span class="absolute right-0.5 bottom-0 text-xs font-light tracking-tighter italic">
+            {onlineTransfer.clients.size - 1 || "!"}
+          </span>
         </Anchor>
       {/if}
 

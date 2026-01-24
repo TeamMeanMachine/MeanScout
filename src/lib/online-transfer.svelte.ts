@@ -1,4 +1,5 @@
 import { dev } from "$app/environment";
+import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
@@ -15,6 +16,15 @@ const inboundMessageSchema = z.discriminatedUnion("type", [
 
 type InboundMessage = z.infer<typeof inboundMessageSchema>;
 
+/** Contains everything about a client: basic metadata such as id and name, and potentially an active connection/channel. */
+type Client = {
+  info: ClientInfo;
+  /** May or may not exist or be ready for RTC data transfer. */
+  connection?: RTCPeerConnection;
+  /** Should only exist when the client is ready for RTC data transfer. */
+  channel?: RTCDataChannel;
+};
+
 // Should maybe set up a developers settings page to control things like this.
 // Or maybe a way to use the web app's deployed location hostname.
 const LOCALHOST_SIGNALING_URL = new URL("http://" + location.hostname + ":8787");
@@ -24,9 +34,11 @@ const SIGNALING_SERVER_URL = dev ? LOCALHOST_SIGNALING_URL : DEPLOYED_SIGNALING_
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 class OnlineTransfer {
-  ws: WebSocket | undefined = undefined;
-  signaling = $state<{ clients: ClientInfo[]; localId: string } | undefined>();
-  connections = $state(new Map<string, RTCPeerConnection>());
+  private ws: WebSocket | undefined = undefined;
+  /** This client's id, only set when connected to the signaling server. */
+  localId = $state<string | undefined>(undefined);
+  /** The list of clients, deeply reactive. */
+  clients = $state(new SvelteMap<string, Client>());
 
   joinRoom({ room, name, team }: { room: string; name: string; team: string }) {
     const url = new URL(SIGNALING_SERVER_URL);
@@ -51,10 +63,12 @@ class OnlineTransfer {
 
     ws.onclose = () => {
       console.log("WebSocket was closed");
-      ws.close();
       this.ws = undefined;
-      this.signaling = undefined;
-      this.clearConnections();
+      this.localId = undefined;
+      for (const [, client] of this.clients) {
+        client.connection?.close();
+      }
+      this.clients.clear();
     };
 
     ws.onmessage = ({ data }) => this.handleMessage(ws, data);
@@ -64,8 +78,11 @@ class OnlineTransfer {
     console.log("WebSocket closed manually");
     this.ws?.close();
     this.ws = undefined;
-    this.signaling = undefined;
-    this.clearConnections();
+    this.localId = undefined;
+    for (const [, client] of this.clients) {
+      client.connection?.close();
+    }
+    this.clients.clear();
   }
 
   private handleMessage(ws: WebSocket, data: any) {
@@ -92,19 +109,17 @@ class OnlineTransfer {
     }
 
     if (message.type == "join") {
-      this.signaling = { clients: [], localId: message.id };
+      this.localId = message.id;
       this.ws = ws;
 
       for (const client of message.clients) {
-        this.addClient(client);
-        if (client.id == message.id) continue;
-        this.connectToClient(client.id);
+        this.addClient(client, { connectNow: client.id !== message.id });
       }
 
       return;
     }
 
-    if (!this.signaling) {
+    if (!this.localId) {
       console.error("Waiting for 'join' message");
       return;
     }
@@ -112,17 +127,13 @@ class OnlineTransfer {
     switch (message.type) {
       case "clients":
         for (const newClient of message.clients) {
-          if (newClient.id == this.signaling.localId) continue;
-          const existingClient = this.signaling.clients.find((c) => c.id == newClient.id);
+          if (newClient.id == this.localId) continue;
+          const existingClient = this.clients.get(newClient.id);
           if (existingClient) {
-            existingClient.id = newClient.id;
-            existingClient.name = newClient.name;
-            existingClient.team = newClient.team;
+            existingClient.info.name = newClient.name;
+            existingClient.info.team = newClient.team;
           } else {
-            this.addClient(newClient);
-            if (!this.connections.has(newClient.id)) {
-              this.connectToClient(newClient.id);
-            }
+            this.addClient(newClient, { connectNow: true });
           }
         }
         break;
@@ -136,7 +147,7 @@ class OnlineTransfer {
           break;
         }
 
-        let connection = this.connections.get(message.from);
+        let connection = this.clients.get(message.from)?.connection;
         if (!connection) {
           console.error("no connection on non-offer signal");
           break;
@@ -153,30 +164,38 @@ class OnlineTransfer {
         }
         break;
       case "leave":
-        this.disconnectFromClient(message.id);
         this.removeClient(message.id);
         break;
     }
   }
 
-  private addClient(client: ClientInfo) {
-    if (!this.signaling) return;
-    const existingClient = this.signaling.clients.find((c) => c.id == client.id);
+  private addClient(info: ClientInfo, options?: { connectNow?: boolean | undefined }) {
+    if (!this.localId) return;
+    const existingClient = this.clients.get(info.id);
     if (existingClient) {
-      existingClient.name = client.name;
-      existingClient.team = client.team;
+      existingClient.info.name = info.name;
+      existingClient.info.team = info.team;
     } else {
-      this.signaling.clients.push(client);
+      const client = $state<Client>({ info });
+      this.clients.set(info.id, client);
+      if (options?.connectNow) {
+        this.connectToClient(info.id);
+      }
     }
   }
 
   private removeClient(id: string) {
-    if (!this.signaling) return;
-    this.signaling.clients = this.signaling?.clients.filter((c) => c.id !== id);
+    const client = this.clients.get(id);
+    client?.connection?.close();
+    this.clients.delete(id);
   }
 
   private connectToClient(id: string, remoteOffer?: any) {
-    if (!this.signaling) throw new Error("Signaling server not initialized");
+    if (!this.localId) throw new Error("Signaling server not initialized");
+    if (this.localId == id) throw new Error("Cannot form RTC connection with self");
+
+    const client = this.clients.get(id);
+    if (!client) throw new Error(`Cannot form RTC connection, client does not exist, id ${id}`);
 
     console.log("setting up rtc connection");
 
@@ -188,14 +207,21 @@ class OnlineTransfer {
 
     connection.ondatachannel = ({ channel }) => {
       console.log("connection: on data channel:", channel);
+      const client = this.clients.get(id);
+      if (!client) {
+        connection.close();
+        throw new Error(`Cannot form RTC channel, client does not exist, id ${id}`);
+      }
+
+      client.channel = channel;
       channel.onopen = () => {
         console.log("data channel: on open");
-        channel.send(`hello from peer ${this.signaling?.localId}`);
+        channel.send(`hello from peer ${this.localId}`);
       };
       channel.onmessage = ({ data }) => {
         console.log("data channel: on message:", data);
       };
-      channel.send(`hello from peer ${this.signaling?.localId}`);
+      channel.send(`hello from peer ${this.localId}`);
     };
 
     connection.onicecandidate = (event) => {
@@ -250,29 +276,23 @@ class OnlineTransfer {
     } else {
       const dataChannel = connection.createDataChannel("data");
       dataChannel.onopen = () => {
+        const client = this.clients.get(id);
+        if (!client) {
+          connection.close();
+          throw new Error(`Cannot form RTC channel, client does not exist, id ${id}`);
+        }
+        client.channel = dataChannel;
         console.log("data channel: opened");
-        dataChannel.send(`hello from peer ${this.signaling?.localId}`);
+        dataChannel.send(`hello from peer ${this.localId}`);
       };
       dataChannel.onmessage = (event) => {
         console.log("data channel: on message:", event.data);
       };
     }
 
-    this.connections.set(id, connection);
+    client.connection = connection;
     console.log("setup done");
     return connection;
-  }
-
-  private disconnectFromClient(id: string) {
-    this.connections.get(id)?.close();
-    this.connections.delete(id);
-  }
-
-  private clearConnections() {
-    for (const [, connection] of this.connections) {
-      connection.close();
-    }
-    this.connections.clear();
   }
 }
 

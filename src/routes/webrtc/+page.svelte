@@ -53,16 +53,16 @@
 </script>
 
 <Header
-  title="{onlineTransfer.signaling ? 'Room' : 'Join Room'} - MeanScout"
-  heading={onlineTransfer.signaling ? "Room" : "Join Room"}
+  title="{onlineTransfer.localId ? 'Room' : 'Join Room'} - MeanScout"
+  heading={onlineTransfer.localId ? "Room" : "Join Room"}
   {backLink}
   class="max-w-(--breakpoint-sm)"
 />
 
 <div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
-  {#if onlineTransfer.signaling}
-    {@const clientCount = onlineTransfer.signaling.clients.length}
-    {@const localClient = onlineTransfer.signaling.clients.find((c) => c.id == onlineTransfer.signaling?.localId)}
+  {#if onlineTransfer.localId}
+    {@const clientCount = onlineTransfer.clients.size}
+    {@const localClient = onlineTransfer.clients.get(onlineTransfer.localId)}
 
     {#if clientCount}
       <span>{clientCount} {clientCount == 1 ? "peer" : "peers"}</span>
@@ -72,23 +72,22 @@
       <div class="flex flex-col">
         <h2 class="font-bold">You</h2>
         <span>
-          {localClient.name}
-          {#if localClient.team}
-            <span class="text-xs font-light">({localClient.team})</span>
+          {localClient.info.name}
+          {#if localClient.info.team}
+            <span class="text-xs font-light">({localClient.info.team})</span>
           {/if}
         </span>
       </div>
     {/if}
 
-    {#each onlineTransfer.signaling.clients.filter((c) => c.id !== onlineTransfer.signaling?.localId) as client (client.id)}
+    {#each onlineTransfer.clients
+      .values()
+      .filter((c) => c.info.id !== onlineTransfer.localId) as client (client.info.id)}
       <div class="flex flex-col">
         <span>
-          {#if onlineTransfer.signaling.localId == client.id}
-            <span class="text-xs font-light">(you)</span>
-          {/if}
-          {client.name}
-          {#if client.team}
-            <span class="text-xs font-light">({client.team})</span>
+          {client.info.name}
+          {#if client.info.team}
+            <span class="text-xs font-light">({client.info.team})</span>
           {/if}
         </span>
       </div>

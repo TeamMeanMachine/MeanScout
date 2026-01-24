@@ -62,9 +62,9 @@
       </span>
     </div>
     <Anchor route="webrtc">
-      <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.signaling && "animate-pulse"]} />
+      <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.localId && "animate-pulse"]} />
       <div class="flex grow flex-col">
-        {#if onlineTransfer.signaling}
+        {#if onlineTransfer.localId}
           View room
         {:else}
           Join a room
