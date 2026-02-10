@@ -1,9 +1,13 @@
 import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
+import { compSchema } from "./comp";
+import { entrySchema, entryStatuses } from "./entry";
+import { fieldSchema } from "./field";
+import { surveySchema, surveyTypes } from "./survey";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
-type ClientInfo = z.infer<typeof clientInfoSchema>;
+export type ClientInfo = z.infer<typeof clientInfoSchema>;
 
 const inboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("join"), id: z.string(), clients: z.array(clientInfoSchema) }),
@@ -15,6 +19,57 @@ const inboundMessageSchema = z.discriminatedUnion("type", [
 ]);
 
 type InboundMessage = z.infer<typeof inboundMessageSchema>;
+
+type OutboundMessage = {
+  type: "signal";
+  to: string;
+  data:
+    | { offer: RTCSessionDescription | null }
+    | { answer: RTCSessionDescription | null }
+    | { candidate: RTCIceCandidate };
+};
+
+const rtcRequestMessageSchema = z.object({
+  type: z.literal("request"),
+  from: z.string().optional(),
+  request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
+});
+
+export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
+
+const rtcResponseMessageSchema = z.object({
+  type: z.literal("response"),
+  from: z.string().optional(),
+
+  comps: z
+    .union([compSchema, z.object({ created: z.date().optional(), modified: z.date().optional() })])
+    .array()
+    .optional(),
+  surveys: z
+    .union([surveySchema, z.object({ created: z.date().optional(), modified: z.date().optional() })])
+    .array()
+    .optional(),
+  fields: fieldSchema.array().optional(),
+  entries: z
+    .union([
+      entrySchema,
+      z.object({
+        type: z.union(surveyTypes.map((t) => z.literal(t))).optional(),
+        status: z.union(entryStatuses.map((s) => z.literal(s))).optional(),
+        created: z.date().optional(),
+        modified: z.date().optional(),
+      }),
+    ])
+    .array()
+    .optional(),
+  version: z.number().optional(),
+});
+
+export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
+
+const rtcMessageSchema = z.discriminatedUnion("type", [rtcRequestMessageSchema, rtcResponseMessageSchema]);
+
+export type RTCMessage = z.infer<typeof rtcMessageSchema>;
 
 /** Contains everything about a client: basic metadata such as id and name, and potentially an active connection/channel. */
 type Client = {
@@ -35,10 +90,25 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 class OnlineTransfer {
   private ws: WebSocket | undefined = undefined;
-  /** This client's id, only set when connected to the signaling server. */
+
+  /** This client's id, only set when connected to the signaling server. Reactive. */
   localId = $state<string | undefined>(undefined);
-  /** The list of clients, deeply reactive. */
+
+  /** A map of clients, deeply reactive. */
   clients = $state(new SvelteMap<string, Client>());
+
+  /** A reactive list of remote clients. */
+  remoteClients = $derived(
+    this.localId
+      ? this.clients
+          .values()
+          .filter((c) => c.info.id !== this.localId && c.channel)
+          .toArray()
+      : [],
+  );
+
+  /** A reactive list of incoming RTC messages from clients. */
+  rtcMessages = $state<RTCMessage[]>([]);
 
   joinRoom({ room, name, team }: { room: string; name: string; team: string }) {
     const url = new URL(SIGNALING_SERVER_URL);
@@ -54,28 +124,29 @@ class OnlineTransfer {
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log("WebSocket was opened");
+      console.log("websocket: opened");
     };
 
     ws.onerror = (error) => {
-      console.error("WebSocket error", error);
+      console.error("websocket: error:", error);
     };
 
     ws.onclose = () => {
-      console.log("WebSocket was closed");
+      console.log("websocket: closed");
       this.ws = undefined;
       this.localId = undefined;
       for (const [, client] of this.clients) {
         client.connection?.close();
       }
       this.clients.clear();
+      this.rtcMessages = [];
     };
 
-    ws.onmessage = ({ data }) => this.handleMessage(ws, data);
+    ws.onmessage = ({ data }) => this.handleWsMessage(ws, data);
   }
 
   leaveRoom() {
-    console.log("WebSocket closed manually");
+    console.log("websocket: manually closed");
     this.ws?.close();
     this.ws = undefined;
     this.localId = undefined;
@@ -83,11 +154,63 @@ class OnlineTransfer {
       client.connection?.close();
     }
     this.clients.clear();
+    this.rtcMessages = [];
   }
 
-  private handleMessage(ws: WebSocket, data: any) {
+  sendToAll(data: RTCMessage) {
+    const string = JSON.stringify(data);
+    for (const [, client] of this.clients) {
+      if (client.info.id == this.localId) continue;
+      client.channel?.send(string);
+    }
+  }
+
+  sendTo(remoteId: string, data: RTCMessage) {
+    const string = JSON.stringify(data);
+    if (remoteId == this.localId) return;
+    this.clients.get(remoteId)?.channel?.send(string);
+  }
+
+  clearRtcMessage(message: RTCMessage) {
+    this.rtcMessages = this.rtcMessages.filter((m) => {
+      const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
+      const responseMatches =
+        m.type == "response" &&
+        message.type == "response" &&
+        m.version === message.version &&
+        m.comps?.length === message.comps?.length &&
+        m.surveys?.length === message.surveys?.length &&
+        m.fields?.length === message.fields?.length &&
+        m.entries?.length === message.entries?.length;
+
+      return !(m.from === message.from && (requestMatches || responseMatches));
+    });
+  }
+
+  private messageAlreadyExists(message: RTCMessage) {
+    return this.rtcMessages.some((m) => {
+      const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
+      const responseMatches =
+        m.type == "response" &&
+        message.type == "response" &&
+        m.version === message.version &&
+        m.comps?.length === message.comps?.length &&
+        m.surveys?.length === message.surveys?.length &&
+        m.fields?.length === message.fields?.length &&
+        m.entries?.length === message.entries?.length;
+
+      return m.from === message.from && (requestMatches || responseMatches);
+    });
+  }
+
+  private sendToServer(message: OutboundMessage) {
+    console.log("websocket: sending message", message);
+    this.ws?.send(JSON.stringify(message));
+  }
+
+  private handleWsMessage(ws: WebSocket, data: any) {
     if (typeof data !== "string") {
-      console.error("Invalid message received: not a string");
+      console.error("websocket: invalid message received: not a string");
       return;
     }
 
@@ -97,16 +220,16 @@ class OnlineTransfer {
       data = JSON.parse(data);
       message = z.parse(inboundMessageSchema, data);
     } catch (error) {
-      console.error("Invalid message: could not be parsed", error);
+      console.error("websocket: invalid message: could not be parsed", error);
       return;
     }
-
-    console.log(message);
 
     if (message.type == "error") {
-      console.error(`Error received: ${message.error}`);
+      console.error(`websocket: error message received: ${message.error}`);
       return;
     }
+
+    console.log("websocket: message received:", message);
 
     if (message.type == "join") {
       this.localId = message.id;
@@ -120,7 +243,7 @@ class OnlineTransfer {
     }
 
     if (!this.localId) {
-      console.error("Waiting for 'join' message");
+      console.error("websocket: error on message: waiting for 'join' message");
       return;
     }
 
@@ -142,24 +265,23 @@ class OnlineTransfer {
         break;
       case "signal":
         if (message.data.offer) {
-          console.log("offer received", message.data.offer);
+          console.log("websocket: remote offer received, connecting", message.data.offer);
           this.connectToClient(message.from, message.data.offer);
           break;
         }
 
         let connection = this.clients.get(message.from)?.connection;
         if (!connection) {
-          console.error("no connection on non-offer signal");
+          console.error("websocket: no connection on non-offer signal");
           break;
         }
 
         if (message.data.answer) {
-          console.log("answer received", message.data.answer);
           connection.setRemoteDescription(message.data.answer).then(() => {
-            console.log("remote answer set");
+            console.log("websocket: remote answer received", message.data.answer);
           });
         } else if (message.data.candidate) {
-          console.log("candidate received", message.data.candidate);
+          console.log("websocket: remote candidate received", message.data.candidate);
           connection.addIceCandidate(message.data.candidate);
         }
         break;
@@ -188,14 +310,15 @@ class OnlineTransfer {
     const client = this.clients.get(id);
     client?.connection?.close();
     this.clients.delete(id);
+    this.rtcMessages = this.rtcMessages.filter((m) => !(m.from === id && m.type == "request"));
   }
 
-  private connectToClient(id: string, remoteOffer?: any) {
+  private connectToClient(remoteId: string, remoteOffer?: any) {
     if (!this.localId) throw new Error("Signaling server not initialized");
-    if (this.localId == id) throw new Error("Cannot form RTC connection with self");
+    if (this.localId == remoteId) throw new Error("Cannot form RTC connection with self");
 
-    const client = this.clients.get(id);
-    if (!client) throw new Error(`Cannot form RTC connection, client does not exist, id ${id}`);
+    const client = this.clients.get(remoteId);
+    if (!client) throw new Error(`Cannot form RTC connection, client does not exist, id ${remoteId}`);
 
     console.log("setting up rtc connection");
 
@@ -207,27 +330,23 @@ class OnlineTransfer {
 
     connection.ondatachannel = ({ channel }) => {
       console.log("connection: on data channel:", channel);
-      const client = this.clients.get(id);
+      const client = this.clients.get(remoteId);
       if (!client) {
         connection.close();
-        throw new Error(`Cannot form RTC channel, client does not exist, id ${id}`);
+        throw new Error(`Cannot form RTC channel, client does not exist, id ${remoteId}`);
       }
 
-      client.channel = channel;
       channel.onopen = () => {
-        console.log("data channel: on open");
-        channel.send(`hello from peer ${this.localId}`);
+        client.channel = channel;
+        console.log("data channel: opened");
       };
-      channel.onmessage = ({ data }) => {
-        console.log("data channel: on message:", data);
-      };
-      channel.send(`hello from peer ${this.localId}`);
+      channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
     };
 
     connection.onicecandidate = (event) => {
       console.log("connection: on ice candidate:", event.candidate);
       if (event.candidate) {
-        this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { candidate: event.candidate } }));
+        this.sendToServer({ type: "signal", to: remoteId, data: { candidate: event.candidate } });
       }
     };
 
@@ -244,13 +363,13 @@ class OnlineTransfer {
     };
 
     connection.onnegotiationneeded = () => {
-      console.log("connection: on negotiation needed:");
+      console.log("connection: on negotiation needed");
       connection
         .createOffer()
         .then((offer) => connection.setLocalDescription(offer))
         .then(() => {
           console.log("connection: offer created");
-          this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { offer: connection.localDescription } }));
+          this.sendToServer({ type: "signal", to: remoteId, data: { offer: connection.localDescription } });
         });
     };
 
@@ -263,36 +382,49 @@ class OnlineTransfer {
     };
 
     if (remoteOffer) {
-      connection.setRemoteDescription(remoteOffer).then(() => {
-        console.log("connection: remote offer set");
-        connection.createAnswer().then((answer) => {
-          console.log("connection: answer created");
-          connection.setLocalDescription(answer).then(() => {
-            console.log("connection: local answer set");
-            this.ws?.send(JSON.stringify({ type: "signal", to: id, data: { answer } }));
-          });
+      connection
+        .setRemoteDescription(remoteOffer)
+        .then(() => connection.createAnswer())
+        .then((answer) => connection.setLocalDescription(answer))
+        .then(() => {
+          console.log("connection: remote offer received, sending answer");
+          this.sendToServer({ type: "signal", to: remoteId, data: { answer: connection.localDescription } });
         });
-      });
     } else {
       const dataChannel = connection.createDataChannel("data");
       dataChannel.onopen = () => {
-        const client = this.clients.get(id);
+        const client = this.clients.get(remoteId);
         if (!client) {
           connection.close();
-          throw new Error(`Cannot form RTC channel, client does not exist, id ${id}`);
+          throw new Error(`connection: cannot form RTC channel, client does not exist, id ${remoteId}`);
         }
         client.channel = dataChannel;
         console.log("data channel: opened");
-        dataChannel.send(`hello from peer ${this.localId}`);
       };
-      dataChannel.onmessage = (event) => {
-        console.log("data channel: on message:", event.data);
-      };
+      dataChannel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
     }
 
     client.connection = connection;
     console.log("setup done");
     return connection;
+  }
+
+  private handleRtcMessage(remoteId: string, data: any) {
+    try {
+      const json = JSON.parse(data);
+      const parsed = z.parse(rtcMessageSchema, json);
+      parsed.from = remoteId;
+
+      if (this.messageAlreadyExists(parsed)) {
+        console.log("data channel: message already exists:", parsed);
+        return;
+      }
+
+      this.rtcMessages.push(parsed);
+      console.log("data channel: message received:", parsed);
+    } catch (e) {
+      console.log("data channel: unusual rtc message received:", data);
+    }
   }
 }
 

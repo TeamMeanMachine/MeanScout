@@ -50,7 +50,7 @@ const pitEntrySchema = z.object({
 });
 export type PitEntry = z.infer<typeof pitEntrySchema>;
 
-const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);
+export const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);
 export type Entry = z.infer<typeof entrySchema>;
 
 export function getMatchEntriesByTeam(entries: MatchEntry[]) {

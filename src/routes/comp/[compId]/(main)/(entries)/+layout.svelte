@@ -1,94 +1,69 @@
 <script lang="ts">
   import { DownloadIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { rerunAllContextLoads } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
-  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import type { Entry } from "$lib/entry";
-  import { idb } from "$lib/idb";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
   const showingNewPage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/new");
+  const showingSendPage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/send");
+  const showingReceivePage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/receive");
 
-  function onbulkexport(exportedEntries: Entry[]) {
-    const tx = idb.transaction(["comps", "entries"], "readwrite");
-    const entryStore = tx.objectStore("entries");
-    for (const entry of $state.snapshot(exportedEntries)) {
-      if (entry.status == "exported") {
-        continue;
-      }
-      entryStore.put({ ...entry, status: "exported", modified: new Date() });
-    }
-    tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
-    tx.oncomplete = rerunAllContextLoads;
-  }
+  const showingSubpage = $derived(showingNewPage || showingSendPage || showingReceivePage);
 
-  function refresh() {
-    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
-  }
+  const requestMessageCount = $derived(
+    onlineTransfer.rtcMessages.filter((m) => m.type == "request" && m.request == "entries").length,
+  );
+  const responseMessageCount = $derived(
+    onlineTransfer.rtcMessages.filter((m) => m.type == "response" && m.entries?.length).length,
+  );
 </script>
 
 <div
   class={[
     "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-80 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
     "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
-    data.groupBy || showingNewPage ? "max-lg:hidden" : "max-lg:mb-[65px]",
+    data.groupBy || showingSubpage ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >
   <div class="flex flex-col gap-3 px-3 py-6 max-lg:mt-[57px]">
     <h2 class="font-bold">Entries</h2>
 
     <div class="flex flex-wrap justify-between gap-3 text-sm">
-      <Button
-        onclick={() => {
-          if (showingNewPage) {
-            sessionStorage.removeItem("new-entry");
-            goto(`#/comp/${data.compRecord.id}`);
-          } else {
-            goto(`#/comp/${data.compRecord.id}/new`);
-          }
-        }}
-        class={["w-20 flex-col gap-1!", showingNewPage ? "font-bold" : ""]}
-      >
-        <PlusIcon class="text-theme transition-[rotate] {showingNewPage ? 'rotate-45' : 'rotate-0'}" />
-        {showingNewPage ? "Cancel" : "New"}
-      </Button>
+      <Anchor route="comp/{data.compRecord.id}/new" class={["w-20 flex-col gap-1!", showingNewPage ? "font-bold" : ""]}>
+        <PlusIcon class="text-theme" />
+        New
+      </Anchor>
 
       <div class="flex flex-wrap gap-2">
         {#if data.entryRecords.some((e) => e.status != "draft")}
-          <Button
-            onclick={() => {
-              const entries = data.entryRecords.filter((e) => e.status != "draft");
-              openDialog(BulkExportDialog, {
-                entries,
-                onexport: () => onbulkexport(entries),
-              });
-            }}
-            class="w-20 flex-col gap-1!"
+          <Anchor
+            route="comp/{data.compRecord.id}/send"
+            class={["relative w-20 flex-col gap-1!", showingSendPage ? "font-bold" : ""]}
           >
             <ShareIcon class="text-theme" />
             Send
-          </Button>
+            {#if requestMessageCount}
+              <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
+                {requestMessageCount}
+              </span>
+            {/if}
+          </Anchor>
         {/if}
-        <Button
-          onclick={() => {
-            openDialog(ImportEntriesDialog, {
-              surveyRecords: data.surveyRecords,
-              existingEntries: data.entryRecords,
-              onimport: refresh,
-            });
-          }}
-          class="w-20 flex-col gap-1!"
+        <Anchor
+          route="comp/{data.compRecord.id}/receive"
+          class={["relative w-20 flex-col gap-1!", showingReceivePage ? "font-bold" : ""]}
         >
           <DownloadIcon class="text-theme" />
           Receive
-        </Button>
+          {#if responseMessageCount}
+            <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
+              {responseMessageCount}
+            </span>
+          {/if}
+        </Anchor>
       </div>
     </div>
 
