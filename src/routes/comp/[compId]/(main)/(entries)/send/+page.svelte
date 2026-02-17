@@ -1,21 +1,14 @@
 <script lang="ts">
   import { CheckIcon, FileDownIcon, Share2Icon, ShareIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import {
-    download,
-    rerunAllContextLoads,
-    rerunOtherContextLoads,
-    schemaVersion,
-    sessionStorageStore,
-    share,
-  } from "$lib";
+  import { download, rerunOtherContextLoads, schemaVersion, sessionStorageStore, share } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { openDialog } from "$lib/dialog";
-  import HandleRtcMessageDialog from "$lib/dialogs/HandleRtcMessageDialog.svelte";
+  import HandleRtcRequestMessageDialog from "$lib/dialogs/HandleRtcRequestMessageDialog.svelte";
   import { idb } from "$lib/idb";
-  import { onlineTransfer, type RTCRequestMessage } from "$lib/online-transfer.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { cameraStore } from "$lib/settings";
   import type { PageProps } from "./$types";
 
@@ -27,7 +20,12 @@
   const tab = sessionStorageStore<"room" | "qrfcode" | "file">("export-data-tab", "room");
 
   const json = generateExportedData();
-  const string = JSON.stringify(json);
+  const string = JSON.stringify(json, (key, value) => {
+    if (key == "created" || key == "modified") {
+      return undefined;
+    }
+    return value;
+  });
 
   const fileName = ["ms", entriesDescriptor()]
     .filter((p) => p)
@@ -61,19 +59,9 @@
   }
 
   function generateExportedData() {
-    const preparedEntries = $state.snapshot(entries).map((entry) => {
-      return {
-        ...entry,
-        type: undefined,
-        status: undefined,
-        created: undefined,
-        modified: undefined,
-      };
-    });
-
     return {
       version: schemaVersion,
-      entries: preparedEntries,
+      entries: $state.snapshot(entries),
     };
   }
 </script>
@@ -117,16 +105,17 @@
 
     <div class="flex flex-col gap-3">
       {#if $tab == "room"}
-        {#each onlineTransfer.rtcMessages.filter((m): m is RTCRequestMessage => m.type == "request" && m.request == "entries") as message}
+        {#each onlineTransfer.rtcMessages.filter((m) => m.type == "request") as message}
           {@const client = message.from ? onlineTransfer.clients.get(message.from) : undefined}
           <Button
             onclick={() => {
               if (!client) return;
-              openDialog(HandleRtcMessageDialog, {
+              openDialog(HandleRtcRequestMessageDialog, {
                 message,
                 client: client.info,
                 onhandle(action) {
                   if (action == "accept") {
+                    sendBulkTo(client.info.id);
                   }
 
                   onlineTransfer.clearRtcMessage(message);
@@ -136,10 +125,8 @@
             class="flex-col items-start gap-1!"
           >
             {#if client}
-              <span>From: {client.info.name} {client.info.team ? `(${client.info.team})` : ""}</span>
+              <span>Incoming request from {client.info.name} {client.info.team ? `(${client.info.team})` : ""}</span>
             {/if}
-
-            <span>Requesting: {message.request}</span>
           </Button>
         {/each}
 

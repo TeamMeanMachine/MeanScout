@@ -9,7 +9,7 @@ import { surveySchema, surveyTypes } from "./survey";
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
 
-const inboundMessageSchema = z.discriminatedUnion("type", [
+const wsInboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("join"), id: z.string(), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("clients"), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("info"), info: clientInfoSchema }),
@@ -18,9 +18,9 @@ const inboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("error"), error: z.string() }),
 ]);
 
-type InboundMessage = z.infer<typeof inboundMessageSchema>;
+type WSInboundMessage = z.infer<typeof wsInboundMessageSchema>;
 
-type OutboundMessage = {
+type WSOutboundMessage = {
   type: "signal";
   to: string;
   data:
@@ -41,27 +41,10 @@ const rtcResponseMessageSchema = z.object({
   type: z.literal("response"),
   from: z.string().optional(),
 
-  comps: z
-    .union([compSchema, z.object({ created: z.date().optional(), modified: z.date().optional() })])
-    .array()
-    .optional(),
-  surveys: z
-    .union([surveySchema, z.object({ created: z.date().optional(), modified: z.date().optional() })])
-    .array()
-    .optional(),
+  comps: compSchema.array().optional(),
+  surveys: surveySchema.array().optional(),
   fields: fieldSchema.array().optional(),
-  entries: z
-    .union([
-      entrySchema,
-      z.object({
-        type: z.union(surveyTypes.map((t) => z.literal(t))).optional(),
-        status: z.union(entryStatuses.map((s) => z.literal(s))).optional(),
-        created: z.date().optional(),
-        modified: z.date().optional(),
-      }),
-    ])
-    .array()
-    .optional(),
+  entries: entrySchema.array().optional(),
   version: z.number().optional(),
 });
 
@@ -158,7 +141,10 @@ class OnlineTransfer {
   }
 
   sendToAll(data: RTCMessage) {
-    const string = JSON.stringify(data);
+    const string = JSON.stringify(data, (key, value) => {
+      if (key == "created" || key == "modified") return undefined;
+      return value;
+    });
     for (const [, client] of this.clients) {
       if (client.info.id == this.localId) continue;
       client.channel?.send(string);
@@ -166,7 +152,10 @@ class OnlineTransfer {
   }
 
   sendTo(remoteId: string, data: RTCMessage) {
-    const string = JSON.stringify(data);
+    const string = JSON.stringify(data, (key, value) => {
+      if (key == "created" || key == "modified") return undefined;
+      return value;
+    });
     if (remoteId == this.localId) return;
     this.clients.get(remoteId)?.channel?.send(string);
   }
@@ -187,7 +176,7 @@ class OnlineTransfer {
     });
   }
 
-  private messageAlreadyExists(message: RTCMessage) {
+  private rtcMessageAlreadyReceived(message: RTCMessage) {
     return this.rtcMessages.some((m) => {
       const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
       const responseMatches =
@@ -203,7 +192,7 @@ class OnlineTransfer {
     });
   }
 
-  private sendToServer(message: OutboundMessage) {
+  private sendWsMessage(message: WSOutboundMessage) {
     console.log("websocket: sending message", message);
     this.ws?.send(JSON.stringify(message));
   }
@@ -214,11 +203,11 @@ class OnlineTransfer {
       return;
     }
 
-    let message: InboundMessage;
+    let message: WSInboundMessage;
 
     try {
       data = JSON.parse(data);
-      message = z.parse(inboundMessageSchema, data);
+      message = z.parse(wsInboundMessageSchema, data);
     } catch (error) {
       console.error("websocket: invalid message: could not be parsed", error);
       return;
@@ -346,7 +335,7 @@ class OnlineTransfer {
     connection.onicecandidate = (event) => {
       console.log("connection: on ice candidate:", event.candidate);
       if (event.candidate) {
-        this.sendToServer({ type: "signal", to: remoteId, data: { candidate: event.candidate } });
+        this.sendWsMessage({ type: "signal", to: remoteId, data: { candidate: event.candidate } });
       }
     };
 
@@ -369,7 +358,7 @@ class OnlineTransfer {
         .then((offer) => connection.setLocalDescription(offer))
         .then(() => {
           console.log("connection: offer created");
-          this.sendToServer({ type: "signal", to: remoteId, data: { offer: connection.localDescription } });
+          this.sendWsMessage({ type: "signal", to: remoteId, data: { offer: connection.localDescription } });
         });
     };
 
@@ -388,7 +377,7 @@ class OnlineTransfer {
         .then((answer) => connection.setLocalDescription(answer))
         .then(() => {
           console.log("connection: remote offer received, sending answer");
-          this.sendToServer({ type: "signal", to: remoteId, data: { answer: connection.localDescription } });
+          this.sendWsMessage({ type: "signal", to: remoteId, data: { answer: connection.localDescription } });
         });
     } else {
       const dataChannel = connection.createDataChannel("data");
@@ -415,7 +404,7 @@ class OnlineTransfer {
       const parsed = z.parse(rtcMessageSchema, json);
       parsed.from = remoteId;
 
-      if (this.messageAlreadyExists(parsed)) {
+      if (this.rtcMessageAlreadyReceived(parsed)) {
         console.log("data channel: message already exists:", parsed);
         return;
       }
@@ -423,7 +412,7 @@ class OnlineTransfer {
       this.rtcMessages.push(parsed);
       console.log("data channel: message received:", parsed);
     } catch (e) {
-      console.log("data channel: unusual rtc message received:", data);
+      console.log("data channel: unusual rtc message received:", e, data);
     }
   }
 }

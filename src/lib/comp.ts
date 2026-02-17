@@ -17,8 +17,8 @@ export const compSchema = z.object({
   teams: z.array(teamSchema),
   alliances: z.optional(z.array(allianceSchema)),
   scouts: z.optional(z.array(z.string())),
-  created: z.date(),
-  modified: z.date(),
+  created: z.date().catch(() => new Date()),
+  modified: z.date().catch(() => new Date()),
 });
 
 export type Comp = z.infer<typeof compSchema>;

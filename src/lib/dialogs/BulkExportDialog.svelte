@@ -4,7 +4,6 @@
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
-  import { compress } from "$lib/compress";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { Entry } from "$lib/entry";
   import type { Field } from "$lib/field";
@@ -28,7 +27,12 @@
   const tab = sessionStorageStore<"room" | "qrfcode" | "file">("export-data-tab", "room");
 
   const json = generateExportedData();
-  const jsonString = JSON.stringify(json);
+  const jsonString = JSON.stringify(json, (key, value) => {
+    if (key == "created" || key == "modified") {
+      return undefined;
+    }
+    return value;
+  });
 
   const fileName = ["ms", compsDescriptor(), surveysDescriptor(), fieldsDescriptor(), entriesDescriptor()]
     .filter((p) => p)
@@ -88,41 +92,7 @@
   }
 
   function generateExportedData() {
-    const preparedComps = $state.snapshot(comps)?.map((comp) => {
-      return {
-        ...structuredClone(comp),
-        created: undefined,
-        modified: undefined,
-      };
-    });
-
-    const preparedSurveys = $state.snapshot(surveys)?.map((survey) => {
-      return {
-        ...structuredClone(survey),
-        created: undefined,
-        modified: undefined,
-      };
-    });
-
-    const preparedFields = $state.snapshot(fields);
-
-    const preparedEntries = $state.snapshot(entries)?.map((entry) => {
-      return {
-        ...structuredClone(entry),
-        type: undefined,
-        status: undefined,
-        created: undefined,
-        modified: undefined,
-      };
-    });
-
-    return {
-      version: schemaVersion,
-      comps: preparedComps,
-      surveys: preparedSurveys,
-      fields: preparedFields,
-      entries: preparedEntries,
-    };
+    return $state.snapshot({ version: schemaVersion, comps, surveys, fields, entries });
   }
 </script>
 

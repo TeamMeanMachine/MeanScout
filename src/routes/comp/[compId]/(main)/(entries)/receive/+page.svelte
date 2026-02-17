@@ -6,10 +6,10 @@
   import QRCodeReader from "$lib/components/QRCodeReader.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { openDialog } from "$lib/dialog";
-  import HandleRtcMessageDialog from "$lib/dialogs/HandleRtcMessageDialog.svelte";
+  import HandleRtcResponseMessageDialog from "$lib/dialogs/HandleRtcResponseMessageDialog.svelte";
   import type { Entry, TbaMetrics } from "$lib/entry";
   import { idb } from "$lib/idb";
-  import { onlineTransfer, type RTCResponseMessage } from "$lib/online-transfer.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { cameraStore } from "$lib/settings";
   import type { PageProps } from "./$types";
 
@@ -266,20 +266,23 @@
 
     <div class="flex flex-col gap-3">
       {#if $tab == "room"}
-        {#each onlineTransfer.rtcMessages.filter((m): m is RTCResponseMessage => m.type == "response" && !!m.entries?.length) as message}
+        {#each onlineTransfer.rtcMessages.filter((m) => m.type == "response") as message}
           {@const client = (message.from ? onlineTransfer.clients.get(message.from) : undefined) || {
             info: { id: "", name: "Disconnected" },
           }}
 
           <Button
             onclick={() => {
-              openDialog(HandleRtcMessageDialog, {
+              openDialog(HandleRtcResponseMessageDialog, {
                 message,
                 client: client.info,
+                existing: {
+                  comps: [data.compRecord],
+                  surveys: data.surveyRecords,
+                  fields: data.fieldRecords,
+                  entries: data.entryRecords,
+                },
                 onhandle(action) {
-                  if (action == "accept") {
-                  }
-
                   onlineTransfer.clearRtcMessage(message);
                 },
               });
