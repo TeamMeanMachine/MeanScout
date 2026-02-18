@@ -1,10 +1,7 @@
 import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
-import { compSchema } from "./comp";
-import { entrySchema } from "./entry";
-import { fieldSchema } from "./field";
-import { surveySchema } from "./survey";
+import { importSchema } from "./import";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -40,12 +37,7 @@ export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
 const rtcResponseMessageSchema = z.object({
   type: z.literal("response"),
   from: z.string().optional(),
-
-  comps: compSchema.array().optional(),
-  surveys: surveySchema.array().optional(),
-  fields: fieldSchema.array().optional(),
-  entries: entrySchema.array().optional(),
-  version: z.number().optional(),
+  ...importSchema.shape,
 });
 
 export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;

@@ -50,7 +50,15 @@ const pitEntrySchema = z.object({
 });
 export type PitEntry = z.infer<typeof pitEntrySchema>;
 
-export const entrySchema = z.union([matchEntrySchema, pitEntrySchema]);
+export const entrySchema = z.preprocess(
+  (val) => {
+    if (val && typeof val == "object" && !("type" in val)) {
+      return { ...val, type: "match" in val ? "match" : "pit" };
+    }
+    return val;
+  },
+  z.union([matchEntrySchema, pitEntrySchema]),
+);
 export type Entry = z.infer<typeof entrySchema>;
 
 export function getMatchEntriesByTeam(entries: MatchEntry[]) {
