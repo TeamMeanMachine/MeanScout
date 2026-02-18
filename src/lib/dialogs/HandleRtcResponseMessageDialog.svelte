@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ChevronRightIcon, CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
-  import { compareMatches, type Match, type Team } from "$lib";
+  import { ChevronRightIcon, CircleCheckBigIcon, CircleIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { compareMatches, rerunAllContextLoads, type Match, type Team } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
@@ -24,7 +24,7 @@
       fields?: Field[] | undefined;
       entries?: Entry[] | undefined;
     };
-    onhandle(action: "accept-overwrite-entries" | "accept-no-overwrite-entries" | "ignore"): void;
+    onhandle(): void;
   } = $props();
 
   const incomingIds = {
@@ -48,9 +48,7 @@
     entries: incomingIds.entries.intersection(existingIds.entries),
   };
 
-  let action = $state<"accept-overwrite-entries" | "accept-no-overwrite-entries" | "ignore">(
-    "accept-overwrite-entries",
-  );
+  let overwriteDuplicateEntries = $state(true);
 
   let viewEntries = $state(false);
 
@@ -59,12 +57,6 @@
   export const { onconfirm }: DialogExports = {
     onconfirm() {
       if (error) {
-        return;
-      }
-
-      if (action == "ignore") {
-        onhandle(action);
-        closeDialog();
         return;
       }
 
@@ -79,7 +71,8 @@
       };
 
       transaction.oncomplete = () => {
-        onhandle(action);
+        onhandle();
+        rerunAllContextLoads();
         closeDialog();
       };
 
@@ -219,15 +212,20 @@
 
         for (const incomingSurvey of incomingSurveys) {
           const incomingFieldsForThisSurvey = incomingFields?.filter((f) => f.surveyId == incomingSurvey.id);
+          const existingFieldsForThisSurvey = existing.fields?.filter((f) => f.surveyId == incomingSurvey.id);
+
           if (incomingFieldsForThisSurvey?.length) {
             for (const field of incomingFieldsForThisSurvey) {
               fieldStore.put(field);
             }
           }
 
-          const oldFieldIds = existingIds.fields.difference(incomingIds.fields);
-          for (const id of oldFieldIds) {
-            fieldStore.delete(id);
+          if (existingFieldsForThisSurvey?.length) {
+            for (const field of existingFieldsForThisSurvey) {
+              if (!incomingFieldsForThisSurvey?.some((f) => f.id == field.id)) {
+                fieldStore.delete(field.id);
+              }
+            }
           }
 
           if (!duplicateIds.surveys.has(incomingSurvey.id)) {
@@ -306,7 +304,7 @@
           if (incomingEntry.type == "match") {
             for (const metric of incomingEntry.tbaMetrics || []) {
               const metricIndex = tbaMetrics.findIndex((m) => m.name == metric.name);
-              if (metricIndex !== -1 && action == "accept-overwrite-entries") {
+              if (metricIndex !== -1 && overwriteDuplicateEntries) {
                 tbaMetrics[metricIndex].value = $state.snapshot(metric).value;
               } else {
                 tbaMetrics.push($state.snapshot(metric));
@@ -314,8 +312,7 @@
             }
           }
 
-          let newEntry =
-            action == "accept-overwrite-entries" ? $state.snapshot(incomingEntry) : $state.snapshot(existingEntry);
+          let newEntry = overwriteDuplicateEntries ? $state.snapshot(incomingEntry) : $state.snapshot(existingEntry);
 
           if (tbaMetrics.length) {
             entryStore.put({ ...newEntry, tbaMetrics });
@@ -337,7 +334,12 @@
   }
 </script>
 
-<span>From: {client.name} {client.team ? `(${client.team})` : ""}</span>
+<span>
+  From: {client.name}
+  {#if client.team}
+    <span class="text-xs font-light">({client.team})</span>
+  {/if}
+</span>
 
 <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
   {#if message.comps?.length || message.surveys?.length || message.fields?.length}
@@ -448,7 +450,7 @@
         <div class="flex flex-col">
           <span
             class={duplicateIds.entries.size &&
-            action == "accept-no-overwrite-entries" &&
+            !overwriteDuplicateEntries &&
             message.entries.length == duplicateIds.entries.size
               ? "line-through opacity-60"
               : ""}
@@ -456,7 +458,7 @@
             Incoming entries: {message.entries.length}
           </span>
           {#if duplicateIds.entries.size}
-            <span class={["text-xs font-light", action == "accept-no-overwrite-entries" && "line-through opacity-60"]}>
+            <span class={["text-xs font-light", !overwriteDuplicateEntries && "line-through opacity-60"]}>
               Duplicates: {duplicateIds.entries.size}
             </span>
           {/if}
@@ -480,8 +482,7 @@
           </thead>
           <tbody>
             {#each message.entries.toSorted(sortEntries) as incomingEntry}
-              {@const isSkipping =
-                action == "accept-no-overwrite-entries" && duplicateIds.entries.has(incomingEntry.id)}
+              {@const isSkipping = !overwriteDuplicateEntries && duplicateIds.entries.has(incomingEntry.id)}
 
               <tr class={isSkipping ? "line-through opacity-60" : ""}>
                 <td class="p-2 text-center">{incomingEntry.team}</td>
@@ -514,52 +515,22 @@
   {/if}
 </div>
 
-<div class="flex flex-wrap gap-2">
+{#if duplicateIds.entries.size}
   <Button
-    onclick={() => (action = "accept-overwrite-entries")}
-    class={["grow basis-0", action == "accept-overwrite-entries" ? "font-bold" : "font-light"]}
+    onclick={() => (overwriteDuplicateEntries = !overwriteDuplicateEntries)}
+    class={["grow basis-0", overwriteDuplicateEntries ? "font-bold" : "font-light"]}
   >
-    {#if action == "accept-overwrite-entries"}
-      <CircleCheckBigIcon class="text-theme" />
+    {#if overwriteDuplicateEntries}
+      <SquareCheckBigIcon class="text-theme" />
     {:else}
-      <CircleIcon class="text-theme" />
+      <SquareIcon class="text-theme" />
     {/if}
-    <div class="flex flex-col">
-      Accept
-      {#if duplicateIds.entries.size}
-        <span class="text-xs">Overwrite duplicate entries</span>
-      {:else}
-        <span class="text-xs font-light">and store this data on your device</span>
-      {/if}
-    </div>
+    <div class="flex flex-col">Overwrite duplicate entries</div>
   </Button>
+{/if}
 
-  {#if duplicateIds.entries.size}
-    <Button
-      onclick={() => (action = "accept-no-overwrite-entries")}
-      class={["grow basis-0", action == "accept-no-overwrite-entries" ? "font-bold" : "font-light"]}
-    >
-      {#if action == "accept-no-overwrite-entries"}
-        <CircleCheckBigIcon class="text-theme" />
-      {:else}
-        <CircleIcon class="text-theme" />
-      {/if}
-      <div class="flex flex-col">
-        Accept
-        <span class="text-xs">Skip duplicate entries</span>
-      </div>
-    </Button>
-  {/if}
+Accept data?
 
-  <Button onclick={() => (action = "ignore")} class={["grow basis-0", action == "ignore" ? "font-bold" : "font-light"]}>
-    {#if action == "ignore"}
-      <CircleCheckBigIcon class="text-theme" />
-    {:else}
-      <CircleIcon class="text-theme" />
-    {/if}
-    <div class="flex flex-col">
-      Ignore
-      <span class="text-xs font-light">and dismiss</span>
-    </div>
-  </Button>
-</div>
+{#if error}
+  <span>{error}</span>
+{/if}

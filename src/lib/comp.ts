@@ -2,6 +2,7 @@ import { z } from "zod";
 import { matchSchema, teamSchema } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
+import type { AllData } from "./idb";
 import type { Survey } from "./survey";
 
 const allianceSchema = z.object({
@@ -24,6 +25,7 @@ export const compSchema = z.object({
 export type Comp = z.infer<typeof compSchema>;
 
 export type CompPageData = {
+  all: AllData;
   compRecord: Comp;
   surveyRecords: Survey[];
   fieldRecords: Field[];

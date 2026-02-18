@@ -22,7 +22,7 @@ export type TbaMetrics = z.infer<typeof tbaMetricsSchema>;
 const baseEntrySchema = z.object({
   id: z.string(),
   surveyId: z.string(),
-  status: z.enum(entryStatuses),
+  status: z.enum(entryStatuses).catch("exported"),
   team: z.string(),
   values: z.array(valueSchema),
   scout: z.optional(z.string()),
@@ -50,7 +50,7 @@ const pitEntrySchema = z.object({
 });
 export type PitEntry = z.infer<typeof pitEntrySchema>;
 
-export const entrySchema = z.discriminatedUnion("type", [matchEntrySchema, pitEntrySchema]);
+export const entrySchema = z.union([matchEntrySchema, pitEntrySchema]);
 export type Entry = z.infer<typeof entrySchema>;
 
 export function getMatchEntriesByTeam(entries: MatchEntry[]) {

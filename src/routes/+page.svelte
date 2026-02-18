@@ -37,7 +37,7 @@
       {/each}
     {/if}
 
-    <Button onclick={() => openDialog(BulkImportDialog, {})}>
+    <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })}>
       <DownloadIcon class="text-theme" />
       <div class="flex flex-col">
         Receive

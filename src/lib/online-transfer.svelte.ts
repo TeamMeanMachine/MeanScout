@@ -2,9 +2,9 @@ import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 import { compSchema } from "./comp";
-import { entrySchema, entryStatuses } from "./entry";
+import { entrySchema } from "./entry";
 import { fieldSchema } from "./field";
-import { surveySchema, surveyTypes } from "./survey";
+import { surveySchema } from "./survey";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -145,9 +145,25 @@ class OnlineTransfer {
       if (key == "created" || key == "modified") return undefined;
       return value;
     });
+
     for (const [, client] of this.clients) {
       if (client.info.id == this.localId) continue;
       client.channel?.send(string);
+    }
+
+    if (data.type == "response") {
+      const sentEntries = !!data.entries?.length;
+      const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
+      const sentAny = sentEntries || sentConfigs;
+
+      this.rtcMessages = this.rtcMessages.filter((m) => {
+        return !(
+          m.type == "request" &&
+          ((m.request == "entries" && sentEntries) ||
+            (m.request == "configs" && sentConfigs) ||
+            (m.request == "all" && sentAny))
+        );
+      });
     }
   }
 
@@ -156,8 +172,26 @@ class OnlineTransfer {
       if (key == "created" || key == "modified") return undefined;
       return value;
     });
+
     if (remoteId == this.localId) return;
-    this.clients.get(remoteId)?.channel?.send(string);
+    const channel = this.clients.get(remoteId)?.channel;
+    channel?.send(string);
+
+    if (channel && data.type == "response") {
+      const sentEntries = !!data.entries?.length;
+      const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
+      const sentAny = sentEntries || sentConfigs;
+
+      this.rtcMessages = this.rtcMessages.filter((m) => {
+        return !(
+          m.from == remoteId &&
+          m.type == "request" &&
+          ((m.request == "entries" && sentEntries) ||
+            (m.request == "configs" && sentConfigs) ||
+            (m.request == "all" && sentAny))
+        );
+      });
+    }
   }
 
   clearRtcMessage(message: RTCMessage) {
@@ -299,7 +333,6 @@ class OnlineTransfer {
     const client = this.clients.get(id);
     client?.connection?.close();
     this.clients.delete(id);
-    this.rtcMessages = this.rtcMessages.filter((m) => !(m.from === id && m.type == "request"));
   }
 
   private connectToClient(remoteId: string, remoteOffer?: any) {

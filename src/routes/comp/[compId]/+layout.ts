@@ -23,7 +23,7 @@ export const load: LayoutLoad = async (event) => {
   }
 
   return {
-    otherComps: all.comps.filter((c) => c.id != compRecord.id),
+    all,
     compRecord,
     surveyRecords,
     fieldRecords,

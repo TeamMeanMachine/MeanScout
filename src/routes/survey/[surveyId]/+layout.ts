@@ -2,11 +2,12 @@ import { error } from "@sveltejs/kit";
 import type { Comp } from "$lib/comp";
 import type { MatchEntry, PitEntry } from "$lib/entry";
 import { getFieldsWithDetails, type Field } from "$lib/field";
-import { idb } from "$lib/idb";
+import { idb, type AllData } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
 import type { LayoutLoad } from "./$types";
 
 type SurveyPageData = {
+  all: AllData;
   compRecord: Comp;
   fieldRecords: Field[];
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
@@ -36,6 +37,7 @@ export const load: LayoutLoad = async (event) => {
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   return {
+    all,
     compRecord,
     fieldRecords,
     fieldsWithDetails,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { getTeamName, type Value } from "$lib";
+  import { getTeamName, rerunOtherContextLoads, type Value } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
@@ -54,7 +54,8 @@
       idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
       sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
       sessionStorage.removeItem("new-entry");
-      goto(`#/entry/${entry.id}`);
+      goto(`#/entry/${entry.id}`, { invalidateAll: true });
+      rerunOtherContextLoads();
     };
   }
 </script>
@@ -65,20 +66,7 @@
       onclick={() => {
         openDialog(BulkExportDialog, {
           entries: [entry],
-          onexport() {
-            idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
-
-            if (entry.status == "exported") {
-              onchange();
-              return;
-            }
-
-            idb.put("entries", {
-              ...$state.snapshot(entry),
-              status: "exported",
-              modified: new Date(),
-            }).onsuccess = onchange;
-          },
+          onexport: onchange,
         });
       }}
     >
