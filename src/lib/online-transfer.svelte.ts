@@ -1,7 +1,7 @@
 import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
-import { importSchema } from "./import";
+import { importSchema } from "./import.svelte";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -147,15 +147,7 @@ class OnlineTransfer {
       const sentEntries = !!data.entries?.length;
       const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
       const sentAny = sentEntries || sentConfigs;
-
-      this.rtcMessages = this.rtcMessages.filter((m) => {
-        return !(
-          m.type == "request" &&
-          ((m.request == "entries" && sentEntries) ||
-            (m.request == "configs" && sentConfigs) ||
-            (m.request == "all" && sentAny))
-        );
-      });
+      this.rtcMessages = this.rtcMessages.filter((m) => !(m.type == "request" && sentAny));
     }
   }
 
@@ -173,22 +165,15 @@ class OnlineTransfer {
       const sentEntries = !!data.entries?.length;
       const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
       const sentAny = sentEntries || sentConfigs;
-
-      this.rtcMessages = this.rtcMessages.filter((m) => {
-        return !(
-          m.from == remoteId &&
-          m.type == "request" &&
-          ((m.request == "entries" && sentEntries) ||
-            (m.request == "configs" && sentConfigs) ||
-            (m.request == "all" && sentAny))
-        );
-      });
+      this.rtcMessages = this.rtcMessages.filter((m) => !(m.type == "request" && sentAny && m.from == remoteId));
     }
   }
 
   clearRtcMessage(message: RTCMessage) {
     this.rtcMessages = this.rtcMessages.filter((m) => {
-      const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
+      const requestMatches =
+        m.type == "request" && message.type == "request" && (m.request == message.request || message.request == "all");
+
       const responseMatches =
         m.type == "response" &&
         message.type == "response" &&
@@ -205,6 +190,7 @@ class OnlineTransfer {
   private rtcMessageAlreadyReceived(message: RTCMessage) {
     return this.rtcMessages.some((m) => {
       const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
+
       const responseMatches =
         m.type == "response" &&
         message.type == "response" &&

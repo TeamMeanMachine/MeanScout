@@ -189,11 +189,7 @@
         </div>
       </Button>
 
-      <Button
-        onclick={() => {
-          openDialog(BulkExportDialog, { entries });
-        }}
-      >
+      <Button onclick={() => openDialog(BulkExportDialog, { send: "entries", entries })}>
         <ShareIcon class="size-5 text-theme" />
       </Button>
     </div>

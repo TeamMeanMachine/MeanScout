@@ -5,7 +5,7 @@
   import ImportViewer from "$lib/components/ImportViewer.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { AllData } from "$lib/idb";
-  import { importData } from "$lib/import";
+  import { importData } from "$lib/import.svelte";
   import type { ClientInfo, RTCResponseMessage } from "$lib/online-transfer.svelte";
 
   let {

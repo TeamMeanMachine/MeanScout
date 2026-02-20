@@ -38,7 +38,7 @@
       <div class="flex flex-wrap gap-2">
         {#if data.entryRecords.some((e) => e.status != "draft")}
           <Button
-            onclick={() => openDialog(BulkExportDialog, { entries: data.entryRecords })}
+            onclick={() => openDialog(BulkExportDialog, { send: "entries", entries: data.entryRecords })}
             class="relative w-20 flex-col gap-1!"
           >
             <ShareIcon class={["text-theme", requestMessageCount ? "animate-bounce" : "animate-none"]} />

@@ -65,6 +65,7 @@
     <Button
       onclick={() => {
         openDialog(BulkExportDialog, {
+          send: "entries",
           entries: [entry],
           onexport: onchange,
         });

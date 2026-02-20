@@ -7,7 +7,7 @@
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { AllData } from "$lib/idb";
-  import { importData, importSchema, type ImportedData } from "$lib/import";
+  import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { cameraStore } from "$lib/settings";
   import { z } from "zod";
@@ -21,7 +21,8 @@
     request: "entries" | "configs" | "all";
   } = $props();
 
-  const tab = sessionStorageStore<"room" | "qrfcode" | "file">("import-data-tab", "room");
+  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("import-data-tab", "room");
+  let currentTab = $state(onlineTransfer.rtcMessages.some((m) => m.type == "response") ? "room" : $storedTab);
 
   let imported = $state<ImportedData>({});
   let overwriteDuplicateEntries = $state(true);
@@ -53,31 +54,39 @@
     entries: importedIds.entries.intersection(existingIds.entries),
   });
 
-  let rtcMessages = $state($state.snapshot(onlineTransfer.rtcMessages.filter((m) => m.type == "response")));
-  let rtcClients = $state($state.snapshot(onlineTransfer.remoteClients));
+  const responseMessages = $derived(onlineTransfer.rtcMessages.filter((m) => m.type == "response"));
+
+  // svelte-ignore state_referenced_locally
+  let displayedMessages = $state($state.snapshot(responseMessages));
+  let displayedClients = $state($state.snapshot(onlineTransfer.remoteClients));
 
   const clientsChanged = $derived.by(() => {
-    const savedIds = new Set(rtcClients.map((c) => c.info.id));
+    const displayedIds = new Set(displayedClients.map((c) => c.info.id));
     const currentIds = new Set(onlineTransfer.remoteClients.map((c) => c.info.id));
 
-    if (currentIds.symmetricDifference(savedIds).size) {
+    if (currentIds.symmetricDifference(displayedIds).size) {
       return true;
     }
     return false;
   });
 
+  const messagesChanged = $derived(displayedMessages.length != responseMessages.length);
+
   function refreshMessages() {
-    rtcMessages = $state.snapshot(onlineTransfer.rtcMessages.filter((m) => m.type == "response"));
+    displayedMessages = $state.snapshot(responseMessages);
   }
 
   function refreshClients() {
-    rtcClients = $state.snapshot(onlineTransfer.remoteClients);
+    displayedClients = $state.snapshot(onlineTransfer.remoteClients);
   }
 
-  tab.subscribe(() => {
+  function changeTab(to: "room" | "qrfcode" | "file") {
+    error = "";
+    currentTab = to;
+    $storedTab = to;
     refreshMessages();
     refreshClients();
-  });
+  }
 
   async function onchange() {
     if (!files?.length) {
@@ -119,6 +128,11 @@
         return;
       }
 
+      if (!anyImported && currentTab == "room") {
+        closeDialog();
+        return;
+      }
+
       if (!anyImported) {
         error = "No data from input";
         return;
@@ -140,34 +154,38 @@
   <span>Receive {request}</span>
 
   <div class="flex flex-wrap gap-2 text-sm">
-    <Button onclick={() => ($tab = "room")} class={$tab == "room" ? "font-bold" : "font-light"}>Room</Button>
-    <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>QRF code</Button>
-    <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
+    <Button onclick={() => changeTab("room")} class={currentTab == "room" ? "font-bold" : "font-light"}>Room</Button>
+    {#if $cameraStore}
+      <Button onclick={() => changeTab("qrfcode")} class={currentTab == "qrfcode" ? "font-bold" : "font-light"}>
+        QRF code
+      </Button>
+    {/if}
+    <Button onclick={() => changeTab("file")} class={currentTab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 </div>
 
-{#if $tab == "room"}
+{#if currentTab == "room"}
   <Button
     onclick={() => {
       refreshMessages();
       refreshClients();
     }}
     class="relative self-start text-sm"
-    disabled={onlineTransfer.rtcMessages.length == rtcMessages.length && !clientsChanged}
+    disabled={!messagesChanged && !clientsChanged}
   >
     <RefreshCwIcon class="size-5 text-theme" />
-    Refresh
-    {#if onlineTransfer.rtcMessages.length != rtcMessages.length || clientsChanged}
-      <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic"> ! </span>
+    <span class={messagesChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
+    {#if messagesChanged || clientsChanged}
+      <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">!</span>
     {/if}
   </Button>
 
-  {#if rtcMessages.length}
+  {#if displayedMessages.length}
     <div class="flex flex-col">
       <span class="text-sm font-light">Incoming data</span>
 
       <div class="flex flex-col gap-2">
-        {#each rtcMessages as message}
+        {#each displayedMessages as message}
           {@const client = message.from ? onlineTransfer.clients.get(message.from) : undefined}
 
           <div class="flex items-stretch gap-1">
@@ -227,7 +245,7 @@
     </div>
   {/if}
 
-  {#if onlineTransfer.remoteClients.length}
+  {#if displayedClients.length}
     <div class="flex flex-col">
       <span class="text-sm font-light">Request from</span>
 
@@ -237,7 +255,7 @@
           Everyone
         </Button>
 
-        {#each onlineTransfer.remoteClients as client (client.info.id)}
+        {#each displayedClients as client (client.info.id)}
           <Button onclick={() => requestFrom(client.info.id)}>
             <div class="w-6 shrink-0"></div>
             <span class="text-sm">
@@ -253,7 +271,7 @@
   {:else}
     <RoomWidget />
   {/if}
-{:else if $tab == "qrfcode" && $cameraStore}
+{:else if currentTab == "qrfcode" && $cameraStore}
   {#if anyImported}
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
@@ -272,7 +290,7 @@
   />
 {/if}
 
-{#if $tab != "room" && anyImported}
+{#if currentTab != "room" && anyImported}
   <ImportViewer {imported} {existing} {overwriteDuplicateEntries} />
 
   {#if duplicateIds.entries.size}

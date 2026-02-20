@@ -3,7 +3,7 @@
   import { compareMatches } from "$lib";
   import type { Entry } from "$lib/entry";
   import type { AllData } from "$lib/idb";
-  import type { ImportedData } from "$lib/import";
+  import type { ImportedData } from "$lib/import.svelte";
   import type { ClientInfo } from "$lib/online-transfer.svelte";
   import Button from "./Button.svelte";
 

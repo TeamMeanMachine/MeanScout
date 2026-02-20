@@ -17,6 +17,8 @@
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
+
+  const responseCount = $derived(onlineTransfer.rtcMessages.filter((m) => m.type == "response").length);
 </script>
 
 <Header class="max-w-(--breakpoint-sm)" />
@@ -37,12 +39,17 @@
       {/each}
     {/if}
 
-    <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })}>
-      <DownloadIcon class="text-theme" />
-      <div class="flex flex-col">
+    <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })} class="relative">
+      <DownloadIcon class={["text-theme", responseCount ? "animate-bounce-down" : "animate-none"]} />
+      <div class={["flex flex-col", responseCount ? "animate-pulse" : "animate-none"]}>
         Receive
         <span class="text-xs font-light">Comps, surveys, entries</span>
       </div>
+      {#if responseCount}
+        <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
+          {responseCount}
+        </span>
+      {/if}
     </Button>
     <Button onclick={() => openDialog(NewCompDialog, {})}>
       <PlusIcon class="text-theme" />
