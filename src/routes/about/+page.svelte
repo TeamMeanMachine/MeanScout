@@ -36,28 +36,38 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">MeanScout</h2>
       <span>A highly configurable peer-to-peer FRC scouting web app.</span>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Features</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Full offline support (progressive web app)</li>
         <li>Lightweight mobile-first design</li>
-        <li>Customizable fields: toggles, numbers, selectors, textfields, ratings, and timers</li>
-        <li>Supports any number of match and non-match (pit) scouting forms</li>
-        <li>Data-driven rankings (pick lists and expressions)</li>
-        <li>Editable pick lists: omit and reorder teams</li>
-        <li>Optional scout names and match guessing game</li>
-        <li>Stores data locally, in the browser</li>
-        <li>Export/share survey configs and scouting data via QRF codes or files</li>
+        <li>Online and offline data transfer</li>
         <li>
-          Pull matches/teams/alliances from
+          Supports
           <a href="https://www.thebluealliance.com/" target="_blank">
             <span class="underline">The Blue Alliance</span>
             <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
           </a>
         </li>
-        <li>Or, manually set them up as needed</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Configuration features</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Supports any number of match and non-match (pit) scouting forms</li>
+        <li>Drag-and-drop field editor with toggles, numbers, selectors, textfields, ratings, and timers</li>
+        <li>Data-driven rankings (pick lists and expressions)</li>
+        <li>Editable pick lists: omit and reorder teams</li>
+        <li>Optional scout names and match guessing game</li>
+        <li>Add matches/teams/alliances from TBA (or manually)</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Data transfer features</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Stores data locally, in the browser</li>
+        <li>Online transfer via room-based peer-to-peer connections</li>
+        <li>Offline transfer via QRF codes and files</li>
       </ul>
     </div>
 
@@ -129,14 +139,25 @@
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Privacy</h2>
-      <span>
-        If you use The Blue Alliance in MeanScout, here's all the data that can be automatically sent from your device:
-      </span>
+      <span> If you use The Blue Alliance in MeanScout, here's everyting automatically sent: </span>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Your API key - MeanScout supplies its own auth key, but you may want to use your own</li>
+        <li>Your API key (if used) - MeanScout supplies its own auth key, but you may want to use your own</li>
         <li>Your team number - To get events your team participates in</li>
         <li>Event keys - To get match schedules, participating teams, and playoff alliances for those events</li>
       </ul>
+      <span>If you join a room for online transfers, here's everything automatically sent from your device:</span>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Your name</li>
+        <li>Your team number</li>
+      </ul>
+      <span>
+        The servers that broker connections between everyone in a room will store your name/team number while you are
+        connected. Scouting data and configs are sent directly between your devices using
+        <a href="https://webrtcforthecurious.com/" target="_blank">
+          <span class="underline">WebRTC</span>
+          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
+        </a>, and you have manual control over which devices receive that data from you.
+      </span>
       <span>MeanScout itself is completely free of telemetry or any other form of usage analytics.</span>
       <span>
         However, you should read sections regarding end users in the
@@ -164,7 +185,7 @@
         </a>
         to browse the source code, provide feedback, and/or contribute to the project.
       </span>
-      <span>&copy; 2020-2025 Aidan Linerud, Aran O'Day, FRC Team Mean Machine 2471</span>
+      <span>&copy; 2020-2026 Aidan Linerud, Aran O'Day, FRC Team Mean Machine 2471</span>
     </div>
   {:else if $tab == "guides"}
     <div class="flex flex-col gap-2">
@@ -273,8 +294,10 @@
       <h2 class="font-bold">Exporting</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Copy ranking results to other apps (e.g. Google Keep)</li>
-        <li>Export configs and scouting data via QRF codes or files</li>
+        <li>Export configs and scouting data using online rooms, or QRF codes/files when offline</li>
         <li>Scouting data can be easily exported from entries page</li>
+        <li>Online rooms work great on the same network, but using cellular data is very hit-or-miss</li>
+        <li>If internet isn't available, or if online rooms don't seem to work, use QRF codes</li>
         <li>If you can't use QRF codes, you'll have to manually share data as files between devices</li>
         <li>
           In that case, you can use Quick Share (Android + Windows), AirDrop (Apple), USB, email, messaging, smoke
@@ -290,6 +313,7 @@
         <li>Fill in the team setting on each device (highlights your team in match lists)</li>
         <li>Set a target on each device, ensuring each target is at least covered by one scout per match</li>
         <li>If you can use QRF codes, make sure to pick a rear-facing camera</li>
+        <li>If you use online rooms, you can still do offline transfers</li>
       </ol>
     </div>
   {:else if $tab == "guesses"}
