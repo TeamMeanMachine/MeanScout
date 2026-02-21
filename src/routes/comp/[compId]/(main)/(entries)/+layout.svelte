@@ -1,37 +1,17 @@
 <script lang="ts">
   import { DownloadIcon, PlusIcon, ShareIcon } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { rerunAllContextLoads } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
-  import ImportEntriesDialog from "$lib/dialogs/ImportEntriesDialog.svelte";
-  import type { Entry } from "$lib/entry";
-  import { idb } from "$lib/idb";
+  import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
   const showingNewPage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/new");
-
-  function onbulkexport(exportedEntries: Entry[]) {
-    const tx = idb.transaction(["comps", "entries"], "readwrite");
-    const entryStore = tx.objectStore("entries");
-    for (const entry of $state.snapshot(exportedEntries)) {
-      if (entry.status == "exported") {
-        continue;
-      }
-      entryStore.put({ ...entry, status: "exported", modified: new Date() });
-    }
-    tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
-    tx.oncomplete = rerunAllContextLoads;
-  }
-
-  function refresh() {
-    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
-  }
 </script>
 
 <div
@@ -45,49 +25,41 @@
     <h2 class="font-bold">Entries</h2>
 
     <div class="flex flex-wrap justify-between gap-3 text-sm">
-      <Button
-        onclick={() => {
-          if (showingNewPage) {
-            sessionStorage.removeItem("new-entry");
-            goto(`#/comp/${data.compRecord.id}`);
-          } else {
-            goto(`#/comp/${data.compRecord.id}/new`);
-          }
-        }}
-        class={["w-20 flex-col gap-1!", showingNewPage ? "font-bold" : ""]}
-      >
-        <PlusIcon class="text-theme transition-[rotate] {showingNewPage ? 'rotate-45' : 'rotate-0'}" />
-        {showingNewPage ? "Cancel" : "New"}
-      </Button>
+      <Anchor route="comp/{data.compRecord.id}/new" class={["w-20 flex-col gap-1!", showingNewPage ? "font-bold" : ""]}>
+        <PlusIcon class="text-theme" />
+        New
+      </Anchor>
 
       <div class="flex flex-wrap gap-2">
         {#if data.entryRecords.some((e) => e.status != "draft")}
           <Button
-            onclick={() => {
-              const entries = data.entryRecords.filter((e) => e.status != "draft");
-              openDialog(BulkExportDialog, {
-                entries,
-                onexport: () => onbulkexport(entries),
-              });
-            }}
-            class="w-20 flex-col gap-1!"
+            onclick={() => openDialog(BulkExportDialog, { send: "entries", entries: data.entryRecords })}
+            class="relative w-20 flex-col gap-1!"
           >
-            <ShareIcon class="text-theme" />
-            Send
+            <ShareIcon
+              class={["text-theme", onlineTransfer.requestsFromClients.size ? "animate-bounce" : "animate-none"]}
+            />
+            <span class={onlineTransfer.requestsFromClients.size ? "animate-pulse" : "animate-none"}>Send</span>
+            {#if onlineTransfer.requestsFromClients.size}
+              <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
+                {onlineTransfer.requestsFromClients.size}
+              </span>
+            {/if}
           </Button>
         {/if}
         <Button
-          onclick={() => {
-            openDialog(ImportEntriesDialog, {
-              surveyRecords: data.surveyRecords,
-              existingEntries: data.entryRecords,
-              onimport: refresh,
-            });
-          }}
-          class="w-20 flex-col gap-1!"
+          onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "entries" })}
+          class="relative w-20 flex-col gap-1!"
         >
-          <DownloadIcon class="text-theme" />
-          Receive
+          <DownloadIcon
+            class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
+          />
+          <span class={onlineTransfer.dataFromClients.size ? "animate-pulse" : "animate-none"}>Receive</span>
+          {#if onlineTransfer.dataFromClients.size}
+            <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
+              {onlineTransfer.dataFromClients.size}
+            </span>
+          {/if}
         </Button>
       </div>
     </div>

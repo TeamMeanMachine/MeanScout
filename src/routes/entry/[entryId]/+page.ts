@@ -3,11 +3,12 @@ import { type Value } from "$lib";
 import type { Comp } from "$lib/comp";
 import type { Entry, MatchEntry, PitEntry } from "$lib/entry";
 import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
-import { idb } from "$lib/idb";
+import { idb, type AllData } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
 import type { PageLoad } from "./$types";
 
 type EntryPageData = {
+  all: AllData;
   title: string;
   compRecord: Comp;
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
@@ -64,6 +65,7 @@ export const load: PageLoad = async (event) => {
   }
 
   return {
+    all,
     title,
     compRecord,
     fieldsWithDetails,

@@ -1,17 +1,26 @@
 <script lang="ts">
-  import { ArrowRightIcon, DownloadIcon, InfoIcon, PlusIcon, SettingsIcon } from "@lucide/svelte";
+  import {
+    ArrowRightIcon,
+    ChevronsLeftRightEllipsisIcon,
+    DownloadIcon,
+    InfoIcon,
+    PlusIcon,
+    SettingsIcon,
+  } from "@lucide/svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
+  import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { openDialog } from "$lib/dialog";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>
 
-<Header />
+<Header class="max-w-(--breakpoint-sm)" />
 
 <div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <div class="flex flex-col gap-2">
@@ -29,12 +38,19 @@
       {/each}
     {/if}
 
-    <Button onclick={() => openDialog(BulkImportDialog, {})}>
-      <DownloadIcon class="text-theme" />
-      <div class="flex flex-col">
+    <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })} class="relative">
+      <DownloadIcon
+        class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
+      />
+      <div class={["flex flex-col", onlineTransfer.dataFromClients.size ? "animate-pulse" : "animate-none"]}>
         Receive
         <span class="text-xs font-light">Comps, surveys, entries</span>
       </div>
+      {#if onlineTransfer.dataFromClients.size}
+        <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
+          {onlineTransfer.dataFromClients.size}
+        </span>
+      {/if}
     </Button>
     <Button onclick={() => openDialog(NewCompDialog, {})}>
       <PlusIcon class="text-theme" />
@@ -53,6 +69,22 @@
         ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
       </span>
     </div>
+    <Button onclick={() => openDialog(RoomWidget, {})} class="relative">
+      <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.localId && "animate-pulse"]} />
+      <div class="flex grow flex-col">
+        {#if onlineTransfer.localId}
+          View room
+        {:else}
+          Join a room
+        {/if}
+        <span class="text-xs font-light">Send data over the internet</span>
+        {#if onlineTransfer.localId}
+          <span class="absolute bottom-0 left-0.5 text-xs font-light tracking-tighter italic">
+            {onlineTransfer.remoteClients.length}
+          </span>
+        {/if}
+      </div>
+    </Button>
     <Anchor route="settings">
       <SettingsIcon class="text-theme" />
       <div class="flex grow flex-col">

@@ -1,83 +1,99 @@
 <script lang="ts">
-  import { Undo2Icon } from "@lucide/svelte";
-  import { rerunAllContextLoads, schemaVersion, sessionStorageStore } from "$lib";
-  import type { Comp } from "$lib/comp";
+  import { DownloadIcon, RefreshCwIcon, SquareCheckBigIcon, SquareIcon, Undo2Icon, XIcon } from "@lucide/svelte";
+  import { rerunAllContextLoads, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
+  import ImportViewer from "$lib/components/ImportViewer.svelte";
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
-  import { type Field } from "$lib/field";
-  import { idb } from "$lib/idb";
+  import RoomWidget from "$lib/components/RoomWidget.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import type { AllData } from "$lib/idb";
+  import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { cameraStore } from "$lib/settings";
-  import { type Survey } from "$lib/survey";
+  import { z } from "zod";
+  import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 
-  let imported = $state<{
-    comps?: Comp[];
-    surveys?: Survey[];
-    fields?: Field[];
-    entries?: Entry[];
-  }>({});
+  let {
+    existing,
+    request,
+  }: {
+    existing: AllData;
+    request: "entries" | "configs" | "all";
+  } = $props();
 
-  let anyImported = $derived.by(() => {
-    return imported.comps?.length || imported.surveys?.length || imported.fields?.length || imported.entries?.length;
-  });
+  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("import-data-tab", "room");
+  let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
-  const tab = sessionStorageStore<"qrfcode" | "file">("import-data-tab", $cameraStore ? "qrfcode" : "file");
-
+  let imported = $state<ImportedData>({});
+  let overwriteDuplicateEntries = $state(true);
   let files = $state<FileList | undefined>();
   let error = $state("");
 
-  export const { onconfirm }: DialogExports = {
-    async onconfirm() {
-      if (!anyImported) {
-        error = "No input";
-        return;
-      }
+  const anyImported = $derived.by(() => {
+    return imported.comps?.length || imported.surveys?.length || imported.fields?.length || imported.entries?.length;
+  });
 
-      const transaction = idb.transaction(["comps", "surveys", "fields", "entries"], "readwrite");
+  const importedIds = $derived({
+    comps: new Set(imported.comps?.map((c) => c.id)),
+    surveys: new Set(imported.surveys?.map((s) => s.id)),
+    fields: new Set(imported.fields?.map((f) => f.id)),
+    entries: new Set(imported.entries?.map((e) => e.id)),
+  });
 
-      const compStore = transaction.objectStore("comps");
-      const surveyStore = transaction.objectStore("surveys");
-      const fieldStore = transaction.objectStore("fields");
-      const entryStore = transaction.objectStore("entries");
+  const existingIds = $derived({
+    comps: new Set(existing.comps.map((c) => c.id)),
+    surveys: new Set(existing.surveys.map((s) => s.id)),
+    fields: new Set(existing.fields.map((f) => f.id)),
+    entries: new Set(existing.entries.map((e) => e.id)),
+  });
 
-      transaction.oncomplete = () => {
-        rerunAllContextLoads();
-        closeDialog();
-      };
+  const duplicateIds = $derived({
+    comps: importedIds.comps.intersection(existingIds.comps),
+    surveys: importedIds.surveys.intersection(existingIds.surveys),
+    fields: importedIds.fields.intersection(existingIds.fields),
+    entries: importedIds.entries.intersection(existingIds.entries),
+  });
 
-      transaction.onabort = () => {
-        error = transaction.error?.message || "Could not import data";
-      };
+  // svelte-ignore state_referenced_locally
+  let displayedDataFromClients = $state($state.snapshot(onlineTransfer.dataFromClients));
+  let displayedClients = $state($state.snapshot(onlineTransfer.remoteClients));
 
-      if (imported.comps?.length) {
-        for (const importedComp of imported.comps) {
-          compStore.put($state.snapshot(importedComp));
-        }
-      }
+  const clientsChanged = $derived.by(() => {
+    const displayedIds = new Set(displayedClients.map((c) => c.info.id));
+    const currentIds = new Set(onlineTransfer.remoteClients.map((c) => c.info.id));
 
-      if (imported.surveys?.length) {
-        for (const importedSurvey of imported.surveys) {
-          surveyStore.put($state.snapshot(importedSurvey));
-        }
-      }
+    if (currentIds.symmetricDifference(displayedIds).size) {
+      return true;
+    }
+    return false;
+  });
 
-      if (imported.fields?.length) {
-        for (const importedField of imported.fields) {
-          fieldStore.put($state.snapshot(importedField));
-        }
-      }
+  const dataFromClientsChanged = $derived.by(() => {
+    if (displayedDataFromClients.size != onlineTransfer.dataFromClients.size) {
+      return true;
+    }
+    for (const [clientId, actual] of onlineTransfer.dataFromClients) {
+      const displayed = displayedDataFromClients.get(clientId);
+      if (actual !== displayed) return true;
+    }
+    for (const [clientId, displayed] of displayedDataFromClients) {
+      const actual = onlineTransfer.dataFromClients.get(clientId);
+      if (displayed !== actual) return true;
+    }
+    return false;
+  });
 
-      if (imported.entries?.length) {
-        for (const importedEntry of imported.entries) {
-          entryStore.put($state.snapshot(importedEntry));
-        }
-      }
+  function refreshDisplayed() {
+    displayedDataFromClients = $state.snapshot(onlineTransfer.dataFromClients);
+    displayedClients = $state.snapshot(onlineTransfer.remoteClients);
+  }
 
-      rerunAllContextLoads();
-      closeDialog();
-    },
-  };
+  function changeTab(to: "room" | "qrfcode" | "file") {
+    error = "";
+    currentTab = to;
+    $storedTab = to;
+    refreshDisplayed();
+  }
 
   async function onchange() {
     if (!files?.length) {
@@ -88,257 +104,178 @@
   }
 
   function onread(data: string) {
-    let json: {
-      version: number;
-      comps?: Comp[];
-      surveys?: Survey[];
-      fields?: Field[];
-      entries?: Entry[];
-    };
-
     try {
-      json = JSON.parse(data);
+      const json = JSON.parse(data);
+      imported = z.parse(importSchema, json);
     } catch (e) {
-      console.error("JSON failed to parse imported data:", data);
-      error = "JSON failed to parse";
+      console.error("Failed to parse imported data:", data, e);
+      error = "Failed to parse imported data";
       return;
     }
-
-    if (json.version < schemaVersion) {
-      error = "Outdated version";
-      return;
-    } else if (json.version > schemaVersion) {
-      error = "Unsupported version";
-      return;
-    }
-
-    const importedComps = json.comps?.map((jsonComp) => {
-      const comp: Comp = {
-        id: jsonComp.id,
-        name: jsonComp.name,
-        matches: jsonComp.matches,
-        teams: jsonComp.teams,
-        created: new Date(),
-        modified: new Date(),
-      };
-
-      if (jsonComp.tbaEventKey) {
-        comp.tbaEventKey = jsonComp.tbaEventKey;
-      }
-
-      if (jsonComp.scouts) {
-        comp.scouts = jsonComp.scouts;
-      }
-
-      return comp;
-    });
-
-    const importedSurveys = json.surveys
-      ?.map((jsonSurvey) => {
-        let survey: Survey;
-
-        switch (jsonSurvey.type) {
-          case "match":
-            survey = {
-              id: jsonSurvey.id,
-              compId: jsonSurvey.compId,
-              name: jsonSurvey.name,
-              type: "match",
-              fieldIds: jsonSurvey.fieldIds,
-              pickLists: jsonSurvey.pickLists,
-              expressions: jsonSurvey.expressions,
-              created: new Date(),
-              modified: new Date(),
-            };
-            if (jsonSurvey.tbaMetrics?.length) {
-              survey.tbaMetrics = jsonSurvey.tbaMetrics;
-            }
-            break;
-          case "pit":
-            survey = {
-              id: jsonSurvey.id,
-              compId: jsonSurvey.compId,
-              name: jsonSurvey.name,
-              type: "pit",
-              fieldIds: jsonSurvey.fieldIds,
-              created: new Date(),
-              modified: new Date(),
-            };
-            break;
-          default:
-            return;
-        }
-
-        return survey;
-      })
-      .filter((jsonSurvey) => jsonSurvey !== undefined);
-
-    const importedFields = json.fields?.map((jsonField) => {
-      let field: Field;
-
-      switch (jsonField.type) {
-        case "number":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-          };
-          if (jsonField.allowNegative) {
-            field.allowNegative = true;
-          }
-          break;
-        case "toggle":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-          };
-          break;
-        case "select":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-            values: jsonField.values,
-          };
-          if (jsonField.radio) {
-            field.radio = true;
-          }
-          break;
-        case "text":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-          };
-          if (jsonField.long) {
-            field.long = true;
-          }
-          break;
-        case "rating":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-          };
-          break;
-        case "timer":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-          };
-          break;
-        case "group":
-          field = {
-            id: jsonField.id,
-            surveyId: jsonField.surveyId,
-            name: jsonField.name,
-            type: jsonField.type,
-            fieldIds: jsonField.fieldIds,
-          };
-          break;
-      }
-
-      if (field.type != "group" && jsonField.type != "group" && jsonField.tip) {
-        field.tip = jsonField.tip;
-      }
-
-      return field;
-    });
-
-    const importedEntries = json.entries?.map((jsonEntry) => {
-      let entry: Entry;
-
-      if ("match" in jsonEntry) {
-        entry = {
-          id: jsonEntry.id,
-          surveyId: jsonEntry.surveyId,
-          type: "match",
-          status: "exported",
-          team: jsonEntry.team,
-          match: jsonEntry.match,
-          absent: jsonEntry.absent,
-          values: jsonEntry.values,
-          created: new Date(),
-          modified: new Date(),
-        };
-
-        if (jsonEntry.matchSet && jsonEntry.matchSet > 1) {
-          entry.matchSet = jsonEntry.matchSet;
-        }
-
-        if (jsonEntry.matchLevel && jsonEntry.matchLevel != "qm") {
-          entry.matchLevel = jsonEntry.matchLevel;
-        }
-
-        if (jsonEntry.tbaMetrics) {
-          entry.tbaMetrics = jsonEntry.tbaMetrics;
-        }
-
-        if (jsonEntry.scout && jsonEntry.prediction) {
-          entry.prediction = jsonEntry.prediction;
-          if (jsonEntry.predictionReason) {
-            entry.predictionReason = jsonEntry.predictionReason;
-          }
-        }
-      } else {
-        entry = {
-          id: jsonEntry.id,
-          surveyId: jsonEntry.surveyId,
-          type: "pit",
-          status: "exported",
-          team: jsonEntry.team,
-          values: jsonEntry.values,
-          created: new Date(),
-          modified: new Date(),
-        };
-      }
-
-      if (jsonEntry.scout) {
-        entry.scout = jsonEntry.scout;
-        if (jsonEntry.scoutTeam) {
-          entry.scoutTeam = jsonEntry.scoutTeam;
-        }
-      }
-
-      return entry;
-    });
-
-    imported = {
-      comps: importedComps?.length ? importedComps : undefined,
-      surveys: importedSurveys?.length ? importedSurveys : undefined,
-      fields: importedFields?.length ? importedFields : undefined,
-      entries: importedEntries?.length ? importedEntries : undefined,
-    };
   }
 
   function retry() {
     error = "";
     imported = {};
   }
+
+  function requestFromAll() {
+    if (!onlineTransfer.localId) return;
+    onlineTransfer.sendToAll({ type: "request", request });
+  }
+
+  function requestFrom(id: string) {
+    if (!onlineTransfer.localId) return;
+    onlineTransfer.sendTo(id, { type: "request", request });
+  }
+
+  export const { onconfirm }: DialogExports = {
+    async onconfirm() {
+      if (error) {
+        return;
+      }
+
+      if (!anyImported && currentTab == "room") {
+        closeDialog();
+        return;
+      }
+
+      if (!anyImported) {
+        error = "No data from input";
+        return;
+      }
+
+      importData({ imported, existing, overwriteDuplicateEntries })
+        .then(() => {
+          rerunAllContextLoads();
+          closeDialog();
+        })
+        .catch((reason) => {
+          error = reason;
+        });
+    },
+  };
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  <span>Import data</span>
+  <span>Receive {request}</span>
 
-  {#if $cameraStore}
-    <div class="flex flex-wrap gap-2 text-sm">
-      <Button onclick={() => ($tab = "qrfcode")} class={$tab == "qrfcode" ? "font-bold" : "font-light"}>
+  <div class="flex flex-wrap gap-2 text-sm">
+    <Button onclick={() => changeTab("room")} class={currentTab == "room" ? "font-bold" : "font-light"}>Room</Button>
+    {#if $cameraStore}
+      <Button onclick={() => changeTab("qrfcode")} class={currentTab == "qrfcode" ? "font-bold" : "font-light"}>
         QRF code
       </Button>
-      <Button onclick={() => ($tab = "file")} class={$tab == "file" ? "font-bold" : "font-light"}>File</Button>
-    </div>
-  {/if}
+    {/if}
+    <Button onclick={() => changeTab("file")} class={currentTab == "file" ? "font-bold" : "font-light"}>File</Button>
+  </div>
 </div>
 
-{#if $tab == "qrfcode" && $cameraStore}
+{#if currentTab == "room"}
+  <Button
+    onclick={refreshDisplayed}
+    class="relative self-start text-sm"
+    disabled={!dataFromClientsChanged && !clientsChanged}
+  >
+    <RefreshCwIcon class="size-5 text-theme" />
+    <span class={dataFromClientsChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
+    {#if dataFromClientsChanged || clientsChanged}
+      <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">!</span>
+    {/if}
+  </Button>
+
+  {#if displayedDataFromClients.size}
+    <div class="flex flex-col">
+      <span class="text-sm font-light">Incoming data</span>
+
+      <div class="flex flex-col gap-2">
+        {#each displayedDataFromClients as [clientId, data]}
+          {@const client = onlineTransfer.clients.get(clientId)}
+
+          <div class="flex items-stretch gap-1">
+            <Button
+              onclick={() => {
+                openDialog(HandleRtcResponseMessageDialog, {
+                  data,
+                  client: client?.info || { id: "", name: "Disconnected" },
+                  existing,
+                  onhandle() {
+                    onlineTransfer.dataFromClients.delete(clientId);
+                    refreshDisplayed();
+                  },
+                });
+              }}
+              class="grow flex-col items-start gap-1! text-sm"
+            >
+              <span>
+                {#if client}
+                  {client.info.name}
+                  {#if client.info.team}
+                    <span class="text-xs font-light">({client.info.team})</span>
+                  {/if}
+                {:else}
+                  Disconnected
+                {/if}
+              </span>
+
+              {#if data.comps.length}
+                <span>Comps: {data.comps.length}</span>
+              {/if}
+
+              {#if data.surveys.length}
+                <span>Surveys: {data.surveys.length}</span>
+              {/if}
+
+              {#if data.fields.length}
+                <span>Fields: {data.fields.length}</span>
+              {/if}
+
+              {#if data.entries.length}
+                <span>Entries: {data.entries.length}</span>
+              {/if}
+            </Button>
+
+            <Button
+              onclick={() => {
+                onlineTransfer.dataFromClients.delete(clientId);
+                refreshDisplayed();
+              }}
+            >
+              <XIcon class="text-theme" />
+            </Button>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  {#if displayedClients.length}
+    <div class="flex flex-col">
+      <span class="text-sm font-light">Request from</span>
+
+      <div class="flex flex-col gap-2">
+        <Button onclick={requestFromAll}>
+          <DownloadIcon class="text-theme" />
+          Everyone
+        </Button>
+
+        {#each displayedClients as client (client.info.id)}
+          <Button onclick={() => requestFrom(client.info.id)}>
+            <div class="w-6 shrink-0"></div>
+            <span class="text-sm">
+              {client.info.name}
+              {#if client.info.team}
+                <span class="text-xs font-light">({client.info.team})</span>
+              {/if}
+            </span>
+          </Button>
+        {/each}
+      </div>
+    </div>
+  {:else}
+    <RoomWidget hideTitle />
+  {/if}
+{:else if currentTab == "qrfcode" && $cameraStore}
   {#if anyImported}
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
@@ -357,24 +294,22 @@
   />
 {/if}
 
-{#if anyImported}
-  <div class="flex flex-col gap-1 text-sm">
-    {#if imported.comps?.length}
-      <span>Comps: {imported.comps.length == 1 ? imported.comps[0].name : imported.comps.length}</span>
-    {/if}
+{#if currentTab != "room" && anyImported}
+  <ImportViewer {imported} {existing} {overwriteDuplicateEntries} />
 
-    {#if imported.surveys?.length}
-      <span>Surveys: {imported.surveys.length == 1 ? imported.surveys[0].name : imported.surveys.length}</span>
-    {/if}
-
-    {#if imported.fields?.length}
-      <span>Fields: {imported.fields.length}</span>
-    {/if}
-
-    {#if imported.entries?.length}
-      <span>Entries: {imported.entries.length}</span>
-    {/if}
-  </div>
+  {#if duplicateIds.entries.size}
+    <Button
+      onclick={() => (overwriteDuplicateEntries = !overwriteDuplicateEntries)}
+      class={["grow basis-0", overwriteDuplicateEntries ? "font-bold" : "font-light"]}
+    >
+      {#if overwriteDuplicateEntries}
+        <SquareCheckBigIcon class="text-theme" />
+      {:else}
+        <SquareIcon class="text-theme" />
+      {/if}
+      <div class="flex flex-col">Overwrite duplicate entries</div>
+    </Button>
+  {/if}
 {/if}
 
 {#if error}

@@ -11,8 +11,8 @@ const baseSurveySchema = z.object({
   compId: z.string(),
   name: z.string(),
   fieldIds: z.array(z.string()),
-  created: z.date(),
-  modified: z.date(),
+  created: z.date().catch(() => new Date()),
+  modified: z.date().catch(() => new Date()),
 });
 
 const matchSurveySchema = z.object({

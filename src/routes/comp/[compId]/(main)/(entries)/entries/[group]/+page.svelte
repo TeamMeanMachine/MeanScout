@@ -55,19 +55,6 @@
     sessionStorage.setItem("entries-toggle-states", JSON.stringify(toggleStates));
   });
 
-  function onbulkexport(exportedEntries: Entry[]) {
-    const tx = idb.transaction(["comps", "entries"], "readwrite");
-    const entryStore = tx.objectStore("entries");
-    for (const entry of $state.snapshot(exportedEntries)) {
-      if (entry.status == "exported") {
-        continue;
-      }
-      entryStore.put({ ...entry, status: "exported", modified: new Date() });
-    }
-    tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
-    tx.oncomplete = rerunAllContextLoads;
-  }
-
   function refresh() {
     idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
   }
@@ -202,14 +189,7 @@
         </div>
       </Button>
 
-      <Button
-        onclick={() => {
-          openDialog(BulkExportDialog, {
-            entries,
-            onexport: () => onbulkexport(entries),
-          });
-        }}
-      >
+      <Button onclick={() => openDialog(BulkExportDialog, { send: "entries", entries })}>
         <ShareIcon class="size-5 text-theme" />
       </Button>
     </div>

@@ -19,6 +19,7 @@
   heading="Admin"
   subheading="{data.compRecord.name} - {data.survey.record.name}"
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
+  class="max-w-(--breakpoint-lg)"
 >
   <div class="hidden gap-2 text-sm text-nowrap lg:flex">
     {@render links()}

@@ -90,6 +90,7 @@
   heading="Entry"
   subheading={data.surveyRecord.name}
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
+  class="max-w-(--breakpoint-lg)"
 />
 
 <div class="mx-auto mt-[57px] w-full max-w-(--breakpoint-lg) px-3 py-6">
