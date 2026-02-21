@@ -12,11 +12,6 @@
   let { data, children }: LayoutProps = $props();
 
   const showingNewPage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/new");
-
-  const requestMessageCount = $derived(
-    onlineTransfer.rtcMessages.filter((m) => m.type == "request" && m.request == "entries").length,
-  );
-  const responseMessageCount = $derived(onlineTransfer.rtcMessages.filter((m) => m.type == "response").length);
 </script>
 
 <div
@@ -41,11 +36,13 @@
             onclick={() => openDialog(BulkExportDialog, { send: "entries", entries: data.entryRecords })}
             class="relative w-20 flex-col gap-1!"
           >
-            <ShareIcon class={["text-theme", requestMessageCount ? "animate-bounce" : "animate-none"]} />
-            <span class={requestMessageCount ? "animate-pulse" : "animate-none"}>Send</span>
-            {#if requestMessageCount}
+            <ShareIcon
+              class={["text-theme", onlineTransfer.requestsFromClients.size ? "animate-bounce" : "animate-none"]}
+            />
+            <span class={onlineTransfer.requestsFromClients.size ? "animate-pulse" : "animate-none"}>Send</span>
+            {#if onlineTransfer.requestsFromClients.size}
               <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
-                {requestMessageCount}
+                {onlineTransfer.requestsFromClients.size}
               </span>
             {/if}
           </Button>
@@ -54,11 +51,13 @@
           onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "entries" })}
           class="relative w-20 flex-col gap-1!"
         >
-          <DownloadIcon class={["text-theme", responseMessageCount ? "animate-bounce-down" : "animate-none"]} />
-          <span class={responseMessageCount ? "animate-pulse" : "animate-none"}>Receive</span>
-          {#if responseMessageCount}
+          <DownloadIcon
+            class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
+          />
+          <span class={onlineTransfer.dataFromClients.size ? "animate-pulse" : "animate-none"}>Receive</span>
+          {#if onlineTransfer.dataFromClients.size}
             <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">
-              {responseMessageCount}
+              {onlineTransfer.dataFromClients.size}
             </span>
           {/if}
         </Button>

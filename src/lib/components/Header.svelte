@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronsLeftRightEllipsisIcon, EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
@@ -45,22 +45,14 @@
     {@render children?.()}
 
     <div class="flex grow items-center justify-end gap-3">
-      {#if onlineTransfer.localId}
-        <Anchor route="webrtc" class="relative">
-          <ChevronsLeftRightEllipsisIcon class="animate-pulse" />
-          <span class="absolute right-0.5 bottom-0 text-xs font-light tracking-tighter italic">
-            {#if onlineTransfer.clients.size}
-              {onlineTransfer.clients.size - 1}
-            {:else}
-              !
-            {/if}
-          </span>
-        </Anchor>
-      {/if}
-
       {#if onmenupressed}
-        <Button onclick={onmenupressed}>
+        <Button onclick={onmenupressed} class="relative">
           <EllipsisVerticalIcon class="text-theme" />
+          {#if onlineTransfer.requestsFromClients.size || onlineTransfer.dataFromClients.size}
+            <span class="absolute right-0.5 bottom-0 animate-bounce text-xs font-bold tracking-tighter italic">
+              {onlineTransfer.requestsFromClients.size + onlineTransfer.dataFromClients.size}
+            </span>
+          {/if}
         </Button>
       {:else if backLink !== undefined}
         <Anchor route={backLink}>

@@ -22,7 +22,7 @@
   } = $props();
 
   const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("import-data-tab", "room");
-  let currentTab = $state(onlineTransfer.rtcMessages.some((m) => m.type == "response") ? "room" : $storedTab);
+  let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
   let imported = $state<ImportedData>({});
   let overwriteDuplicateEntries = $state(true);
@@ -54,10 +54,8 @@
     entries: importedIds.entries.intersection(existingIds.entries),
   });
 
-  const responseMessages = $derived(onlineTransfer.rtcMessages.filter((m) => m.type == "response"));
-
   // svelte-ignore state_referenced_locally
-  let displayedMessages = $state($state.snapshot(responseMessages));
+  let displayedDataFromClients = $state($state.snapshot(onlineTransfer.dataFromClients));
   let displayedClients = $state($state.snapshot(onlineTransfer.remoteClients));
 
   const clientsChanged = $derived.by(() => {
@@ -70,13 +68,23 @@
     return false;
   });
 
-  const messagesChanged = $derived(displayedMessages.length != responseMessages.length);
+  const dataFromClientsChanged = $derived.by(() => {
+    if (displayedDataFromClients.size != onlineTransfer.dataFromClients.size) {
+      return true;
+    }
+    for (const [clientId, actual] of onlineTransfer.dataFromClients) {
+      const displayed = displayedDataFromClients.get(clientId);
+      if (actual !== displayed) return true;
+    }
+    for (const [clientId, displayed] of displayedDataFromClients) {
+      const actual = onlineTransfer.dataFromClients.get(clientId);
+      if (displayed !== actual) return true;
+    }
+    return false;
+  });
 
-  function refreshMessages() {
-    displayedMessages = $state.snapshot(responseMessages);
-  }
-
-  function refreshClients() {
+  function refreshDisplayed() {
+    displayedDataFromClients = $state.snapshot(onlineTransfer.dataFromClients);
     displayedClients = $state.snapshot(onlineTransfer.remoteClients);
   }
 
@@ -84,8 +92,7 @@
     error = "";
     currentTab = to;
     $storedTab = to;
-    refreshMessages();
-    refreshClients();
+    refreshDisplayed();
   }
 
   async function onchange() {
@@ -166,38 +173,35 @@
 
 {#if currentTab == "room"}
   <Button
-    onclick={() => {
-      refreshMessages();
-      refreshClients();
-    }}
+    onclick={refreshDisplayed}
     class="relative self-start text-sm"
-    disabled={!messagesChanged && !clientsChanged}
+    disabled={!dataFromClientsChanged && !clientsChanged}
   >
     <RefreshCwIcon class="size-5 text-theme" />
-    <span class={messagesChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
-    {#if messagesChanged || clientsChanged}
+    <span class={dataFromClientsChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
+    {#if dataFromClientsChanged || clientsChanged}
       <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">!</span>
     {/if}
   </Button>
 
-  {#if displayedMessages.length}
+  {#if displayedDataFromClients.size}
     <div class="flex flex-col">
       <span class="text-sm font-light">Incoming data</span>
 
       <div class="flex flex-col gap-2">
-        {#each displayedMessages as message}
-          {@const client = message.from ? onlineTransfer.clients.get(message.from) : undefined}
+        {#each displayedDataFromClients as [clientId, data]}
+          {@const client = onlineTransfer.clients.get(clientId)}
 
           <div class="flex items-stretch gap-1">
             <Button
               onclick={() => {
                 openDialog(HandleRtcResponseMessageDialog, {
-                  message,
+                  data,
                   client: client?.info || { id: "", name: "Disconnected" },
                   existing,
                   onhandle() {
-                    onlineTransfer.clearRtcMessage(message);
-                    refreshMessages();
+                    onlineTransfer.dataFromClients.delete(clientId);
+                    refreshDisplayed();
                   },
                 });
               }}
@@ -214,27 +218,27 @@
                 {/if}
               </span>
 
-              {#if message.comps?.length}
-                <span>Comps: {message.comps?.length}</span>
+              {#if data.comps.length}
+                <span>Comps: {data.comps.length}</span>
               {/if}
 
-              {#if message.surveys?.length}
-                <span>Surveys: {message.surveys?.length}</span>
+              {#if data.surveys.length}
+                <span>Surveys: {data.surveys.length}</span>
               {/if}
 
-              {#if message.fields?.length}
-                <span>Fields: {message.fields?.length}</span>
+              {#if data.fields.length}
+                <span>Fields: {data.fields.length}</span>
               {/if}
 
-              {#if message.entries?.length}
-                <span>Entries: {message.entries?.length}</span>
+              {#if data.entries.length}
+                <span>Entries: {data.entries.length}</span>
               {/if}
             </Button>
 
             <Button
               onclick={() => {
-                onlineTransfer.clearRtcMessage(message);
-                refreshMessages();
+                onlineTransfer.dataFromClients.delete(clientId);
+                refreshDisplayed();
               }}
             >
               <XIcon class="text-theme" />
@@ -269,7 +273,7 @@
       </div>
     </div>
   {:else}
-    <RoomWidget />
+    <RoomWidget hideTitle />
   {/if}
 {:else if currentTab == "qrfcode" && $cameraStore}
   {#if anyImported}

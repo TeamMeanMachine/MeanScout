@@ -1,7 +1,8 @@
 import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
-import { importSchema } from "./import.svelte";
+import type { AllData } from "./idb";
+import { importSchema, mergeOldAndNewData } from "./import.svelte";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -82,8 +83,21 @@ class OnlineTransfer {
       : [],
   );
 
-  /** A reactive list of incoming RTC messages from clients. */
-  rtcMessages = $state<RTCMessage[]>([]);
+  /** Reactive map of any remote clients' requests. */
+  requestsFromClients = $state(new SvelteMap<string, "entries" | "configs" | "all">());
+
+  /** Reactive map of any remote clients' data. */
+  dataFromClients = $state(new SvelteMap<string, AllData>());
+
+  /** Reactive counts of different requests. */
+  requestCounts = $derived.by(() => {
+    const messages = Object.groupBy(onlineTransfer.requestsFromClients.values(), (r) => r);
+    return {
+      entries: messages.entries?.length || 0,
+      configs: messages.configs?.length || 0,
+      all: messages.all?.length || 0,
+    };
+  });
 
   joinRoom({ room, name, team }: { room: string; name: string; team: string }) {
     const url = new URL(SIGNALING_SERVER_URL);
@@ -114,7 +128,8 @@ class OnlineTransfer {
         client.connection?.close();
       }
       this.clients.clear();
-      this.rtcMessages = [];
+      this.dataFromClients.clear();
+      this.requestsFromClients.clear();
     };
 
     ws.onmessage = ({ data }) => this.handleWsMessage(ws, data);
@@ -129,7 +144,8 @@ class OnlineTransfer {
       client.connection?.close();
     }
     this.clients.clear();
-    this.rtcMessages = [];
+    this.dataFromClients.clear();
+    this.requestsFromClients.clear();
   }
 
   sendToAll(data: RTCMessage) {
@@ -141,13 +157,22 @@ class OnlineTransfer {
     for (const [, client] of this.clients) {
       if (client.info.id == this.localId) continue;
       client.channel?.send(string);
-    }
 
-    if (data.type == "response") {
+      if (data.type == "request") continue;
+
       const sentEntries = !!data.entries?.length;
       const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
       const sentAny = sentEntries || sentConfigs;
-      this.rtcMessages = this.rtcMessages.filter((m) => !(m.type == "request" && sentAny));
+
+      const request = this.requestsFromClients.get(client.info.id);
+
+      if (
+        (request == "entries" && sentEntries) ||
+        (request == "configs" && sentConfigs) ||
+        (request == "all" && sentAny)
+      ) {
+        this.requestsFromClients.delete(client.info.id);
+      }
     }
   }
 
@@ -157,51 +182,24 @@ class OnlineTransfer {
       return value;
     });
 
-    if (remoteId == this.localId) return;
     const channel = this.clients.get(remoteId)?.channel;
     channel?.send(string);
 
-    if (channel && data.type == "response") {
-      const sentEntries = !!data.entries?.length;
-      const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
-      const sentAny = sentEntries || sentConfigs;
-      this.rtcMessages = this.rtcMessages.filter((m) => !(m.type == "request" && sentAny && m.from == remoteId));
+    if (data.type == "request") return;
+
+    const sentEntries = !!data.entries?.length;
+    const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
+    const sentAny = sentEntries || sentConfigs;
+
+    const request = this.requestsFromClients.get(remoteId);
+
+    if (
+      (request == "entries" && sentEntries) ||
+      (request == "configs" && sentConfigs) ||
+      (request == "all" && sentAny)
+    ) {
+      this.requestsFromClients.delete(remoteId);
     }
-  }
-
-  clearRtcMessage(message: RTCMessage) {
-    this.rtcMessages = this.rtcMessages.filter((m) => {
-      const requestMatches =
-        m.type == "request" && message.type == "request" && (m.request == message.request || message.request == "all");
-
-      const responseMatches =
-        m.type == "response" &&
-        message.type == "response" &&
-        m.version === message.version &&
-        m.comps?.length === message.comps?.length &&
-        m.surveys?.length === message.surveys?.length &&
-        m.fields?.length === message.fields?.length &&
-        m.entries?.length === message.entries?.length;
-
-      return !(m.from === message.from && (requestMatches || responseMatches));
-    });
-  }
-
-  private rtcMessageAlreadyReceived(message: RTCMessage) {
-    return this.rtcMessages.some((m) => {
-      const requestMatches = m.type == "request" && message.type == "request" && m.request == message.request;
-
-      const responseMatches =
-        m.type == "response" &&
-        message.type == "response" &&
-        m.version === message.version &&
-        m.comps?.length === message.comps?.length &&
-        m.surveys?.length === message.surveys?.length &&
-        m.fields?.length === message.fields?.length &&
-        m.entries?.length === message.entries?.length;
-
-      return m.from === message.from && (requestMatches || responseMatches);
-    });
   }
 
   private sendWsMessage(message: WSOutboundMessage) {
@@ -415,12 +413,33 @@ class OnlineTransfer {
       const parsed = z.parse(rtcMessageSchema, json);
       parsed.from = remoteId;
 
-      if (this.rtcMessageAlreadyReceived(parsed)) {
-        console.log("data channel: message already exists:", parsed);
-        return;
+      if (parsed.type == "request") {
+        const existingRequest = this.requestsFromClients.get(remoteId);
+        if (!existingRequest) {
+          this.requestsFromClients.set(remoteId, parsed.request);
+        } else if (existingRequest != "all" && parsed.request != existingRequest) {
+          this.requestsFromClients.set(remoteId, "all");
+        }
+      } else if (parsed.type == "response") {
+        const existingData = this.dataFromClients.get(remoteId);
+        if (!existingData) {
+          this.dataFromClients.set(remoteId, {
+            comps: parsed.comps || [],
+            surveys: parsed.surveys || [],
+            fields: parsed.fields || [],
+            entries: parsed.entries || [],
+          });
+        } else {
+          const { merged } = mergeOldAndNewData({
+            existing: existingData,
+            imported: parsed,
+            overwriteDuplicateEntries: true,
+            includeExisting: true,
+          });
+          this.dataFromClients.set(remoteId, merged);
+        }
       }
 
-      this.rtcMessages.push(parsed);
       console.log("data channel: message received:", parsed);
     } catch (e) {
       console.log("data channel: unusual rtc message received:", e, data);

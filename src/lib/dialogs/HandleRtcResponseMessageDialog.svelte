@@ -6,25 +6,25 @@
   import { closeDialog, type DialogExports } from "$lib/dialog";
   import type { AllData } from "$lib/idb";
   import { importData } from "$lib/import.svelte";
-  import type { ClientInfo, RTCResponseMessage } from "$lib/online-transfer.svelte";
+  import type { ClientInfo } from "$lib/online-transfer.svelte";
 
   let {
-    message,
+    data,
     client,
     existing,
     onhandle,
   }: {
-    message: RTCResponseMessage;
+    data: AllData;
     client: ClientInfo;
     existing: AllData;
     onhandle(): void;
   } = $props();
 
   const importedIds = $derived({
-    comps: new Set(message.comps?.map((c) => c.id)),
-    surveys: new Set(message.surveys?.map((s) => s.id)),
-    fields: new Set(message.fields?.map((f) => f.id)),
-    entries: new Set(message.entries?.map((e) => e.id)),
+    comps: new Set(data.comps.map((c) => c.id)),
+    surveys: new Set(data.surveys.map((s) => s.id)),
+    fields: new Set(data.fields.map((f) => f.id)),
+    entries: new Set(data.entries.map((e) => e.id)),
   });
 
   const existingIds = $derived({
@@ -50,12 +50,12 @@
         return;
       }
 
-      if (!message.comps?.length && !message.surveys?.length && !message.fields?.length && !message.entries?.length) {
-        error = "No data in message";
+      if (!data.comps?.length && !data.surveys?.length && !data.fields?.length && !data.entries?.length) {
+        error = "No data in data";
         return;
       }
 
-      importData({ imported: message, existing, overwriteDuplicateEntries })
+      importData({ imported: data, existing, overwriteDuplicateEntries })
         .then(() => {
           onhandle();
           rerunAllContextLoads();
@@ -68,7 +68,7 @@
   };
 </script>
 
-<ImportViewer imported={message} {existing} {overwriteDuplicateEntries} {client} />
+<ImportViewer imported={data} {existing} {overwriteDuplicateEntries} {client} />
 
 {#if duplicateIds.entries.size}
   <Button

@@ -9,7 +9,7 @@
   import type { Entry } from "$lib/entry";
   import type { Field } from "$lib/field";
   import { idb } from "$lib/idb";
-  import { onlineTransfer, type RTCRequestMessage } from "$lib/online-transfer.svelte";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -29,12 +29,10 @@
   } = $props();
 
   const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("export-data-tab", "room");
-  let currentTab = $state(onlineTransfer.rtcMessages.some((m) => m.type == "request") ? "room" : $storedTab);
-
-  const requestMessages = $derived(onlineTransfer.rtcMessages.filter((m) => m.type == "request"));
+  let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
   // svelte-ignore state_referenced_locally
-  let displayedMessages = $state($state.snapshot(requestMessages));
+  let displayedRequests = $state($state.snapshot(onlineTransfer.requestsFromClients));
   let displayedClients = $state($state.snapshot(onlineTransfer.remoteClients));
 
   const clientsChanged = $derived.by(() => {
@@ -43,7 +41,19 @@
     return currentIds.symmetricDifference(savedIds).size;
   });
 
-  const messagesChanged = $derived(displayedMessages.length != requestMessages.length);
+  const requestsChanged = $derived.by(() => {
+    if (displayedRequests.size != onlineTransfer.requestsFromClients.size) {
+      return true;
+    }
+    for (const [clientId, actual] of onlineTransfer.requestsFromClients) {
+      const displayed = displayedRequests.get(clientId);
+      if (actual !== displayed) return true;
+    }
+    for (const [clientId, displayed] of displayedRequests) {
+      const actual = onlineTransfer.requestsFromClients.get(clientId);
+      if (displayed !== actual) return true;
+    }
+  });
 
   const unexportedEntries = entries?.filter((e) => e.status == "submitted");
 
@@ -70,7 +80,7 @@
     .toLowerCase();
 
   function refreshDisplayed() {
-    displayedMessages = $state.snapshot(onlineTransfer.rtcMessages.filter((m) => m.type == "request"));
+    displayedRequests = $state.snapshot(onlineTransfer.requestsFromClients);
     displayedClients = $state.snapshot(onlineTransfer.remoteClients);
   }
 
@@ -90,31 +100,15 @@
     download(defaultExportedData, `${fileName}.json`, "application/json");
   }
 
-  function getLargestRequest(requests: ("entries" | "configs" | "all")[]) {
-    if (requests.includes("all")) return "all";
-
-    const anyConfigs = requests.includes("configs");
-    const anyEntries = requests.includes("entries");
-
-    if (anyConfigs && anyEntries) return "all";
-    if (anyConfigs) return "configs";
-    if (anyEntries) return "entries";
-    return "all";
-  }
-
   function sendBulkTo(id: string) {
-    const clientRequests = onlineTransfer.rtcMessages
-      .filter((m): m is RTCRequestMessage => m.from == id && m.type == "request")
-      .map((r) => r.request);
+    const sending = onlineTransfer.requestsFromClients.get(id) || send;
 
-    const largestRequest = getLargestRequest([send, ...clientRequests]);
-
-    if (largestRequest == "entries") {
+    if (sending == "entries") {
       onlineTransfer.sendTo(id, {
         type: "response",
         entries: entries?.filter((e) => e.status != "draft"),
       });
-    } else if (largestRequest == "configs") {
+    } else if (sending == "configs") {
       onlineTransfer.sendTo(id, {
         type: "response",
         comps,
@@ -131,7 +125,7 @@
       });
     }
 
-    onlineTransfer.rtcMessages = onlineTransfer.rtcMessages.filter((m) => !(m.from == id && m.type == "request"));
+    onlineTransfer.requestsFromClients.delete(id);
   }
 
   function sendBulkToAll() {
@@ -210,21 +204,21 @@
 </div>
 
 {#if currentTab == "room"}
-  <Button onclick={refreshDisplayed} class="relative self-start text-sm" disabled={!messagesChanged && !clientsChanged}>
+  <Button onclick={refreshDisplayed} class="relative self-start text-sm" disabled={!requestsChanged && !clientsChanged}>
     <RefreshCwIcon class="size-5 text-theme" />
-    <span class={messagesChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
-    {#if messagesChanged || clientsChanged}
+    <span class={requestsChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
+    {#if requestsChanged || clientsChanged}
       <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">!</span>
     {/if}
   </Button>
 
-  {#if displayedMessages.length}
+  {#if displayedRequests.size}
     <div class="flex flex-col">
       <span class="text-sm font-light">Incoming requests</span>
 
       <div class="flex flex-col gap-2">
-        {#each displayedMessages as message}
-          {@const client = message.from ? onlineTransfer.clients.get(message.from) : undefined}
+        {#each displayedRequests as [clientId, request]}
+          {@const client = onlineTransfer.clients.get(clientId)}
 
           <div class="flex items-stretch gap-1">
             <Button
@@ -245,14 +239,14 @@
                     Disconnected
                   {/if}
                 </span>
-                <span class="text-sm font-light">wants: {message.request}</span>
+                <span class="text-sm font-light">wants: {request}</span>
               </div>
               <CheckIcon class="text-theme" />
             </Button>
 
             <Button
               onclick={() => {
-                onlineTransfer.clearRtcMessage(message);
+                onlineTransfer.requestsFromClients.delete(clientId);
                 refreshDisplayed();
               }}
             >
@@ -293,7 +287,7 @@
       </div>
     </div>
   {:else}
-    <RoomWidget />
+    <RoomWidget hideTitle />
   {/if}
 {:else if currentTab == "qrfcode"}
   <QrCodeDisplay data={defaultExportedData} />

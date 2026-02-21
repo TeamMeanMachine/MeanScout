@@ -15,6 +15,7 @@
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
+  import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import BulkExportDialog from "./BulkExportDialog.svelte";
@@ -26,19 +27,6 @@
   }: {
     pageData: CompPageData;
   } = $props();
-
-  const { responseCount, requestAllCount, requestConfigsCount, requestEntriesCount } = $derived.by(() => {
-    const messages = Object.groupBy(onlineTransfer.rtcMessages, (m) => {
-      if (m.type == "response") return "response";
-      return m.request;
-    });
-    return {
-      responseCount: messages.response?.length || 0,
-      requestAllCount: messages.all?.length || 0,
-      requestConfigsCount: messages.configs?.length || 0,
-      requestEntriesCount: messages.entries?.length || 0,
-    };
-  });
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -74,13 +62,13 @@
     class="relative"
   >
     <ShareIcon class="text-theme" />
-    <div class={["flex flex-col", requestAllCount ? "animate-pulse" : "animate-none"]}>
+    <div class={["flex flex-col", onlineTransfer.requestCounts.all ? "animate-pulse" : "animate-none"]}>
       Send all
       <span class="text-xs font-light">Configs and entries</span>
     </div>
-    {#if requestAllCount}
+    {#if onlineTransfer.requestCounts.all}
       <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
-        {requestAllCount}
+        {onlineTransfer.requestCounts.all}
       </span>
     {/if}
   </Button>
@@ -98,10 +86,10 @@
     class="relative text-sm"
   >
     <div class="w-6 shrink-0"></div>
-    <span class={requestConfigsCount ? "animate-pulse" : "animate-none"}>Just configs</span>
-    {#if requestConfigsCount}
+    <span class={onlineTransfer.requestCounts.configs ? "animate-pulse" : "animate-none"}>Just configs</span>
+    {#if onlineTransfer.requestCounts.configs}
       <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
-        {requestConfigsCount}
+        {onlineTransfer.requestCounts.configs}
       </span>
     {/if}
   </Button>
@@ -119,10 +107,10 @@
     class="relative text-sm"
   >
     <div class="w-6 shrink-0"></div>
-    <span class={requestEntriesCount ? "animate-pulse" : "animate-none"}>Just entries</span>
-    {#if requestEntriesCount}
+    <span class={onlineTransfer.requestCounts.entries ? "animate-pulse" : "animate-none"}>Just entries</span>
+    {#if onlineTransfer.requestCounts.entries}
       <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
-        {requestEntriesCount}
+        {onlineTransfer.requestCounts.entries}
       </span>
     {/if}
   </Button>
@@ -138,14 +126,34 @@
     }}
     class="relative"
   >
-    <DownloadIcon class={["text-theme", responseCount ? "animate-bounce-down" : "animate-none"]} />
-    <div class={["flex flex-col", responseCount ? "animate-pulse" : "animate-none"]}>
+    <DownloadIcon
+      class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
+    />
+    <div class={["flex flex-col", onlineTransfer.dataFromClients.size ? "animate-pulse" : "animate-none"]}>
       Receive
       <span class="text-xs font-light">Configs or entries</span>
     </div>
-    {#if responseCount}
+    {#if onlineTransfer.dataFromClients.size}
       <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
-        {responseCount}
+        {onlineTransfer.dataFromClients.size}
+      </span>
+    {/if}
+  </Button>
+</div>
+
+<div class="flex flex-col gap-1">
+  <Button onclick={() => openDialog(RoomWidget, {})} class="relative">
+    <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.localId ? "animate-pulse" : ""]} />
+    <div class="flex grow flex-col">
+      {#if onlineTransfer.localId}
+        View room
+      {:else}
+        Join a room
+      {/if}
+    </div>
+    {#if onlineTransfer.localId}
+      <span class="absolute bottom-0 left-0.5 text-xs font-light tracking-tighter italic">
+        {onlineTransfer.remoteClients.length}
       </span>
     {/if}
   </Button>
@@ -195,18 +203,6 @@
   <Anchor route="">
     <ArrowLeftIcon class="text-theme" />
     <div class="flex grow flex-col">Main page</div>
-  </Anchor>
-
-  <Anchor route="webrtc">
-    <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.localId ? "animate-pulse" : ""]} />
-    <div class="flex grow flex-col">
-      {#if onlineTransfer.localId}
-        View room
-      {:else}
-        Join a room
-      {/if}
-    </div>
-    <ArrowRightIcon class="text-theme" />
   </Anchor>
 
   <Anchor route="settings">

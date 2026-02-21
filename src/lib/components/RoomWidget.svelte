@@ -4,6 +4,12 @@
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { scoutStore, teamStore, webRtcActiveStore, webRtcRoomIdStore } from "$lib/settings";
 
+  let {
+    hideTitle,
+  }: {
+    hideTitle?: boolean;
+  } = $props();
+
   const MAX_NAME_LENGTH = 32;
   const MAX_TEAM_LENGTH = 6;
 
@@ -49,9 +55,13 @@
   }
 </script>
 
+{#if !hideTitle}
+  <h2 class="font-bold">{onlineTransfer.localId ? "Room" : "Join a room"}</h2>
+{/if}
+
 {#if onlineTransfer.localId}
   <div class="flex flex-col">
-    <h2 class="font-bold">You</h2>
+    <span class="text-sm font-light">You</span>
     <span>
       {$scoutStore}
       {#if $teamStore}
@@ -60,18 +70,23 @@
     </span>
   </div>
 
-  {#each onlineTransfer.remoteClients as client (client.info.id)}
-    <div class="flex flex-col">
-      <span>
-        {client.info.name}
-        {#if client.info.team}
-          <span class="text-xs font-light">({client.info.team})</span>
-        {/if}
-      </span>
-    </div>
-  {:else}
-    <span class="text-sm font-light">Nobody else is active in this room.</span>
-  {/each}
+  <div class="flex flex-col">
+    <span class="text-sm font-light">
+      Others <span class="text-xs tracking-tighter">({onlineTransfer.remoteClients.length})</span>
+    </span>
+    {#each onlineTransfer.remoteClients as client (client.info.id)}
+      <div class="flex flex-col">
+        <span>
+          {client.info.name}
+          {#if client.info.team}
+            <span class="text-xs font-light">({client.info.team})</span>
+          {/if}
+        </span>
+      </div>
+    {:else}
+      <span class="text-sm font-light">Nobody else is active in this room.</span>
+    {/each}
+  </div>
 
   <div class="flex flex-wrap justify-between gap-2">
     <Button onclick={leaveRoom}>
