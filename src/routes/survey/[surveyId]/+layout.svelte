@@ -16,9 +16,9 @@
 
 <Header
   title="Admin - {data.compRecord.name} - {data.survey.record.name} - MeanScout"
-  heading="Admin"
-  subheading="{data.compRecord.name} - {data.survey.record.name}"
-  backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
+  heading={data.survey.record.name}
+  subheading={data.compRecord.name}
+  backLink="comp/{data.compRecord.id}/admin"
   class="max-w-(--breakpoint-lg)"
 >
   <div class="hidden gap-2 text-sm text-nowrap lg:flex">

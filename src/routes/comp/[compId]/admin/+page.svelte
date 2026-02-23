@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { CalendarDaysIcon, SquarePenIcon } from "@lucide/svelte";
+  import { ArrowRightIcon, CalendarDaysIcon, PlusIcon, Settings2Icon, SquarePenIcon } from "@lucide/svelte";
   import { rerunAllContextLoads } from "$lib";
+  import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
   import { openDialog } from "$lib/dialog";
   import EditCompNameDialog from "$lib/dialogs/EditCompNameDialog.svelte";
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
+  import NewSurveyDialog from "$lib/dialogs/NewSurveyDialog.svelte";
   import { idb } from "$lib/idb";
   import type { PageProps } from "./$types";
 
@@ -32,6 +34,23 @@
         {data.compRecord.name}
         <span class="text-xs font-light">Edit name</span>
       </div>
+    </Button>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
+      <Anchor route="survey/{survey.id}">
+        <Settings2Icon class="text-theme" />
+        <div class="flex grow flex-col">
+          <span>{survey.name}</span>
+        </div>
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    {/each}
+
+    <Button onclick={() => openDialog(NewSurveyDialog, { compId: data.compRecord.id })}>
+      <PlusIcon class="text-theme" />
+      <div class="flex flex-col">New survey</div>
     </Button>
   </div>
 

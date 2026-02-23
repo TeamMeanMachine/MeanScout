@@ -17,8 +17,6 @@
   let showCheck = $state(false);
   let showCheckTimeout = $state<number | undefined>();
 
-  let hasMetrics = pageData.surveyRecords.some((s) => s.type == "match" && s.tbaMetrics?.length);
-
   async function getDataFromTbaEvent() {
     showCheck = false;
     window.clearTimeout(showCheckTimeout);
@@ -163,15 +161,7 @@
   {:else}
     <CloudDownloadIcon class="text-theme" />
   {/if}
-
-  <div class="flex flex-col">
-    Get data from TBA
-    <span class="text-xs font-light">
-      Matches,
-      {hasMetrics ? "metrics," : ""}
-      teams
-    </span>
-  </div>
+  Fetch TBA data
 </Button>
 
 {#if getTbaDataError}

@@ -16,7 +16,7 @@
 
 <Header
   title="Admin - {data.compRecord.name} - MeanScout"
-  heading="Admin"
+  heading="Comp"
   subheading={data.compRecord.name}
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
   class="max-w-(--breakpoint-lg)"
