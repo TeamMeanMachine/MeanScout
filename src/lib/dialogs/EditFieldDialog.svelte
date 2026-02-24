@@ -184,6 +184,29 @@
     }
   }
 
+  function newMultiple() {
+    if (changes.type !== "number") return;
+    if (!changes.multiples?.length) {
+      changes.multiples = [2];
+    } else {
+      const maxMultiple = Math.max(1, ...changes.multiples);
+      changes.multiples.push(maxMultiple + 1);
+    }
+  }
+
+  function deleteMultiple(index: number) {
+    if (changes.type !== "number") return;
+    if (!changes.multiples?.length) {
+      delete changes.multiples;
+      return;
+    }
+
+    changes.multiples = changes.multiples.filter((_, i) => i != index);
+    if (!changes.multiples.length) {
+      delete changes.multiples;
+    }
+  }
+
   function toggleRadio() {
     if (changes.type == "select") {
       changes.radio = !changes.radio;
@@ -260,6 +283,25 @@
         <SquareIcon class="text-theme" />
       {/if}
       Allow negative
+    </Button>
+
+    <div class="flex flex-col">
+      Multiples
+      <span class="text-xs font-light">+1/-1 is always available.</span>
+    </div>
+    {#if changes.multiples}
+      {#each changes.multiples, i}
+        <div class="flex gap-2">
+          <input type="number" bind:value={changes.multiples[i]} class="grow bg-neutral-800 p-2 text-theme" />
+          <Button onclick={() => deleteMultiple(i)}>
+            <Trash2Icon class="text-theme" />
+          </Button>
+        </div>
+      {/each}
+    {/if}
+    <Button onclick={newMultiple}>
+      <PlusIcon class="text-theme" />
+      New multiple
     </Button>
   {:else if changes.type == "select"}
     <Button onclick={toggleRadio}>

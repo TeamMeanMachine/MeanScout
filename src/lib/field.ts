@@ -34,6 +34,7 @@ const numberFieldSchema = z.object({
   ...baseSingleFieldSchema.shape,
   type: z.literal("number"),
   allowNegative: z.optional(z.boolean()),
+  multiples: z.array(z.number()).optional(),
 });
 export type NumberField = z.infer<typeof numberFieldSchema>;
 
