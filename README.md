@@ -10,6 +10,8 @@ Check out MeanScout's [about page](https://meanscout.team2471.org/#/about) for f
 
 - [Svelte](https://svelte.dev/)
 - [The Blue Alliance](https://www.thebluealliance.com/)
+- [Cloudflare](https://www.cloudflare.com/)
+- [WebRTC](https://webrtcforthecurious.com/)
 - [jsQR](https://github.com/cozmo/jsQR)
 - [node-qrcode](https://github.com/soldair/node-qrcode)
 - [Zod](https://zod.dev/)

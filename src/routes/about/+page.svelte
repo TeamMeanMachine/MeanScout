@@ -6,7 +6,7 @@
 
   const backLink = sessionStorage.getItem("home") || "";
 
-  const tab = sessionStorageStore<"info" | "guides" | "guesses" | "qrfcode">("about-tab", "info");
+  const tab = sessionStorageStore<"info" | "guides" | "rooms" | "qrfcode" | "guesses">("about-tab", "info");
   tab.subscribe(() => window.scrollTo(0, 0));
 
   function getTabClass(matching: string) {
@@ -23,8 +23,16 @@
 {#snippet links()}
   <Button onclick={() => ($tab = "info")} class="text-nowrap {getTabClass('info')}">Info</Button>
   <Button onclick={() => ($tab = "guides")} class="text-nowrap {getTabClass('guides')}">Guides</Button>
-  <Button onclick={() => ($tab = "guesses")} class="text-nowrap {getTabClass('guesses')}">Guesses</Button>
+  <Button onclick={() => ($tab = "rooms")} class="text-nowrap {getTabClass('rooms')}">Rooms</Button>
   <Button onclick={() => ($tab = "qrfcode")} class="text-nowrap {getTabClass('qrfcode')}">QRF Codes</Button>
+  <Button onclick={() => ($tab = "guesses")} class="text-nowrap {getTabClass('guesses')}">Guesses</Button>
+{/snippet}
+
+{#snippet externalLink(label: string, url: `https://${string}`)}
+  <a href={url} target="_blank">
+    <span class="underline">{label}</span>
+    <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
+  </a>
 {/snippet}
 
 <div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3 text-pretty">
@@ -34,19 +42,13 @@
 
   {#if $tab == "info"}
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">MeanScout</h2>
+      <h2 class="text-xl font-bold">MeanScout</h2>
       <span>A highly configurable peer-to-peer FRC scouting web app.</span>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Full offline support (progressive web app)</li>
         <li>Lightweight mobile-first design</li>
         <li>Online and offline data transfer</li>
-        <li>
-          Supports
-          <a href="https://www.thebluealliance.com/" target="_blank">
-            <span class="underline">The Blue Alliance</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
+        <li>Supports {@render externalLink("The Blue Alliance", "https://www.thebluealliance.com/")}</li>
       </ul>
     </div>
 
@@ -74,104 +76,64 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Powered by</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>{@render externalLink("Svelte", "https://svelte.dev/")}</li>
+        <li>{@render externalLink("The Blue Alliance", "https://www.thebluealliance.com/")}</li>
+        <li>{@render externalLink("Cloudflare", "https://www.cloudflare.com/")}</li>
+        <li>{@render externalLink("WebRTC", "https://webrtcforthecurious.com/")}</li>
+        <li>{@render externalLink("jsQR", "https://github.com/cozmo/jsQR")}</li>
+        <li>{@render externalLink("node-qrcode", "https://github.com/soldair/node-qrcode")}</li>
+        <li>{@render externalLink("Zod", "https://zod.dev/")}</li>
+        <li>{@render externalLink("SortableJS", "https://sortablejs.github.io/Sortable/")}</li>
         <li>
-          <a href="https://svelte.dev/" target="_blank">
-            <span class="underline">Svelte</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
+          {@render externalLink(
+            "fractional-indexing-jittered",
+            "https://github.com/TMeerhof/fractional-indexing-jittered",
+          )}
         </li>
-        <li>
-          <a href="https://www.thebluealliance.com/" target="_blank">
-            <span class="underline">The Blue Alliance</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/cozmo/jsQR" target="_blank">
-            <span class="underline">jsQR</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/soldair/node-qrcode" target="_blank">
-            <span class="underline">node-qrcode</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://zod.dev/" target="_blank">
-            <span class="underline">Zod</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://sortablejs.github.io/Sortable/" target="_blank">
-            <span class="underline">SortableJS</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/TMeerhof/fractional-indexing-jittered" target="_blank">
-            <span class="underline">fractional-indexing-jittered</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://tailwindcss.com/" target="_blank">
-            <span class="underline">Tailwind CSS</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://lucide.dev/" target="_blank">
-            <span class="underline">Lucide</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/tonsky/FiraCode" target="_blank">
-            <span class="underline">Fira Code</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
+        <li>{@render externalLink("Tailwind CSS", "https://tailwindcss.com/")}</li>
+        <li>{@render externalLink("Lucide", "https://lucide.dev/")}</li>
+        <li>{@render externalLink("Fira Code", "https://github.com/tonsky/FiraCode")}</li>
       </ul>
     </div>
 
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Privacy</h2>
-      <span> If you use The Blue Alliance in MeanScout, here's everyting automatically sent: </span>
+      <span>MeanScout itself is completely free of telemetry or any other form of usage analytics.</span>
+      <span>
+        However, you should read sections regarding end users in the
+        {@render externalLink("privacy policy for Cloudflare", "https://www.cloudflare.com/privacypolicy/")}, which is
+        used to host and deploy MeanScout.
+      </span>
+      <span>
+        These sections on privacy apply only to the version of MeanScout deployed at
+        {@render externalLink("https://meanscout.team2471.org", "https://meanscout.team2471.org")}. Other versions/forks
+        may have more or different online features.
+      </span>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Privacy - The Blue Alliance</h2>
+      <span>If you use The Blue Alliance in MeanScout, here's everything automatically sent to them:</span>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Your API key (if used) - MeanScout supplies its own auth key, but you may want to use your own</li>
         <li>Your team number - To get events your team participates in</li>
         <li>Event keys - To get match schedules, participating teams, and playoff alliances for those events</li>
       </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Privacy - Online rooms</h2>
       <span>If you join a room for online transfers, here's everything automatically sent from your device:</span>
       <ul class="ml-8 list-outside list-disc space-y-1">
         <li>Your name</li>
         <li>Your team number</li>
       </ul>
       <span>
-        The servers that broker connections between everyone in a room will store your name/team number while you are
-        connected. Scouting data and configs are sent directly between your devices using
-        <a href="https://webrtcforthecurious.com/" target="_blank">
-          <span class="underline">WebRTC</span>
-          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-        </a>, and you have manual control over which devices receive that data from you.
-      </span>
-      <span>MeanScout itself is completely free of telemetry or any other form of usage analytics.</span>
-      <span>
-        However, you should read sections regarding end users in the
-        <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">
-          <span class="underline">privacy policy for Cloudflare</span>
-          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-        </a>, which is used to host and deploy MeanScout.
-      </span>
-      <span>
-        This applies only to the version of MeanScout deployed at
-        <a href="https://meanscout.team2471.org" target="_blank">
-          <span class="underline">https://meanscout.team2471.org</span>
-          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-        </a>. Other versions/forks may have more or different online features.
+        Cloudflare Workers (specifically, Durable Objects) are used to broker connections between everyone in a room.
+        Your name/team number will be temporarily stored while you are connected. Scouting data and configs are sent
+        directly between your devices using
+        {@render externalLink("WebRTC", "https://webrtcforthecurios.com/")}, never touching Cloudflare's servers. On top
+        of that, you have manual control over when and which devices receive that data from you.
       </span>
     </div>
 
@@ -179,10 +141,7 @@
       <h2 class="font-bold">FOSS</h2>
       <span>
         MeanScout is Free and Open Source Software.
-        <a href="https://github.com/TeamMeanMachine/MeanScout" target="_blank">
-          <span class="underline">Visit MeanScout's GitHub repository</span>
-          <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-        </a>
+        {@render externalLink("Visit MeanScout's GitHub repository", "https://github.com/TeamMeanMachine/MeanScout")}
         to browse the source code, provide feedback, and/or contribute to the project.
       </span>
       <span>&copy; 2020-2026 Aidan Linerud, Aran O'Day, FRC Team Mean Machine 2471</span>
@@ -277,14 +236,9 @@
       <ol class="ml-8 list-outside list-decimal space-y-1">
         <li>MeanScout supplies its own Read API key, but you may want to use your own</li>
         <li>
-          <a href="https://www.thebluealliance.com/account/login" target="_blank">
-            <span class="underline">Create an account and Read API Key</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
+          {@render externalLink("Create an account and Read API Key", "https://www.thebluealliance.com/account/login")}
         </li>
-        <li>
-          Enter that API key, and your team number, in the <a href="#/settings" class="underline">settings page</a>
-        </li>
+        <li>Enter that API key, and your team number, in the settings page</li>
         <li>In your comp's config, select one of your team's events (or manually enter any TBA event key)</li>
         <li>Pull match schedules, team info, and playoff alliances from the TBA event</li>
       </ol>
@@ -316,6 +270,103 @@
         <li>If you use online rooms, you can still do offline transfers</li>
       </ol>
     </div>
+  {:else if $tab == "rooms"}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Online transfer via rooms</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Uses room-based peer-to-peer connections</li>
+        <li>
+          Scouting data and configs are securely transferred via
+          {@render externalLink("WebRTC", "https://webrtcforthecurious.com/")}
+        </li>
+        <li>You can join a room by typing in a unique room id</li>
+        <li>Anyone who uses the same exact id will join the same room</li>
+        <li>Your selected scout name and team will identify yourself in the room</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Requesting/Receiving data</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Request data from specific people, or everyone active in the room</li>
+        <li>Once you receive data, you can review the sent data before accepting it</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Sending data</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Send data to specific people, or everyone active in the room</li>
+        <li>Easily handle incoming requests from people</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Advantages (compared to QRF codes)</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Near-instant transfer that handles much more data</li>
+        <li>Does not require devices with good cameras</li>
+        <li>Send to multiple devices in one step</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Limitations</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Some competition venues may not have easily accessible internet</li>
+        <li>Cell networks can be unstable</li>
+        <li>
+          Some networks may be too restricted to form WebRTC connections, either in the same network, or between
+          different networks
+        </li>
+        <li>If someone's device loses connection to the room, they cannot receive requests or data</li>
+        <li>Devices going to sleep/screen lock will likely disconnect from the room</li>
+      </ul>
+    </div>
+  {:else if $tab == "qrfcode"}
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Offline transfer via QRF codes</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Any amount of data can be transmitted in a QRF code</li>
+        <li>Very useful when one or more devices can't connect to online rooms</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Limitations (compared to online rooms)</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>The more data to transfer, the longer it will take</li>
+        <li>Transfer rate depends on camera quality, light conditions, etc.</li>
+        <li>Transfer must happen within the same physical location</li>
+        <li>An entire transfer can only send data from one device to another</li>
+        <li>Scales poorly with more and more devices</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">What's a QRF code?</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>A single QR code can only hold so much information</li>
+        <li>
+          QRF codes combine QR codes with a technology called
+          {@render externalLink("fountain codes", "https://en.wikipedia.org/wiki/Fountain_code")}
+        </li>
+        <li>QR codes are generated endlessly, each containing randomly selected chunks of data</li>
+        <li>When scanning a QRF code, original data is reassembled on the fly</li>
+        <li>You can scan QRF codes with a regular QR code scanner, but you probably can't do much with it</li>
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h2 class="font-bold">Why is it called a "fountain" code?</h2>
+      <ul class="ml-8 list-outside list-disc space-y-1">
+        <li>Let's say you want to fill up a bucket with water from a fountain</li>
+        <li>You don't care about which molecules of water go in your bucket</li>
+        <li>You just need enough water to fill it up</li>
+      </ul>
+    </div>
+
+    <div>{@render externalLink("Learn more", "https://aidunlin.com/qrfcodes")}</div>
   {:else if $tab == "guesses"}
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Optional guessing game</h2>
@@ -359,37 +410,5 @@
         <li>Come up with real-life prizes based on total points, like candy!</li>
       </ul>
     </div>
-  {:else if $tab == "qrfcode"}
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">What's a QRF code?</h2>
-      <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>A single QR code can only hold so much information</li>
-        <li>
-          QRF codes combine QR codes with a technology called
-          <a href="https://en.wikipedia.org/wiki/Fountain_code" target="_blank">
-            <span class="underline">fountain codes</span>
-            <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-          </a>
-        </li>
-        <li>Any amount of data can be transmitted from endlessly generating QR codes</li>
-        <li>Each QR code contains and combines randomly selected chunks of data</li>
-        <li>When scanning a QRF code in MeanScout, the app reassembles the original data on the fly</li>
-        <li>You can scan QRF codes with a regular QR code scanner, but you probably can't do much with it</li>
-      </ul>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Why is it called a "fountain" code?</h2>
-      <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Let's say you want to fill up a bucket with water from a fountain</li>
-        <li>You don't care about which molecules of water go in your bucket</li>
-        <li>You just need enough water to fill it up</li>
-      </ul>
-    </div>
-
-    <a href="https://aidunlin.com/qrfcodes" target="_blank" class="self-start">
-      <span class="underline">Learn more</span>
-      <SquareArrowOutUpRightIcon class="inline h-4 w-4 text-theme" strokeWidth={3} />
-    </a>
   {/if}
 </div>
