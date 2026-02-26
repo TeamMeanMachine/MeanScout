@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronsLeftRightEllipsisIcon, UnplugIcon } from "@lucide/svelte";
+  import { LogInIcon, LogOutIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { scoutStore, teamStore, webRtcActiveStore, webRtcRoomIdStore } from "$lib/settings";
@@ -90,8 +90,8 @@
 
   <div class="flex flex-wrap justify-between gap-2">
     <Button onclick={leaveRoom}>
-      <UnplugIcon class="text-theme" />
-      Leave room
+      <LogOutIcon class="text-theme" />
+      Leave
     </Button>
   </div>
 {:else}
@@ -112,7 +112,7 @@
 
   <div class="flex flex-wrap justify-between gap-2">
     <Button onclick={joinRoom} class="font-bold">
-      <ChevronsLeftRightEllipsisIcon class="text-theme" />
+      <LogInIcon class="text-theme" />
       Join
     </Button>
   </div>

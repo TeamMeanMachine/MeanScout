@@ -43,7 +43,19 @@ const rtcResponseMessageSchema = z.object({
 
 export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
 
-const rtcMessageSchema = z.discriminatedUnion("type", [rtcRequestMessageSchema, rtcResponseMessageSchema]);
+const rtcSignalMessageSchema = z.object({
+  type: z.literal("ice"),
+  from: z.string().optional(),
+  candidate: z.any(),
+});
+
+export type RTCSignalMessage = z.infer<typeof rtcSignalMessageSchema>;
+
+const rtcMessageSchema = z.discriminatedUnion("type", [
+  rtcRequestMessageSchema,
+  rtcResponseMessageSchema,
+  rtcSignalMessageSchema,
+]);
 
 export type RTCMessage = z.infer<typeof rtcMessageSchema>;
 
@@ -158,7 +170,7 @@ class OnlineTransfer {
       if (client.info.id == this.localId) continue;
       client.channel?.send(string);
 
-      if (data.type == "request") continue;
+      if (data.type !== "response") continue;
 
       const sentEntries = !!data.entries?.length;
       const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
@@ -185,7 +197,7 @@ class OnlineTransfer {
     const channel = this.clients.get(remoteId)?.channel;
     channel?.send(string);
 
-    if (data.type == "request") return;
+    if (data.type !== "response") return;
 
     const sentEntries = !!data.entries?.length;
     const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
@@ -336,15 +348,24 @@ class OnlineTransfer {
 
       channel.onopen = () => {
         client.channel = channel;
-        console.log("data channel: opened");
+        console.log("data channel: opened with:", remoteId);
       };
       channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
     };
 
     connection.onicecandidate = (event) => {
-      console.log("connection: on ice candidate:", event.candidate);
       if (event.candidate) {
-        this.sendWsMessage({ type: "signal", to: remoteId, data: { candidate: event.candidate } });
+        if (client.channel?.readyState == "open") {
+          console.log("connection: sending ice candidate via data channel:", event.candidate);
+          client.channel.send(JSON.stringify({ type: "ice", candidate: event.candidate }));
+        } else {
+          console.log("connection: sending ice candidate via WS:", event.candidate);
+          this.sendWsMessage({
+            type: "signal",
+            to: remoteId,
+            data: { candidate: event.candidate },
+          });
+        }
       }
     };
 
@@ -354,6 +375,10 @@ class OnlineTransfer {
 
     connection.oniceconnectionstatechange = () => {
       console.log("connection: on ice connection state change:", connection.iceConnectionState);
+      if (connection.iceConnectionState === "failed") {
+        console.log("connection: restarting ice");
+        connection.restartIce();
+      }
     };
 
     connection.onicegatheringstatechange = () => {
@@ -437,6 +462,17 @@ class OnlineTransfer {
             includeExisting: true,
           });
           this.dataFromClients.set(remoteId, merged);
+        }
+      } else if (parsed.type == "ice") {
+        const client = this.clients.get(remoteId);
+        if (!client || !client.channel || !client.connection) {
+          console.error("data channel: cannot receive signal, client does not exist");
+          return;
+        }
+        if (parsed.candidate) {
+          console.log("data channel: ice candidate received", parsed);
+          client.connection.addIceCandidate(parsed.candidate);
+          return;
         }
       }
 
