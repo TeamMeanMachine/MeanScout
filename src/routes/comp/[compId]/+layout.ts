@@ -18,7 +18,7 @@ export const load: LayoutLoad = async (event) => {
   const fieldRecords = all.fields.filter((field) => surveyIds.includes(field.surveyId));
   const entryRecords = all.entries.filter((entry) => surveyIds.includes(entry.surveyId));
 
-  if (!event.url.hash.includes("/admin")) {
+  if (!event.route.id.startsWith("/comp/[compId]/admin")) {
     sessionStorage.setItem("home", event.url.hash);
   }
 

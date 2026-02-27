@@ -28,7 +28,10 @@
     onexport?: () => void;
   } = $props();
 
-  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("export-data-tab", "room");
+  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">(
+    "export-data-tab",
+    navigator.onLine ? "room" : "qrfcode",
+  );
   let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
   // svelte-ignore state_referenced_locally
@@ -55,6 +58,7 @@
     }
   });
 
+  const completedEntries = entries?.filter((e) => e.status != "draft");
   const unexportedEntries = entries?.filter((e) => e.status == "submitted");
 
   const defaultExportedData = JSON.stringify(
@@ -63,7 +67,7 @@
       comps: send != "entries" ? comps : undefined,
       surveys: send != "entries" ? surveys : undefined,
       fields: send != "entries" ? fields : undefined,
-      entries: send != "configs" ? entries?.filter((e) => e.status != "draft") : undefined,
+      entries: send != "configs" ? completedEntries : undefined,
     }),
     (key, value) => {
       if (key == "created" || key == "modified") {
@@ -121,7 +125,7 @@
         comps,
         surveys,
         fields,
-        entries: entries?.filter((e) => e.status != "draft"),
+        entries: completedEntries,
       });
     }
 

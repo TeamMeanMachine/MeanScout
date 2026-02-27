@@ -127,7 +127,7 @@
     </div>
     {#if cameras.length}
       <select bind:value={cameraInput} class="w-full bg-neutral-800 p-2 text-theme capitalize sm:w-auto">
-        <option value="">Select</option>
+        <option value="">Default</option>
         {#each cameras as { id, name }}
           <option value={id}>{name}</option>
         {/each}
@@ -143,7 +143,7 @@
     <UserSearchIcon class="text-theme" />
     <div class="flex grow flex-col">
       Your name
-      <span class="text-xs font-light">Used in entries for guessing game</span>
+      <span class="text-xs font-light">Used in entries, online rooms</span>
     </div>
     <input bind:value={scoutInput} class="w-full bg-neutral-800 p-2 text-theme sm:w-auto" />
   </label>
@@ -152,7 +152,7 @@
     <UsersIcon class="text-theme" />
     <div class="flex grow flex-col">
       Your team
-      <span class="text-xs font-light">Used w/ TBA data, upcoming match views</span>
+      <span class="text-xs font-light">Used in entries, rooms, TBA queries</span>
     </div>
     <input bind:value={teamInput} class="w-full bg-neutral-800 p-2 text-theme sm:w-32" />
   </label>

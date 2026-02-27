@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { LoaderIcon } from "@lucide/svelte";
   import { decompress } from "$lib/compress";
   import { FountainDecoder } from "$lib/fountain";
   import { cameraStore } from "$lib/settings";
@@ -22,6 +23,9 @@
 
   let video: HTMLVideoElement | undefined = undefined;
   let stream: MediaStream;
+  let cameras = $state<{ id: string; name: string }[]>([]);
+  let noCamera = $state(false);
+
   let fountainDecoder: FountainDecoder;
 
   onMount(async () => {
@@ -48,6 +52,13 @@
       audio: false,
     });
 
+    const devices = await navigator.mediaDevices.enumerateDevices();
+
+    cameras = devices
+      .filter((device) => device.kind == "videoinput" && device.label.trim())
+      .map((device) => ({ id: device.deviceId, name: device.label.trim() }))
+      .toSorted((a, b) => a.name.localeCompare(b.name, "en"));
+
     // QRCodeReader might be destroyed while we're getting user media.
     if (!video) {
       stop();
@@ -65,6 +76,30 @@
   });
 
   onDestroy(stop);
+
+  async function changeCamera() {
+    stop();
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: $cameraStore ? { exact: $cameraStore } : undefined,
+        aspectRatio: { ideal: 1 },
+      },
+      audio: false,
+    });
+
+    reading = true;
+
+    if (video) {
+      video.srcObject = stream;
+
+      if ("requestVideoFrameCallback" in video) {
+        video.requestVideoFrameCallback(update);
+      } else {
+        requestAnimationFrame(update);
+      }
+    }
+  }
 
   async function update() {
     if (!reading || !video) return;
@@ -102,6 +137,19 @@
 </script>
 
 <video bind:this={video} autoplay playsinline muted class={reading ? "block" : "hidden"}></video>
+
+{#if cameras.length}
+  <select bind:value={$cameraStore} onchange={changeCamera} class="bg-neutral-800 p-2 text-theme capitalize">
+    <option value="">Default</option>
+    {#each cameras as { id, name }}
+      <option value={id}>{name}</option>
+    {/each}
+  </select>
+{:else if noCamera}
+  <span class="text-sm font-light">No camera</span>
+{:else}
+  <LoaderIcon class="animate-spin text-theme" />
+{/if}
 
 <div class="flex flex-wrap gap-x-4 gap-y-2 truncate text-sm text-nowrap">
   <div class="flex grow basis-0 flex-col text-sm">

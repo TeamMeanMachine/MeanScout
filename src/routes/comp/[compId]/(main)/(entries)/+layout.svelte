@@ -12,6 +12,9 @@
   let { data, children }: LayoutProps = $props();
 
   const showingNewPage = $derived(page.route.id == "/comp/[compId]/(main)/(entries)/new");
+
+  const drafts = $derived(data.entryRecords.filter((e) => e.status == "draft"));
+  const unexported = $derived(data.entryRecords.filter((e) => e.status == "submitted"));
 </script>
 
 <div
@@ -71,7 +74,19 @@
             route="comp/{data.compRecord.id}/entries/{group}"
             class={data.groupBy == group ? "font-bold" : "font-light"}
           >
-            Group by <span class="capitalize">{group}</span>
+            <div class="flex flex-col">
+              <span>Group by <span class="capitalize">{group}</span></span>
+              {#if group == "status" && (drafts.length || unexported.length)}
+                <div class="flex gap-2 text-xs font-bold">
+                  {#if drafts.length}
+                    <span>Drafts: {drafts.length}</span>
+                  {/if}
+                  {#if unexported.length}
+                    <span>Ready to export: {unexported.length}</span>
+                  {/if}
+                </div>
+              {/if}
+            </div>
           </Anchor>
         {/each}
       </div>

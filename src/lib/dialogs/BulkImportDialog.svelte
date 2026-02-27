@@ -9,7 +9,6 @@
   import type { AllData } from "$lib/idb";
   import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { cameraStore } from "$lib/settings";
   import { z } from "zod";
   import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 
@@ -21,7 +20,10 @@
     request: "entries" | "configs" | "all";
   } = $props();
 
-  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">("import-data-tab", "room");
+  const storedTab = sessionStorageStore<"room" | "qrfcode" | "file">(
+    "import-data-tab",
+    navigator.onLine ? "room" : "qrfcode",
+  );
   let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
   let imported = $state<ImportedData>({});
@@ -162,11 +164,9 @@
 
   <div class="flex flex-wrap gap-2 text-sm">
     <Button onclick={() => changeTab("room")} class={currentTab == "room" ? "font-bold" : "font-light"}>Room</Button>
-    {#if $cameraStore}
-      <Button onclick={() => changeTab("qrfcode")} class={currentTab == "qrfcode" ? "font-bold" : "font-light"}>
-        QRF code
-      </Button>
-    {/if}
+    <Button onclick={() => changeTab("qrfcode")} class={currentTab == "qrfcode" ? "font-bold" : "font-light"}>
+      QRF code
+    </Button>
     <Button onclick={() => changeTab("file")} class={currentTab == "file" ? "font-bold" : "font-light"}>File</Button>
   </div>
 </div>
@@ -275,7 +275,7 @@
   {:else}
     <RoomWidget hideTitle />
   {/if}
-{:else if currentTab == "qrfcode" && $cameraStore}
+{:else if currentTab == "qrfcode"}
   {#if anyImported}
     <Button onclick={retry}>
       <Undo2Icon class="text-theme" />
