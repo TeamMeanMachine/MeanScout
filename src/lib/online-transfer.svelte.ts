@@ -7,18 +7,21 @@ import { importSchema, mergeOldAndNewData } from "./import.svelte";
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
 
+const inboundSignalMessageSchema = z.object({ type: z.literal("signal"), from: z.string(), data: z.any() });
+
 const wsInboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("join"), id: z.string(), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("clients"), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("info"), info: clientInfoSchema }),
-  z.object({ type: z.literal("signal"), from: z.string(), data: z.any() }),
+  inboundSignalMessageSchema,
   z.object({ type: z.literal("leave"), id: z.string() }),
   z.object({ type: z.literal("error"), error: z.string() }),
+  z.object({ type: z.literal("batch"), messages: z.array(inboundSignalMessageSchema) }),
 ]);
 
 type WSInboundMessage = z.infer<typeof wsInboundMessageSchema>;
 
-type WSOutboundMessage = {
+type WSOutboundSignalMessage = {
   type: "signal";
   to: string;
   data:
@@ -26,6 +29,8 @@ type WSOutboundMessage = {
     | { answer: RTCSessionDescription | null }
     | { candidate: RTCIceCandidate };
 };
+
+type WSOutboundMessage = WSOutboundSignalMessage | { type: "batch"; messages: WSOutboundSignalMessage[] };
 
 const rtcRequestMessageSchema = z.object({
   type: z.literal("request"),
@@ -214,7 +219,25 @@ class OnlineTransfer {
     }
   }
 
+  private signalBatch: WSOutboundSignalMessage[] = [];
+  private signalBatchTimer: number | undefined = undefined;
+  private signalBatchTimeout = 100 as const;
+
   private sendWsMessage(message: WSOutboundMessage) {
+    if (message.type == "signal") {
+      this.signalBatch.push(message);
+      if (!this.signalBatchTimer) {
+        this.signalBatchTimer = window.setTimeout(() => {
+          const batchMessage = { type: "batch", messages: this.signalBatch };
+          console.log("websocket: sending batch message", batchMessage);
+          this.ws?.send(JSON.stringify(batchMessage));
+          this.signalBatch = [];
+          this.signalBatchTimer = undefined;
+        }, this.signalBatchTimeout);
+      }
+      return;
+    }
+
     console.log("websocket: sending message", message);
     this.ws?.send(JSON.stringify(message));
   }
@@ -299,6 +322,29 @@ class OnlineTransfer {
       case "leave":
         this.removeClient(message.id);
         break;
+      case "batch":
+        for (const msg of message.messages) {
+          if (msg.data.offer) {
+            console.log("websocket: remote offer received, connecting", msg.data.offer);
+            this.connectToClient(msg.from, msg.data.offer);
+            break;
+          }
+
+          let connection = this.clients.get(msg.from)?.connection;
+          if (!connection) {
+            console.error("websocket: no connection on non-offer signal");
+            break;
+          }
+
+          if (msg.data.answer) {
+            connection.setRemoteDescription(msg.data.answer).then(() => {
+              console.log("websocket: remote answer received", msg.data.answer);
+            });
+          } else if (msg.data.candidate) {
+            console.log("websocket: remote candidate received", msg.data.candidate);
+            connection.addIceCandidate(msg.data.candidate);
+          }
+        }
     }
   }
 
