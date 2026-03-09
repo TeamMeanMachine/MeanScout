@@ -56,10 +56,10 @@
 </script>
 
 {#if !hideTitle}
-  <h2 class="font-bold">{onlineTransfer.localId ? "Room" : "Join a room"}</h2>
+  <h2 class="font-bold">{$webRtcActiveStore ? "Room" : "Join a room"}</h2>
 {/if}
 
-{#if onlineTransfer.localId}
+{#if $webRtcActiveStore}
   <div class="flex flex-col">
     <span class="text-sm font-light">You</span>
     <span>
@@ -72,9 +72,9 @@
 
   <div class="flex flex-col">
     <span class="text-sm font-light">
-      Others <span class="text-xs tracking-tighter">({onlineTransfer.remoteClients.length})</span>
+      Others <span class="text-xs tracking-tighter">({onlineTransfer.clients.length})</span>
     </span>
-    {#each onlineTransfer.remoteClients as client (client.info.id)}
+    {#each onlineTransfer.clients as client (client.info.id)}
       <div class="flex flex-col">
         <span>
           {client.info.name}

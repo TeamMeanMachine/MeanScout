@@ -36,11 +36,11 @@
 
   // svelte-ignore state_referenced_locally
   let displayedRequests = $state($state.snapshot(onlineTransfer.requestsFromClients));
-  let displayedClients = $state($state.snapshot(onlineTransfer.remoteClients));
+  let displayedClients = $state($state.snapshot(onlineTransfer.clients));
 
   const clientsChanged = $derived.by(() => {
     const savedIds = new Set(displayedClients.map((c) => c.info.id));
-    const currentIds = new Set(onlineTransfer.remoteClients.map((c) => c.info.id));
+    const currentIds = new Set(onlineTransfer.clients.map((c) => c.info.id));
     return currentIds.symmetricDifference(savedIds).size;
   });
 
@@ -85,7 +85,7 @@
 
   function refreshDisplayed() {
     displayedRequests = $state.snapshot(onlineTransfer.requestsFromClients);
-    displayedClients = $state.snapshot(onlineTransfer.remoteClients);
+    displayedClients = $state.snapshot(onlineTransfer.clients);
   }
 
   function changeTab(to: "room" | "qrfcode" | "file") {
@@ -133,7 +133,7 @@
   }
 
   function sendBulkToAll() {
-    for (const client of onlineTransfer.remoteClients) {
+    for (const client of onlineTransfer.clients) {
       sendBulkTo(client.info.id);
     }
     refreshDisplayed();
@@ -222,7 +222,7 @@
 
       <div class="flex flex-col gap-2">
         {#each displayedRequests as [clientId, request]}
-          {@const client = onlineTransfer.clients.get(clientId)}
+          {@const client = onlineTransfer.getClient(clientId)}
 
           <div class="flex items-stretch gap-1">
             <Button

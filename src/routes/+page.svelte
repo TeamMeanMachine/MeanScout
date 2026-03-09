@@ -15,6 +15,7 @@
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import { webRtcActiveStore } from "$lib/settings";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -70,17 +71,17 @@
       </span>
     </div>
     <Button onclick={() => openDialog(RoomWidget, {})} class="relative">
-      <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.localId && "animate-pulse"]} />
+      <ChevronsLeftRightEllipsisIcon class={["text-theme", $webRtcActiveStore && "animate-pulse"]} />
       <div class="flex grow flex-col">
-        {#if onlineTransfer.localId}
+        {#if $webRtcActiveStore}
           View room
         {:else}
           Join a room
         {/if}
         <span class="text-xs font-light">Send data over the internet</span>
-        {#if onlineTransfer.localId}
+        {#if $webRtcActiveStore}
           <span class="absolute bottom-0 left-0.5 text-xs font-light tracking-tighter italic">
-            {onlineTransfer.remoteClients.length}
+            {onlineTransfer.clients.length}
           </span>
         {/if}
       </div>
