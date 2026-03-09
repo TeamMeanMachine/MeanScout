@@ -323,10 +323,6 @@ class OnlineTransfer {
             console.warn("[websocket] couldn't handle message from batch, no connection:", msg);
             break;
           }
-          if (!connection.remoteDescription) {
-            console.warn("[websocket] couldn't handle message from batch, no remote description:", msg);
-            break;
-          }
           connection.addIceCandidate(msg.candidate);
         }
     }
@@ -503,14 +499,11 @@ class OnlineTransfer {
       } else if (parsed.type == "candidate") {
         const client = this.getClient(remoteId);
         if (!client || !client.channel || !client.connection) {
-          console.error(logLabel, "client does not exist, couldn't receive ice candidate:", parsed);
+          console.error(logLabel, "couldn't receive ice candidate, client does not exist:", parsed);
           return;
         }
-        if (parsed.candidate) {
-          console.log(logLabel, "received ice candidate:", parsed);
-          client.connection.addIceCandidate(parsed.candidate);
-          return;
-        }
+        console.log(logLabel, "received ice candidate:", parsed);
+        client.connection.addIceCandidate(parsed.candidate);
       }
     } catch (e) {
       console.warn(logLabel, "received unusual message:", data, e);
