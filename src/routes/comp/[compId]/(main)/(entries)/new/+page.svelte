@@ -12,17 +12,7 @@
     XIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import {
-    compareMatches,
-    getTeamName,
-    isValidTeam,
-    matchIdentifierSchema,
-    matchUrl,
-    rerunAllContextLoads,
-    rerunOtherContextLoads,
-    type MatchIdentifier,
-    type Team,
-  } from "$lib";
+  import { getTeamName, isValidTeam, rerunAllContextLoads, rerunOtherContextLoads, type Team } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog } from "$lib/dialog";
@@ -33,6 +23,7 @@
   import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
+  import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier } from "$lib/match";
   import { scoutStore, targetStore, teamStore, type Target } from "$lib/settings";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { fly, slide, type FlyParams } from "svelte/transition";

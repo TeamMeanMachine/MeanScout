@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { compareMatches, matchUrl, type Match, type MatchIdentifier, type Team, type Value } from "$lib";
+  import type { Team, Value } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions } from "$lib/expression";
   import { getFieldsWithDetails } from "$lib/field";
+  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "$lib/match";
   import { getExpressionData } from "$lib/rank";
   import type { MatchSurvey } from "$lib/survey";
   import Anchor from "./Anchor.svelte";

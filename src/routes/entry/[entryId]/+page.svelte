@@ -9,7 +9,7 @@
     UsersIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { getAllMatches, getTeamName, rerunOtherContextLoads, type MatchIdentifier, type Team } from "$lib";
+  import { getTeamName, rerunOtherContextLoads, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -20,6 +20,7 @@
   import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
+  import { getAllMatches, type MatchIdentifier } from "$lib/match";
   import { scoutStore, teamStore } from "$lib/settings";
   import { slide } from "svelte/transition";
   import type { PageData, PageProps } from "./$types";

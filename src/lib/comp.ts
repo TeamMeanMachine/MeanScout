@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { matchSchema, teamSchema } from "./";
+import { teamSchema } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
 import type { AllData } from "./idb";
+import { matchSchema } from "./match";
 import type { Survey } from "./survey";
 
 const allianceSchema = z.object({

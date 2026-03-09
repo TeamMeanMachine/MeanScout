@@ -1,8 +1,9 @@
 <script lang="ts">
   import { CheckIcon, CloudDownloadIcon, LoaderIcon } from "@lucide/svelte";
-  import { compareMatches, rerunAllContextLoads } from "$lib";
+  import { rerunAllContextLoads } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
+  import { compareMatches } from "$lib/match";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import Button from "./Button.svelte";
 

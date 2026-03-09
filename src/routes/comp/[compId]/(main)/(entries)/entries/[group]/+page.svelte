@@ -1,12 +1,13 @@
 <script lang="ts">
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
-  import { compareMatches, getTeamName, matchIdentifierSchema, rerunAllContextLoads, type MatchIdentifier } from "$lib";
+  import { getTeamName, rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
   import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
   import { entryStatuses, type Entry, type EntryStatus } from "$lib/entry";
   import { idb } from "$lib/idb";
+  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "$lib/match";
   import { targets, type Target } from "$lib/settings";
   import { slide } from "svelte/transition";
   import { z } from "zod";

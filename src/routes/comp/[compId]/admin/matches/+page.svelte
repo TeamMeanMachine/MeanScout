@@ -1,10 +1,11 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { compareMatches, getMatchTeamFontWeight, rerunAllContextLoads } from "$lib";
+  import { rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { closeAllDialogs, openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "$lib/idb";
+  import { compareMatches, getMatchTeamFontWeight } from "$lib/match";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

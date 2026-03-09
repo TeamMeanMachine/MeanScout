@@ -1,6 +1,6 @@
-import { compareMatches } from "$lib";
 import type { Comp } from "./comp";
 import type { Entry, MatchEntry } from "./entry";
+import { compareMatches } from "./match";
 
 export function getAllScouts(comp: Comp, entries: Entry[]) {
   const scouts: { name: string; team?: string | undefined }[] = [];

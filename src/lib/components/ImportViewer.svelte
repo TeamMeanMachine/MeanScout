@@ -1,9 +1,9 @@
 <script lang="ts">
   import { ChevronRightIcon } from "@lucide/svelte";
-  import { compareMatches } from "$lib";
   import type { Entry } from "$lib/entry";
   import type { AllData } from "$lib/idb";
   import type { ImportedData } from "$lib/import.svelte";
+  import { compareMatches } from "$lib/match";
   import type { ClientInfo } from "$lib/online-transfer.svelte";
   import Button from "./Button.svelte";
 

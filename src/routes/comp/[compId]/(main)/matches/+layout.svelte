@@ -1,12 +1,13 @@
 <script lang="ts">
   import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
   import { afterNavigate, goto } from "$app/navigation";
-  import { compareMatches, matchUrl, rerunAllContextLoads, type Match } from "$lib";
+  import { rerunAllContextLoads } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
   import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "$lib/idb";
+  import { compareMatches, matchUrl, type Match } from "$lib/match";
   import { teamStore } from "$lib/settings";
   import { slide } from "svelte/transition";
   import { z } from "zod";

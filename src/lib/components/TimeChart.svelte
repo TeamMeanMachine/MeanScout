@@ -7,11 +7,12 @@
     TrendingUpIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { compareMatches, getAllMatches, matchUrl, type Match, type MatchIdentifier, type Team } from "$lib";
+  import type { Team } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import type { Entry, MatchEntry } from "$lib/entry";
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
+  import { compareMatches, getAllMatches, matchUrl, type MatchIdentifier } from "$lib/match";
   import { colors, getExpressionData, getFieldData } from "$lib/rank";
   import { groupRanks, type MatchSurvey } from "$lib/survey";
   import { slide } from "svelte/transition";

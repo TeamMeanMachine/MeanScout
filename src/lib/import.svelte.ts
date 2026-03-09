@@ -1,9 +1,10 @@
-import { compareMatches, type Match, type Team } from "$lib";
+import { type Team } from "$lib";
 import { z } from "zod";
 import { compSchema, type Comp } from "./comp";
 import { entrySchema, type Entry, type TbaMetrics } from "./entry";
 import { fieldSchema } from "./field";
 import { idb, type AllData } from "./idb";
+import { compareMatches, type Match } from "./match";
 import { surveySchema, type MatchSurvey, type PitSurvey } from "./survey";
 
 export const importSchema = z

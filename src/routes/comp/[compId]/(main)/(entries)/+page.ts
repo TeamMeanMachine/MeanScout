@@ -1,4 +1,4 @@
-import { getAllMatches } from "$lib";
+import { getAllMatches } from "$lib/match";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {

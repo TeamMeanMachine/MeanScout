@@ -1,4 +1,4 @@
-import { compareMatches, getAllMatches, matchLevels, type MatchIdentifier, type MatchLevel } from "$lib";
+import { compareMatches, getAllMatches, matchLevels, type MatchIdentifier, type MatchLevel } from "$lib/match";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {

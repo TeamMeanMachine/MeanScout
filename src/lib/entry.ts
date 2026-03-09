@@ -1,14 +1,7 @@
 import { z } from "zod";
-import {
-  compareMatches,
-  getTeamName,
-  matchLevels,
-  matchValueSchema,
-  valueSchema,
-  type Match,
-  type MatchIdentifier,
-} from "./";
+import { getTeamName, valueSchema } from "./";
 import type { Comp } from "./comp";
+import { compareMatches, matchLevels, matchValueSchema, type Match, type MatchIdentifier } from "./match";
 import { getAllScouts } from "./prediction";
 import { targets } from "./settings";
 import type { Survey } from "./survey";

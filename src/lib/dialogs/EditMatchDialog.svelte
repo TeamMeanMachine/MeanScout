@@ -1,9 +1,10 @@
 <script lang="ts">
   import { Trash2Icon } from "@lucide/svelte";
-  import { compareMatches, isValidTeam, matchLevels, type Match } from "$lib";
+  import { isValidTeam } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { compareMatches, matchLevels, type Match } from "$lib/match";
   import { slide } from "svelte/transition";
   import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
   import SelectTeamsDialog from "./SelectTeamsDialog.svelte";

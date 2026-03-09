@@ -1,11 +1,12 @@
 <script lang="ts">
   import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { type Match, type Team } from "$lib";
+  import type { Team } from "$lib";
   import type { Alliance, Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
+  import type { Match } from "$lib/match";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 

@@ -1,13 +1,6 @@
 <script lang="ts">
   import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
-  import {
-    allianceTeamLabels,
-    getOrdinal,
-    getTeamName,
-    rerunAllContextLoads,
-    sessionStorageStore,
-    type Match,
-  } from "$lib";
+  import { allianceTeamLabels, getOrdinal, getTeamName, rerunAllContextLoads, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
@@ -16,6 +9,7 @@
   import { sortExpressions, type Expression } from "$lib/expression";
   import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
+  import type { Match } from "$lib/match";
   import {
     colors,
     getExpressionData,

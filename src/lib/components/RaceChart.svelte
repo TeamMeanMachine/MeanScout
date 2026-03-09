@@ -1,9 +1,10 @@
 <script lang="ts">
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
-  import { compareMatches, getOrdinal, sessionStorageStore } from "$lib";
+  import { getOrdinal, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import type { MatchEntry } from "$lib/entry";
   import { getFieldsWithDetails } from "$lib/field";
+  import { compareMatches } from "$lib/match";
   import { getExpressionData, getFieldData, getPickListData, type RankData } from "$lib/rank";
   import type { MatchSurvey } from "$lib/survey";
   import { onDestroy, onMount } from "svelte";
