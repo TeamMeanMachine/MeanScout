@@ -10,7 +10,10 @@
   let { data }: PageProps = $props();
 
   let showDangerZone = $derived(
-    data.compRecord.scouts?.length || data.compRecord.matches.length || data.compRecord.teams.length,
+    data.compRecord.scouts?.length ||
+      data.compRecord.matches.length ||
+      data.compRecord.teams.length ||
+      data.compRecord.teamsInsights,
   );
 </script>
 
@@ -79,6 +82,18 @@
           Delete
           {data.compRecord.alliances.length}
           {data.compRecord.alliances.length > 1 ? "alliances" : "alliance"}
+        </Button>
+      {/if}
+
+      {#if data.compRecord.teamsInsights}
+        <Button
+          onclick={() => {
+            delete data.compRecord.teamsInsights;
+            idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
+          }}
+        >
+          <Trash2Icon class="text-theme" />
+          Delete insights
         </Button>
       {/if}
     </div>

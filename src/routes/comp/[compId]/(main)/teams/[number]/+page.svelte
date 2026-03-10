@@ -2,6 +2,7 @@
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { allianceTeamLabels, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
+  import { getTeamInsights } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
@@ -17,6 +18,8 @@
   const allianceWithIndex = $derived(
     data.compRecord.alliances?.map((a, i) => ({ ...a, i })).find((a) => a.teams.includes(data.team.number)),
   );
+
+  const insights = $derived(getTeamInsights(data.compRecord, data.team.number));
 </script>
 
 <div class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
@@ -128,6 +131,44 @@
         {/key}
       </div>
     {/each}
+  {/if}
+
+  {#if insights}
+    <div class="flex flex-col gap-1">
+      <h2 class="font-bold">TBA Insights</h2>
+      <div class="flex flex-wrap gap-x-6 gap-y-3">
+        {#if insights.opr !== undefined}
+          <div class="flex flex-col">
+            <span class="text-xs">OPR</span>
+            {insights.opr.toFixed(2)}
+          </div>
+        {/if}
+        {#if insights.dpr !== undefined}
+          <div class="flex flex-col">
+            <span class="text-xs">DPR</span>
+            {insights.dpr.toFixed(2)}
+          </div>
+        {/if}
+        {#if insights.ccwm !== undefined}
+          <div class="flex flex-col">
+            <span class="text-xs">CCWM</span>
+            {insights.ccwm.toFixed(2)}
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <h2 class="font-bold">COPRs</h2>
+      <div class="flex flex-wrap gap-x-6 gap-y-3">
+        {#each Object.entries(insights.coprs || {}) as [coprName, value]}
+          <div class="flex flex-col">
+            <span class="text-xs">{coprName}</span>
+            {value.toFixed(2)}
+          </div>
+        {/each}
+      </div>
+    </div>
   {/if}
 
   <div class="flex flex-wrap gap-x-4">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { teamSchema } from "./";
+import { teamSchema, type TeamInsights } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
 import type { AllData } from "./idb";
@@ -11,12 +11,21 @@ const allianceSchema = z.object({
 });
 export type Alliance = z.infer<typeof allianceSchema>;
 
+export const teamsInsightsSchema = z.object({
+  oprs: z.record(z.string(), z.number()),
+  dprs: z.record(z.string(), z.number()),
+  ccwms: z.record(z.string(), z.number()),
+  coprs: z.record(z.string(), z.record(z.string(), z.number())),
+});
+export type TeamsInsights = z.infer<typeof teamsInsightsSchema>;
+
 export const compSchema = z.object({
   id: z.string(),
   name: z.string(),
   tbaEventKey: z.optional(z.string()),
   matches: z.array(matchSchema),
   teams: z.array(teamSchema),
+  teamsInsights: z.optional(teamsInsightsSchema),
   alliances: z.optional(z.array(allianceSchema)),
   scouts: z.optional(z.array(z.string())),
   created: z.date().catch(() => new Date()),
@@ -32,3 +41,26 @@ export type CompPageData = {
   fieldRecords: Field[];
   entryRecords: Entry[];
 };
+
+export function getTeamInsights(comp: Comp, team: string) {
+  if (!comp.teamsInsights) return;
+
+  const insights: TeamInsights = {
+    opr: comp.teamsInsights.oprs[team],
+    dpr: comp.teamsInsights.dprs[team],
+    ccwm: comp.teamsInsights.ccwms[team],
+  };
+
+  for (const coprName in comp.teamsInsights.coprs) {
+    const coprs = comp.teamsInsights.coprs[coprName];
+    if (!(team in coprs)) continue;
+
+    if (insights.coprs) {
+      insights.coprs[coprName] = coprs[team];
+    } else {
+      insights.coprs = { [coprName]: coprs[team] };
+    }
+  }
+
+  return insights;
+}

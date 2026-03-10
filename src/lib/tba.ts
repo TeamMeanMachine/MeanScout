@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
-import { parseValueFromString, type Team, type Value } from "./";
-import type { Alliance } from "./comp";
+import { parseValueFromString, type Team, type TeamInsights, type Value } from "./";
+import type { Alliance, TeamsInsights } from "./comp";
 import type { TbaMetrics } from "./entry";
 import type { Match } from "./match";
 import { tbaAuthKeyStore } from "./settings";
@@ -131,6 +131,64 @@ export async function tbaGetEventAlliances(eventKey: string) {
     return response.data.map((alliance): Alliance => {
       return { teams: (alliance.picks as string[]).map((team) => team.replace("frc", "")) };
     });
+  }
+}
+
+export async function tbaGetEventTeamInsights(eventKey: string) {
+  const [oprsResponse, coprsResponse] = await Promise.all([
+    tbaFetch(`/event/${eventKey}/oprs`),
+    tbaFetch(`/event/${eventKey}/coprs`),
+  ]);
+
+  if (
+    oprsResponse.status == "success" &&
+    coprsResponse.status == "success" &&
+    (oprsResponse.data || coprsResponse.data)
+  ) {
+    const teamsInsights: TeamsInsights = { oprs: {}, dprs: {}, ccwms: {}, coprs: {} };
+
+    if (oprsResponse.data.oprs) {
+      for (const frcTeam in oprsResponse.data.oprs as Record<string, number>) {
+        const team = frcTeam.replace("frc", "");
+        const value = oprsResponse.data.oprs[frcTeam];
+        teamsInsights.oprs[team] = value;
+      }
+    }
+
+    if (oprsResponse.data.dprs) {
+      for (const frcTeam in oprsResponse.data.dprs as Record<string, number>) {
+        const team = frcTeam.replace("frc", "");
+        const value = oprsResponse.data.dprs[frcTeam];
+        teamsInsights.dprs[team] = value;
+      }
+    }
+
+    if (oprsResponse.data.ccwms) {
+      for (const frcTeam in oprsResponse.data.ccwms as Record<string, number>) {
+        const team = frcTeam.replace("frc", "");
+        const value = oprsResponse.data.ccwms[frcTeam];
+        teamsInsights.ccwms[team] = value;
+      }
+    }
+
+    if (coprsResponse.data) {
+      for (const coprName in coprsResponse.data as Record<string, object>) {
+        const coprs = coprsResponse.data[coprName];
+
+        for (const frcTeam in coprs as Record<string, number>) {
+          const team = frcTeam.replace("frc", "");
+          const value = coprs[frcTeam];
+
+          if (coprName in teamsInsights.coprs) {
+            teamsInsights.coprs[coprName][team] = value;
+          } else {
+            teamsInsights.coprs[coprName] = { [team]: value };
+          }
+        }
+      }
+    }
+
+    return teamsInsights;
   }
 }
 

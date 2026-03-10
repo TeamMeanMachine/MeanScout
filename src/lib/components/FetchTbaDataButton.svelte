@@ -4,7 +4,7 @@
   import type { CompPageData } from "$lib/comp";
   import { idb } from "$lib/idb";
   import { compareMatches } from "$lib/match";
-  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "$lib/tba";
   import Button from "./Button.svelte";
 
   let {
@@ -30,6 +30,7 @@
         getMatchesFromTbaEvent(),
         getTeamsFromTbaEvent(),
         getAlliancesFromTbaEvent(),
+        getTeamsInsightsFromTbaEvent(),
       ]);
 
       showCheck = anyPulled.includes(true);
@@ -145,6 +146,22 @@
       pageData = {
         ...pageData,
         compRecord: { ...pageData.compRecord, alliances: response, modified: new Date() },
+      };
+      idb.put("comps", $state.snapshot(pageData.compRecord));
+      return true;
+    }
+
+    return false;
+  }
+
+  async function getTeamsInsightsFromTbaEvent() {
+    if (!pageData.compRecord.tbaEventKey) return false;
+
+    const response = await tbaGetEventTeamInsights(pageData.compRecord.tbaEventKey);
+    if (response) {
+      pageData = {
+        ...pageData,
+        compRecord: { ...pageData.compRecord, teamsInsights: response, modified: new Date() },
       };
       idb.put("comps", $state.snapshot(pageData.compRecord));
       return true;

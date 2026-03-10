@@ -22,7 +22,18 @@ export const schemaVersion = 16;
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
 export type Value = z.infer<typeof valueSchema>;
 
-export const teamSchema = z.object({ number: z.string(), name: z.string() });
+const teamInsightsSchema = z.object({
+  opr: z.optional(z.number()),
+  dpr: z.optional(z.number()),
+  ccwm: z.optional(z.number()),
+  coprs: z.optional(z.record(z.string(), z.number())),
+});
+export type TeamInsights = z.infer<typeof teamInsightsSchema>;
+
+export const teamSchema = z.object({
+  number: z.string(),
+  name: z.string(),
+});
 export type Team = z.infer<typeof teamSchema>;
 
 export function isValidTeam(team: string) {

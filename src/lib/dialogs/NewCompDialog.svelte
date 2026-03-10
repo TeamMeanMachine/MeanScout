@@ -2,12 +2,12 @@
   import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import type { Team } from "$lib";
-  import type { Alliance, Comp } from "$lib/comp";
+  import { type Alliance, type Comp, type TeamsInsights } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import type { Match } from "$lib/match";
-  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeams } from "$lib/tba";
+  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "$lib/tba";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 
   let name = $state("");
@@ -16,6 +16,7 @@
   let matches = $state<Match[]>([]);
   let teams = $state<Team[]>([]);
   let alliances = $state<Alliance[] | undefined>(undefined);
+  let insights = $state<TeamsInsights | undefined>(undefined);
 
   let error = $state("");
 
@@ -44,6 +45,7 @@
 
       if (event) comp.tbaEventKey = event;
       if (alliances) comp.alliances = alliances;
+      if (insights) comp.teamsInsights = insights;
 
       const addRequest = idb.add("comps", $state.snapshot(comp));
       addRequest.onerror = () => {
@@ -62,19 +64,22 @@
     matches = [];
     teams = [];
     alliances = undefined;
+    insights = undefined;
 
     isLoadingTbaData = true;
 
     try {
-      const [tbaMatches, tbaTeams, tbaAlliances] = await Promise.all([
+      const [tbaMatches, tbaTeams, tbaAlliances, tbaInsights] = await Promise.all([
         tbaGetEventMatches(event),
         tbaGetEventTeams(event),
         tbaGetEventAlliances(event),
+        tbaGetEventTeamInsights(event),
       ]);
 
       if (tbaMatches?.length) matches = tbaMatches.map(({ match }) => match);
       if (tbaTeams?.length) teams = tbaTeams;
       if (tbaAlliances?.length) alliances = tbaAlliances;
+      if (tbaInsights) insights = tbaInsights;
     } catch (e) {
       error = "Error while trying to get data";
       console.error(e);
@@ -129,6 +134,9 @@
     {/if}
     {#if alliances?.length}
       <span>Alliances: {alliances.length}</span>
+    {/if}
+    {#if insights}
+      <span>Insights (OPRs) found</span>
     {/if}
   </div>
 {/if}
