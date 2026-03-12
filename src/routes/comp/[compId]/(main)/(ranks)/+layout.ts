@@ -11,12 +11,13 @@ export const load: LayoutLoad = async (event) => {
   const pickListName = searchParams.get("picklist");
   const expressionName = searchParams.get("expression");
   const fieldId = searchParams.get("field");
+  const oprName = searchParams.get("opr");
 
   const matchSurveys = data.surveyRecords
     .filter((survey) => survey.type == "match")
     .toSorted((a, b) => a.name.localeCompare(b.name));
 
-  const showRanking = data.fieldRecords.length && data.entryRecords.length;
+  const showRanking = (data.fieldRecords.length && data.entryRecords.length) || data.compRecord.teamsInsights;
 
   const groupedRanks = matchSurveys.map((survey) => {
     const fieldsWithDetails = getFieldsWithDetails(
@@ -47,5 +48,6 @@ export const load: LayoutLoad = async (event) => {
     pickListName,
     expressionName,
     fieldId,
+    oprName,
   };
 };

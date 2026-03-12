@@ -36,7 +36,15 @@ type ExpressionTeamRank = {
   inputs: { value: number; percentage: number }[];
 };
 
-export type TeamRank = PickListTeamRank | ExpressionTeamRank;
+type OprTeamRank = {
+  team: string;
+  teamName: string;
+  rank: number;
+  value: number;
+  percentage: number;
+};
+
+export type TeamRank = PickListTeamRank | ExpressionTeamRank | OprTeamRank;
 
 type PickListRankData = {
   survey: MatchSurvey;
@@ -68,7 +76,16 @@ type FieldRankData = {
   inputs: { name: string; maxValue: number; minValue: number }[];
 };
 
-export type RankData = PickListRankData | ExpressionRankData | FieldRankData;
+type OprRankData = {
+  type: "opr";
+  oprName: string;
+  teams: OprTeamRank[];
+  text: string;
+  maxValue: number;
+  minValue: number;
+};
+
+export type RankData = PickListRankData | ExpressionRankData | FieldRankData | OprRankData;
 
 export function getPickListData(
   compRecord: Comp,
@@ -262,6 +279,61 @@ export function getFieldData(
     type: "field",
     field: singleField,
   };
+}
+
+export function getOprData(compRecord: Comp, oprName: string): OprRankData | undefined {
+  if (!compRecord.teamsInsights) return;
+
+  let rawData: Record<string, number>;
+  if (oprName == "oprs" || oprName == "dprs" || oprName == "ccwms") {
+    rawData = compRecord.teamsInsights[oprName];
+  } else {
+    rawData = compRecord.teamsInsights.coprs[oprName];
+  }
+
+  if (!rawData) return;
+
+  const data: OprRankData = {
+    type: "opr",
+    oprName,
+    teams: [],
+    text: "",
+    maxValue: -Infinity,
+    minValue: Infinity,
+  };
+
+  for (const team in rawData) {
+    const value = rawData[team];
+    data.teams.push({
+      team,
+      teamName: compRecord.teams.find((t) => t.number == team)?.name || "",
+      rank: 0,
+      value,
+      percentage: 0,
+    });
+    if (value > data.maxValue) {
+      data.maxValue = value;
+    }
+    if (value < data.minValue) {
+      data.minValue = value;
+    }
+  }
+
+  data.teams = data.teams
+    .toSorted((a, b) => b.value - a.value)
+    .map((team, index) => {
+      team.rank = index + 1;
+      team.percentage = Math.abs(
+        ((team.value - Math.min(data.minValue, 0)) / (data.maxValue || data.minValue || team.value || 1)) * 100,
+      );
+      return team;
+    });
+
+  data.text = data.teams
+    .map((teamRank, index) => `${index + 1}\t${teamRank.team}\t${teamRank.value.toFixed(2)}`)
+    .join("\n");
+
+  return data;
 }
 
 function calculateTeamData(

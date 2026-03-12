@@ -114,13 +114,15 @@
               subsetEntriesByTeam,
               fieldsWithDetails.orderedSingle,
             )
-          : getFieldData(
-              pageData.compRecord,
-              rankData.field,
-              surveyRecord,
-              subsetEntriesByTeam,
-              fieldsWithDetails.orderedSingle,
-            );
+          : rankData.type == "field"
+            ? getFieldData(
+                pageData.compRecord,
+                rankData.field,
+                surveyRecord,
+                subsetEntriesByTeam,
+                fieldsWithDetails.orderedSingle,
+              )
+            : undefined;
 
     if (!newRankData) {
       throw new Error("AAAAA");

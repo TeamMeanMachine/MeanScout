@@ -97,3 +97,27 @@ export function getOrdinal(n: number) {
   if (n % 10 == 3 && n % 100 != 13) return "rd";
   return "th";
 }
+
+const oprLabelDict: Record<string, string> = {
+  oprs: "OPRs",
+  dprs: "DPRs",
+  ccwms: "CCWMs",
+  opr: "OPR",
+  dpr: "DPR",
+  ccwm: "CCWM",
+  rp: "Ranking Points",
+};
+
+export function convertOprToLabel(opr: string) {
+  const label = oprLabelDict[opr];
+  if (label) {
+    return label;
+  }
+
+  if (opr.includes(" ")) {
+    return opr;
+  }
+
+  const result = opr.replace(/([A-Z])/g, " $1");
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}

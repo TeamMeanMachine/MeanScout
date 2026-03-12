@@ -1,12 +1,28 @@
 import { error } from "@sveltejs/kit";
+import { convertOprToLabel } from "$lib";
 import type { MatchEntry } from "$lib/entry";
 import { sortExpressions } from "$lib/expression";
 import { getFieldsWithDetails } from "$lib/field";
-import { getExpressionData, getFieldData, getPickListData } from "$lib/rank";
+import { getExpressionData, getFieldData, getOprData, getPickListData } from "$lib/rank";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();
+
+  if (data.oprName) {
+    const output = getOprData(data.compRecord, data.oprName);
+    if (!output) {
+      error(500, `Something went wrong generating an output for OPR ${data.oprName}`);
+    }
+
+    sessionStorage.setItem("rank-view", JSON.stringify({ oprName: data.oprName }));
+
+    return {
+      title: convertOprToLabel(data.oprName),
+      output,
+    };
+  }
+
   if (!data.surveyId) {
     error(404, "No survey id given");
   }

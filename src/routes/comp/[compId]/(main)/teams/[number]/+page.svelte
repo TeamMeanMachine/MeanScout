@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { allianceTeamLabels, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
+  import { allianceTeamLabels, convertOprToLabel, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
   import { getTeamInsights } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
@@ -163,7 +163,7 @@
       <div class="flex flex-wrap gap-x-6 gap-y-3">
         {#each Object.entries(insights.coprs || {}) as [coprName, value]}
           <div class="flex flex-col">
-            <span class="text-xs">{coprName}</span>
+            <span class="text-xs">{convertOprToLabel(coprName)}</span>
             {value.toFixed(2)}
           </div>
         {/each}

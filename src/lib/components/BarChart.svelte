@@ -55,7 +55,7 @@
   const alliancesWithIndexes = $derived(pageData.compRecord.alliances?.map((a, i) => ({ ...a, i })));
   const allianceTeams = $derived(pageData.compRecord.alliances?.flatMap((a) => a.teams) || []);
 
-  const sortedTeams = $derived(
+  const sortedTeams: TeamRank[] = $derived(
     hideAlliances || hideOmitted || useCustomRanks ? rankData.teams.toSorted(sortTeams) : rankData.teams,
   );
 
@@ -78,10 +78,12 @@
   const flipTeamDuration = 500;
 
   const orderedSingleFields = $derived(
-    getFieldsWithDetails(
-      rankData.survey,
-      pageData.fieldRecords.filter((f) => f.surveyId == rankData.survey.id),
-    ).orderedSingle,
+    rankData.type != "opr"
+      ? getFieldsWithDetails(
+          rankData.survey,
+          pageData.fieldRecords.filter((f) => f.surveyId == rankData.survey.id),
+        ).orderedSingle
+      : undefined,
   );
 
   const legacyInputNames = $derived.by(() => {
@@ -92,7 +94,7 @@
       } else if (rankData.expression.input.from == "fields") {
         inputs.push(
           ...rankData.expression.input.fieldIds
-            .map((id) => orderedSingleFields.find((f) => f.field.id == id)?.detailedName)
+            .map((id) => orderedSingleFields?.find((f) => f.field.id == id)?.detailedName)
             .filter((f) => f !== undefined),
         );
       }
@@ -106,7 +108,7 @@
       return rankData.pickList.weights
         .map((w) => {
           if (w.from == "field") {
-            return orderedSingleFields.find((f) => f.field.id == w.fieldId)?.detailedName;
+            return orderedSingleFields?.find((f) => f.field.id == w.fieldId)?.detailedName;
           }
           return w.expressionName;
         })
@@ -122,7 +124,7 @@
               } else if (i.from == "tba") {
                 return i.tbaMetric;
               } else {
-                return orderedSingleFields.find((f) => f.field.id == i.fieldId)?.detailedName;
+                return orderedSingleFields?.find((f) => f.field.id == i.fieldId)?.detailedName;
               }
             })
             .filter((i) => i != undefined),
@@ -157,6 +159,7 @@
   });
 
   function inputUrl(name: string, i: number) {
+    if (rankData.type == "opr") return location.hash;
     const path = `comp/${pageData.compRecord.id}/rank?surveyId=${encodeURIComponent(rankData.survey.id)}`;
 
     if (rankData.type == "picklist") {
@@ -553,7 +556,7 @@
                 </div>
               {/if}
 
-              {#if inputNames.length > 1}
+              {#if "inputs" in teamRank && inputNames.length > 1}
                 <div class="-mx-2 mt-1">
                   <div
                     class="flex text-center text-xs font-light tracking-tighter"
@@ -586,7 +589,7 @@
         </div>
 
         <div class={["transition-[background]", isHighlighted ? "bg-neutral-700" : "bg-neutral-800"]}>
-          {#if inputNames.length > 1}
+          {#if "inputs" in teamRank && inputNames.length > 1 && rankData.type != "opr"}
             <div class="flex" style="width:{teamRank.percentage.toFixed(2)}%">
               {#if "value" in teamRank && rankData.type != "picklist"}
                 {#each teamRank.inputs as input, i}
@@ -627,7 +630,7 @@
           {/if}
         </div>
 
-        {#if inputNames.length > 1}
+        {#if "inputs" in teamRank && inputNames.length > 1 && rankData.type != "opr"}
           <div
             class="flex text-center text-xs font-light tracking-tighter"
             style="width:{teamRank.percentage.toFixed(2)}%"
@@ -660,8 +663,10 @@
 </div>
 
 {#if $highlightedTeam}
+  <div class="h-16" transition:slide></div>
+
   <div
-    class="sticky right-3 bottom-20 z-20 mr-2 flex flex-col self-end border border-neutral-500 bg-neutral-900 p-2 shadow-2xl lg:bottom-8"
+    class="fixed right-3 bottom-20 z-20 mr-2 flex flex-col self-end border border-neutral-500 bg-neutral-900 p-2 shadow-2xl lg:bottom-8"
     transition:slide
   >
     <span class="text-xs font-light">Jump to</span>

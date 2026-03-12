@@ -17,7 +17,7 @@
   const chartType = sessionStorageStore<"bar" | "race">("rank-chart-type", "bar");
 
   function editRank() {
-    if (data.output.type == "picklist") {
+    if (data.surveyRecord && data.output.type == "picklist") {
       const pickList = data.output.pickList;
       const index = data.surveyRecord.pickLists.findIndex((pl) => pl.name == pickList.name);
 
@@ -70,7 +70,7 @@
           };
         },
       });
-    } else if (data.output.type == "expression") {
+    } else if (data.surveyRecord && data.output.type == "expression") {
       const expression = data.output.expression;
       const index = data.surveyRecord.expressions.findIndex((e) => e.name == expression.name);
 
@@ -155,6 +155,8 @@
   }
 
   function expressionReferencesOther(e: Expression, other: Expression) {
+    if (!data.surveyRecord) return false;
+
     const expressionNames: string[] = [];
 
     if (e.input.from == "expressions") {
@@ -184,12 +186,13 @@
 
   function getExpressionsAvailableTo(expression: Expression) {
     return {
-      entry: data.expressions.entry.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
-      survey: data.expressions.survey.filter(
-        (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
-      ),
+      entry:
+        data.expressions?.entry.filter((e) => expression.name != e.name && !expressionReferencesOther(e, expression)) ||
+        [],
+      survey:
+        data.expressions?.survey.filter(
+          (e) => expression.name != e.name && !expressionReferencesOther(e, expression),
+        ) || [],
     };
   }
 </script>
@@ -198,18 +201,22 @@
   <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
     <div class="flex grow flex-col">
       <h2 class="font-bold">{data.title}</h2>
-      <span class="text-xs font-light">{data.surveyRecord.name}</span>
+      <span class="text-xs font-light">
+        {data.surveyRecord?.name || (data.oprName ? "TBA Insight" : "")}
+      </span>
     </div>
 
     <div class="flex gap-x-4 gap-y-2 text-sm">
-      <div class="flex gap-2 text-sm">
-        <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
-          Bar
-        </Button>
-        <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
-          Race
-        </Button>
-      </div>
+      {#if data.surveyId}
+        <div class="flex gap-2 text-sm">
+          <Button onclick={() => ($chartType = "bar")} class={$chartType == "bar" ? "font-bold" : "font-light"}>
+            Bar
+          </Button>
+          <Button onclick={() => ($chartType = "race")} class={$chartType == "race" ? "font-bold" : "font-light"}>
+            Race
+          </Button>
+        </div>
+      {/if}
 
       {#if "canShare" in navigator || "clipboard" in navigator || data.output.type != "field"}
         <div class="flex gap-2">
@@ -225,7 +232,7 @@
             </Button>
           {/if}
 
-          {#if data.output.type != "field"}
+          {#if data.output.type == "picklist" || data.output.type == "expression"}
             <Button onclick={editRank}>
               <SquarePenIcon class="size-5 text-theme" />
             </Button>
@@ -237,7 +244,7 @@
 
   {#if $chartType == "bar"}
     <BarChart pageData={data} rankData={data.output} />
-  {:else if $chartType == "race"}
+  {:else if $chartType == "race" && data.surveyRecord}
     <RaceChart
       pageData={data}
       surveyRecord={data.surveyRecord}

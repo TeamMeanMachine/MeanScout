@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { rerunOtherContextLoads } from "$lib";
+  import { convertOprToLabel, rerunOtherContextLoads } from "$lib";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
@@ -11,6 +11,7 @@
   import { type SingleFieldWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import type { MatchSurvey } from "$lib/survey";
+  import { untrack } from "svelte";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
@@ -25,6 +26,8 @@
     data.groupedRanks;
     return filterGroupedRanks(cleanedSearch);
   });
+
+  const filteredInsights = $derived(filterInsights(cleanedSearch));
 
   function filterGroupedRanks(search: string) {
     return structuredClone(data.groupedRanks).map((surveyGroups) => {
@@ -51,6 +54,34 @@
     });
   }
 
+  function filterInsights(search: string) {
+    if (!data.compRecord.teamsInsights) {
+      return { oprs: [], coprs: [] };
+    }
+
+    const oprs = ["oprs", "dprs", "ccwms"]
+      .map((opr) => ({ opr, label: convertOprToLabel(opr) }))
+      .filter(({ opr, label }) => {
+        if (!search) return true;
+        return (
+          opr.toLowerCase().replaceAll(" ", "").includes(search) ||
+          label.toLowerCase().replaceAll(" ", "").includes(search)
+        );
+      });
+
+    const coprs = Object.entries(data.compRecord.teamsInsights.coprs)
+      .map(([opr]) => ({ opr, label: convertOprToLabel(opr) }))
+      .filter(({ opr, label }) => {
+        if (!search) return true;
+        return (
+          opr.toLowerCase().replaceAll(" ", "").includes(search) ||
+          label.toLowerCase().replaceAll(" ", "").includes(search)
+        );
+      });
+
+    return { oprs, coprs };
+  }
+
   function onsearchinput(value: string) {
     window.clearTimeout(debounceTimer);
 
@@ -61,8 +92,11 @@
   }
 
   function onsearchenter() {
-    if (filteredGroupedRanks.length) {
-      const group = filteredGroupedRanks[0].groups[0];
+    const group = filteredGroupedRanks[0]?.groups.find(
+      (g) => g.pickLists?.length || g.expressions?.length || g.fields?.length,
+    );
+
+    if (group) {
       const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(filteredGroupedRanks[0].survey.id)}`;
 
       if (group.pickLists?.length) {
@@ -72,6 +106,10 @@
       } else if (group.fields?.length) {
         goto(`${path}&field=${encodeURIComponent(group.fields[0].field.id)}`);
       }
+    } else if (filteredInsights.oprs.length) {
+      goto(`#/comp/${data.compRecord.id}/rank?opr=${encodeURIComponent(filteredInsights.oprs[0].opr)}`);
+    } else if (filteredInsights.coprs.length) {
+      goto(`#/comp/${data.compRecord.id}/rank?opr=${encodeURIComponent(filteredInsights.coprs[0].opr)}`);
     }
   }
 
@@ -108,7 +146,7 @@
   class={[
     "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-72 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
     "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
-    data.surveyId ? "max-lg:hidden" : "max-lg:mb-[65px]",
+    data.surveyId || data.oprName ? "max-lg:hidden" : "max-lg:mb-[65px]",
   ]}
 >
   <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
@@ -155,7 +193,7 @@
               <span class="text-xs font-light">{group.category}</span>
 
               <div class="flex flex-col gap-2 text-sm">
-                {#if group.category != "Fields"}
+                {#if group.category != "Fields" && !debouncedSearch}
                   <Button
                     onclick={() => {
                       if (group.category == "Pick Lists") {
@@ -195,6 +233,11 @@
                   {#each group.pickLists as pickList}
                     {@const viewing = survey.id == data.surveyId && pickList.name == data.pickListName}
                     <Anchor
+                      {@attach (node) => {
+                        untrack(() => {
+                          if (viewing) node.scrollIntoView({ block: "center", inline: "center" });
+                        });
+                      }}
                       route="{path}&picklist={encodeURIComponent(pickList.name)}"
                       class={viewing ? "font-bold underline" : ""}
                     >
@@ -207,6 +250,11 @@
                   {#each group.expressions as expression}
                     {@const viewing = survey.id == data.surveyId && expression.name == data.expressionName}
                     <Anchor
+                      {@attach (node) => {
+                        untrack(() => {
+                          if (viewing) node.scrollIntoView({ block: "center", inline: "center" });
+                        });
+                      }}
                       route="{path}&expression={encodeURIComponent(expression.name)}"
                       class={viewing ? "font-bold underline" : ""}
                     >
@@ -219,6 +267,11 @@
                   {#each group.fields as field}
                     {@const viewing = survey.id == data.surveyId && field.field.id == data.fieldId}
                     <Anchor
+                      {@attach (node) => {
+                        untrack(() => {
+                          if (viewing) node.scrollIntoView({ block: "center", inline: "center" });
+                        });
+                      }}
                       route="{path}&field={encodeURIComponent(field.field.id)}"
                       class={viewing ? "font-bold underline" : ""}
                     >
@@ -231,6 +284,56 @@
           {/each}
         </div>
       {/each}
+
+      {#if data.compRecord.teamsInsights}
+        {@const path = `comp/${data.compRecord.id}/rank?`}
+
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2">
+            <h2 class="text-sm font-bold">TBA Insights</h2>
+            {#if filteredInsights.oprs.length}
+              <div class="flex flex-col gap-2 text-sm">
+                {#each filteredInsights.oprs as { opr, label }}
+                  {@const viewing = data.oprName == opr}
+                  <Anchor
+                    {@attach (node) => {
+                      untrack(() => {
+                        if (viewing) node.scrollIntoView({ block: "center", inline: "center" });
+                      });
+                    }}
+                    route="{path}opr={encodeURIComponent(opr)}"
+                    class={viewing ? "font-bold underline" : ""}
+                  >
+                    {label}
+                  </Anchor>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          {#if filteredInsights.coprs.length}
+            <div class="flex flex-col">
+              <span class="text-xs font-light">COPRs</span>
+              <div class="flex flex-col gap-2 text-sm">
+                {#each filteredInsights.coprs as { opr, label }}
+                  {@const viewing = data.oprName == opr}
+                  <Anchor
+                    {@attach (node) => {
+                      untrack(() => {
+                        if (viewing) node.scrollIntoView({ block: "center", inline: "center" });
+                      });
+                    }}
+                    route="{path}opr={encodeURIComponent(opr)}"
+                    class={viewing ? "font-bold underline" : ""}
+                  >
+                    {label}
+                  </Anchor>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
 
       <div class="flex flex-col gap-2 text-xs font-light text-pretty">
         <span>
