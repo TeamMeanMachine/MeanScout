@@ -24,8 +24,8 @@
     ]),
     ...surveyRecord.pickLists
       .flatMap((p) => p.weights)
-      .filter((w) => w.from != "field")
-      .map((w) => w.expressionName),
+      .map((w) => (w.from == "expression" ? w.expressionName : undefined))
+      .filter((e) => e !== undefined),
   ]);
 
   const expressions = $derived({
@@ -95,6 +95,7 @@
             <Button
               onclick={() => {
                 openDialog(EditPickListDialog, {
+                  compRecord: data.compRecord,
                   surveyRecord,
                   orderedSingleFields: data.fieldsWithDetails.orderedSingle,
                   expressions,
@@ -165,6 +166,7 @@
       <Button
         onclick={() => {
           openDialog(NewPickListDialog, {
+            compRecord: data.compRecord,
             surveyRecord: data.surveyRecord,
             orderedSingleFields: data.fieldsWithDetails.orderedSingle,
             expressions,
@@ -211,7 +213,7 @@
           if (expression.name != previousName) {
             pickLists = pickLists.map((pickList) => {
               pickList.weights = pickList.weights.map((weight) => {
-                if (weight.from != "field" && weight.expressionName == previousName) {
+                if ((!weight.from || weight.from == "expression") && weight.expressionName == previousName) {
                   weight.expressionName = expression.name;
                 }
                 return weight;

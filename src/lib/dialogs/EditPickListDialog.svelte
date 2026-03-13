@@ -1,5 +1,6 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon, Trash2Icon, Undo2Icon } from "@lucide/svelte";
+  import { getTeamsInsights, type Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
   import type { EntryExpression, Expression, SurveyExpression } from "$lib/expression";
@@ -10,6 +11,7 @@
   import ResetPickListDialog from "./ResetPickListDialog.svelte";
 
   let {
+    compRecord,
     surveyRecord,
     orderedSingleFields,
     expressions,
@@ -19,6 +21,7 @@
     onreset,
     ondelete,
   }: {
+    compRecord: Comp;
     surveyRecord: MatchSurvey;
     orderedSingleFields: SingleFieldWithDetails[];
     expressions: {
@@ -35,6 +38,8 @@
   let changes = $state(structuredClone($state.snapshot(pickList)));
   let totalWeights = $derived(changes.weights.reduce((total, weight) => total + Math.abs(weight.percentage), 0));
   let error = $state("");
+
+  const insights = $derived(getTeamsInsights(compRecord));
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -99,7 +104,7 @@
 
 {#snippet expressionButton(expression: Expression)}
   {@const weightIndex = changes.weights.findIndex(
-    (weight) => weight.from != "field" && weight.expressionName == expression.name,
+    (weight) => (!weight.from || weight.from == "expression") && weight.expressionName == expression.name,
   )}
   {@const isWeight = weightIndex != -1}
 
@@ -199,7 +204,61 @@
       {/if}
     {/each}
   </div>
+
+  {#if compRecord.teamsInsights}
+    <div class="flex flex-col gap-2">
+      <span>TBA Insights</span>
+      {#each insights.oprs as { opr, label }}
+        {@render oprButton(opr, label)}
+      {/each}
+    </div>
+
+    {#if insights.coprs.length}
+      <div class="flex flex-col gap-2">
+        <span>COPRs</span>
+        {#each insights.coprs as { opr, label }}
+          {@render oprButton(opr, label)}
+        {/each}
+      </div>
+    {/if}
+  {/if}
 </div>
+
+{#snippet oprButton(opr: string, label: string)}
+  {@const weightIndex = changes.weights.findIndex((weight) => weight.from == "opr" && weight.oprName == opr)}
+  {@const isWeight = changes.weights.some((weight) => weight.from == "opr" && weight.oprName == opr)}
+
+  <Button
+    onclick={() => {
+      if (isWeight) {
+        changes.weights = changes.weights.toSpliced(weightIndex, 1);
+      } else {
+        changes.weights = [...changes.weights, { from: "opr", oprName: opr, percentage: 0 }];
+      }
+    }}
+  >
+    {#if isWeight}
+      <SquareCheckBigIcon class="text-theme" />
+      <span class="text-base font-bold">{label}</span>
+    {:else}
+      <SquareIcon class="text-theme" />
+      {label}
+    {/if}
+  </Button>
+  {#if isWeight}
+    <label class="m-2 ml-10 flex flex-col self-start">
+      Weight
+      <input
+        type="number"
+        min="-100"
+        max="100"
+        step="1"
+        bind:value={changes.weights[weightIndex].percentage}
+        class="bg-neutral-800 p-2 text-theme"
+      />
+    </label>
+  {/if}
+{/snippet}
 
 <span>Total weights: {totalWeights}%</span>
 

@@ -1,8 +1,14 @@
 <script lang="ts">
   import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
-  import { allianceTeamLabels, getOrdinal, getTeamName, rerunAllContextLoads, sessionStorageStore } from "$lib";
-  import type { CompPageData } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
+  import {
+    allianceTeamLabels,
+    convertOprToLabel,
+    getOrdinal,
+    getTeamName,
+    rerunAllContextLoads,
+    sessionStorageStore,
+  } from "$lib";
+  import { getTeamsInsights, type CompPageData } from "$lib/comp";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { type MatchEntry } from "$lib/entry";
@@ -14,6 +20,7 @@
     colors,
     getExpressionData,
     getFieldData,
+    getOprData,
     getPickListData,
     type PickList,
     type RankData,
@@ -23,6 +30,7 @@
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import Anchor from "./Anchor.svelte";
+  import Button from "./Button.svelte";
 
   let {
     pageData,
@@ -57,11 +65,14 @@
     }),
   );
 
+  const insights = $derived(getTeamsInsights(pageData.compRecord));
+
   const rankViewSchema = z
     .union([
       z.object({ surveyId: z.string(), pickList: z.string() }),
       z.object({ surveyId: z.string(), expression: z.string() }),
       z.object({ surveyId: z.string(), field: z.string() }),
+      z.object({ opr: z.string() }),
       z.undefined(),
     ])
     .catch(undefined);
@@ -76,10 +87,11 @@
   let selectedRanking = $state(initialRanking());
 
   const orderedSingleFields = $derived.by(() => {
-    if (!selectedRanking) return [];
+    if (!selectedRanking || selectedRanking.rankData.type == "opr") return [];
+    const surveyId = selectedRanking.rankData.survey.id;
     return getFieldsWithDetails(
       selectedRanking.rankData.survey,
-      pageData.fieldRecords.filter((f) => f.surveyId == selectedRanking!.rankData.survey.id),
+      pageData.fieldRecords.filter((f) => f.surveyId == surveyId),
     ).orderedSingle;
   });
 
@@ -106,10 +118,14 @@
     if (selectedRanking.rankData.type == "picklist") {
       return selectedRanking.rankData.pickList.weights
         .map((w) => {
-          if (w.from == "field") {
-            return orderedSingleFields.find((f) => f.field.id == w.fieldId)?.detailedName;
+          switch (w.from) {
+            case "field":
+              return orderedSingleFields?.find((f) => f.field.id == w.fieldId)?.detailedName;
+            case "opr":
+              return convertOprToLabel(w.oprName);
+            default:
+              return w.expressionName;
           }
-          return w.expressionName;
         })
         .filter((i) => i != undefined);
     } else if (selectedRanking.rankData.type == "expression") {
@@ -162,6 +178,10 @@
     const rankView = rankViewSchema.parse(getRankView());
     if (!rankView) return firstRankingChoice();
 
+    if ("opr" in rankView) {
+      return getRanking(rankView);
+    }
+
     const survey = matchSurveys.find((survey) => survey.id == rankView?.surveyId);
     if (!survey) return;
 
@@ -195,13 +215,16 @@
     const ranking = getRanking(params);
     if (ranking) {
       if (ranking.rankData?.type == "picklist") {
-        const rankView = { surveyId: params.survey.id, pickList: ranking.rankData.pickList.name };
+        const rankView = { surveyId: ranking.rankData.survey.id, pickList: ranking.rankData.pickList.name };
         sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       } else if (ranking.rankData?.type == "expression") {
-        const rankView = { surveyId: params.survey.id, expression: ranking.rankData.expression.name };
+        const rankView = { surveyId: ranking.rankData.survey.id, expression: ranking.rankData.expression.name };
         sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       } else if (ranking.rankData.type == "field") {
-        const rankView = { surveyId: params.survey.id, field: ranking.rankData.field.field.id };
+        const rankView = { surveyId: ranking.rankData.survey.id, field: ranking.rankData.field.field.id };
+        sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
+      } else if (ranking.rankData.type == "opr") {
+        const rankView = { opr: ranking.rankData.oprName };
         sessionStorage.setItem("match-rank-view", JSON.stringify(rankView));
       }
     }
@@ -212,8 +235,15 @@
     params:
       | { survey: MatchSurvey; pickList: PickList }
       | { survey: MatchSurvey; expression: Expression }
-      | { survey: MatchSurvey; field: SingleFieldWithDetails },
+      | { survey: MatchSurvey; field: SingleFieldWithDetails }
+      | { opr: string },
   ) {
+    if ("opr" in params) {
+      const rankData = getOprData(pageData.compRecord, params.opr);
+      if (!rankData) return;
+      return { ...params, rankData };
+    }
+
     const entriesByTeam: Record<string, MatchEntry[]> = {};
     for (const entry of pageData.entryRecords.filter(
       (e): e is MatchEntry => e.surveyId == params.survey.id && e.type == "match",
@@ -283,6 +313,8 @@
             {selectedRanking.expression.name}
           {:else if "field" in selectedRanking}
             {selectedRanking.field.detailedName}
+          {:else if "opr" in selectedRanking}
+            {convertOprToLabel(selectedRanking.opr)}
           {/if}
         </span>
       {:else}
@@ -351,6 +383,42 @@
             {/each}
           </div>
         {/each}
+
+        {#if pageData.compRecord.teamsInsights}
+          <div class="flex flex-col gap-3 first:mt-3">
+            <h2 class="text-sm font-bold">TBA Insights</h2>
+            {#if insights.oprs.length}
+              <div class="flex flex-wrap gap-2 text-sm">
+                {#each insights.oprs as { opr, label }}
+                  {@const selected = selectedRanking && "opr" in selectedRanking && selectedRanking.opr == opr}
+                  <Button
+                    onclick={() => (selectedRanking = switchRanking({ opr }))}
+                    class={selected ? "font-bold" : ""}
+                  >
+                    {label}
+                  </Button>
+                {/each}
+              </div>
+            {/if}
+
+            {#if insights.coprs.length}
+              <div class="flex flex-col">
+                <span class="text-xs font-light">COPRs</span>
+                <div class="flex flex-wrap gap-2 text-sm">
+                  {#each insights.coprs as { opr, label }}
+                    {@const selected = selectedRanking && "opr" in selectedRanking && selectedRanking.opr == opr}
+                    <Button
+                      onclick={() => (selectedRanking = switchRanking({ opr }))}
+                      class={selected ? "font-bold" : ""}
+                    >
+                      {label}
+                    </Button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -366,7 +434,10 @@
       selectedRanking.rankData.type == "field" &&
       "field=" + encodeURIComponent(selectedRanking.rankData.field.field.id)}
     {@const objectParam = pickListParam || expressionParam || fieldParam || ""}
-    {@const rankLinkParams = `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${objectParam}`}
+    {@const rankLinkParams =
+      "opr" in selectedRanking
+        ? `opr=${encodeURIComponent(selectedRanking.opr)}`
+        : `surveyId=${encodeURIComponent(selectedRanking.survey.id)}&${objectParam}`}
 
     {#if inputNames.length}
       <div class="-mx-3 -my-1 flex gap-2 overflow-x-auto px-3 py-1 text-xs">
@@ -385,6 +456,10 @@
                       selectedRanking = switchRanking({ survey: selectedRanking.survey, field });
                       return;
                     }
+                  }
+                  if (selectedRanking.pickList.weights[i].from == "opr") {
+                    selectedRanking = switchRanking({ opr: selectedRanking.pickList.weights[i].oprName });
+                    return;
                   }
                   const expression = selectedRanking.survey.expressions.find((e) => e.name == name);
                   if (expression) {
@@ -559,7 +634,7 @@
             </Button>
           </div>
 
-          {#if inputNames.length > 1}
+          {#if "inputs" in teamRank && inputNames.length > 1}
             <div class="-mx-2 mt-1">
               <div class="flex text-center text-xs font-light tracking-tighter" style="width:{percentageStr}">
                 {#if "value" in teamRank && rankData.type != "picklist"}
@@ -589,7 +664,7 @@
     </div>
 
     <div class={["transition-[background]", isHighlighted ? "bg-neutral-700" : "bg-neutral-800"]}>
-      {#if inputNames.length > 1}
+      {#if "inputs" in teamRank && inputNames.length > 1 && rankData.type != "opr"}
         <div class="flex" style="width:{percentageStr}">
           {#if "value" in teamRank && rankData.type != "picklist"}
             {#each teamRank.inputs as input, i}
@@ -629,7 +704,7 @@
       {/if}
     </div>
 
-    {#if inputNames.length > 1}
+    {#if "inputs" in teamRank && inputNames.length > 1 && rankData.type != "opr"}
       <div class="flex text-center text-xs font-light tracking-tighter" style="width:{percentageStr}">
         {#if "value" in teamRank && rankData.type != "picklist"}
           {#each teamRank.inputs as input, i}

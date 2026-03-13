@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { teamSchema, type TeamInsights } from "./";
+import { convertOprToLabel, teamSchema, type TeamInsights } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
 import type { AllData } from "./idb";
@@ -63,4 +63,19 @@ export function getTeamInsights(comp: Comp, team: string) {
   }
 
   return insights;
+}
+
+export function getTeamsInsights(comp: Comp) {
+  if (!comp.teamsInsights) {
+    return { oprs: [], coprs: [] };
+  }
+
+  const oprs = ["oprs", "dprs", "ccwms"].map((opr) => ({ opr, label: convertOprToLabel(opr) }));
+
+  const coprs = Object.entries(comp.teamsInsights.coprs).map(([opr]) => ({
+    opr,
+    label: convertOprToLabel(opr),
+  }));
+
+  return { oprs, coprs };
 }

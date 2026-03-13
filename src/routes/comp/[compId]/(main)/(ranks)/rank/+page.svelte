@@ -22,6 +22,7 @@
       const index = data.surveyRecord.pickLists.findIndex((pl) => pl.name == pickList.name);
 
       openDialog(EditPickListDialog, {
+        compRecord: data.compRecord,
         surveyRecord: data.surveyRecord,
         orderedSingleFields: data.fieldsWithDetails.orderedSingle,
         expressions: data.expressions,
@@ -89,7 +90,7 @@
           if (expression.name != previousName) {
             pickLists = pickLists.map((pickList) => {
               pickList.weights = pickList.weights.map((weight) => {
-                if (weight.from != "field" && weight.expressionName == previousName) {
+                if ((!weight.from || weight.from == "expression") && weight.expressionName == previousName) {
                   weight.expressionName = expression.name;
                 }
                 return weight;

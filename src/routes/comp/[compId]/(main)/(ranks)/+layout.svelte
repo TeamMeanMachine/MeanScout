@@ -2,6 +2,7 @@
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { convertOprToLabel, rerunOtherContextLoads } from "$lib";
+  import { getTeamsInsights } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
@@ -55,31 +56,25 @@
   }
 
   function filterInsights(search: string) {
-    if (!data.compRecord.teamsInsights) {
-      return { oprs: [], coprs: [] };
-    }
+    const insights = getTeamsInsights(data.compRecord);
 
-    const oprs = ["oprs", "dprs", "ccwms"]
-      .map((opr) => ({ opr, label: convertOprToLabel(opr) }))
-      .filter(({ opr, label }) => {
-        if (!search) return true;
-        return (
-          opr.toLowerCase().replaceAll(" ", "").includes(search) ||
-          label.toLowerCase().replaceAll(" ", "").includes(search)
-        );
-      });
+    insights.oprs = insights.oprs.filter(({ opr, label }) => {
+      if (!search) return true;
+      return (
+        opr.toLowerCase().replaceAll(" ", "").includes(search) ||
+        label.toLowerCase().replaceAll(" ", "").includes(search)
+      );
+    });
 
-    const coprs = Object.entries(data.compRecord.teamsInsights.coprs)
-      .map(([opr]) => ({ opr, label: convertOprToLabel(opr) }))
-      .filter(({ opr, label }) => {
-        if (!search) return true;
-        return (
-          opr.toLowerCase().replaceAll(" ", "").includes(search) ||
-          label.toLowerCase().replaceAll(" ", "").includes(search)
-        );
-      });
+    insights.coprs = insights.coprs.filter(({ opr, label }) => {
+      if (!search) return true;
+      return (
+        opr.toLowerCase().replaceAll(" ", "").includes(search) ||
+        label.toLowerCase().replaceAll(" ", "").includes(search)
+      );
+    });
 
-    return { oprs, coprs };
+    return insights;
   }
 
   function onsearchinput(value: string) {
@@ -198,6 +193,7 @@
                     onclick={() => {
                       if (group.category == "Pick Lists") {
                         openDialog(NewPickListDialog, {
+                          compRecord: data.compRecord,
                           surveyRecord: survey,
                           orderedSingleFields: fieldsWithDetails.orderedSingle,
                           expressions: groupedExpressions,

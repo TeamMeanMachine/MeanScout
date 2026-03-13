@@ -9,6 +9,7 @@ import type { MatchSurvey } from "./survey";
 const weightSchema = z.discriminatedUnion("from", [
   z.object({ from: z.literal("expression").optional(), expressionName: z.string(), percentage: z.number() }),
   z.object({ from: z.literal("field"), fieldId: z.string(), percentage: z.number() }),
+  z.object({ from: z.literal("opr"), oprName: z.string(), percentage: z.number() }),
 ]);
 
 export const pickListSchema = z.object({
@@ -103,6 +104,32 @@ export function getPickListData(
   }
 
   for (const weight of pickList.weights) {
+    if (weight.from == "opr") {
+      if (!compRecord.teamsInsights) continue;
+
+      let rawData: Record<string, number>;
+      if (weight.oprName == "oprs" || weight.oprName == "dprs" || weight.oprName == "ccwms") {
+        rawData = compRecord.teamsInsights[weight.oprName];
+      } else {
+        rawData = compRecord.teamsInsights.coprs[weight.oprName];
+      }
+      if (!rawData) continue;
+
+      const teamData: Record<string, { value: number; inputs: Value[] }> = {};
+      for (const team in rawData) {
+        teamData[team] = { value: rawData[team], inputs: [] };
+      }
+
+      const normalizedTeamData = normalizeTeamData(teamData, weight.percentage);
+
+      for (const team in normalizedTeamData) {
+        pickListData[team].value += normalizedTeamData[team];
+        weightsData[team].push(normalizedTeamData[team]);
+      }
+
+      continue;
+    }
+
     let expression: Expression;
     if (weight.from == "field") {
       const field = orderedSingleFields.find((f) => f.field.id == weight.fieldId);

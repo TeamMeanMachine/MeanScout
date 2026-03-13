@@ -13,7 +13,7 @@
     UserPlusIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { allianceTeamLabels, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "$lib";
+  import { allianceTeamLabels, convertOprToLabel, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "$lib";
   import type { CompPageData } from "$lib/comp";
   import { openDialog } from "$lib/dialog";
   import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
@@ -107,10 +107,14 @@
     if (rankData.type == "picklist") {
       return rankData.pickList.weights
         .map((w) => {
-          if (w.from == "field") {
-            return orderedSingleFields?.find((f) => f.field.id == w.fieldId)?.detailedName;
+          switch (w.from) {
+            case "field":
+              return orderedSingleFields?.find((f) => f.field.id == w.fieldId)?.detailedName;
+            case "opr":
+              return convertOprToLabel(w.oprName);
+            default:
+              return w.expressionName;
           }
-          return w.expressionName;
         })
         .filter((i) => i != undefined);
     } else if (rankData.type == "expression") {
@@ -165,6 +169,9 @@
     if (rankData.type == "picklist") {
       if (rankData.pickList.weights[i].from == "field") {
         return `${path}&field=${encodeURIComponent(rankData.pickList.weights[i].fieldId)}`;
+      }
+      if (rankData.pickList.weights[i].from == "opr") {
+        return `comp/${pageData.compRecord.id}/rank?opr=${encodeURIComponent(rankData.pickList.weights[i].oprName)}`;
       }
       return `${path}&expression=${encodeURIComponent(name)}`;
     } else if (rankData.type == "expression") {

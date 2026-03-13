@@ -44,8 +44,8 @@ export const load: PageLoad = async (event) => {
     ]),
     ...surveyRecord.pickLists
       .flatMap((p) => p.weights)
-      .filter((w) => w.from != "field")
-      .map((w) => w.expressionName),
+      .map((w) => (w.from == "expression" ? w.expressionName : undefined))
+      .filter((e) => e !== undefined),
   ];
 
   const expressions = {
