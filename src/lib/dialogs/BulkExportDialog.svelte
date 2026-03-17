@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckIcon, FileBracesIcon, RefreshCwIcon, Share2Icon, ShareIcon, XIcon } from "@lucide/svelte";
+  import { FileBracesIcon, LogOutIcon, Share2Icon, ShareIcon, XIcon } from "@lucide/svelte";
   import { download, rerunAllContextLoads, schemaVersion, sessionStorageStore, share } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
@@ -10,6 +10,7 @@
   import type { Field } from "$lib/field";
   import { idb } from "$lib/idb";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import { webRtcActiveStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -33,30 +34,6 @@
     navigator.onLine ? "room" : "qrfcode",
   );
   let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
-
-  // svelte-ignore state_referenced_locally
-  let displayedRequests = $state($state.snapshot(onlineTransfer.requestsFromClients));
-  let displayedClients = $state($state.snapshot(onlineTransfer.clients));
-
-  const clientsChanged = $derived.by(() => {
-    const savedIds = new Set(displayedClients.map((c) => c.info.id));
-    const currentIds = new Set(onlineTransfer.clients.map((c) => c.info.id));
-    return currentIds.symmetricDifference(savedIds).size;
-  });
-
-  const requestsChanged = $derived.by(() => {
-    if (displayedRequests.size != onlineTransfer.requestsFromClients.size) {
-      return true;
-    }
-    for (const [clientId, actual] of onlineTransfer.requestsFromClients) {
-      const displayed = displayedRequests.get(clientId);
-      if (actual !== displayed) return true;
-    }
-    for (const [clientId, displayed] of displayedRequests) {
-      const actual = onlineTransfer.requestsFromClients.get(clientId);
-      if (displayed !== actual) return true;
-    }
-  });
 
   const completedEntries = entries?.filter((e) => e.status != "draft");
   const unexportedEntries = entries?.filter((e) => e.status == "submitted");
@@ -83,15 +60,9 @@
     .replaceAll(" ", "_")
     .toLowerCase();
 
-  function refreshDisplayed() {
-    displayedRequests = $state.snapshot(onlineTransfer.requestsFromClients);
-    displayedClients = $state.snapshot(onlineTransfer.clients);
-  }
-
   function changeTab(to: "room" | "qrfcode" | "file") {
     currentTab = to;
     $storedTab = to;
-    refreshDisplayed();
   }
 
   function shareBulkAsFile() {
@@ -136,7 +107,12 @@
     for (const client of onlineTransfer.clients) {
       sendBulkTo(client.info.id);
     }
-    refreshDisplayed();
+  }
+
+  function sendBulkToRequests() {
+    for (const [clientId] of onlineTransfer.requestsFromClients) {
+      sendBulkTo(clientId);
+    }
   }
 
   function compsDescriptor() {
@@ -208,88 +184,79 @@
 </div>
 
 {#if currentTab == "room"}
-  <Button onclick={refreshDisplayed} class="relative self-start text-sm" disabled={!requestsChanged && !clientsChanged}>
-    <RefreshCwIcon class="size-5 text-theme" />
-    <span class={requestsChanged || clientsChanged ? "animate-pulse" : ""}>Refresh</span>
-    {#if requestsChanged || clientsChanged}
-      <span class="absolute top-0 right-0.5 text-xs font-bold tracking-tighter italic">!</span>
-    {/if}
-  </Button>
-
-  {#if displayedRequests.size}
-    <div class="flex flex-col">
-      <span class="text-sm font-light">Incoming requests</span>
-
-      <div class="flex flex-col gap-2">
-        {#each displayedRequests as [clientId, request]}
-          {@const client = onlineTransfer.getClient(clientId)}
-
-          <div class="flex items-stretch gap-1">
-            <Button
-              onclick={() => {
-                if (client) sendBulkTo(client.info.id);
-                refreshDisplayed();
-              }}
-              class="grow"
-            >
-              <div class="flex grow flex-col">
-                <span>
-                  {#if client}
-                    {client.info.name}
-                    {#if client.info.team}
-                      <span class="text-xs font-light">({client.info.team})</span>
-                    {/if}
-                  {:else}
-                    Disconnected
-                  {/if}
-                </span>
-                <span class="text-sm font-light">wants: {request}</span>
+  {#if onlineTransfer.localId}
+    <div class="-m-1 flex h-[300px] flex-col gap-3 overflow-auto p-1">
+      {#if onlineTransfer.clients.length}
+        <div class="flex flex-col">
+          <span class="text-sm font-light">Send to</span>
+          <div class="flex gap-1">
+            <Button onclick={sendBulkToAll} class="grow">
+              <ShareIcon class="text-theme" />
+              <div class="flex flex-col">
+                Everyone
+                <span class="text-xs font-light">{onlineTransfer.clients.length} connected</span>
               </div>
-              <CheckIcon class="text-theme" />
             </Button>
-
-            <Button
-              onclick={() => {
-                onlineTransfer.requestsFromClients.delete(clientId);
-                refreshDisplayed();
-              }}
-            >
-              <XIcon class="text-theme" />
-            </Button>
+            {#if onlineTransfer.requestsFromClients.size}
+              <Button onclick={sendBulkToRequests}>
+                <ShareIcon class="text-theme" />
+                <div class="flex flex-col">
+                  Requesters
+                  <span class="text-xs font-light">{onlineTransfer.requestsFromClients.size} requested</span>
+                </div>
+              </Button>
+            {/if}
           </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
+        </div>
 
-  {#if displayedClients.length}
-    <div class="flex flex-col">
-      <span class="text-sm font-light">Send to</span>
+        <div class="flex flex-col gap-2">
+          {#each onlineTransfer.clients as client (client.info.id)}
+            {@const request = onlineTransfer.requestsFromClients.get(client.info.id)}
 
-      <div class="flex flex-col gap-2">
-        <Button onclick={sendBulkToAll}>
-          <ShareIcon class="text-theme" />
-          Everyone
-        </Button>
+            <div class="flex gap-1">
+              <Button onclick={() => sendBulkTo(client.info.id)} disabled={!client.channel} class="grow">
+                <div class="flex grow flex-col">
+                  {client.info.name}
+                  {#if client.info.team}
+                    <span class="text-xs font-light">{client.info.team}</span>
+                  {/if}
+                </div>
 
-        {#each displayedClients as client (client.info.id)}
-          <Button
-            onclick={() => {
-              if (client) sendBulkTo(client.info.id);
-              refreshDisplayed();
-            }}
-          >
-            <div class="w-6 shrink-0"></div>
-            <span class="text-sm">
-              {client.info.name}
-              {#if client.info.team}
-                <span class="text-xs font-light">({client.info.team})</span>
+                {#if request}
+                  <div class="flex flex-col text-right text-xs font-light">
+                    wants
+                    <span>{request}</span>
+                  </div>
+                  <ShareIcon class="text-theme" />
+                {/if}
+              </Button>
+
+              {#if request}
+                <Button
+                  onclick={() => {
+                    onlineTransfer.requestsFromClients.delete(client.info.id);
+                  }}
+                >
+                  <XIcon class="text-theme" />
+                </Button>
               {/if}
-            </span>
-          </Button>
-        {/each}
-      </div>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <span class="text-sm">Nobody else is active in this room.</span>
+      {/if}
     </div>
+
+    <Button
+      onclick={() => {
+        $webRtcActiveStore = "";
+        onlineTransfer.leaveRoom();
+      }}
+    >
+      <LogOutIcon class="text-theme" />
+      Leave
+    </Button>
   {:else}
     <RoomWidget hideTitle />
   {/if}

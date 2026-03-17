@@ -59,65 +59,65 @@
   <h2 class="font-bold">{$webRtcActiveStore ? "Room" : "Join a room"}</h2>
 {/if}
 
-{#if $webRtcActiveStore}
-  <div class="flex flex-col">
-    <span class="text-sm font-light">You</span>
-    <span>
-      {$scoutStore}
-      {#if $teamStore}
-        <span class="text-xs font-light">({$teamStore})</span>
-      {/if}
-    </span>
-  </div>
+<div class="-m-1 flex h-[300px] flex-col gap-3 overflow-auto p-1">
+  {#if $webRtcActiveStore}
+    <div class="flex flex-col">
+      <span class="text-sm font-light">You</span>
+      <span>
+        {$scoutStore}
+        {#if $teamStore}
+          <span class="text-xs font-light">({$teamStore})</span>
+        {/if}
+      </span>
+    </div>
 
-  <div class="flex flex-col">
-    <span class="text-sm font-light">
-      Others <span class="text-xs tracking-tighter">({onlineTransfer.clients.length})</span>
-    </span>
-    {#each onlineTransfer.clients as client (client.info.id)}
-      <div class="flex flex-col">
-        <span>
-          {client.info.name}
-          {#if client.info.team}
-            <span class="text-xs font-light">({client.info.team})</span>
-          {/if}
-        </span>
-      </div>
-    {:else}
-      <span class="text-sm font-light">Nobody else is active in this room.</span>
-    {/each}
-  </div>
+    <div class="flex flex-col">
+      <span class="text-sm font-light">
+        Others <span class="text-xs tracking-tighter">({onlineTransfer.clients.length})</span>
+      </span>
+      {#each onlineTransfer.clients as client (client.info.id)}
+        <div class="flex flex-col">
+          <span>
+            {client.info.name}
+            {#if client.info.team}
+              <span class="text-xs font-light">({client.info.team})</span>
+            {/if}
+          </span>
+        </div>
+      {:else}
+        <span class="text-sm font-light">Nobody else is active in this room.</span>
+      {/each}
+    </div>
+  {:else}
+    <label class="flex flex-col">
+      Your name
+      <input bind:value={scoutInput} class="bg-neutral-800 p-2 text-theme" />
+    </label>
 
-  <div class="flex flex-wrap justify-between gap-2">
-    <Button onclick={leaveRoom}>
-      <LogOutIcon class="text-theme" />
-      Leave
-    </Button>
-  </div>
-{:else}
-  <label class="flex flex-col">
-    Your name
-    <input bind:value={scoutInput} class="bg-neutral-800 p-2 text-theme" />
-  </label>
+    <label class="flex flex-col">
+      Your team
+      <input bind:value={teamInput} class="bg-neutral-800 p-2 text-theme" />
+    </label>
 
-  <label class="flex flex-col">
-    Your team
-    <input bind:value={teamInput} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-
-  <label class="flex flex-col">
-    Room id
-    <input bind:value={roomIdInput} class="bg-neutral-800 p-2 text-theme" />
-  </label>
-
-  <div class="flex flex-wrap justify-between gap-2">
-    <Button onclick={joinRoom} class="font-bold">
-      <LogInIcon class="text-theme" />
-      Join
-    </Button>
-  </div>
-
-  {#if error}
-    <span>Error: {error}</span>
+    <label class="flex flex-col">
+      Room id
+      <input bind:value={roomIdInput} class="bg-neutral-800 p-2 text-theme" />
+    </label>
   {/if}
+</div>
+
+{#if $webRtcActiveStore}
+  <Button onclick={leaveRoom}>
+    <LogOutIcon class="text-theme" />
+    Leave
+  </Button>
+{:else}
+  <Button onclick={joinRoom} class="font-bold">
+    <LogInIcon class="text-theme" />
+    Join
+  </Button>
+{/if}
+
+{#if error}
+  <span>Error: {error}</span>
 {/if}

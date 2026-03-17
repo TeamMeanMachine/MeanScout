@@ -144,6 +144,7 @@ class OnlineTransfer {
       this.ws = undefined;
 
       for (const client of this.clients) {
+        client.channel?.close();
         client.connection?.close();
       }
 
@@ -166,6 +167,7 @@ class OnlineTransfer {
     }
 
     for (const client of this.clients) {
+      client.channel?.close();
       client.connection?.close();
     }
 
@@ -264,6 +266,15 @@ class OnlineTransfer {
 
     if (message.type == "init") {
       console.log("[websocket] successfully joined room:", message);
+
+      for (const client of this.clients) {
+        client.channel?.close();
+        client.connection?.close();
+      }
+
+      this.clients = [];
+      this.requestsFromClients.clear();
+      this.dataFromClients.clear();
       this.localId = message.id;
 
       for (const client of message.clients) {
@@ -282,6 +293,16 @@ class OnlineTransfer {
     switch (message.type) {
       case "clients":
         console.log("[websocket] received clients", message.clients);
+        this.clients = this.clients.filter((existingClient) => {
+          if (message.clients.some((c) => c.id === existingClient.info.id)) {
+            return true;
+          }
+          existingClient.channel?.close();
+          existingClient.connection?.close();
+          this.requestsFromClients.delete(existingClient.info.id);
+          this.dataFromClients.delete(existingClient.info.id);
+          return false;
+        });
         for (const newClient of message.clients) {
           if (newClient.id === this.localId) continue;
           this.addClient(newClient, { connectNow: true });
@@ -312,7 +333,10 @@ class OnlineTransfer {
         break;
       case "leave":
         const client = this.getClient(message.id);
+        client?.channel?.close();
         client?.connection?.close();
+        this.requestsFromClients.delete(message.id);
+        this.dataFromClients.delete(message.id);
         this.removeClient(message.id);
         break;
       case "batch":
@@ -368,9 +392,10 @@ class OnlineTransfer {
 
     if (client.connection) {
       console.log(webrtcLogLabel, "reconnecting");
+      client.channel?.close();
+      client.channel = undefined;
       client.connection.close();
       client.connection = undefined;
-      client.channel = undefined;
     }
 
     console.log(webrtcLogLabel, "initializing", { remoteId, remoteOffer });
