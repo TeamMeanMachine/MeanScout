@@ -58,7 +58,9 @@
           <div>{data.totalAdjustedPoints.toFixed(2)}</div>
           <div>{data.totalPoints}</div>
           <div>{data.totalCoopPoints}</div>
-          <div>{data.totalCorrectGuesses}<span class="text-xs font-light">/{data.entryRecords.length}</span></div>
+          <div>
+            {data.totalCorrectGuesses}<span class="text-xs font-light">/{data.entriesWithPredictions.length}</span>
+          </div>
           <div>{(data.overallAccuracy * 100).toFixed(1)}<span class="text-xs font-light">%</span></div>
         </div>
       </div>

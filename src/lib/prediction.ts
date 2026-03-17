@@ -26,10 +26,7 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
   const predictionsPerScout = allScouts
     .map((scout) => {
       const scoutEntries = entries
-        .filter(
-          (entry) =>
-            entry.status != "draft" && entry.scout == scout.name && entry.scoutTeam == scout.team && entry.prediction,
-        )
+        .filter((entry) => entry.scout == scout.name && entry.scoutTeam == scout.team)
         .toSorted((a, b) => b.match - a.match);
 
       let correctGuesses = 0;
@@ -46,8 +43,7 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
 
           const otherCorrectEntriesCount = entries.filter(
             (e) =>
-              e.scout != scout.name &&
-              e.scoutTeam != scout.team &&
+              (e.scout != scout.name || e.scoutTeam != scout.team) &&
               compareMatches(match, e) == 0 &&
               e.prediction == "red",
           ).length;
@@ -59,8 +55,7 @@ export function getPredictionsPerScout(comp: Comp, entries: MatchEntry[]) {
 
           const otherCorrectEntriesCount = entries.filter(
             (e) =>
-              e.scout != scout.name &&
-              e.scoutTeam != scout.team &&
+              (e.scout != scout.name || e.scoutTeam != scout.team) &&
               compareMatches(match, e) == 0 &&
               e.prediction == "blue",
           ).length;
@@ -107,9 +102,7 @@ export function getPredictionsPerMatch(comp: Comp, entries: MatchEntry[]) {
     .toSorted((a, b) => compareMatches(b, a))
     .map((match) => {
       const matchEntries = entries
-        .filter(
-          (entry) => entry.status != "draft" && compareMatches(match, entry) == 0 && entry.scout && entry.prediction,
-        )
+        .filter((entry) => compareMatches(match, entry) == 0 && entry.scout)
         .toSorted((a, b) => a.scout?.localeCompare(b.scout || "") || 0);
 
       const redEntries = matchEntries.filter((entry) => entry.prediction == "red");

@@ -187,22 +187,25 @@ export function mergeOldAndNewData({
       };
 
       const mergedTbaEventKey = importedComp.tbaEventKey || existingComp.tbaEventKey;
-
       if (mergedTbaEventKey) {
         mergedComp.tbaEventKey = mergedTbaEventKey;
       }
 
-      const scouts = new Set<string>();
-
-      for (const scout of existingComp.scouts || []) {
-        scouts.add(scout);
+      const mergedAlliances = importedComp.alliances || existingComp.alliances;
+      if (mergedAlliances) {
+        mergedComp.alliances = mergedAlliances;
       }
 
+      const mergedTeamsInsights = importedComp.teamsInsights || existingComp.teamsInsights;
+      if (mergedTeamsInsights) {
+        mergedComp.teamsInsights = mergedTeamsInsights;
+      }
+
+      const scouts = new Set<string>(existingComp.scouts);
       for (const scout of importedComp.scouts || []) {
         scouts.add(scout);
       }
-
-      if (scouts.size) {
+      if (existingComp.scouts || importedComp.scouts) {
         mergedComp.scouts = scouts
           .values()
           .toArray()
