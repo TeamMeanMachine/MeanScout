@@ -39,7 +39,7 @@
 <div class="flex flex-col">
   <div class="mb-3 flex gap-2">
     <label class="flex grow flex-col">
-      <span>Your name</span>
+      <span>Input your name</span>
       <input
         bind:value={selectedScout}
         oninput={() => {
@@ -60,7 +60,7 @@
       {#if error}
         <span class="text-sm font-bold">Error: {error}</span>
       {:else}
-        <span class="text-sm">Select your name below</span>
+        <span class="text-sm">Or, select your name below</span>
       {/if}
 
       <div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">

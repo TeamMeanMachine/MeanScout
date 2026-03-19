@@ -282,6 +282,7 @@
       sessionStorage.removeItem("new-entry");
       idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: new Date() }).onsuccess = () => {
         rerunOtherContextLoads();
+        sessionStorage.setItem("home", `#/comp/${data.compRecord.id}`);
         goto(`#/entry/${entry.id}`, { invalidateAll: true });
       };
     };
@@ -439,34 +440,40 @@
       </div>
     {/if}
 
-    <label class="flex flex-col">
+    <div class="flex flex-col">
       Survey
-      <select
-        value={newEntry.survey.id}
-        onchange={(e) => {
-          const newSurveyId = e.currentTarget.value;
-          const surveyRecord = data.surveyRecords.find((s) => s.id == newSurveyId);
-          if (!surveyRecord || newSurveyId == newEntry.survey.id) return;
-
-          if (surveyRecord.type == "match") {
-            const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
-            const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
-            newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-          }
-
-          if (surveyRecord.type == "pit") {
-            const entryRecords = data.entryRecords.filter((e) => e.surveyId == newSurveyId);
-            const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
-            newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
-          }
-        }}
-        class="bg-neutral-800 p-2 text-theme"
-      >
+      <div class="flex flex-wrap gap-2">
         {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
-          <option value={surveyRecord.id}>{surveyRecord.name}</option>
+          {@const isSelected = surveyRecord.id == newEntry.survey.id}
+
+          <Button
+            onclick={() => {
+              if (!surveyRecord || isSelected) return;
+
+              if (surveyRecord.type == "match") {
+                const entryRecords = data.entryRecords.filter((e) => e.surveyId == surveyRecord.id);
+                const prefills = getNewMatchEntryPrefills(entryRecords as MatchEntry[]);
+                newEntry = { type: "match", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+              }
+
+              if (surveyRecord.type == "pit") {
+                const entryRecords = data.entryRecords.filter((e) => e.surveyId == surveyRecord.id);
+                const prefills = getNewPitEntryPrefills(entryRecords as PitEntry[]);
+                newEntry = { type: "pit", survey: surveyRecord, prefills, state: structuredClone(prefills) };
+              }
+            }}
+            class={["grow basis-16 text-nowrap", isSelected ? "font-bold" : "font-light"]}
+          >
+            {#if isSelected}
+              <CircleCheckBigIcon class="size-5 text-theme" />
+            {:else}
+              <CircleIcon class="size-5 text-theme" />
+            {/if}
+            {surveyRecord.name}
+          </Button>
         {/each}
-      </select>
-    </label>
+      </div>
+    </div>
 
     {#if newEntry.type == "match"}
       <div class="flex flex-wrap gap-x-4 gap-y-3" transition:slide>

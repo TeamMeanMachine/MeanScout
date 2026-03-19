@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
+    CheckIcon,
     ListOrderedIcon,
-    SaveIcon,
     SquareCheckBigIcon,
     SquareIcon,
     Trash2Icon,
@@ -88,13 +88,18 @@
 
 <Header
   title="{data.title} - {data.surveyRecord.name} - {data.compRecord.name} - MeanScout"
-  heading="Entry"
-  subheading={data.surveyRecord.name}
+  heading={data.title}
+  subheading="Scouting"
   backLink={sessionStorage.getItem("home") || `comp/${data.compRecord.id}`}
   class="max-w-(--breakpoint-lg)"
 />
 
 <div class="mx-auto mt-[57px] w-full max-w-(--breakpoint-lg) px-3 py-6">
+  <div class="mb-2 flex flex-col">
+    <span class="text-xs font-light">{data.compRecord.name}</span>
+    <h2 class="font-bold">{data.surveyRecord.name}</h2>
+  </div>
+
   <div class="mb-6 flex gap-4 max-sm:flex-col">
     {#if data.compRecord.scouts || entry.scout}
       <Button
@@ -263,8 +268,8 @@
       }}
       class="font-bold"
     >
-      <SaveIcon class="text-theme" />
-      Submit
+      <CheckIcon class="text-theme" />
+      Done
     </Button>
 
     <Button
@@ -277,7 +282,10 @@
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             tx.oncomplete = () => {
               rerunOtherContextLoads();
-              goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true, replaceState: true });
+              goto(sessionStorage.getItem("home") || `#/comp/${data.compRecord.id}`, {
+                invalidateAll: true,
+                replaceState: true,
+              });
             };
           },
         })}

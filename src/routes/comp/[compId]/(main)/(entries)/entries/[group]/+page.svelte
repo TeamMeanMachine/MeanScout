@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import { getTeamName, rerunAllContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { openDialog } from "$lib/dialog";
@@ -202,13 +203,17 @@
 
           <Button
             onclick={() => {
-              openDialog(ViewEntryDialog, {
-                compRecord: data.compRecord,
-                surveyRecord: survey!,
-                fieldRecords: data.fieldRecords,
-                entryRecord: entry,
-                onchange: refresh,
-              });
+              if (entry.status == "draft") {
+                goto(`#/entry/${entry.id}`);
+              } else {
+                openDialog(ViewEntryDialog, {
+                  compRecord: data.compRecord,
+                  surveyRecord: survey!,
+                  fieldRecords: data.fieldRecords,
+                  entryRecord: entry,
+                  onchange: refresh,
+                });
+              }
             }}
             class="gap-x-4"
           >
