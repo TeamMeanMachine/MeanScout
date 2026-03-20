@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
+  import { ArrowBigDownDashIcon, EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
   import Anchor from "./Anchor.svelte";
   import Button from "./Button.svelte";
+  import "$lib/app-update.svelte";
+  import { appUpdate } from "$lib/app-update.svelte";
 
   let {
     title = "MeanScout",
@@ -45,6 +47,12 @@
     {@render children?.()}
 
     <div class="flex grow items-center justify-end gap-3">
+      {#if appUpdate.available}
+        <Button onclick={() => location.reload()} class="animate-pulse">
+          <ArrowBigDownDashIcon class="animate-bounce-down text-theme" />
+        </Button>
+      {/if}
+
       {#if onmenupressed}
         <Button onclick={onmenupressed} class="relative">
           <EllipsisVerticalIcon class="text-theme" />

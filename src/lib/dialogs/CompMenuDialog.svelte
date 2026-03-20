@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    ArrowBigDownDashIcon,
     ArrowLeftIcon,
     ArrowRightIcon,
     ChevronsLeftRightEllipsisIcon,
@@ -9,6 +10,7 @@
     SettingsIcon,
     ShareIcon,
   } from "@lucide/svelte";
+  import { appUpdate } from "$lib/app-update.svelte";
   import type { CompPageData } from "$lib/comp";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
@@ -160,6 +162,16 @@
       ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
     </span>
   </div>
+
+  {#if appUpdate.available}
+    <Button onclick={() => location.reload()} class="mb-1">
+      <ArrowBigDownDashIcon class="animate-bounce-down text-theme" />
+      <div class="flex animate-pulse flex-col">
+        <span>Update available!</span>
+        <span class="text-xs font-light">Reload and apply update</span>
+      </div>
+    </Button>
+  {/if}
 
   <Anchor route="">
     <ArrowLeftIcon class="text-theme" />

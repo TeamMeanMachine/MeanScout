@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    ArrowBigDownDashIcon,
     ArrowRightIcon,
     ChevronsLeftRightEllipsisIcon,
     DownloadIcon,
@@ -7,6 +8,7 @@
     PlusIcon,
     SettingsIcon,
   } from "@lucide/svelte";
+  import { appUpdate } from "$lib/app-update.svelte";
   import Anchor from "$lib/components/Anchor.svelte";
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -70,6 +72,15 @@
         ({new Date(import.meta.env.VITE_GIT_COMMIT_DATE).toLocaleDateString()})
       </span>
     </div>
+    {#if appUpdate.available}
+      <Button onclick={() => location.reload()}>
+        <ArrowBigDownDashIcon class="animate-bounce-down text-theme" />
+        <div class="flex animate-pulse flex-col">
+          <span>Update available!</span>
+          <span class="text-xs font-light">Reload and apply update</span>
+        </div>
+      </Button>
+    {/if}
     <Button onclick={() => openDialog(RoomWidget, {})} class="relative">
       <ChevronsLeftRightEllipsisIcon class={["text-theme", $webRtcActiveStore && "animate-pulse"]} />
       <div class="flex grow flex-col">
