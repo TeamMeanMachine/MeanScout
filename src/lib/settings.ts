@@ -78,3 +78,5 @@ export const useCompressionStore = localStorageStore<"true" | "">(
 
 export const webRtcActiveStore = localStorageStore<"" | "true">("webrtc-active", "");
 export const webRtcRoomIdStore = localStorageStore<string>("webrtc-room-id", "");
+export const webRtcAutoSendStore = localStorageStore<"entries" | "">("webrtc-auto-receive", "entries");
+export const webRtcAutoReceiveStore = localStorageStore<"new-entries" | "">("webrtc-auto-receive", "new-entries");

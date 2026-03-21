@@ -2,12 +2,10 @@ import { error } from "@sveltejs/kit";
 import type { Comp } from "$lib/comp";
 import type { MatchEntry, PitEntry } from "$lib/entry";
 import { getFieldsWithDetails, type Field } from "$lib/field";
-import { idb, type AllData } from "$lib/idb";
 import type { MatchSurvey, PitSurvey } from "$lib/survey";
 import type { LayoutLoad } from "./$types";
 
 type SurveyPageData = {
-  all: AllData;
   compRecord: Comp;
   fieldRecords: Field[];
   fieldsWithDetails: ReturnType<typeof getFieldsWithDetails>;
@@ -19,25 +17,24 @@ type SurveyPageData = {
 export const load: LayoutLoad = async (event) => {
   const surveyId = event.params.surveyId;
 
-  const all = await idb.getAllAsync();
+  const data = await event.parent();
 
-  const surveyRecord = all.surveys.find((survey) => survey.id == surveyId);
+  const surveyRecord = data.all.surveys.find((survey) => survey.id == surveyId);
   if (!surveyRecord) {
     error(404, `Survey record not found with id ${surveyId}`);
   }
 
-  const compRecord = all.comps.find((comp) => comp.id == surveyRecord.compId);
+  const compRecord = data.all.comps.find((comp) => comp.id == surveyRecord.compId);
   if (!compRecord) {
     error(404, `Comp record not found with id ${surveyRecord.compId}`);
   }
 
-  const fieldRecords = all.fields.filter((field) => field.surveyId == surveyId);
-  const entryRecords = all.entries.filter((entry) => entry.surveyId == surveyId);
+  const fieldRecords = data.all.fields.filter((field) => field.surveyId == surveyId);
+  const entryRecords = data.all.entries.filter((entry) => entry.surveyId == surveyId);
 
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   return {
-    all,
     compRecord,
     fieldRecords,
     fieldsWithDetails,

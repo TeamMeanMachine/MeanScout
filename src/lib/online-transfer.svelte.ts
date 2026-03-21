@@ -205,6 +205,9 @@ class OnlineTransfer {
     this.satisfyRequestsFromClient(remoteId, data);
   }
 
+  onrtcrequestmessage: ((id: string, request: "entries" | "configs" | "all") => void) | undefined;
+  onrtcresponsemessage: ((id: string, response: AllData) => void) | undefined;
+
   private satisfyRequestsFromClient(remoteId: string, data: RTCResponseMessage) {
     const sentEntries = !!data.entries?.length;
     const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
@@ -496,37 +499,51 @@ class OnlineTransfer {
 
       if (parsed.type == "request") {
         console.log(logLabel, "received request", parsed);
-        const existingRequest = this.requestsFromClients.get(remoteId);
-        if (!existingRequest) {
+        let request = this.requestsFromClients.get(remoteId);
+
+        if (!request) {
           this.requestsFromClients.set(remoteId, parsed.request);
-        } else if (existingRequest != "all" && parsed.request != existingRequest) {
+          request = parsed.request;
+        } else if (request != "all" && parsed.request != request) {
           this.requestsFromClients.set(remoteId, "all");
+          request = "all";
         }
+
+        this.onrtcrequestmessage?.(remoteId, request);
       } else if (parsed.type == "response") {
         console.log(logLabel, "received response", parsed);
-        const existingData = this.dataFromClients.get(remoteId);
-        if (!existingData) {
-          this.dataFromClients.set(remoteId, {
+        let data = this.dataFromClients.get(remoteId);
+
+        if (!data) {
+          data = {
             comps: parsed.comps || [],
             surveys: parsed.surveys || [],
             fields: parsed.fields || [],
             entries: parsed.entries || [],
-          });
+          };
+
+          this.dataFromClients.set(remoteId, data);
         } else {
           const { merged } = mergeOldAndNewData({
-            existing: existingData,
+            existing: data,
             imported: parsed,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });
-          this.dataFromClients.set(remoteId, merged);
+
+          data = merged;
+          this.dataFromClients.set(remoteId, data);
         }
+
+        this.onrtcresponsemessage?.(remoteId, data);
       } else if (parsed.type == "candidate") {
         const client = this.getClient(remoteId);
+
         if (!client || !client.channel || !client.connection) {
           console.error(logLabel, "couldn't receive ice candidate, client does not exist:", parsed);
           return;
         }
+
         console.log(logLabel, "received ice candidate:", parsed);
         client.connection.addIceCandidate(parsed.candidate);
       }

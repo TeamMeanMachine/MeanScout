@@ -9,7 +9,7 @@
   import type { AllData } from "$lib/idb";
   import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore } from "$lib/settings";
+  import { webRtcActiveStore, webRtcAutoReceiveStore, webRtcAutoSendStore } from "$lib/settings";
   import { z } from "zod";
   import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 
@@ -139,7 +139,7 @@
 
 {#if currentTab == "room"}
   {#if onlineTransfer.localId}
-    <div class="-m-1 flex h-[300px] flex-col gap-3 overflow-auto p-1">
+    <div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
       {#if onlineTransfer.clients.length}
         <div class="flex flex-col">
           <span class="text-sm font-light">Request from</span>
@@ -220,6 +220,35 @@
       {:else}
         <span class="text-sm">Nobody else is active in this room.</span>
       {/if}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <Button onclick={() => ($webRtcAutoSendStore = $webRtcAutoSendStore ? "" : "entries")} class="grow basis-40">
+        {#if $webRtcAutoSendStore}
+          <SquareCheckBigIcon class="text-theme" />
+        {:else}
+          <SquareIcon class="text-theme" />
+        {/if}
+        <div class={["flex flex-col", $webRtcAutoSendStore ? "font-bold" : "font-light"]}>
+          Auto-send
+          <span class="text-xs font-light">Entries</span>
+        </div>
+      </Button>
+
+      <Button
+        onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}
+        class="grow basis-40"
+      >
+        {#if $webRtcAutoReceiveStore}
+          <SquareCheckBigIcon class="text-theme" />
+        {:else}
+          <SquareIcon class="text-theme" />
+        {/if}
+        <div class={["flex flex-col", $webRtcAutoReceiveStore ? "font-bold" : "font-light"]}>
+          Auto-receive
+          <span class="text-xs font-light">New entries</span>
+        </div>
+      </Button>
     </div>
 
     <Button

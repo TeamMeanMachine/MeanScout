@@ -9,7 +9,7 @@
     UsersIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import { getTeamName, rerunOtherContextLoads, type Team } from "$lib";
+  import { getTeamName, rerunOtherContextLoads, schemaVersion, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
@@ -21,7 +21,8 @@
   import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
   import { idb } from "$lib/idb";
   import { getAllMatches, type MatchIdentifier } from "$lib/match";
-  import { scoutStore, teamStore } from "$lib/settings";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import { scoutStore, teamStore, webRtcActiveStore, webRtcAutoSendStore } from "$lib/settings";
   import { slide } from "svelte/transition";
   import type { PageData, PageProps } from "./$types";
 
@@ -255,13 +256,25 @@
         openDialog(SubmitEntryDialog, {
           orderedSingleFields: data.fieldsWithDetails.orderedSingle,
           entryRecord: entry,
-          onsubmit() {
-            const tx = idb.transaction(["comps", "surveys"], "readwrite");
+          onsubmit(submittedEntry) {
+            const tx = idb.transaction(["comps", "surveys", "entries"], "readwrite");
+
+            tx.objectStore("entries").put(submittedEntry);
             tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+
             tx.oncomplete = () => {
+              if ($webRtcActiveStore && $webRtcAutoSendStore) {
+                onlineTransfer.sendToAll({ type: "response", version: schemaVersion, entries: [submittedEntry] });
+              }
+
               rerunOtherContextLoads();
               goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true });
+            };
+
+            tx.onerror = (error) => {
+              console.error(error);
+              alert(`Could not submit entry: ${error instanceof Error ? error.message : "Unknown error"}`);
             };
           },
         });

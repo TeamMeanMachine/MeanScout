@@ -29,6 +29,11 @@
 </script>
 
 <span>Are you sure you want to <span class="font-bold">delete this entry?</span></span>
+
+<span class="text-sm font-light">
+  This only affects your device. If you've already shared this entry, other devices may have a copy.
+</span>
+
 {#if error}
   <span>{error}</span>
 {/if}

@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { LogInIcon, LogOutIcon } from "@lucide/svelte";
+  import { LogInIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { scoutStore, teamStore, webRtcActiveStore, webRtcRoomIdStore } from "$lib/settings";
+  import {
+    scoutStore,
+    teamStore,
+    webRtcActiveStore,
+    webRtcAutoReceiveStore,
+    webRtcAutoSendStore,
+    webRtcRoomIdStore,
+  } from "$lib/settings";
 
   let {
     hideTitle,
@@ -59,7 +66,7 @@
   <h2 class="font-bold">{$webRtcActiveStore ? "Room" : "Join a room"}</h2>
 {/if}
 
-<div class="-m-1 flex h-[300px] flex-col gap-3 overflow-auto p-1">
+<div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
   {#if $webRtcActiveStore}
     <div class="flex flex-col">
       <span class="text-sm font-light">You</span>
@@ -104,6 +111,35 @@
       <input bind:value={roomIdInput} class="bg-neutral-800 p-2 text-theme" />
     </label>
   {/if}
+</div>
+
+<div class="flex flex-wrap gap-3">
+  <Button onclick={() => ($webRtcAutoSendStore = $webRtcAutoSendStore ? "" : "entries")} class="grow basis-40">
+    {#if $webRtcAutoSendStore}
+      <SquareCheckBigIcon class="text-theme" />
+    {:else}
+      <SquareIcon class="text-theme" />
+    {/if}
+    <div class={["flex flex-col", $webRtcAutoSendStore ? "font-bold" : "font-light"]}>
+      Auto-send
+      <span class="text-xs font-light">Entries</span>
+    </div>
+  </Button>
+
+  <Button
+    onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}
+    class="grow basis-40"
+  >
+    {#if $webRtcAutoReceiveStore}
+      <SquareCheckBigIcon class="text-theme" />
+    {:else}
+      <SquareIcon class="text-theme" />
+    {/if}
+    <div class={["flex flex-col", $webRtcAutoReceiveStore ? "font-bold" : "font-light"]}>
+      Auto-receive
+      <span class="text-xs font-light">New entries</span>
+    </div>
+  </Button>
 </div>
 
 {#if $webRtcActiveStore}

@@ -25,8 +25,8 @@ type ImportDataParams = {
 };
 
 export function importData({ existing, imported, overwriteDuplicateEntries }: ImportDataParams) {
-  return new Promise<void>((resolve, reject) => {
-    const { merged, fieldsToDelete } = mergeOldAndNewData({
+  return new Promise<{ duplicateEntryIds: Set<string> }>((resolve, reject) => {
+    const { merged, fieldsToDelete, duplicateEntryIds } = mergeOldAndNewData({
       existing,
       imported,
       overwriteDuplicateEntries,
@@ -51,7 +51,7 @@ export function importData({ existing, imported, overwriteDuplicateEntries }: Im
     };
 
     transaction.oncomplete = () => {
-      resolve();
+      resolve({ duplicateEntryIds });
     };
 
     const compStore = transaction.objectStore("comps");
@@ -93,6 +93,8 @@ export function mergeOldAndNewData({
     fields: [],
     entries: [],
   };
+
+  const duplicateEntryIds = new Set<string>();
 
   const fieldsToDelete = new Set<string>();
 
@@ -293,6 +295,8 @@ export function mergeOldAndNewData({
       if (!existingEntry) {
         merged.entries.push(importedEntry);
         continue;
+      } else {
+        duplicateEntryIds.add(existingEntry.id);
       }
 
       const tbaMetrics: TbaMetrics = [];
@@ -335,5 +339,5 @@ export function mergeOldAndNewData({
     merged.fields = merged.fields.filter((f) => !fieldsToDelete.has(f.id));
   }
 
-  return { merged, fieldsToDelete };
+  return { merged, fieldsToDelete, duplicateEntryIds };
 }
