@@ -9,6 +9,7 @@
     SquareCheckBigIcon,
     SquareIcon,
     SquarePenIcon,
+    UserSearchIcon,
     XIcon,
   } from "@lucide/svelte";
   import { goto } from "$app/navigation";
@@ -24,8 +25,10 @@
   import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
   import { idb } from "$lib/idb";
   import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier } from "$lib/match";
+  import { onlineTransfer, type ScoutingStatus } from "$lib/online-transfer.svelte";
   import { scoutStore, targetStore, teamStore, type Target } from "$lib/settings";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
+  import { untrack } from "svelte";
   import { fly, slide, type FlyParams } from "svelte/transition";
   import { z } from "zod";
   import type { PageProps } from "./$types";
@@ -105,6 +108,25 @@
       "new-entry",
       JSON.stringify($state.snapshot({ survey: newEntry.survey.id, state: newEntry.state })),
     );
+  });
+
+  $effect(() => {
+    newEntry.state.team;
+    newEntry.type == "match" && newEntry.state.match && newEntry.state.prediction;
+
+    untrack(() => {
+      if (!onlineTransfer.localId) return;
+
+      let status: ScoutingStatus = { team: newEntry.state.team };
+
+      if (newEntry.type == "match") {
+        status.match = newEntry.state.match;
+        status.prediction = newEntry.state.prediction;
+      }
+
+      onlineTransfer.localScoutingStatus = status;
+      onlineTransfer.sendToAll({ type: "scouting", status });
+    });
   });
 
   const fieldRecords = $derived(data.fieldRecords.filter((field) => field.surveyId == newEntry.survey.id));
@@ -194,6 +216,13 @@
       .map((team): Team => ({ number: team, name: getTeamName(team, data.compRecord.teams) || "" }))
       .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
   });
+
+  const statusesMatchingTeam = $derived(
+    onlineTransfer.clientsScoutingStatus
+      .values()
+      .toArray()
+      .filter((status) => status.team == newEntry.state.team),
+  );
 
   function onconfirm() {
     newEntry.state.team = newEntry.state.team.trim();
@@ -574,14 +603,18 @@
     {/if}
 
     {#if matchData && newEntry.type == "match"}
-      {#snippet teamMatchButton(team: string, target?: Target, color = "", order = "")}
+      {#snippet teamMatchButton(team: string, match: MatchIdentifier, target?: Target, color = "", order = "")}
         {#if team}
+          {@const matchingStatuses = onlineTransfer.clientsScoutingStatus
+            .values()
+            .toArray()
+            .filter((status) => status.team === team && status.match && compareMatches(status.match, match) === 0)}
           <Button
             onclick={() => {
               newEntry.state.team = team;
               if (target) $targetStore = target;
             }}
-            class="w-full {order}"
+            class="relative w-full {order}"
           >
             {#if newEntry.state.team == team}
               <CircleCheckBigIcon class="{color} size-5" />
@@ -592,6 +625,11 @@
               <span class="{color} {teamUnderline(team)}">{team}</span>
               <span class="truncate text-xs">{getTeamName(team, data.compRecord.teams)}</span>
             </div>
+            {#if onlineTransfer.clientsScoutingStatus.size && matchingStatuses.length}
+              <div class="absolute top-0.5 right-0.5 flex gap-0.5 text-sm">
+                {matchingStatuses.length}<UserSearchIcon class="size-4" />
+              </div>
+            {/if}
           </Button>
         {/if}
       {/snippet}
@@ -605,12 +643,12 @@
 
             {#if red1 || red2 || red3 || blue1 || blue2 || blue3}
               <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
-                {@render teamMatchButton(red1, "red 1", "text-red", "max-sm:order-1")}
-                {@render teamMatchButton(red2, "red 2", "text-red", "max-sm:order-3")}
-                {@render teamMatchButton(red3, "red 3", "text-red", "max-sm:order-5")}
-                {@render teamMatchButton(blue1, "blue 1", "text-blue", "max-sm:order-2")}
-                {@render teamMatchButton(blue2, "blue 2", "text-blue", "max-sm:order-4")}
-                {@render teamMatchButton(blue3, "blue 3", "text-blue", "max-sm:order-6")}
+                {@render teamMatchButton(red1, matchData, "red 1", "text-red", "max-sm:order-1")}
+                {@render teamMatchButton(red2, matchData, "red 2", "text-red", "max-sm:order-3")}
+                {@render teamMatchButton(red3, matchData, "red 3", "text-red", "max-sm:order-5")}
+                {@render teamMatchButton(blue1, matchData, "blue 1", "text-blue", "max-sm:order-2")}
+                {@render teamMatchButton(blue2, matchData, "blue 2", "text-blue", "max-sm:order-4")}
+                {@render teamMatchButton(blue3, matchData, "blue 3", "text-blue", "max-sm:order-6")}
               </div>
             {/if}
 
@@ -618,7 +656,7 @@
               <span class="mt-4 text-sm font-light">Other teams</span>
               <div class="grid grid-cols-3 gap-2 max-sm:grid-cols-2">
                 {#each matchData.extraTeams || [] as extraTeam}
-                  {@render teamMatchButton(extraTeam)}
+                  {@render teamMatchButton(extraTeam, matchData)}
                 {/each}
               </div>
             {/if}
@@ -639,6 +677,7 @@
             },
           });
         }}
+        class="relative"
       >
         <SquarePenIcon class="size-5 text-theme" />
         <div class="flex grow flex-col truncate">
@@ -649,10 +688,36 @@
             Select
           {/if}
         </div>
+        {#if onlineTransfer.clientsScoutingStatus.size && statusesMatchingTeam.length}
+          <div class="absolute top-0.5 right-0.5 flex gap-0.5 text-sm">
+            {statusesMatchingTeam.length}<UserSearchIcon class="size-4" />
+          </div>
+        {/if}
       </Button>
     </div>
 
     {#if newEntry.type == "match" && data.compRecord.scouts}
+      {@const redPredictionStatuses = onlineTransfer.clientsScoutingStatus
+        .values()
+        .toArray()
+        .filter(
+          (status) =>
+            newEntry.type == "match" &&
+            status.prediction == "red" &&
+            status.match &&
+            compareMatches(status.match, newEntry.state.match) === 0,
+        )}
+      {@const bluePredictionStatuses = onlineTransfer.clientsScoutingStatus
+        .values()
+        .toArray()
+        .filter(
+          (status) =>
+            newEntry.type == "match" &&
+            status.prediction == "blue" &&
+            status.match &&
+            compareMatches(status.match, newEntry.state.match) === 0,
+        )}
+
       <div class="flex flex-col" transition:slide>
         <span>Your guess</span>
         <div class="flex flex-wrap gap-2">
@@ -662,7 +727,7 @@
               newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
             }}
             class={[
-              "grow basis-[150px] text-red",
+              "relative grow basis-[150px] text-red",
               newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
             ]}
           >
@@ -672,6 +737,11 @@
               <SquareIcon class="size-5" />
             {/if}
             Red wins
+            {#if onlineTransfer.clientsScoutingStatus.size && redPredictionStatuses.length}
+              <div class="absolute top-0.5 right-0.5 flex gap-0.5 text-sm font-normal">
+                {redPredictionStatuses.length}<UserSearchIcon class="size-4" />
+              </div>
+            {/if}
           </Button>
           <Button
             onclick={() => {
@@ -679,7 +749,7 @@
               newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
             }}
             class={[
-              "grow basis-[150px] text-blue",
+              "relative grow basis-[150px] text-blue",
               newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
             ]}
           >
@@ -689,6 +759,11 @@
               <SquareIcon class="size-5" />
             {/if}
             Blue wins
+            {#if onlineTransfer.clientsScoutingStatus.size && bluePredictionStatuses.length}
+              <div class="absolute top-0.5 right-0.5 flex gap-0.5 text-sm font-normal">
+                {bluePredictionStatuses.length}<UserSearchIcon class="size-4" />
+              </div>
+            {/if}
           </Button>
         </div>
       </div>
@@ -783,6 +858,8 @@
       <Button
         onclick={() => {
           sessionStorage.removeItem("new-entry");
+          onlineTransfer.localScoutingStatus = undefined;
+          onlineTransfer.sendToAll({ type: "scouting", status: "done" });
           goto(`#/comp/${data.compRecord.id}`);
         }}
       >

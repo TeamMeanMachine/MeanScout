@@ -8,12 +8,12 @@
     UserSearchIcon,
     UsersIcon,
   } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
+  import { goto, onNavigate } from "$app/navigation";
   import { getTeamName, rerunOtherContextLoads, schemaVersion, type Team } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
   import Header from "$lib/components/Header.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
+  import { openDialog } from "$lib/dialog";
   import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
   import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
   import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
@@ -23,6 +23,7 @@
   import { getAllMatches, type MatchIdentifier } from "$lib/match";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { scoutStore, teamStore, webRtcActiveStore, webRtcAutoSendStore } from "$lib/settings";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { PageData, PageProps } from "./$types";
 
@@ -85,6 +86,30 @@
     changeTx.objectStore("surveys").put($state.snapshot(data.surveyRecord));
     changeTx.objectStore("comps").put($state.snapshot(data.compRecord));
   }
+
+  onMount(() => {
+    onlineTransfer.localScoutingStatus = { team: entry.team };
+    if (entry.type == "match") {
+      onlineTransfer.localScoutingStatus.match = {
+        number: entry.match,
+        set: entry.matchSet,
+        level: entry.matchLevel,
+      };
+      onlineTransfer.localScoutingStatus.prediction = entry.prediction;
+    }
+    onlineTransfer.sendToAll({ type: "scouting", status: onlineTransfer.localScoutingStatus });
+  });
+
+  onNavigate((navigation) => {
+    if (
+      onlineTransfer.localScoutingStatus &&
+      navigation.from?.route.id !== navigation.to?.route.id &&
+      navigation.from?.route.id == "/entry/[entryId]"
+    ) {
+      onlineTransfer.localScoutingStatus = undefined;
+      onlineTransfer.sendToAll({ type: "scouting", status: "done" });
+    }
+  });
 </script>
 
 <Header
@@ -152,8 +177,14 @@
               entry.match = match.number;
               entry.matchSet = match.set;
               entry.matchLevel = match.level || "qm";
+              onlineTransfer.localScoutingStatus = {
+                ...onlineTransfer.localScoutingStatus,
+                team: entry.team,
+                match,
+                prediction: entry.prediction,
+              };
+              onlineTransfer.sendToAll({ type: "scouting", status: onlineTransfer.localScoutingStatus });
               onchange();
-              closeDialog();
             },
           });
         }}
@@ -180,6 +211,11 @@
           prefilled: entry.team,
           onselect(team) {
             entry.team = team;
+            onlineTransfer.localScoutingStatus = {
+              ...onlineTransfer.localScoutingStatus,
+              team: entry.team,
+            };
+            onlineTransfer.sendToAll({ type: "scouting", status: onlineTransfer.localScoutingStatus });
             onchange();
           },
         });
@@ -266,6 +302,8 @@
             tx.oncomplete = () => {
               if ($webRtcActiveStore && $webRtcAutoSendStore) {
                 onlineTransfer.sendToAll({ type: "response", version: schemaVersion, entries: [submittedEntry] });
+                onlineTransfer.localScoutingStatus = undefined;
+                onlineTransfer.sendToAll({ type: "scouting", status: "done" });
               }
 
               rerunOtherContextLoads();
@@ -295,6 +333,8 @@
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
             tx.oncomplete = () => {
               rerunOtherContextLoads();
+              onlineTransfer.localScoutingStatus = undefined;
+              onlineTransfer.sendToAll({ type: "scouting", status: "done" });
               goto(sessionStorage.getItem("home") || `#/comp/${data.compRecord.id}`, {
                 invalidateAll: true,
                 replaceState: true,

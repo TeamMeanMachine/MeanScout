@@ -3,6 +3,7 @@ import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 import type { AllData } from "./idb";
 import { importSchema, mergeOldAndNewData } from "./import.svelte";
+import { matchIdentifierSchema } from "./match";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -31,6 +32,13 @@ type WSOutboundMessage =
   | WSOutboundCandidateMessage
   | { type: "batch"; messages: WSOutboundCandidateMessage[] };
 
+const scoutingStatusSchema = z.object({
+  team: z.string(),
+  match: matchIdentifierSchema.optional(),
+  prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+});
+export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
+
 const rtcRequestMessageSchema = z.object({
   type: z.literal("request"),
   from: z.string().optional(),
@@ -55,10 +63,19 @@ const rtcSignalMessageSchema = z.object({
 
 export type RTCSignalMessage = z.infer<typeof rtcSignalMessageSchema>;
 
+const rtcScoutingMessageSchema = z.object({
+  type: z.literal("scouting"),
+  from: z.string().optional(),
+  status: z.literal("done").or(scoutingStatusSchema),
+});
+
+export type RTCScoutingMessage = z.infer<typeof rtcScoutingMessageSchema>;
+
 const rtcMessageSchema = z.discriminatedUnion("type", [
   rtcRequestMessageSchema,
   rtcResponseMessageSchema,
   rtcSignalMessageSchema,
+  rtcScoutingMessageSchema,
 ]);
 
 export type RTCMessage = z.infer<typeof rtcMessageSchema>;
@@ -94,6 +111,8 @@ class OnlineTransfer {
   /** This client's id, only set when connected to the signaling server. Reactive. */
   localId = $state<string | undefined>(undefined);
 
+  localScoutingStatus = $state<ScoutingStatus | undefined>(undefined);
+
   /** Reactive list of remote clients. */
   clients = $state<Client[]>([]);
 
@@ -102,6 +121,9 @@ class OnlineTransfer {
 
   /** Reactive map of any remote clients' data. */
   dataFromClients = $state(new SvelteMap<string, AllData>());
+
+  /** Reactive map of clients' scouting status, updated on preparing/starting/stopping scouting. */
+  clientsScoutingStatus = $state(new SvelteMap<string, ScoutingStatus>());
 
   /** Reactive counts of different requests. */
   requestCounts = $derived.by(() => {
@@ -152,6 +174,7 @@ class OnlineTransfer {
       this.localId = undefined;
       this.dataFromClients.clear();
       this.requestsFromClients.clear();
+      this.clientsScoutingStatus.clear();
     };
 
     ws.onmessage = ({ data }) => this.handleWsMessage(data);
@@ -175,6 +198,7 @@ class OnlineTransfer {
     this.localId = undefined;
     this.dataFromClients.clear();
     this.requestsFromClients.clear();
+    this.clientsScoutingStatus.clear();
   }
 
   sendToAll(data: RTCMessage) {
@@ -278,6 +302,7 @@ class OnlineTransfer {
       this.clients = [];
       this.requestsFromClients.clear();
       this.dataFromClients.clear();
+      this.clientsScoutingStatus.clear();
       this.localId = message.id;
 
       for (const client of message.clients) {
@@ -304,6 +329,7 @@ class OnlineTransfer {
           existingClient.connection?.close();
           this.requestsFromClients.delete(existingClient.info.id);
           this.dataFromClients.delete(existingClient.info.id);
+          this.clientsScoutingStatus.delete(existingClient.info.id);
           return false;
         });
         for (const newClient of message.clients) {
@@ -340,6 +366,7 @@ class OnlineTransfer {
         client?.connection?.close();
         this.requestsFromClients.delete(message.id);
         this.dataFromClients.delete(message.id);
+        this.clientsScoutingStatus.delete(message.id);
         this.removeClient(message.id);
         break;
       case "batch":
@@ -412,16 +439,20 @@ class OnlineTransfer {
     connection.ondatachannel = ({ channel }) => {
       const client = this.getClient(remoteId);
       if (!client) {
-        console.error(webrtcLogLabel, "couldn't form channel, client does not exist", remoteId);
+        channel.close();
         connection.close();
+        console.error(webrtcLogLabel, "couldn't form channel, client does not exist", remoteId);
         return;
       }
 
+      channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
       channel.onopen = () => {
         client.channel = channel;
         console.log(webrtcLogLabel, "(channel) opened with", remoteId);
+        if (this.localScoutingStatus) {
+          this.sendTo(remoteId, { type: "scouting", status: this.localScoutingStatus });
+        }
       };
-      channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
     };
 
     connection.onicecandidate = (event) => {
@@ -471,19 +502,23 @@ class OnlineTransfer {
         .then((answer) => connection.setLocalDescription(answer))
         .then(() => this.sendWsMessage({ type: "answer", to: remoteId, answer: connection.localDescription }));
     } else {
-      const dataChannel = connection.createDataChannel("data");
-      dataChannel.onopen = () => {
+      const channel = connection.createDataChannel("data");
+      channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
+      channel.onopen = () => {
         const client = this.getClient(remoteId);
         if (!client) {
+          channel.close();
           connection.close();
           console.error(webrtcLogLabel, "couldn't form channel, client does not exist", remoteId);
           return;
         }
 
-        client.channel = dataChannel;
+        client.channel = channel;
         console.log(webrtcLogLabel, "(channel) created with", remoteId);
+        if (this.localScoutingStatus) {
+          this.sendTo(remoteId, { type: "scouting", status: this.localScoutingStatus });
+        }
       };
-      dataChannel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
     }
 
     client.connection = connection;
@@ -546,6 +581,37 @@ class OnlineTransfer {
 
         console.log(logLabel, "received ice candidate:", parsed);
         client.connection.addIceCandidate(parsed.candidate);
+      } else if (parsed.type == "scouting") {
+        const client = this.getClient(remoteId);
+
+        if (!client) {
+          console.error(logLabel, "couldn't receive scouting status, client does not exist:", parsed);
+          return;
+        }
+
+        console.log(logLabel, "received scouting status:", parsed);
+
+        if (parsed.status === "done") {
+          this.clientsScoutingStatus.delete(remoteId);
+          return;
+        }
+
+        let status = $state(this.clientsScoutingStatus.get(remoteId));
+        if (!status) {
+          status = { team: parsed.status.team };
+        } else {
+          status.team = parsed.status.team;
+        }
+
+        if (parsed.status.match) {
+          status.match = parsed.status.match;
+          status.prediction = parsed.status.prediction;
+        } else {
+          status.match = undefined;
+          status.prediction = undefined;
+        }
+
+        this.clientsScoutingStatus.set(remoteId, status);
       }
     } catch (e) {
       console.warn(logLabel, "received unusual message:", data, e);
