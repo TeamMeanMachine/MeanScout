@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { rerunOtherContextLoads } from "$lib";
   import type { Comp } from "$lib/comp";
   import type { DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
@@ -22,7 +23,8 @@
       };
 
       deleteTransaction.oncomplete = () => {
-        goto(`#/`);
+        rerunOtherContextLoads();
+        goto(`#/`, { invalidateAll: true });
       };
 
       const compRequest = deleteTransaction.objectStore("comps").delete(compRecord.id);

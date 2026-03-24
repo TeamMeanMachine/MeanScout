@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
-  import type { Team } from "$lib";
+  import { rerunOtherContextLoads, type Team } from "$lib";
   import { type Alliance, type Comp, type TeamsInsights } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
@@ -53,7 +53,8 @@
       };
 
       addRequest.onsuccess = () => {
-        goto(`#/comp/${comp.id}/admin`);
+        rerunOtherContextLoads();
+        goto(`#/comp/${comp.id}/admin`, { invalidateAll: true });
       };
     },
   };

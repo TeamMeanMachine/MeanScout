@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
+  import { rerunOtherContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import type { DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
@@ -63,7 +64,8 @@
       };
 
       addRequest.onsuccess = () => {
-        goto(`#/survey/${survey.id}`);
+        rerunOtherContextLoads();
+        goto(`#/survey/${survey.id}`, { invalidateAll: true });
       };
     },
   };

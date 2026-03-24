@@ -27,6 +27,7 @@ type WSInboundMessage = z.infer<typeof wsInboundMessageSchema>;
 type WSOutboundCandidateMessage = { type: "candidate"; to: string; candidate: RTCIceCandidate | null };
 
 type WSOutboundMessage =
+  | { type: "info"; info: { name: string; team: string } }
   | { type: "offer"; to: string; offer: RTCSessionDescription | null }
   | { type: "answer"; to: string; answer: RTCSessionDescription | null }
   | WSOutboundCandidateMessage
@@ -248,7 +249,9 @@ class OnlineTransfer {
     }
   }
 
-  private sendWsMessage(message: WSOutboundMessage) {
+  sendWsMessage(message: WSOutboundMessage) {
+    if (!this.ws) return;
+
     if (message.type == "candidate") {
       console.log("[websocket] batching ice candidate", message.candidate);
       this.signalBatch.messages.push(message);
@@ -267,7 +270,7 @@ class OnlineTransfer {
     }
 
     console.log("[websocket] sending message", message);
-    this.ws?.send(JSON.stringify(message));
+    this.ws.send(JSON.stringify(message));
   }
 
   private handleWsMessage(data: any) {

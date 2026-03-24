@@ -235,12 +235,12 @@
       return;
     }
 
-    if (data.compRecord.scouts && !$scoutStore) {
+    if (!$scoutStore) {
       error = "scout name missing";
       return;
     }
 
-    if (data.compRecord.scouts && !isValidTeam($teamStore)) {
+    if (!isValidTeam($teamStore)) {
       error = "invalid value for scout's team";
       return;
     }
@@ -436,38 +436,37 @@
   <div class="mx-auto flex max-w-(--breakpoint-lg) flex-col space-y-6">
     <h2 class="mb-4 font-bold">New entry</h2>
 
-    {#if data.compRecord.scouts}
-      <div class="flex flex-col">
-        Your name
-        <Button
-          onclick={() => {
-            openDialog(SelectScoutDialog, {
-              scouts: suggestedScouts,
-              prefilled: $scoutStore,
-              prefilledTeam: $teamStore,
-              onselect(scout, team) {
-                $scoutStore = scout;
-                $teamStore = team;
-              },
-            });
-          }}
-          class="w-full"
-        >
-          <SquarePenIcon class="size-5 text-theme" />
-          <div class="flex flex-col truncate">
-            {#if $scoutStore}
-              <span class="truncate font-bold">{$scoutStore}</span>
-            {:else}
-              Select
-            {/if}
+    <div class="flex flex-col">
+      Your name
+      <Button
+        onclick={() => {
+          openDialog(SelectScoutDialog, {
+            scouts: suggestedScouts,
+            prefilled: $scoutStore,
+            prefilledTeam: $teamStore,
+            onselect(scout, team) {
+              $scoutStore = scout;
+              $teamStore = team;
+              onlineTransfer.sendWsMessage({ type: "info", info: { name: scout, team } });
+            },
+          });
+        }}
+        class="w-full"
+      >
+        <SquarePenIcon class="size-5 text-theme" />
+        <div class="flex flex-col truncate">
+          {#if $scoutStore}
+            <span class="truncate font-bold">{$scoutStore}</span>
+          {:else}
+            Select
+          {/if}
 
-            {#if $teamStore}
-              <span class="text-xs font-light">{$teamStore}</span>
-            {/if}
-          </div>
-        </Button>
-      </div>
-    {/if}
+          {#if $teamStore}
+            <span class="text-xs font-light">{$teamStore}</span>
+          {/if}
+        </div>
+      </Button>
+    </div>
 
     <div class="flex flex-col">
       Survey
@@ -696,7 +695,7 @@
       </Button>
     </div>
 
-    {#if newEntry.type == "match" && data.compRecord.scouts}
+    {#if newEntry.type == "match"}
       {@const redPredictionStatuses = onlineTransfer.clientsScoutingStatus
         .values()
         .toArray()

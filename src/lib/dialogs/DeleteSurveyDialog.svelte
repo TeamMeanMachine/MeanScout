@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidateAll } from "$app/navigation";
+  import { rerunOtherContextLoads } from "$lib";
   import type { DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import type { Survey } from "$lib/survey";
@@ -22,7 +23,8 @@
       };
 
       deleteTransaction.oncomplete = () => {
-        goto(`#/comp/${surveyRecord.compId}`);
+        rerunOtherContextLoads();
+        goto(`#/comp/${surveyRecord.compId}`, { invalidateAll: true });
       };
 
       const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);

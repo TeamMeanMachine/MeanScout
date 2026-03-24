@@ -140,6 +140,7 @@
               onchange();
               $scoutStore = scout;
               $teamStore = team;
+              onlineTransfer.sendWsMessage({ type: "info", info: { name: scout, team } });
             },
           });
         }}

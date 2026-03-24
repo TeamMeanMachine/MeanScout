@@ -59,7 +59,6 @@
         <li>Drag-and-drop field editor with toggles, numbers, selectors, textfields, ratings, and timers</li>
         <li>Data-driven rankings (pick lists and expressions)</li>
         <li>Editable pick lists: omit and reorder teams</li>
-        <li>Optional scout names and match guessing game</li>
         <li>Add matches/teams/alliances from TBA (or manually)</li>
       </ul>
     </div>
@@ -132,8 +131,9 @@
         Cloudflare Workers (specifically, Durable Objects) are used to broker connections between everyone in a room.
         Your name/team number will be temporarily stored while you are connected. Scouting data and configs are sent
         directly between your devices using
-        {@render externalLink("WebRTC", "https://webrtcforthecurios.com/")}, never touching Cloudflare's servers. On top
-        of that, you have manual control over when and which devices receive that data from you.
+        {@render externalLink("WebRTC", "https://webrtcforthecurios.com/")}, never touching Cloudflare's servers. You
+        have manual control over when and which devices receive that data from you, as well as auto-send/auto-receive
+        features.
       </span>
     </div>
 
@@ -184,10 +184,9 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Preparing for an event</h2>
       <ol class="ml-8 list-outside list-decimal space-y-1">
-        <li>Create a new comp and give it a good name (e.g. PNW Champs 2024)</li>
+        <li>Create a new comp and give it a good name (e.g. PNW Champs 2026)</li>
         <li>If you hook it to a TBA event, matches and teams are fetched for you</li>
         <li>You can manually add matches and teams at any time</li>
-        <li>Choose whether to enable scout names and match guessing game (only works with a match schedule)</li>
       </ol>
     </div>
 
@@ -307,6 +306,7 @@
         <li>Near-instant transfer that handles much more data</li>
         <li>Does not require devices with good cameras</li>
         <li>Send to multiple devices in one step</li>
+        <li>Option for automatic sending and/or receiving entries (enabled by default)</li>
       </ul>
     </div>
 
@@ -369,11 +369,11 @@
     <div>{@render externalLink("Learn more", "https://aidunlin.com/qrfcodes")}</div>
   {:else if $tab == "guesses"}
     <div class="flex flex-col gap-2">
-      <h2 class="font-bold">Optional guessing game</h2>
+      <h2 class="font-bold">Guessing game</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>Enabled if scout names are enabled, requires match schedule & scores from TBA</li>
         <li>Before each match, scouts can predict which alliance will win</li>
         <li>Scouts can easily view rankings for teams playing that match on their device</li>
+        <li>Match scores are pulled from TBA</li>
       </ul>
     </div>
 
@@ -402,12 +402,10 @@
     <div class="flex flex-col gap-2">
       <h2 class="font-bold">Cooperation</h2>
       <ul class="ml-8 list-outside list-disc space-y-1">
-        <li>
-          Unless you manually sync data between all your devices every match, each device only has small portion of data
-        </li>
-        <li>Scouts will have to talk to each other and compare data, ideas, opinions, etc. to make the best guesses</li>
+        <li>Unless you sync data between devices after every match, each device only has a portion of data</li>
+        <li>Scouts should communicate and compare data, ideas, opinions, etc. to make the best guesses</li>
         <li>Point system encourages cooperation among scouts</li>
-        <li>Come up with real-life prizes based on total points, like candy!</li>
+        <li>Come up with real-life prizes based on total points, and shout out your scouts!</li>
       </ul>
     </div>
   {/if}
