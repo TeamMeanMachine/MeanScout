@@ -256,10 +256,7 @@
       {/if}
     </div>
 
-    <Button
-      onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}
-      class="grow basis-40"
-    >
+    <Button onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}>
       {#if $webRtcAutoReceiveStore}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
