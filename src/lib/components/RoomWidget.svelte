@@ -113,34 +113,17 @@
   {/if}
 </div>
 
-<div class="flex flex-wrap gap-3">
-  <Button onclick={() => ($webRtcAutoSendStore = $webRtcAutoSendStore ? "" : "entries")} class="grow basis-40">
-    {#if $webRtcAutoSendStore}
-      <SquareCheckBigIcon class="text-theme" />
-    {:else}
-      <SquareIcon class="text-theme" />
-    {/if}
-    <div class={["flex flex-col", $webRtcAutoSendStore ? "font-bold" : "font-light"]}>
-      Auto-send
-      <span class="text-xs font-light">Entries</span>
-    </div>
-  </Button>
-
-  <Button
-    onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}
-    class="grow basis-40"
-  >
-    {#if $webRtcAutoReceiveStore}
-      <SquareCheckBigIcon class="text-theme" />
-    {:else}
-      <SquareIcon class="text-theme" />
-    {/if}
-    <div class={["flex flex-col", $webRtcAutoReceiveStore ? "font-bold" : "font-light"]}>
-      Auto-receive
-      <span class="text-xs font-light">New entries</span>
-    </div>
-  </Button>
-</div>
+<Button onclick={() => ($webRtcAutoReceiveStore = $webRtcAutoReceiveStore ? "" : "new-entries")}>
+  {#if $webRtcAutoReceiveStore}
+    <SquareCheckBigIcon class="text-theme" />
+  {:else}
+    <SquareIcon class="text-theme" />
+  {/if}
+  <div class={["flex flex-col", $webRtcAutoReceiveStore ? "font-bold" : "font-light"]}>
+    Auto-receive
+    <span class="text-xs font-light">New entries</span>
+  </div>
+</Button>
 
 {#if $webRtcActiveStore}
   <Button onclick={leaveRoom}>
