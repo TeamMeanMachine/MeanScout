@@ -2,6 +2,7 @@
   import {
     CameraIcon,
     CheckIcon,
+    ChevronsLeftRightEllipsisIcon,
     CrosshairIcon,
     KeyIcon,
     LoaderIcon,
@@ -16,6 +17,7 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import { supportsCompressionApi } from "$lib/compress";
+  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import {
     cameraStore,
     scoutStore,
@@ -24,6 +26,7 @@
     tbaAuthKeyStore,
     teamStore,
     useCompressionStore,
+    webRtcForceFallbackStore,
   } from "$lib/settings";
   import { tbaAuthKeyIsValid } from "$lib/tba";
   import { onMount } from "svelte";
@@ -36,6 +39,7 @@
   let teamInput = $state($teamStore);
   let tbaAuthKeyInput = $state($tbaAuthKeyStore);
   let useCompressionInput = $state($useCompressionStore);
+  let forceFallbackInput = $state($webRtcForceFallbackStore);
 
   let cameras = $state<{ id: string; name: string }[]>([]);
   let noCamera = $state(false);
@@ -49,7 +53,8 @@
       scoutInput.trim() != $scoutStore ||
       teamInput.trim() != $teamStore ||
       tbaAuthKeyInput.trim() != $tbaAuthKeyStore ||
-      useCompressionInput != $useCompressionStore
+      useCompressionInput != $useCompressionStore ||
+      forceFallbackInput != $webRtcForceFallbackStore
     );
   });
 
@@ -98,6 +103,7 @@
     $teamStore = teamInput;
     $tbaAuthKeyStore = tbaAuthKeyInput;
     $useCompressionStore = useCompressionInput;
+    $webRtcForceFallbackStore = forceFallbackInput;
 
     goto(backLink);
   }
@@ -191,6 +197,31 @@
     {/if}
     {#if useCompressionInput == ""}
       <span class="text-sm font-light">Uncompressed data transfers will take longer.</span>
+    {/if}
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <ChevronsLeftRightEllipsisIcon class="text-theme" />
+    <div class="flex grow flex-col">
+      Force fallback relay
+      <span class="text-xs font-light">Enable if online rooms seemingly break your connection</span>
+    </div>
+    <Button
+      onclick={() => {
+        forceFallbackInput = forceFallbackInput ? "" : "true";
+      }}
+      disabled={!!onlineTransfer.localId}
+      class={["w-full sm:w-fit", forceFallbackInput == "true" ? "font-bold" : "font-light"]}
+    >
+      {#if forceFallbackInput == "true"}
+        <SquareCheckBigIcon class="text-theme" />
+      {:else}
+        <SquareIcon class="text-theme" />
+      {/if}
+      Force
+    </Button>
+    {#if forceFallbackInput == "true"}
+      <span class="text-sm font-light">Your data will always be relayed through Cloudflare servers.</span>
     {/if}
   </div>
 

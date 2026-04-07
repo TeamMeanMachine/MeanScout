@@ -7,7 +7,7 @@
     teamStore,
     webRtcActiveStore,
     webRtcAutoReceiveStore,
-    webRtcAutoSendStore,
+    webRtcForceFallbackStore,
     webRtcRoomIdStore,
   } from "$lib/settings";
 
@@ -53,7 +53,12 @@
     $webRtcRoomIdStore = roomIdInput;
     $webRtcActiveStore = "true";
 
-    onlineTransfer.joinRoom({ room: roomIdInput, name: scoutInput, team: teamInput });
+    onlineTransfer.joinRoom({
+      room: roomIdInput,
+      name: scoutInput,
+      team: teamInput,
+      forceFallback: $webRtcForceFallbackStore == "true",
+    });
   }
 
   function leaveRoom() {

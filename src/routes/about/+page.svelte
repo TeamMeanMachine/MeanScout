@@ -129,11 +129,11 @@
       </ul>
       <span>
         Cloudflare Workers (specifically, Durable Objects) are used to broker connections between everyone in a room.
-        Your name/team number will be temporarily stored while you are connected. Scouting data and configs are sent
-        directly between your devices using
-        {@render externalLink("WebRTC", "https://webrtcforthecurios.com/")}, never touching Cloudflare's servers. You
-        have manual control over when and which devices receive that data from you, as well as auto-send/auto-receive
-        features.
+        Your name/team number will be temporarily stored while you are connected. Scouting data and configs may be
+        relayed through Cloudflare servers if a direct
+        {@render externalLink("WebRTC", "https://webrtcforthecurios.com/")}
+        connection can't be formed between devices. You have manual control over when and which devices receive that data
+        from you, as well as auto-send/auto-receive features.
       </span>
     </div>
 

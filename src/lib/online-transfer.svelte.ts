@@ -115,6 +115,8 @@ class OnlineTransfer {
     timeout: 100,
   };
 
+  private forceFallback = false;
+
   /** This client's id, only set when connected to the signaling server. Reactive. */
   localId = $state<string | undefined>(undefined);
 
@@ -146,7 +148,9 @@ class OnlineTransfer {
     return this.clients.find((c) => c.info.id === id);
   }
 
-  joinRoom({ room, name, team }: { room: string; name: string; team: string }) {
+  joinRoom({ room, name, team, forceFallback }: { room: string; name: string; team: string; forceFallback?: boolean }) {
+    this.forceFallback = !!forceFallback;
+
     const url = new URL(SIGNALING_SERVER_URL);
 
     url.searchParams.set("room", room);
@@ -391,11 +395,19 @@ class OnlineTransfer {
         this.addClient(message.info);
         break;
       case "offer":
+        if (this.forceFallback) {
+          console.log("[websocket] received remote offer, but ignoring");
+          break;
+        }
         console.log("[websocket] received remote offer, connecting", message.offer);
         this.connectToClient(message.from, message.offer);
         break;
       case "answer":
       case "candidate":
+        if (this.forceFallback) {
+          console.log("[websocket] received remote answer/candidate, but ignoring");
+          break;
+        }
         const connection = this.getClient(message.from)?.connection;
         if (!connection) {
           console.error("[websocket] couldn't receive answer/candidate signal, no connection", message);
@@ -521,6 +533,11 @@ class OnlineTransfer {
 
   private connectToClient(remoteId: string, remoteOffer?: any) {
     const webrtcLogLabel = `[webrtc-${remoteId.slice(0, 8)}]`;
+
+    if (this.forceFallback) {
+      console.log(webrtcLogLabel, "forcing fallback, not creating a connection");
+      return;
+    }
 
     if (!this.localId) {
       console.error(webrtcLogLabel, "couldn't initialize connection, no signaling server");
