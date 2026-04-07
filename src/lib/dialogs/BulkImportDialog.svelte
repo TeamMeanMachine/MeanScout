@@ -9,7 +9,7 @@
   import type { AllData } from "$lib/idb";
   import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore, webRtcAutoReceiveStore, webRtcAutoSendStore } from "$lib/settings";
+  import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
   import { z } from "zod";
   import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 
@@ -172,7 +172,6 @@
                     requestFrom(client.info.id);
                   }
                 }}
-                disabled={!client.channel}
                 class="grow"
               >
                 <div class="flex grow flex-col">

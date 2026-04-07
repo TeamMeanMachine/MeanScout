@@ -18,7 +18,7 @@
   import type { Field } from "$lib/field";
   import { idb } from "$lib/idb";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore, webRtcAutoReceiveStore, webRtcAutoSendStore } from "$lib/settings";
+  import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
   import type { Survey } from "$lib/survey";
 
   let {
@@ -222,7 +222,7 @@
             {@const request = onlineTransfer.requestsFromClients.get(client.info.id)}
 
             <div class="flex gap-1">
-              <Button onclick={() => sendBulkTo(client.info.id)} disabled={!client.channel} class="grow">
+              <Button onclick={() => sendBulkTo(client.info.id)} class="grow">
                 <div class="flex grow flex-col">
                   {client.info.name}
                   {#if client.info.team}

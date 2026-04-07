@@ -2,11 +2,18 @@ import { dev } from "$app/environment";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 import type { AllData } from "./idb";
-import { importSchema, mergeOldAndNewData } from "./import.svelte";
+import { importSchema, mergeOldAndNewData, type ImportedData } from "./import.svelte";
 import { matchIdentifierSchema } from "./match";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
+
+const scoutingStatusSchema = z.object({
+  team: z.string(),
+  match: matchIdentifierSchema.optional(),
+  prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+});
+export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
 
 const inboundCandidateMessageSchema = z.object({ type: z.literal("candidate"), from: z.string(), candidate: z.any() });
 
@@ -20,6 +27,13 @@ const wsInboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("leave"), id: z.string() }),
   z.object({ type: z.literal("error"), error: z.string() }),
   z.object({ type: z.literal("batch"), messages: z.array(inboundCandidateMessageSchema) }),
+  z.object({
+    type: z.literal("request"),
+    from: z.string(),
+    request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
+  }),
+  z.object({ type: z.literal("response"), from: z.string(), ...importSchema.shape }),
+  z.object({ type: z.literal("scouting"), from: z.string(), status: z.literal("done").or(scoutingStatusSchema) }),
 ]);
 
 type WSInboundMessage = z.infer<typeof wsInboundMessageSchema>;
@@ -31,18 +45,13 @@ type WSOutboundMessage =
   | { type: "offer"; to: string; offer: RTCSessionDescription | null }
   | { type: "answer"; to: string; answer: RTCSessionDescription | null }
   | WSOutboundCandidateMessage
-  | { type: "batch"; messages: WSOutboundCandidateMessage[] };
-
-const scoutingStatusSchema = z.object({
-  team: z.string(),
-  match: matchIdentifierSchema.optional(),
-  prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
-});
-export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
+  | { type: "batch"; messages: WSOutboundCandidateMessage[] }
+  | { type: "request"; to?: string[]; request: "entries" | "configs" | "all" }
+  | ({ type: "response"; to?: string[] } & ImportedData)
+  | { type: "scouting"; to?: string[]; status: "done" | ScoutingStatus };
 
 const rtcRequestMessageSchema = z.object({
   type: z.literal("request"),
-  from: z.string().optional(),
   request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
 });
 
@@ -50,7 +59,6 @@ export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
 
 const rtcResponseMessageSchema = z.object({
   type: z.literal("response"),
-  from: z.string().optional(),
   ...importSchema.shape,
 });
 
@@ -58,7 +66,6 @@ export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
 
 const rtcSignalMessageSchema = z.object({
   type: z.literal("candidate"),
-  from: z.string().optional(),
   candidate: z.any(),
 });
 
@@ -66,7 +73,6 @@ export type RTCSignalMessage = z.infer<typeof rtcSignalMessageSchema>;
 
 const rtcScoutingMessageSchema = z.object({
   type: z.literal("scouting"),
-  from: z.string().optional(),
   status: z.literal("done").or(scoutingStatusSchema),
 });
 
@@ -203,16 +209,34 @@ class OnlineTransfer {
   }
 
   sendToAll(data: RTCMessage) {
+    if (data.type == "candidate") return;
+
     const string = JSON.stringify(data, (key, value) => {
       if (key == "created" || key == "modified") return undefined;
       return value;
     });
 
+    const wsMessage: WSOutboundMessage =
+      data.type == "request"
+        ? { type: "request", to: [], request: data.request }
+        : data.type == "response"
+          ? { ...data, to: [] }
+          : { type: "scouting", to: [], status: data.status };
+
     for (const client of this.clients) {
-      if (!client.channel) continue;
-      client.channel.send(string);
+      if (client?.channel?.readyState == "open") {
+        client.channel.send(string);
+      } else {
+        if (!wsMessage.to) wsMessage.to = [client.info.id];
+        else wsMessage.to.push(client.info.id);
+      }
+
       if (data.type !== "response") continue;
       this.satisfyRequestsFromClient(client.info.id, data);
+    }
+
+    if (wsMessage.to?.length) {
+      this.sendWsMessage(wsMessage);
     }
   }
 
@@ -224,8 +248,24 @@ class OnlineTransfer {
 
     const client = this.getClient(remoteId);
 
-    if (!client?.channel) return;
-    client.channel.send(string);
+    if (client?.channel?.readyState == "open") {
+      client.channel.send(string);
+    } else {
+      switch (data.type) {
+        case "request":
+          this.sendWsMessage({ ...data, to: [remoteId] });
+          break;
+        case "response":
+          this.sendWsMessage({ ...data, to: [remoteId] });
+          break;
+        case "candidate":
+          this.sendWsMessage({ ...data, to: remoteId });
+          break;
+        case "scouting":
+          this.sendWsMessage(data);
+          break;
+      }
+    }
     if (data.type !== "response") return;
     this.satisfyRequestsFromClient(remoteId, data);
   }
@@ -270,7 +310,11 @@ class OnlineTransfer {
     }
 
     console.log("[websocket] sending message", message);
-    this.ws.send(JSON.stringify(message));
+    const string = JSON.stringify(message, (key, value) => {
+      if (key == "created" || key == "modified") return undefined;
+      return value;
+    });
+    this.ws.send(string);
   }
 
   private handleWsMessage(data: any) {
@@ -321,6 +365,8 @@ class OnlineTransfer {
       return;
     }
 
+    let client: Client | undefined;
+
     switch (message.type) {
       case "clients":
         console.log("[websocket] received clients", message.clients);
@@ -364,7 +410,7 @@ class OnlineTransfer {
         }
         break;
       case "leave":
-        const client = this.getClient(message.id);
+        client = this.getClient(message.id);
         client?.channel?.close();
         client?.connection?.close();
         this.requestsFromClients.delete(message.id);
@@ -382,6 +428,75 @@ class OnlineTransfer {
           }
           connection.addIceCandidate(msg.candidate);
         }
+        break;
+      case "request":
+        console.log("[websocket] received fallback request", message);
+        let request = this.requestsFromClients.get(message.from);
+        if (!request) {
+          this.requestsFromClients.set(message.from, "all");
+          request = message.request;
+        } else if (request != "all" && message.request != request) {
+          this.requestsFromClients.set(message.from, "all");
+          request = "all";
+        }
+        this.onrtcrequestmessage?.(message.from, request);
+        break;
+      case "response":
+        console.log("[websocket] received fallback response", message);
+        let data = this.dataFromClients.get(message.from);
+
+        if (!data) {
+          data = {
+            comps: message.comps || [],
+            surveys: message.surveys || [],
+            fields: message.fields || [],
+            entries: message.entries || [],
+          };
+          this.dataFromClients.set(message.from, data);
+        } else {
+          const { merged } = mergeOldAndNewData({
+            existing: data,
+            imported: message,
+            overwriteDuplicateEntries: true,
+            includeExisting: true,
+          });
+          data = merged;
+          this.dataFromClients.set(message.from, data);
+        }
+
+        this.onrtcresponsemessage?.(message.from, data);
+        break;
+      case "scouting":
+        client = this.getClient(message.from);
+        if (!client) {
+          console.error("[websocket] couldn't receive scouting status, client does not exist:", message);
+          return;
+        }
+
+        console.log("[websocket] received fallback scouting status", message);
+
+        if (message.status === "done") {
+          this.clientsScoutingStatus.delete(message.from);
+          return;
+        }
+
+        let status = $state(this.clientsScoutingStatus.get(message.from));
+        if (!status) {
+          status = { team: message.status.team };
+        } else {
+          status.team = message.status.team;
+        }
+
+        if (message.status.match) {
+          status.match = message.status.match;
+          status.prediction = message.status.prediction;
+        } else {
+          status.match = undefined;
+          status.prediction = undefined;
+        }
+
+        this.clientsScoutingStatus.set(message.from, status);
+        break;
     }
   }
 
@@ -533,7 +648,6 @@ class OnlineTransfer {
     try {
       const json = JSON.parse(data);
       const parsed = z.parse(rtcMessageSchema, json);
-      parsed.from = remoteId;
 
       if (parsed.type == "request") {
         console.log(logLabel, "received request", parsed);
