@@ -28,11 +28,11 @@
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.5",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.5.0",
+    "typescript": "^6.0.2",
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@lucide/svelte": "^0.577.0",
+    "@lucide/svelte": "^1.7.0",
     "fractional-indexing-jittered": "^1.0.0",
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
