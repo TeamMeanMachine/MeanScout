@@ -30,6 +30,8 @@
         return;
       }
 
+      const now = Date.now();
+
       let survey: Survey;
       if (type == "match") {
         survey = {
@@ -40,8 +42,8 @@
           fieldIds: [],
           expressions: [],
           pickLists: [],
-          created: new Date(),
-          modified: new Date(),
+          created: now,
+          modified: now,
         };
       } else if (type == "pit") {
         survey = {
@@ -50,8 +52,8 @@
           name,
           type,
           fieldIds: [],
-          created: new Date(),
-          modified: new Date(),
+          created: now,
+          modified: now,
         };
       } else {
         error = "Invalid survey type!";

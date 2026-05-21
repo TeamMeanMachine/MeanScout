@@ -45,7 +45,7 @@
             onadd(newAlliances) {
               data = {
                 ...data,
-                compRecord: { ...data.compRecord, alliances: newAlliances, modified: new Date() },
+                compRecord: { ...data.compRecord, alliances: newAlliances, modified: Date.now() },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
@@ -76,7 +76,7 @@
               }
               data = {
                 ...data,
-                compRecord: { ...data.compRecord, teams, modified: new Date() },
+                compRecord: { ...data.compRecord, teams, modified: Date.now() },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },
@@ -86,7 +86,7 @@
                 $state.snapshot({
                   ...data.compRecord,
                   teams: data.compRecord.teams.filter((t) => t.number != data.team.number),
-                  modified: new Date(),
+                  modified: Date.now(),
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();

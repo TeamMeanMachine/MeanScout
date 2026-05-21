@@ -1,4 +1,4 @@
-import { schemaVersion } from "./";
+import { schemaVersion, serializeDate } from "./";
 import type { Comp } from "./comp";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
@@ -197,6 +197,9 @@ function migrateData(transaction: IDBTransaction) {
         comp.id = newId;
         compStore.put(comp);
       }
+
+      comp.created = serializeDate(comp.created);
+      comp.modified = serializeDate(comp.modified);
     }
   };
 
@@ -205,6 +208,9 @@ function migrateData(transaction: IDBTransaction) {
     let compConversionIdSuffix = 1;
 
     for (const survey of surveysRequest.result) {
+      survey.created = serializeDate(survey.created);
+      survey.modified = serializeDate(survey.modified);
+
       if (typeof survey.id == "number") {
         surveyStore.delete(survey.id);
         const newId = surveyIdMap.get(survey.id) || generateId() + survey.id;
@@ -320,6 +326,9 @@ function migrateData(transaction: IDBTransaction) {
         surveyIdMap.set(entry.surveyId, newId);
         entry.surveyId = newId;
       }
+
+      entry.created = serializeDate(entry.created);
+      entry.modified = serializeDate(entry.modified);
 
       entryStore.put(entry);
     }

@@ -8,7 +8,7 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { download, rerunAllContextLoads, schemaVersion, sessionStorageStore, share } from "$lib";
+  import { download, rerunAllContextLoads, schemaVersion, serializeDate, sessionStorageStore, share } from "$lib";
   import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
@@ -55,9 +55,7 @@
       entries: send != "configs" ? completedEntries : undefined,
     }),
     (key, value) => {
-      if (key == "created" || key == "modified") {
-        return undefined;
-      }
+      if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     },
   );
@@ -149,23 +147,24 @@
     onconfirm: unexportedEntries?.length
       ? () => {
           const tx = idb.transaction(["comps", "surveys", "entries"], "readwrite");
+          const now = Date.now();
 
           const entryStore = tx.objectStore("entries");
           for (const entry of unexportedEntries) {
-            entryStore.put({ ...$state.snapshot(entry), status: "exported", modified: new Date() });
+            entryStore.put({ ...$state.snapshot(entry), status: "exported", modified: now });
           }
 
           if (comps?.length) {
             const compStore = tx.objectStore("entries");
             for (const comp of comps) {
-              compStore.put({ ...$state.snapshot(comp), modified: new Date() });
+              compStore.put({ ...$state.snapshot(comp), modified: now });
             }
           }
 
           if (surveys?.length) {
             const surveyStore = tx.objectStore("entries");
             for (const survey of surveys) {
-              surveyStore.put({ ...$state.snapshot(survey), modified: new Date() });
+              surveyStore.put({ ...$state.snapshot(survey), modified: now });
             }
           }
 

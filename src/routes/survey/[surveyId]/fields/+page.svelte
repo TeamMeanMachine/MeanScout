@@ -107,7 +107,7 @@
       sortUpdateQueue = [];
     }
 
-    surveyRecord.modified = new Date();
+    surveyRecord.modified = Date.now();
     idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
   }
 

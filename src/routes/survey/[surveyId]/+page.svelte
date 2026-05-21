@@ -14,7 +14,7 @@
 
     data = {
       ...data,
-      survey: { ...data.survey, record: { ...data.survey.record, tbaMetrics: [], modified: new Date() } },
+      survey: { ...data.survey, record: { ...data.survey.record, tbaMetrics: [], modified: Date.now() } },
     };
     idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;
   }
@@ -34,7 +34,7 @@
         record: {
           ...data.survey.record,
           tbaMetrics: [...(data.survey.record.tbaMetrics || []), tbaMetricInput],
-          modified: new Date(),
+          modified: Date.now(),
         },
       },
     };
@@ -70,7 +70,7 @@
               ...data,
               survey: {
                 ...data.survey,
-                record: { ...data.survey.record, name, modified: new Date() },
+                record: { ...data.survey.record, name, modified: Date.now() },
               },
             } as PageData;
             idb.put("surveys", $state.snapshot(data.survey.record)).onsuccess = rerunAllContextLoads;

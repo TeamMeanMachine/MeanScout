@@ -94,14 +94,14 @@ export function mergeOldAndNewData({
     entries: [],
   };
 
+  const now = Date.now();
+
   const duplicateEntryIds = new Set<string>();
 
   const fieldsToDelete = new Set<string>();
 
   if (imported.comps?.length) {
-    const importedComps = $state
-      .snapshot(imported.comps)
-      .map((comp) => ({ ...comp, created: new Date(), modified: new Date() }));
+    const importedComps = $state.snapshot(imported.comps);
 
     for (const importedComp of importedComps) {
       const existingComp = existing.comps.find((c) => c.id == importedComp.id);
@@ -174,7 +174,7 @@ export function mergeOldAndNewData({
         }
       }
 
-      const created = importedComp.created < existingComp.created ? importedComp.created : existingComp.created;
+      const created = Math.min(importedComp.created, existingComp.created);
 
       const mergedComp: Comp = {
         id: existingComp.id,
@@ -185,7 +185,7 @@ export function mergeOldAndNewData({
           .toArray()
           .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true })),
         created,
-        modified: new Date(),
+        modified: now,
       };
 
       const mergedTbaEventKey = importedComp.tbaEventKey || existingComp.tbaEventKey;
@@ -219,9 +219,7 @@ export function mergeOldAndNewData({
   }
 
   if (imported.surveys?.length) {
-    const importedSurveys = $state
-      .snapshot(imported.surveys)
-      .map((survey) => ({ ...survey, created: new Date(), modified: new Date() }));
+    const importedSurveys = $state.snapshot(imported.surveys);
 
     const importedFields = $state.snapshot(imported.fields);
 
@@ -249,6 +247,8 @@ export function mergeOldAndNewData({
         continue;
       }
 
+      const created = Math.min(importedSurvey.created, existingSurvey.created);
+
       if (importedSurvey.type == "match") {
         const mergedSurvey: MatchSurvey = {
           id: existingSurvey.id,
@@ -258,8 +258,8 @@ export function mergeOldAndNewData({
           fieldIds: importedSurvey.fieldIds,
           pickLists: importedSurvey.pickLists,
           expressions: importedSurvey.expressions,
-          created: existingSurvey.created,
-          modified: existingSurvey.modified,
+          created,
+          modified: now,
         };
 
         if (importedSurvey.tbaMetrics?.length) {
@@ -276,8 +276,8 @@ export function mergeOldAndNewData({
           name: importedSurvey.name,
           type: "pit",
           fieldIds: importedSurvey.fieldIds,
-          created: existingSurvey.created,
-          modified: existingSurvey.modified,
+          created,
+          modified: now,
         };
 
         merged.surveys.push(mergedSurvey);
@@ -286,9 +286,7 @@ export function mergeOldAndNewData({
   }
 
   if (imported.entries?.length) {
-    const importedEntries = $state
-      .snapshot(imported.entries)
-      .map((entry): Entry => ({ ...entry, status: "exported", created: new Date(), modified: new Date() }));
+    const importedEntries = $state.snapshot(imported.entries).map((entry): Entry => ({ ...entry, status: "exported" }));
 
     for (const importedEntry of importedEntries) {
       const existingEntry = existing.entries.find((e) => e.id == importedEntry.id);

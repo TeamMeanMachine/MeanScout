@@ -29,7 +29,7 @@
 
                   data = {
                     ...data,
-                    compRecord: { ...data.compRecord, matches, modified: new Date() },
+                    compRecord: { ...data.compRecord, matches, modified: Date.now() },
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
@@ -39,7 +39,7 @@
                     compRecord: {
                       ...data.compRecord,
                       matches: data.compRecord.matches.filter((m) => compareMatches(m, match) != 0),
-                      modified: new Date(),
+                      modified: Date.now(),
                     },
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = () => {
@@ -133,7 +133,7 @@
 
               data = {
                 ...data,
-                compRecord: { ...data.compRecord, matches, modified: new Date() },
+                compRecord: { ...data.compRecord, matches, modified: Date.now() },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
             },

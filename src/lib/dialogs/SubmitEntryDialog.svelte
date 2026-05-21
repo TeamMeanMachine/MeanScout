@@ -30,7 +30,7 @@
       const submittedEntry: Entry = {
         ...$state.snapshot(entryRecord),
         status: onlineTransfer.clients.some((c) => c.channel?.readyState == "open") ? "exported" : "submitted",
-        modified: new Date(),
+        modified: Date.now(),
       };
 
       if (submittedEntry.type == "match" && submittedEntry.absent) {

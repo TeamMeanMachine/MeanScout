@@ -36,7 +36,7 @@
             $state.snapshot({
               ...data.surveyRecord,
               pickLists,
-              modified: new Date(),
+              modified: Date.now(),
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();
@@ -53,7 +53,7 @@
             $state.snapshot({
               ...data.surveyRecord,
               pickLists,
-              modified: new Date(),
+              modified: Date.now(),
             }),
           ).onsuccess = rerunAllContextLoads;
         },
@@ -63,7 +63,7 @@
             $state.snapshot({
               ...data.surveyRecord,
               pickLists: data.surveyRecord.pickLists.filter((pl) => pl.name != pickList.name),
-              modified: new Date(),
+              modified: Date.now(),
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();
@@ -127,7 +127,7 @@
               ...data.surveyRecord,
               pickLists,
               expressions,
-              modified: new Date(),
+              modified: Date.now(),
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();
@@ -144,7 +144,7 @@
             $state.snapshot({
               ...data.surveyRecord,
               expressions: data.surveyRecord.expressions.filter((e) => e.name != expression.name),
-              modified: new Date(),
+              modified: Date.now(),
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();

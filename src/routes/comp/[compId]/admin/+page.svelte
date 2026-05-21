@@ -23,7 +23,7 @@
           onedit(name) {
             data = {
               ...data,
-              compRecord: { ...data.compRecord, name, modified: new Date() },
+              compRecord: { ...data.compRecord, name, modified: Date.now() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           },
@@ -63,7 +63,7 @@
           onedit(tbaEventKey) {
             data = {
               ...data,
-              compRecord: { ...data.compRecord, tbaEventKey, modified: new Date() },
+              compRecord: { ...data.compRecord, tbaEventKey, modified: Date.now() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           },

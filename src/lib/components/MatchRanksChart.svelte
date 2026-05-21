@@ -615,11 +615,7 @@
                   onadd(newAlliances) {
                     idb.put(
                       "comps",
-                      $state.snapshot({
-                        ...pageData.compRecord,
-                        alliances: newAlliances,
-                        modified: new Date(),
-                      }),
+                      $state.snapshot({ ...pageData.compRecord, alliances: newAlliances, modified: Date.now() }),
                     ).onsuccess = rerunAllContextLoads;
                   },
                 });

@@ -125,7 +125,7 @@
           $state.snapshot({
             ...surveyRecord,
             expressions: [...surveyRecord.expressions, expression],
-            modified: new Date(),
+            modified: Date.now(),
           }),
         ).onsuccess = () => {
           rerunOtherContextLoads();
@@ -203,7 +203,7 @@
                               $state.snapshot({
                                 ...survey,
                                 pickLists: [...survey.pickLists, pickList],
-                                modified: new Date(),
+                                modified: Date.now(),
                               }),
                             ).onsuccess = () => {
                               rerunOtherContextLoads();

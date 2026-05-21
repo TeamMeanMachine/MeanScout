@@ -76,7 +76,7 @@
       constrain,
       oncreate(expression) {
         surveyRecord.expressions.push(expression);
-        surveyRecord.modified = new Date();
+        surveyRecord.modified = Date.now();
         idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
       },
     });
@@ -103,18 +103,18 @@
                   index,
                   onupdate(pickList) {
                     surveyRecord.pickLists[index] = pickList;
-                    surveyRecord.modified = new Date();
+                    surveyRecord.modified = Date.now();
                     idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                   onreset() {
                     delete surveyRecord.pickLists[index].customRanks;
                     delete surveyRecord.pickLists[index].omittedTeams;
-                    surveyRecord.modified = new Date();
+                    surveyRecord.modified = Date.now();
                     idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                   ondelete() {
                     surveyRecord.pickLists.splice(index, 1);
-                    surveyRecord.modified = new Date();
+                    surveyRecord.modified = Date.now();
                     idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
                   },
                 });
@@ -172,7 +172,7 @@
             expressions,
             oncreate(pickList) {
               surveyRecord.pickLists.push(pickList);
-              surveyRecord.modified = new Date();
+              surveyRecord.modified = Date.now();
               idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
             },
           });
@@ -245,12 +245,12 @@
           expressions[index] = expression;
           surveyRecord.pickLists = pickLists;
           surveyRecord.expressions = expressions;
-          surveyRecord.modified = new Date();
+          surveyRecord.modified = Date.now();
           idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
         },
         ondelete() {
           surveyRecord.expressions.splice(index, 1);
-          surveyRecord.modified = new Date();
+          surveyRecord.modified = Date.now();
           idb.put("surveys", $state.snapshot(surveyRecord)).onsuccess = rerunAllContextLoads;
         },
       });

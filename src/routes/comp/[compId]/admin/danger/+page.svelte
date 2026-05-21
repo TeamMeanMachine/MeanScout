@@ -25,7 +25,7 @@
           onclick={() => {
             data = {
               ...data,
-              compRecord: { ...data.compRecord, scouts: [], modified: new Date() },
+              compRecord: { ...data.compRecord, scouts: [], modified: Date.now() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
@@ -42,7 +42,7 @@
           onclick={() => {
             data = {
               ...data,
-              compRecord: { ...data.compRecord, matches: [], modified: new Date() },
+              compRecord: { ...data.compRecord, matches: [], modified: Date.now() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}
@@ -59,7 +59,7 @@
           onclick={() => {
             data = {
               ...data,
-              compRecord: { ...data.compRecord, teams: [], modified: new Date() },
+              compRecord: { ...data.compRecord, teams: [], modified: Date.now() },
             };
             idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
           }}

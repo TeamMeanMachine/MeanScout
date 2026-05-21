@@ -74,12 +74,13 @@
   );
 
   async function onchange() {
-    entry.modified = new Date();
+    const now = Date.now();
+    entry.modified = now;
     data = {
       ...data,
       entryRecord: $state.snapshot(entry),
-      surveyRecord: { ...data.surveyRecord, modified: new Date() },
-      compRecord: { ...data.compRecord, modified: new Date() },
+      surveyRecord: { ...data.surveyRecord, modified: now },
+      compRecord: { ...data.compRecord, modified: now },
     } as PageData;
     const changeTx = idb.transaction(["entries", "surveys", "comps"], "readwrite");
     changeTx.objectStore("entries").put($state.snapshot(data.entryRecord));
@@ -295,10 +296,10 @@
           entryRecord: entry,
           onsubmit(submittedEntry) {
             const tx = idb.transaction(["comps", "surveys", "entries"], "readwrite");
-
+            const now = Date.now();
             tx.objectStore("entries").put(submittedEntry);
-            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: now });
+            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: now });
 
             tx.oncomplete = () => {
               if ($webRtcActiveStore && $webRtcAutoSendStore) {
@@ -330,8 +331,9 @@
           entryRecord: data.entryRecord,
           ondelete() {
             const tx = idb.transaction(["comps", "surveys"], "readwrite");
-            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: new Date() });
-            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: new Date() });
+            const now = Date.now();
+            tx.objectStore("surveys").put({ ...$state.snapshot(data.surveyRecord), modified: now });
+            tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: now });
             tx.oncomplete = () => {
               rerunOtherContextLoads();
               onlineTransfer.localScoutingStatus = undefined;

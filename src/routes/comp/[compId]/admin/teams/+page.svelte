@@ -26,7 +26,7 @@
                   if (teamToEdit) teamToEdit.name = name;
                   data = {
                     ...data,
-                    compRecord: { ...data.compRecord, teams, modified: new Date() },
+                    compRecord: { ...data.compRecord, teams, modified: Date.now() },
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
@@ -36,7 +36,7 @@
                     compRecord: {
                       ...data.compRecord,
                       teams: data.compRecord.teams.filter((t) => t.number != team.number),
-                      modified: new Date(),
+                      modified: Date.now(),
                     },
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
@@ -76,7 +76,7 @@
                 compRecord: {
                   ...data.compRecord,
                   teams: [...data.compRecord.teams, ...teams.map((team) => ({ number: team, name: "" }))],
-                  modified: new Date(),
+                  modified: Date.now(),
                 },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;

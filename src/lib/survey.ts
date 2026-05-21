@@ -1,3 +1,4 @@
+import { serializeDate } from "$lib";
 import { z } from "zod";
 import { expressionSchema, sortExpressions } from "./expression";
 import { isNumericField, type SingleFieldWithDetails } from "./field";
@@ -11,8 +12,8 @@ const baseSurveySchema = z.object({
   compId: z.string(),
   name: z.string(),
   fieldIds: z.array(z.string()),
-  created: z.date().catch(() => new Date()),
-  modified: z.date().catch(() => new Date()),
+  created: z.number().catch((ctx) => serializeDate(ctx.value)),
+  modified: z.number().catch((ctx) => serializeDate(ctx.value)),
 });
 
 const matchSurveySchema = z.object({

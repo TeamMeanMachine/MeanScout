@@ -34,13 +34,15 @@
         return;
       }
 
+      const now = Date.now();
+
       const comp: Comp = {
         id,
         name,
         matches,
         teams,
-        created: new Date(),
-        modified: new Date(),
+        created: now,
+        modified: now,
       };
 
       if (event) comp.tbaEventKey = event;

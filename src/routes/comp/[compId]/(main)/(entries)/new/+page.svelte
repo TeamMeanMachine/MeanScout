@@ -84,7 +84,7 @@
 
     const survey =
       data.surveyRecords.find((s) => s.id == storedNewEntry.data?.survey) ||
-      data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime())[0];
+      data.surveyRecords.toSorted((a, b) => b.modified - a.modified)[0];
 
     if (survey.type == "match") {
       const entries = data.entryRecords.filter((e) => e.surveyId == survey.id) as MatchEntry[];
@@ -247,6 +247,8 @@
 
     const defaultValues = fieldsWithDetails.orderedSingle.map((field) => getDefaultFieldValue(field.field));
 
+    const now = Date.now();
+
     let entry: Entry;
     if (newEntry.type == "match") {
       entry = {
@@ -258,8 +260,8 @@
         match: newEntry.state.match.number,
         absent: false,
         values: defaultValues,
-        created: new Date(),
-        modified: new Date(),
+        created: now,
+        modified: now,
       };
 
       if (newEntry.state.match.set && newEntry.state.match.set > 1) {
@@ -290,8 +292,8 @@
         status: "draft",
         team: newEntry.state.team,
         values: defaultValues,
-        created: new Date(),
-        modified: new Date(),
+        created: now,
+        modified: now,
       };
 
       if ($scoutStore) {
@@ -309,7 +311,7 @@
 
     addRequest.onsuccess = () => {
       sessionStorage.removeItem("new-entry");
-      idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: new Date() }).onsuccess = () => {
+      idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: Date.now() }).onsuccess = () => {
         rerunOtherContextLoads();
         sessionStorage.setItem("home", `#/comp/${data.compRecord.id}`);
         goto(`#/entry/${entry.id}`, { invalidateAll: true });
@@ -471,7 +473,7 @@
     <div class="flex flex-col">
       Survey
       <div class="flex flex-wrap gap-2">
-        {#each data.surveyRecords.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as surveyRecord (surveyRecord.id)}
+        {#each data.surveyRecords.toSorted((a, b) => b.modified - a.modified) as surveyRecord (surveyRecord.id)}
           {@const isSelected = surveyRecord.id == newEntry.survey.id}
 
           <Button

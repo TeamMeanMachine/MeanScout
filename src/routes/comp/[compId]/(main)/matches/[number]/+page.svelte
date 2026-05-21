@@ -103,7 +103,7 @@
                 $state.snapshot({
                   ...data.compRecord,
                   matches,
-                  modified: new Date(),
+                  modified: Date.now(),
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();
@@ -116,7 +116,7 @@
                 $state.snapshot({
                   ...data.compRecord,
                   matches: data.compRecord.matches.filter((m) => compareMatches(m, data.match) != 0),
-                  modified: new Date(),
+                  modified: Date.now(),
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();

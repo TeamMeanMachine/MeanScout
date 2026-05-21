@@ -41,8 +41,9 @@
       return;
     }
 
+    const now = Date.now();
+    entry.modified = now;
     entry.status = "draft";
-    entry.modified = new Date();
 
     const editRequest = idb.put("entries", $state.snapshot(entry));
 
@@ -51,7 +52,7 @@
     };
 
     editRequest.onsuccess = () => {
-      idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
+      idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: now });
       sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
       sessionStorage.removeItem("new-entry");
       goto(`#/entry/${entry.id}`, { invalidateAll: true });
@@ -96,7 +97,7 @@
           surveyRecord,
           entryRecord,
           ondelete: () => {
-            idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: new Date() });
+            idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: Date.now() });
             onchange();
             closeDialog();
           },

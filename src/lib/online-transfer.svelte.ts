@@ -1,4 +1,5 @@
 import { dev } from "$app/environment";
+import { serializeDate } from "$lib";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 import type { AllData } from "./idb";
@@ -216,7 +217,7 @@ class OnlineTransfer {
     if (data.type == "candidate") return;
 
     const string = JSON.stringify(data, (key, value) => {
-      if (key == "created" || key == "modified") return undefined;
+      if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     });
 
@@ -246,7 +247,7 @@ class OnlineTransfer {
 
   sendTo(remoteId: string, data: RTCMessage) {
     const string = JSON.stringify(data, (key, value) => {
-      if (key == "created" || key == "modified") return undefined;
+      if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     });
 
@@ -315,7 +316,7 @@ class OnlineTransfer {
 
     console.log("[websocket] sending message", message);
     const string = JSON.stringify(message, (key, value) => {
-      if (key == "created" || key == "modified") return undefined;
+      if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     });
     this.ws.send(string);

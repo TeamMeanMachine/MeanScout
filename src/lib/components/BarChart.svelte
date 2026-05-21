@@ -251,7 +251,7 @@
     idb.put("surveys", {
       ...rankData.survey,
       pickLists,
-      modified: new Date(),
+      modified: Date.now(),
     }).onsuccess = rerunAllContextLoads;
   }
 </script>
@@ -373,7 +373,7 @@
 
               const pickLists = $state.snapshot(rankData.survey.pickLists);
               pickLists.find((pl) => pl.name == rankData.pickList.name)!.customRanks = customRanks;
-              idb.put("surveys", { ...rankData.survey, pickLists, modified: new Date() }).onsuccess =
+              idb.put("surveys", { ...rankData.survey, pickLists, modified: Date.now() }).onsuccess =
                 rerunAllContextLoads;
 
               movingTeam = undefined;
@@ -484,11 +484,7 @@
                         onadd(newAlliances) {
                           idb.put(
                             "comps",
-                            $state.snapshot({
-                              ...pageData.compRecord,
-                              alliances: newAlliances,
-                              modified: new Date(),
-                            }),
+                            $state.snapshot({ ...pageData.compRecord, alliances: newAlliances, modified: Date.now() }),
                           ).onsuccess = rerunAllContextLoads;
                         },
                       });
@@ -526,7 +522,7 @@
 
                             idb.put(
                               "surveys",
-                              $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
+                              $state.snapshot({ ...rankData.survey, pickLists, modified: Date.now() }),
                             ).onsuccess = rerunAllContextLoads;
                           },
                           onunomit() {
@@ -541,7 +537,7 @@
 
                             idb.put(
                               "surveys",
-                              $state.snapshot({ ...rankData.survey, pickLists, modified: new Date() }),
+                              $state.snapshot({ ...rankData.survey, pickLists, modified: Date.now() }),
                             ).onsuccess = rerunAllContextLoads;
                           },
                         });

@@ -17,7 +17,7 @@ export function rerunAllContextLoads() {
   invalidateAll();
 }
 
-export const schemaVersion = 16;
+export const schemaVersion = 17;
 
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
 export type Value = z.infer<typeof valueSchema>;
@@ -120,4 +120,10 @@ export function convertOprToLabel(opr: string) {
 
   const result = opr.replace(/([A-Z])/g, " $1");
   return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+export function serializeDate(value: unknown) {
+  if (typeof value == "number") return value;
+  if (value instanceof Date) return value.getTime();
+  return Date.now();
 }

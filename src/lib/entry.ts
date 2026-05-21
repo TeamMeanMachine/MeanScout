@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getTeamName, valueSchema } from "./";
+import { getTeamName, serializeDate, valueSchema } from "./";
 import type { Comp } from "./comp";
 import { compareMatches, matchLevels, matchValueSchema, type Match, type MatchIdentifier } from "./match";
 import { getAllScouts } from "./prediction";
@@ -20,8 +20,8 @@ const baseEntrySchema = z.object({
   values: z.array(valueSchema),
   scout: z.optional(z.string()),
   scoutTeam: z.optional(z.string()),
-  created: z.date().catch(() => new Date()),
-  modified: z.date().catch(() => new Date()),
+  created: z.number().catch((ctx) => serializeDate(ctx.value)),
+  modified: z.number().catch((ctx) => serializeDate(ctx.value)),
 });
 
 const matchEntrySchema = z.object({

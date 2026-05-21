@@ -49,7 +49,7 @@
                 onedit(newTeam) {
                   if (compRecord.alliances == undefined) return;
                   compRecord.alliances[allianceIndex].teams[teamIndex] = newTeam;
-                  compRecord.modified = new Date();
+                  compRecord.modified = Date.now();
                   idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
                 },
                 ondelete() {
@@ -59,7 +59,7 @@
                   } else {
                     compRecord.alliances[allianceIndex].teams.splice(teamIndex, 1);
                   }
-                  compRecord.modified = new Date();
+                  compRecord.modified = Date.now();
                   idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
                 },
               });
@@ -83,7 +83,7 @@
               onadd(newTeam) {
                 if (compRecord.alliances == undefined) return;
                 compRecord.alliances[allianceIndex].teams.push(newTeam);
-                compRecord.modified = new Date();
+                compRecord.modified = Date.now();
                 idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
               },
             });
@@ -107,7 +107,7 @@
             } else {
               compRecord.alliances.push({ teams: [newTeam] });
             }
-            compRecord.modified = new Date();
+            compRecord.modified = Date.now();
             idb.put("comps", $state.snapshot(compRecord)).onsuccess = rerunAllContextLoads;
           },
         });

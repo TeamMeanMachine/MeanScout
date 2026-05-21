@@ -58,7 +58,7 @@
   });
 
   function refresh() {
-    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: new Date() }).onsuccess = rerunAllContextLoads;
+    idb.put("comps", { ...$state.snapshot(data.compRecord), modified: Date.now() }).onsuccess = rerunAllContextLoads;
   }
 </script>
 

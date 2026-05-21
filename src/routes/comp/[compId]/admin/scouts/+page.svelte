@@ -22,7 +22,7 @@
                 compRecord: {
                   ...data.compRecord,
                   scouts: data.compRecord.scouts?.filter((s) => s != scout),
-                  modified: new Date(),
+                  modified: Date.now(),
                 },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
@@ -47,7 +47,7 @@
                 compRecord: {
                   ...data.compRecord,
                   scouts: [...(data.compRecord.scouts || []), ...scouts],
-                  modified: new Date(),
+                  modified: Date.now(),
                 },
               };
               idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;

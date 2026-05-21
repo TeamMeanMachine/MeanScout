@@ -30,7 +30,7 @@
     <h2 class="font-bold">Comps</h2>
 
     {#if data.all.comps.length}
-      {#each data.all.comps.toSorted((a, b) => b.modified.getTime() - a.modified.getTime()) as comp (comp.id)}
+      {#each data.all.comps.toSorted((a, b) => b.modified - a.modified) as comp (comp.id)}
         <Anchor route="comp/{comp.id}">
           <div class="flex grow flex-col">
             <span>{comp.name}</span>

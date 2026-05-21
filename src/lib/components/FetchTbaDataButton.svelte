@@ -98,7 +98,7 @@
 
         pageData = {
           ...pageData,
-          compRecord: { ...pageData.compRecord, matches, modified: new Date() },
+          compRecord: { ...pageData.compRecord, matches, modified: Date.now() },
         };
         matchesTx.objectStore("comps").put($state.snapshot(pageData.compRecord));
         return matches.length > 0;
@@ -129,7 +129,7 @@
 
       pageData = {
         ...pageData,
-        compRecord: { ...pageData.compRecord, teams, modified: new Date() },
+        compRecord: { ...pageData.compRecord, teams, modified: Date.now() },
       };
       idb.put("comps", $state.snapshot(pageData.compRecord));
       return teams.length > 0;
@@ -145,7 +145,7 @@
     if (response) {
       pageData = {
         ...pageData,
-        compRecord: { ...pageData.compRecord, alliances: response, modified: new Date() },
+        compRecord: { ...pageData.compRecord, alliances: response, modified: Date.now() },
       };
       idb.put("comps", $state.snapshot(pageData.compRecord));
       return true;
@@ -161,7 +161,7 @@
     if (response) {
       pageData = {
         ...pageData,
-        compRecord: { ...pageData.compRecord, teamsInsights: response, modified: new Date() },
+        compRecord: { ...pageData.compRecord, teamsInsights: response, modified: Date.now() },
       };
       idb.put("comps", $state.snapshot(pageData.compRecord));
       return true;

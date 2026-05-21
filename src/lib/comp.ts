@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { convertOprToLabel, teamSchema, type TeamInsights } from "./";
+import { convertOprToLabel, serializeDate, teamSchema, type TeamInsights } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
 import type { AllData } from "./idb";
@@ -28,8 +28,8 @@ export const compSchema = z.object({
   teamsInsights: z.optional(teamsInsightsSchema),
   alliances: z.optional(z.array(allianceSchema)),
   scouts: z.optional(z.array(z.string())),
-  created: z.date().catch(() => new Date()),
-  modified: z.date().catch(() => new Date()),
+  created: z.number().catch((ctx) => serializeDate(ctx.value)),
+  modified: z.number().catch((ctx) => serializeDate(ctx.value)),
 });
 
 export type Comp = z.infer<typeof compSchema>;
