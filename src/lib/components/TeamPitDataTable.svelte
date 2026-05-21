@@ -17,9 +17,12 @@
 
   const leftStickColumnName = "left-2";
 
+  // svelte-ignore state_referenced_locally
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  // svelte-ignore state_referenced_locally
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
+  // svelte-ignore state_referenced_locally
   const entries = pageData.entryRecords.filter(filterEntries).toSorted(sortEntries);
 
   const someScout = entries.some((entry) => entry.scout);

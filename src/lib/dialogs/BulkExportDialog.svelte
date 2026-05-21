@@ -43,9 +43,12 @@
   );
   let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
+  // svelte-ignore state_referenced_locally
   const completedEntries = entries?.filter((e) => e.status != "draft");
+  // svelte-ignore state_referenced_locally
   const unexportedEntries = entries?.filter((e) => e.status == "submitted");
 
+  // svelte-ignore state_referenced_locally
   const defaultExportedData = JSON.stringify(
     $state.snapshot({
       version: schemaVersion,
@@ -192,7 +195,7 @@
 
 {#if currentTab == "room"}
   {#if onlineTransfer.localId}
-    <div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
+    <div class="-m-1 flex h-100 flex-col gap-3 overflow-auto p-1">
       {#if onlineTransfer.clients.length}
         <div class="flex flex-col">
           <span class="text-sm font-light">Send to</span>

@@ -10,6 +10,7 @@
 
   let { data }: PageProps = $props();
 
+  // svelte-ignore state_referenced_locally
   let compRecord = $state($state.snapshot(data.compRecord));
 
   const standardCols = 5;

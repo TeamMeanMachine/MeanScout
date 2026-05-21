@@ -127,12 +127,12 @@
 
 <div
   class={[
-    "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-[280px] lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600 2xl:w-lg",
+    "lg:fixed lg:top-14.25 lg:h-[calc(100vh-57px)] lg:w-70 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600 2xl:w-lg",
     "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
-    data.match ? "max-lg:hidden" : "max-lg:mb-[65px]",
+    data.match ? "max-lg:hidden" : "max-lg:mb-16.25",
   ]}
 >
-  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
+  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-14.25 z-20 lg:top-0", "max-lg:mt-14.25"]}>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h2 class="grow font-bold">Matches</h2>
 

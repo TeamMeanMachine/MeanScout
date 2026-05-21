@@ -38,7 +38,8 @@
     ondelete: () => void;
   } = $props();
 
-  let { name, scope, input, inputs, method } = $state(structuredClone($state.snapshot(expression)));
+  // svelte-ignore state_referenced_locally
+  let { name, scope, input, inputs, method } = $state($state.snapshot(expression));
   let error = $state("");
 
   export const { onconfirm }: DialogExports = {
@@ -227,7 +228,7 @@
   </Button>
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
+<div class="flex max-h-125 flex-col gap-4 overflow-auto p-1 text-sm">
   {#if scope == "survey" && expressions.survey.length}
     <div class="flex flex-col gap-2">
       <span>Aggregate Expressions</span>

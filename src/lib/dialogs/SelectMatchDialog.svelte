@@ -15,14 +15,17 @@
     onselect(match: MatchIdentifier): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const upcomingMatches = lastCompletedMatch
     ? matches.filter((match) => compareMatches(match, lastCompletedMatch!) > 0)
     : matches;
 
+  // svelte-ignore state_referenced_locally
   const previousMatches = lastCompletedMatch
     ? matches.filter((match) => compareMatches(match, lastCompletedMatch!) <= 0).toReversed()
     : [];
 
+  // svelte-ignore state_referenced_locally
   let selectedMatch = $state($state.snapshot(prefilled));
 
   export const { onconfirm }: DialogExports = {
@@ -57,7 +60,7 @@
 
 <span class="text-sm">Or, select a match below</span>
 
-<div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
+<div class="@container -m-1 flex max-h-100 flex-col gap-2 overflow-auto p-1">
   {#if upcomingMatches.length}
     <span class="text-xs font-light">Upcoming matches</span>
     {#each upcomingMatches as match}

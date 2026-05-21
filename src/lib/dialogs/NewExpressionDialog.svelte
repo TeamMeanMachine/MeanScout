@@ -35,6 +35,7 @@
 
   let { name, scope, input, inputs, method } = $state<Expression>({
     name: "",
+    // svelte-ignore state_referenced_locally
     scope: constrain.scope,
     input: { from: "fields", fieldIds: [] },
     inputs: [],
@@ -195,7 +196,7 @@
   </Button>
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
+<div class="flex max-h-125 flex-col gap-4 overflow-auto p-1 text-sm">
   {#if constrain.scope == "survey" && expressions.survey.length}
     <div class="flex flex-col gap-2">
       <span>Aggregate Expressions</span>

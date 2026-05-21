@@ -10,6 +10,7 @@
     onedit: (name: string) => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let name = $state(compRecord.name);
   let error = $state("");
 

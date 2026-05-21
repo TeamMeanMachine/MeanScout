@@ -21,7 +21,7 @@
               openDialog(EditTeamDialog, {
                 team,
                 onedit(name) {
-                  const teams = structuredClone($state.snapshot(data.compRecord.teams));
+                  const teams = $state.snapshot(data.compRecord.teams);
                   const teamToEdit = teams.find((t) => t.number == team.number);
                   if (teamToEdit) teamToEdit.name = name;
                   data = {

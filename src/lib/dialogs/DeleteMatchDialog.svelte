@@ -11,6 +11,7 @@
   } = $props();
 
   export const { onconfirm }: DialogExports = {
+    // svelte-ignore state_referenced_locally
     onconfirm: ondelete,
   };
 </script>

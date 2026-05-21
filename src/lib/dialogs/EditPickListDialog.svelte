@@ -35,7 +35,9 @@
     ondelete(): void;
   } = $props();
 
-  let changes = $state(structuredClone($state.snapshot(pickList)));
+  // svelte-ignore state_referenced_locally
+  let changes = $state($state.snapshot(pickList));
+
   let totalWeights = $derived(changes.weights.reduce((total, weight) => total + Math.abs(weight.percentage), 0));
   let error = $state("");
 
@@ -145,7 +147,7 @@
   </div>
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
+<div class="flex max-h-125 flex-col gap-4 overflow-auto p-1 text-sm">
   {#if expressions.survey.length}
     <div class="flex flex-col gap-2">
       <span>Aggregate Expressions</span>

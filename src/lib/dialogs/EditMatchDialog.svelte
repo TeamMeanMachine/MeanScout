@@ -21,6 +21,7 @@
     ondelete?: () => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const lastMatch = comp.matches.toSorted(compareMatches).at(-1);
 
   const newMatch: Match = {
@@ -35,7 +36,8 @@
     blue3: "",
   };
 
-  let changes = $state(structuredClone($state.snapshot(match || newMatch)));
+  // svelte-ignore state_referenced_locally
+  let changes = $state($state.snapshot(match || newMatch));
   let errors = $state<string[]>([]);
 
   export const { onconfirm }: DialogExports = {

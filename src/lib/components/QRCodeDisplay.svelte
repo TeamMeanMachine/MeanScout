@@ -36,6 +36,7 @@
 
   let fountainEncoder: FountainEncoder;
 
+  // svelte-ignore state_referenced_locally
   let dataToEncode = $state(new TextEncoder().encode(data));
 
   async function initFountainEncoder() {

@@ -31,7 +31,7 @@
 </div>
 
 {#if teams.length}
-  <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <div class="-m-1 flex max-h-125 flex-col gap-2 overflow-auto p-1">
     {#each teams as existingTeam}
       {@const font = team == existingTeam.number ? "font-bold" : "font-light"}
       <Button onclick={() => (team = existingTeam.number)} class={font}>

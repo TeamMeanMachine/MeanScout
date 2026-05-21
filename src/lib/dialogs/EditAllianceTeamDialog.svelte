@@ -20,7 +20,8 @@
     ondelete(): void;
   } = $props();
 
-  let editingTeam = $state(structuredClone($state.snapshot(team)));
+  // svelte-ignore state_referenced_locally
+  let editingTeam = $state($state.snapshot(team));
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -43,7 +44,7 @@
 </div>
 
 {#if teams.length}
-  <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <div class="-m-1 flex max-h-125 flex-col gap-2 overflow-auto p-1">
     {#each teams as existingTeam}
       {@const font = editingTeam == existingTeam.number ? "font-bold" : "font-light"}
       <Button onclick={() => (editingTeam = existingTeam.number)} class={font}>

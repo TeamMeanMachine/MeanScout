@@ -61,7 +61,7 @@
           getTbaDataError = "Error while trying to get matches";
         };
 
-        let matches = structuredClone($state.snapshot(pageData.compRecord.matches));
+        let matches = $state.snapshot(pageData.compRecord.matches);
 
         for (const { match } of response) {
           const similarMatches = matches.filter((existingMatch) => compareMatches(existingMatch, match) == 0);
@@ -115,7 +115,7 @@
 
     const response = await tbaGetEventTeams(pageData.compRecord.tbaEventKey);
     if (response) {
-      const teams = structuredClone($state.snapshot(pageData.compRecord.teams));
+      const teams = $state.snapshot(pageData.compRecord.teams);
       for (const team of response) {
         const existingTeam = teams.find((t) => t.number == team.number);
         if (!existingTeam) {

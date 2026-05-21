@@ -25,7 +25,7 @@
 
 <Header class="max-w-(--breakpoint-sm)" />
 
-<div class="mx-auto mt-[69px] mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
+<div class="mx-auto mt-17.25 mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Comps</h2>
 

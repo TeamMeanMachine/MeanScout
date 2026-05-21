@@ -16,15 +16,21 @@
     match: Match & { extraTeams?: string[] };
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const redAlliance = [match.red1, match.red2, match.red3].filter((team) => team);
+  // svelte-ignore state_referenced_locally
   const blueAlliance = [match.blue1, match.blue2, match.blue3].filter((team) => team);
+  // svelte-ignore state_referenced_locally
   const teams = [...redAlliance, ...blueAlliance, ...(match.extraTeams || [])];
 
   const leftStickColumnName = "left-16";
 
+  // svelte-ignore state_referenced_locally
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  // svelte-ignore state_referenced_locally
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
+  // svelte-ignore state_referenced_locally
   const entries = pageData.entryRecords.filter((entry): entry is PitEntry => {
     return entry.type == "pit" && teams.includes(entry.team) && entry.surveyId == surveyRecord.id;
   });

@@ -198,7 +198,7 @@
   }
 </script>
 
-<div class="mt-[57px] flex grow flex-col space-y-4 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-72">
+<div class="mt-14.25 flex grow flex-col space-y-4 overflow-x-hidden px-3 py-6 max-lg:mb-16.25 lg:ml-72">
   <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
     <div class="flex grow flex-col">
       <h2 class="font-bold">{data.title}</h2>

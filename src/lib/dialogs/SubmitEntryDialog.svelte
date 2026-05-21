@@ -17,6 +17,7 @@
     onsubmit: (entry: Entry) => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const defaultValues = orderedSingleFields.map((field) => getDefaultFieldValue(field.field));
 
   let error = $state("");

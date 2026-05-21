@@ -26,9 +26,11 @@
     onchange?: () => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
-  let entry = $state(structuredClone($state.snapshot(entryRecord)));
+  // svelte-ignore state_referenced_locally
+  let entry = $state($state.snapshot(entryRecord));
   let error = $state("");
 
   let teamName = $derived(getTeamName(entryRecord.team, compRecord.teams));
@@ -120,7 +122,7 @@
   {/if}
 {/snippet}
 
-<div class="grid max-h-[500px] grid-cols-[min-content_auto] items-center gap-x-6 gap-y-3 overflow-auto">
+<div class="grid max-h-125 grid-cols-[min-content_auto] items-center gap-x-6 gap-y-3 overflow-auto">
   {#if entryRecord.type == "match"}
     <div class="text-sm">Match</div>
     <div class="font-bold">

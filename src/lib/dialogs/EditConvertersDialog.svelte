@@ -12,7 +12,8 @@
     onedit: (changes: ConvertExpressionMethod) => void;
   } = $props();
 
-  let changes = $state(structuredClone($state.snapshot(expressionMethod)));
+  // svelte-ignore state_referenced_locally
+  let changes = $state($state.snapshot(expressionMethod));
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {

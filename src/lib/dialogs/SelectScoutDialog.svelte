@@ -15,7 +15,9 @@
     onselect(scout: string, scoutTeam: string): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let selectedScout = $state($state.snapshot(prefilled));
+  // svelte-ignore state_referenced_locally
   let selectedScoutTeam = $state($state.snapshot(prefilledTeam));
   let error = $state("");
 
@@ -63,7 +65,7 @@
         <span class="text-sm">Or, select your name below</span>
       {/if}
 
-      <div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
+      <div class="@container -m-1 flex max-h-100 flex-col gap-2 overflow-auto p-1">
         {#each scouts as scout}
           {@const selected = scout == selectedScout}
 

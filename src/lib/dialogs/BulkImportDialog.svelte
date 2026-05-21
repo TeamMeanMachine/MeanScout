@@ -139,7 +139,7 @@
 
 {#if currentTab == "room"}
   {#if onlineTransfer.localId}
-    <div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
+    <div class="-m-1 flex h-100 flex-col gap-3 overflow-auto p-1">
       {#if onlineTransfer.clients.length}
         <div class="flex flex-col">
           <span class="text-sm font-light">Request from</span>

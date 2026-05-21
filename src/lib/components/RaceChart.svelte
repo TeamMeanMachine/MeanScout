@@ -26,7 +26,9 @@
     rankData: RankData;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  // svelte-ignore state_referenced_locally
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
   const highlightedTeam = sessionStorageStore<string>("team-highlight", "");
@@ -35,6 +37,8 @@
   const changeDuration = 700;
   const updateDuration = changeDuration + 500;
   const tweenOptions = { delay: 0, easing: linear, duration: changeDuration };
+
+  // svelte-ignore state_referenced_locally
   const maxMatch = Math.max(...pageData.entryRecords.map((e) => (e.type == "match" ? e.match : 0)));
 
   const initMatch = getInitMatch();

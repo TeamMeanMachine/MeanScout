@@ -7,12 +7,12 @@
 
 <div
   class={[
-    "w-120 lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
+    "w-120 lg:fixed lg:top-14.25 lg:h-[calc(100vh-57px)] lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
     "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
-    data.scoutName ? "max-lg:hidden" : "max-lg:mb-[65px]",
+    data.scoutName ? "max-lg:hidden" : "max-lg:mb-16.25",
   ]}
 >
-  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-[57px] z-20 lg:top-0", "max-lg:mt-[57px]"]}>
+  <div class={["flex flex-col gap-3 bg-neutral-900 px-3 py-6", "sticky top-14.25 z-20 lg:top-0", "max-lg:mt-14.25"]}>
     <h2 class="font-bold">Scouts</h2>
   </div>
 

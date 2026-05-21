@@ -434,7 +434,7 @@
   }
 </script>
 
-<div class="mt-[57px] grow overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
+<div class="mt-14.25 grow overflow-x-hidden px-3 py-6 max-lg:mb-16.25 lg:ml-80">
   <div class="mx-auto flex max-w-(--breakpoint-lg) flex-col space-y-6">
     <h2 class="mb-4 font-bold">New entry</h2>
 
@@ -728,7 +728,7 @@
               newEntry.state.prediction = newEntry.state.prediction == "red" ? undefined : "red";
             }}
             class={[
-              "relative grow basis-[150px] text-red",
+              "relative grow basis-37.5 text-red",
               newEntry.state.prediction == "red" ? "font-bold uppercase" : "font-light",
             ]}
           >
@@ -750,7 +750,7 @@
               newEntry.state.prediction = newEntry.state.prediction == "blue" ? undefined : "blue";
             }}
             class={[
-              "relative grow basis-[150px] text-blue",
+              "relative grow basis-37.5 text-blue",
               newEntry.state.prediction == "blue" ? "font-bold uppercase" : "font-light",
             ]}
           >

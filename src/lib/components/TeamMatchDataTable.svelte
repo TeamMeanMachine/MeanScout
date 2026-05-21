@@ -19,15 +19,20 @@
     team: Team;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const entryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
 
   const leftStickColumnName = "left-16";
 
+  // svelte-ignore state_referenced_locally
   const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
+  // svelte-ignore state_referenced_locally
   const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
 
+  // svelte-ignore state_referenced_locally
   const entries = pageData.entryRecords.filter(filterEntries);
 
+  // svelte-ignore state_referenced_locally
   const matches = pageData.compRecord.matches.filter((m) =>
     [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
   );

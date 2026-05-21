@@ -29,7 +29,8 @@
 
   let { data }: PageProps = $props();
 
-  let entry = $state(structuredClone($state.snapshot(data.entryRecord)));
+  // svelte-ignore state_referenced_locally
+  let entry = $state($state.snapshot(data.entryRecord));
 
   let error = $state("");
 
@@ -121,7 +122,7 @@
   class="max-w-(--breakpoint-lg)"
 />
 
-<div class="mx-auto mt-[57px] w-full max-w-(--breakpoint-lg) px-3 py-6">
+<div class="mx-auto mt-14.25 w-full max-w-(--breakpoint-lg) px-3 py-6">
   <div class="mb-2 flex flex-col">
     <span class="text-xs font-light">{data.compRecord.name}</span>
     <h2 class="font-bold">{data.surveyRecord.name}</h2>

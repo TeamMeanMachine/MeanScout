@@ -62,7 +62,7 @@
   }
 </script>
 
-<div class="mt-[57px] flex grow flex-col space-y-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
+<div class="mt-14.25 flex grow flex-col space-y-6 overflow-x-hidden px-3 py-6 max-lg:mb-16.25 lg:ml-80">
   <div class="flex flex-col">
     <h2 class="font-bold">Entries</h2>
     <span class="text-xs font-light">Grouped by <span class="capitalize">{data.groupBy}</span></span>

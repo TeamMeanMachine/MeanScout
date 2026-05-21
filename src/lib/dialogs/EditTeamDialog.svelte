@@ -14,7 +14,8 @@
     ondelete(): void;
   } = $props();
 
-  let name = $state(structuredClone($state.snapshot(team.name)));
+  // svelte-ignore state_referenced_locally
+  let name = $state(team.name);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {

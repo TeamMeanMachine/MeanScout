@@ -14,6 +14,7 @@
     onselect(team: string): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let selectedTeam = $state($state.snapshot(prefilled));
   let error = $state("");
 
@@ -63,7 +64,7 @@
         <span class="text-sm">Or, select a team below</span>
       {/if}
 
-      <div class="@container -m-1 flex max-h-[400px] flex-col gap-2 overflow-auto p-1">
+      <div class="@container -m-1 flex max-h-100 flex-col gap-2 overflow-auto p-1">
         {#each teams as team}
           {@const selected = team.number == selectedTeam}
 

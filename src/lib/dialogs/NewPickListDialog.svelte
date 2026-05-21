@@ -102,7 +102,7 @@
   </div>
 {/snippet}
 
-<div class="flex max-h-[500px] flex-col gap-4 overflow-auto p-1 text-sm">
+<div class="flex max-h-125 flex-col gap-4 overflow-auto p-1 text-sm">
   {#if expressions.survey.length}
     <div class="flex flex-col gap-2">
       <span>Aggregate Expressions</span>

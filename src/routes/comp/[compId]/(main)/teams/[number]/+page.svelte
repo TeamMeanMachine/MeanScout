@@ -22,7 +22,7 @@
   const insights = $derived(getTeamInsights(data.compRecord, data.team.number));
 </script>
 
-<div class="mt-[57px] flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-[65px] lg:ml-80">
+<div class="mt-14.25 flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-16.25 lg:ml-80">
   <div class="flex items-start justify-between gap-3">
     <div class="flex flex-col">
       <h2 class="font-bold">Team {data.team.number}</h2>

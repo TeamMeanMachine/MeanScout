@@ -20,6 +20,7 @@
     onunomit(): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let omittedReasonChanges = $state($state.snapshot(omittedReason) || "");
 
   export const { onconfirm }: DialogExports = {

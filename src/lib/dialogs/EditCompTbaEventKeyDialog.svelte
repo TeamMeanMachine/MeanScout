@@ -14,6 +14,7 @@
     onedit: (tbaEventKey: string) => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let event = $state(tbaEventKey ?? "");
   let error = $state("");
   let events = $state<{ name: string; key: string }[]>([]);
@@ -64,7 +65,7 @@
 </div>
 
 {#if events.length}
-  <div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+  <div class="-m-1 flex max-h-125 flex-col gap-2 overflow-auto p-1">
     {#each events as { name, key }}
       {@const font = event == key ? "font-bold" : "font-light"}
       <Button onclick={() => (event = key)} class={font}>

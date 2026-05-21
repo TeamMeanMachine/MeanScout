@@ -36,6 +36,7 @@
     ondelete?: () => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const isExpressionInput =
     surveyRecord.type == "match" &&
     surveyRecord.expressions.some((e) => {
@@ -52,7 +53,8 @@
       );
     });
 
-  let changes = $state(structuredClone($state.snapshot(field)));
+  // svelte-ignore state_referenced_locally
+  let changes = $state($state.snapshot(field));
 
   let index = $derived.by(() => {
     if (parentField) {
@@ -98,7 +100,7 @@
 
   function moveField(by: number) {
     if (parentField) {
-      const updatedFieldIds = structuredClone($state.snapshot(parentField.fieldIds));
+      const updatedFieldIds = $state.snapshot(parentField.fieldIds);
       updatedFieldIds.splice(index + by, 0, ...updatedFieldIds.splice(index, 1));
 
       const request = idb.put("fields", { ...$state.snapshot(parentField), fieldIds: updatedFieldIds });
@@ -124,11 +126,11 @@
       error = "Could not duplicate field";
     };
 
-    const duplicateField = structuredClone($state.snapshot(field));
+    const duplicateField = $state.snapshot(field);
     duplicateField.id = idb.generateId({ randomChars: 0 });
 
     if (parentField) {
-      const updatedParentField = structuredClone($state.snapshot(parentField));
+      const updatedParentField = $state.snapshot(parentField);
       updatedParentField.fieldIds.splice(index + 1, 0, duplicateField.id);
       fieldStore.put(updatedParentField);
     } else {
@@ -137,7 +139,7 @@
           .map((id) => fieldRecords.find((f) => f.id == id))
           .filter((f) => f !== undefined && f.type != "group")
           .map((nestedField, index) => {
-            const duplicateInnerField = structuredClone($state.snapshot(nestedField));
+            const duplicateInnerField = $state.snapshot(nestedField);
             duplicateInnerField.id = idb.generateId({ randomChars: 0 }) + index;
             fieldStore.add(duplicateInnerField);
             return duplicateInnerField.id;
@@ -159,7 +161,7 @@
 
     fieldStore.delete(field.id);
     if (parentField) {
-      const updatedParentField = structuredClone($state.snapshot(parentField));
+      const updatedParentField = $state.snapshot(parentField);
       updatedParentField.fieldIds = updatedParentField.fieldIds.filter((id) => field.id != id);
       fieldStore.put(updatedParentField);
     } else if (field.type == "group") {

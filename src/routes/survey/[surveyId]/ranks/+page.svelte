@@ -13,6 +13,7 @@
 
   let { data }: PageProps = $props();
 
+  // svelte-ignore state_referenced_locally
   let surveyRecord = $state($state.snapshot(data.surveyRecord));
 
   const sortedExpressions = $derived(surveyRecord.expressions.toSorted(sortExpressions));
@@ -206,8 +207,8 @@
         index,
         usedExpressionNames,
         onupdate(expression) {
-          let pickLists = structuredClone($state.snapshot(surveyRecord.pickLists));
-          let expressions = structuredClone($state.snapshot(surveyRecord.expressions));
+          let pickLists = $state.snapshot(surveyRecord.pickLists);
+          let expressions = $state.snapshot(surveyRecord.expressions);
 
           const previousName = expressions[index].name;
           if (expression.name != previousName) {

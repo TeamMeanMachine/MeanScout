@@ -384,7 +384,7 @@
               $highlightedTeam = teamRank.team;
             }
           }}
-          class="relative h-[46px] w-10 justify-center text-sm sm:w-12"
+          class="relative h-11.5 w-10 justify-center text-sm sm:w-12"
         >
           {#if isReorderable && teamIndex && movingIndex && teamIndex < movingIndex}
             <CornerUpRightIcon class="text-theme" />
@@ -415,7 +415,7 @@
                   movingTeam = teamRank.team;
                 }
               }}
-              class="h-[46px] shrink-0 justify-center"
+              class="h-11.5 shrink-0 justify-center"
             >
               {#if !movingTeam}
                 {#if arrIndex == 0}

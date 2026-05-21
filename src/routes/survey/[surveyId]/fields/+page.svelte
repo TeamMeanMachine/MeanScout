@@ -11,6 +11,7 @@
 
   let { data }: PageProps = $props();
 
+  // svelte-ignore state_referenced_locally
   let surveyRecord = $state($state.snapshot(data.survey.record));
 
   let topLevelFields = $derived(
@@ -121,10 +122,10 @@
     openDialog(EditFieldDialog, {
       surveyRecord,
       fieldRecords: data.fieldRecords,
-      field: structuredClone($state.snapshot(field)),
+      field: $state.snapshot(field),
       onedit: updateAndRefresh,
       onmove(index, by) {
-        const fieldIds = structuredClone($state.snapshot(surveyRecord.fieldIds));
+        const fieldIds = $state.snapshot(surveyRecord.fieldIds);
         fieldIds.splice(index + by, 0, ...fieldIds.splice(index, 1));
         surveyRecord.fieldIds = fieldIds;
         updateAndRefresh();
@@ -148,8 +149,8 @@
     openDialog(EditFieldDialog, {
       surveyRecord,
       fieldRecords: data.fieldRecords,
-      field: structuredClone($state.snapshot(nestedField)),
-      parentField: structuredClone($state.snapshot(field)),
+      field: $state.snapshot(nestedField),
+      parentField: $state.snapshot(field),
       onedit: updateAndRefresh,
       onmove: updateAndRefresh,
       onduplicate: updateAndRefresh,

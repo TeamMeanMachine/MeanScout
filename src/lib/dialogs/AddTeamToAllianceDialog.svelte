@@ -15,6 +15,7 @@
     onadd(newAlliances: Alliance[]): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   let alliances = $state($state.snapshot(compAlliances));
 
   const standardCols = 4;
@@ -53,7 +54,7 @@
 </div>
 
 <div
-  class="-mx-3 -my-1 grid max-h-[500px] gap-x-1 gap-y-3 overflow-auto px-3 py-1 text-center"
+  class="-mx-3 -my-1 grid max-h-125 gap-x-1 gap-y-3 overflow-auto px-3 py-1 text-center"
   style="grid-template-columns: repeat({mostBackups + standardCols}, min-content);"
 >
   <div class="col-span-full grid grid-cols-subgrid text-xs font-light tracking-tighter text-nowrap">

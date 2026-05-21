@@ -19,12 +19,12 @@
 
 <div
   class={[
-    "lg:fixed lg:top-[57px] lg:h-[calc(100vh-57px)] lg:w-80 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
+    "lg:fixed lg:top-14.25 lg:h-[calc(100vh-57px)] lg:w-80 lg:overflow-y-auto lg:overscroll-y-contain lg:border-r lg:border-neutral-600",
     "max-lg:mx-auto max-lg:w-full max-lg:max-w-(--breakpoint-lg)",
-    data.groupBy || showingNewPage ? "max-lg:hidden" : "max-lg:mb-[65px]",
+    data.groupBy || showingNewPage ? "max-lg:hidden" : "max-lg:mb-16.25",
   ]}
 >
-  <div class="flex flex-col gap-3 px-3 py-6 max-lg:mt-[57px]">
+  <div class="flex flex-col gap-3 px-3 py-6 max-lg:mt-14.25">
     <h2 class="font-bold">Entries</h2>
 
     <div class="flex flex-wrap justify-between gap-3 text-sm">

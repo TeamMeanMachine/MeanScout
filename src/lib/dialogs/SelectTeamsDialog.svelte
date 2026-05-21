@@ -18,6 +18,7 @@
     onselect(teams: string[]): void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally
   const allianceTeams = comp.alliances?.flatMap((a) => a.teams);
 
   const sortedTeams = $derived.by(() => {
@@ -68,6 +69,7 @@
 
   const multipleGroups = $derived(Object.values(groupedTeams).length > 1);
 
+  // svelte-ignore state_referenced_locally
   let selection = $state(($state.snapshot(previousSelection) || []).filter((s) => s));
   let errors = $state<string[]>([]);
 
@@ -103,7 +105,7 @@
   </Button>
 </div>
 
-<div class="-m-1 flex max-h-[500px] flex-col gap-2 overflow-auto p-1">
+<div class="-m-1 flex max-h-125 flex-col gap-2 overflow-auto p-1">
   {#each Object.entries(groupedTeams).toSorted(([a], [b]) => a.localeCompare(b)) as [group, teams]}
     {#if multipleGroups}
       <span class="mr-2 text-end text-sm not-first:mt-2">{group}</span>
