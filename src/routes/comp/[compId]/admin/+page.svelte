@@ -38,6 +38,7 @@
   </div>
 
   <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Surveys</h2>
     {#each data.surveyRecords.toSorted((a, b) => a.name.localeCompare(b.name)) as survey (survey.id)}
       <Anchor route="survey/{survey.id}">
         <Settings2Icon class="text-theme" />

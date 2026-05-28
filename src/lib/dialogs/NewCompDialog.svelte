@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CalendarDaysIcon, LoaderIcon } from "@lucide/svelte";
+  import { CalendarDaysIcon, LoaderIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { rerunOtherContextLoads, type Team } from "$lib";
   import { type Alliance, type Comp, type TeamsInsights } from "$lib/comp";
@@ -7,6 +7,7 @@
   import { openDialog, type DialogExports } from "$lib/dialog";
   import { idb } from "$lib/idb";
   import type { Match } from "$lib/match";
+  import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "$lib/tba";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 
@@ -18,6 +19,8 @@
   let alliances = $state<Alliance[] | undefined>(undefined);
   let insights = $state<TeamsInsights | undefined>(undefined);
 
+  let createSurveys = $state({ match: true, pit: true });
+
   let error = $state("");
 
   let isLoadingTbaData = $state(false);
@@ -28,6 +31,8 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
+      if (error) return;
+
       name = name.trim();
       if (!name) {
         error = "Name can't be blank!";
@@ -49,12 +54,54 @@
       if (alliances) comp.alliances = alliances;
       if (insights) comp.teamsInsights = insights;
 
-      const addRequest = idb.add("comps", $state.snapshot(comp));
-      addRequest.onerror = () => {
-        error = `Could not add comp: ${addRequest.error?.message}`;
+      const tx = idb.transaction(["comps", "surveys"], "readwrite");
+      const surveyStore = tx.objectStore("surveys");
+
+      tx.objectStore("comps").add($state.snapshot(comp)).onerror = () => {
+        tx.abort();
       };
 
-      addRequest.onsuccess = () => {
+      if (createSurveys.match) {
+        const matchSurvey: MatchSurvey = {
+          id: `${id}-match`,
+          compId: id,
+          name: "Match Survey",
+          type: "match",
+          fieldIds: [],
+          expressions: [],
+          pickLists: [],
+          created: now,
+          modified: now,
+        };
+
+        surveyStore.add($state.snapshot(matchSurvey)).onerror = () => {
+          error = "Could not create match survey";
+          tx.abort();
+        };
+      }
+
+      if (createSurveys.pit) {
+        const pitSurvey: PitSurvey = {
+          id: `${id}-pit`,
+          compId: id,
+          name: "Pit Survey",
+          type: "pit",
+          fieldIds: [],
+          created: now,
+          modified: now,
+        };
+
+        surveyStore.add($state.snapshot(pitSurvey)).onerror = () => {
+          error = "Could not create pit survey";
+          tx.abort();
+        };
+      }
+
+      tx.onerror = () => {
+        error ||= `Could not create comp: ${tx.error?.message}`;
+      };
+
+      tx.oncomplete = () => {
         rerunOtherContextLoads();
         goto(`#/comp/${comp.id}/admin`, { invalidateAll: true });
       };
@@ -157,6 +204,34 @@
     {/if}
     <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
       <span class={id != event ? "font-bold" : "font-light"}>Random</span>
+    </Button>
+  </div>
+</div>
+
+<div class="flex flex-col">
+  <span>Create Surveys</span>
+  <div class="flex flex-wrap gap-2">
+    <Button onclick={() => (createSurveys.match = !createSurveys.match)} class="grow basis-26">
+      {#if createSurveys.match}
+        <SquareCheckBigIcon class="text-theme" />
+      {:else}
+        <SquareIcon class="text-theme" />
+      {/if}
+      <div class="flex flex-col">
+        <span class={createSurveys.match ? "font-bold" : "font-light"}>Match</span>
+        <span class="text-xs font-light">{id}-match</span>
+      </div>
+    </Button>
+    <Button onclick={() => (createSurveys.pit = !createSurveys.pit)} class="grow basis-26">
+      {#if createSurveys.pit}
+        <SquareCheckBigIcon class="text-theme" />
+      {:else}
+        <SquareIcon class="text-theme" />
+      {/if}
+      <div class="flex flex-col">
+        <span class={createSurveys.pit ? "font-bold" : "font-light"}>Pit</span>
+        <span class="text-xs font-light">{id}-pit</span>
+      </div>
     </Button>
   </div>
 </div>
