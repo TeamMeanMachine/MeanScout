@@ -131,7 +131,7 @@
           {#if selected}
             <SquareCheckBigIcon class="size-5 text-theme" />
           {:else}
-            <SquareIcon class="size-5 text-theme" />
+            <SquareIcon class="size-5 text-neutral-500" />
           {/if}
           <div class="flex flex-col truncate">
             <span>{team.number}</span>

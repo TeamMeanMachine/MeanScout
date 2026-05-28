@@ -72,7 +72,7 @@
         {#if event == key}
           <CircleCheckBigIcon class="size-5 text-theme" />
         {:else}
-          <CircleIcon class="size-5 text-theme" />
+          <CircleIcon class="size-5 text-neutral-500" />
         {/if}
         <span class="text-sm">{name}</span>
       </Button>

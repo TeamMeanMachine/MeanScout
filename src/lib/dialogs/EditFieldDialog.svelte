@@ -282,7 +282,7 @@
       {#if changes.allowNegative}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Allow negative
     </Button>
@@ -310,7 +310,7 @@
       {#if changes.radio}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Radio
     </Button>
@@ -332,7 +332,7 @@
       {#if changes.long}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Long
     </Button>

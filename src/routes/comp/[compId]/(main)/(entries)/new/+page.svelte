@@ -497,7 +497,7 @@
             {#if isSelected}
               <CircleCheckBigIcon class="size-5 text-theme" />
             {:else}
-              <CircleIcon class="size-5 text-theme" />
+              <CircleIcon class="size-5 text-neutral-500" />
             {/if}
             {surveyRecord.name}
           </Button>
@@ -620,7 +620,7 @@
             {#if newEntry.state.team == team}
               <CircleCheckBigIcon class="{color} size-5" />
             {:else}
-              <CircleIcon class="{color} size-5" />
+              <CircleIcon class="{color} size-5 opacity-70" />
             {/if}
             <div class="flex flex-col truncate {teamBold(team)}">
               <span class="{color} {teamUnderline(team)}">{team}</span>
@@ -735,7 +735,7 @@
             {#if newEntry.state.prediction == "red"}
               <SquareCheckBigIcon class="size-5" />
             {:else}
-              <SquareIcon class="size-5" />
+              <SquareIcon class="size-5 opacity-70" />
             {/if}
             Red wins
             {#if onlineTransfer.clientsScoutingStatus.size && redPredictionStatuses.length}
@@ -757,7 +757,7 @@
             {#if newEntry.state.prediction == "blue"}
               <SquareCheckBigIcon class="size-5" />
             {:else}
-              <SquareIcon class="size-5" />
+              <SquareIcon class="size-5 opacity-70" />
             {/if}
             Blue wins
             {#if onlineTransfer.clientsScoutingStatus.size && bluePredictionStatuses.length}

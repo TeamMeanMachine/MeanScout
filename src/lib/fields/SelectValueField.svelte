@@ -26,7 +26,7 @@
           {#if value == val}
             <CircleCheckBigIcon class="text-theme" />
           {:else}
-            <CircleIcon class="text-theme" />
+            <CircleIcon class="text-neutral-500" />
           {/if}
           <span class:font-bold={value == val}>{val}</span>
         </Button>

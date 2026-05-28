@@ -176,7 +176,7 @@
       {#if field.allowNegative}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Allow negative
     </Button>
@@ -204,7 +204,7 @@
       {#if field.radio}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Radio
     </Button>
@@ -226,7 +226,7 @@
       {#if field.long}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Long
     </Button>

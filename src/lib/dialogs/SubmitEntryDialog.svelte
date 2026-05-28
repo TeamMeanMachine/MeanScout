@@ -49,7 +49,7 @@
     {#if $webRtcAutoSendStore}
       <SquareCheckBigIcon class="text-theme" />
     {:else}
-      <SquareIcon class="text-theme" />
+      <SquareIcon class="text-neutral-500" />
     {/if}
     <div class={["flex flex-col", $webRtcAutoSendStore ? "font-bold" : "font-light"]}>
       Auto-send

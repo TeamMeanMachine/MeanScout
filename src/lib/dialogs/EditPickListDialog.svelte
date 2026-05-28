@@ -127,7 +127,7 @@
         <SquareCheckBigIcon class="text-theme" />
         <span class="text-base font-bold">{expression.name}</span>
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
         {expression.name}
       {/if}
     </Button>
@@ -187,7 +187,7 @@
           <SquareCheckBigIcon class="text-theme" />
           <span class="text-base font-bold">{field.detailedName}</span>
         {:else}
-          <SquareIcon class="text-theme" />
+          <SquareIcon class="text-neutral-500" />
           {field.detailedName}
         {/if}
       </Button>
@@ -243,7 +243,7 @@
       <SquareCheckBigIcon class="text-theme" />
       <span class="text-base font-bold">{label}</span>
     {:else}
-      <SquareIcon class="text-theme" />
+      <SquareIcon class="text-neutral-500" />
       {label}
     {/if}
   </Button>

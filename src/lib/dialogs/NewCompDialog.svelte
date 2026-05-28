@@ -215,7 +215,7 @@
       {#if createSurveys.match}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       <div class="flex flex-col">
         <span class={createSurveys.match ? "font-bold" : "font-light"}>Match</span>
@@ -226,7 +226,7 @@
       {#if createSurveys.pit}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       <div class="flex flex-col">
         <span class={createSurveys.pit ? "font-bold" : "font-light"}>Pit</span>

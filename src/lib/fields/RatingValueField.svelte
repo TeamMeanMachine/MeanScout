@@ -32,7 +32,7 @@
     {#each Array(5) as _, i}
       <Button onclick={() => rate(i)} class="group active:translate-none!">
         <StarIcon
-          class="text-theme transition-transform group-active:translate-y-0.5"
+          class={["transition-transform group-active:translate-y-0.5", value > i ? "text-theme" : "text-neutral-500"]}
           fill={value > i ? "currentColor" : "transparent"}
         />
       </Button>

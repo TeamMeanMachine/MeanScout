@@ -190,7 +190,7 @@
       <SquareCheckBigIcon class="text-theme" />
       <span class="text-base font-bold">{exp.name}</span>
     {:else}
-      <SquareIcon class="text-theme" />
+      <SquareIcon class="text-neutral-500" />
       {exp.name}
     {/if}
   </Button>
@@ -233,7 +233,7 @@
             <SquareCheckBigIcon class="text-theme" />
             <span class="text-base font-bold">{tbaMetric}</span>
           {:else}
-            <SquareIcon class="text-theme" />
+            <SquareIcon class="text-neutral-500" />
             {tbaMetric}
           {/if}
         </Button>
@@ -259,7 +259,7 @@
           <SquareCheckBigIcon class="text-theme" />
           <span class="text-base font-bold">{field.detailedName}</span>
         {:else}
-          <SquareIcon class="text-theme" />
+          <SquareIcon class="text-neutral-500" />
           {field.detailedName}
         {/if}
       </Button>

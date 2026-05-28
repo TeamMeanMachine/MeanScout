@@ -89,7 +89,7 @@
         {#if type == surveyType}
           <CircleCheckBigIcon class="text-theme" />
         {:else}
-          <CircleIcon class="text-theme" />
+          <CircleIcon class="text-neutral-500" />
         {/if}
         <span class="capitalize {type == surveyType ? 'font-bold' : 'font-light'}">{surveyType}</span>
       </Button>

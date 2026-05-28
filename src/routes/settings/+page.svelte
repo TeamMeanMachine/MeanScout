@@ -188,7 +188,7 @@
       {#if useCompressionInput == "true"}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Compress
     </Button>
@@ -216,7 +216,7 @@
       {#if forceFallbackInput == "true"}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
-        <SquareIcon class="text-theme" />
+        <SquareIcon class="text-neutral-500" />
       {/if}
       Force
     </Button>

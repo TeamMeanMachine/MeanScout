@@ -243,7 +243,7 @@
         {#if entry.absent}
           <SquareCheckBigIcon class="text-theme" />
         {:else}
-          <SquareIcon class="text-theme" />
+          <SquareIcon class="text-neutral-500" />
         {/if}
         <div class="flex flex-col sm:w-28">
           <span class={entry.absent ? "font-bold" : "font-light"}>Absent</span>

@@ -51,7 +51,7 @@
         {#if editingTeam == existingTeam.number}
           <CircleCheckBigIcon class="size-5 text-theme" />
         {:else}
-          <CircleIcon class="size-5 text-theme" />
+          <CircleIcon class="size-5 text-neutral-500" />
         {/if}
         <div class="flex flex-col truncate">
           <span>{existingTeam.number}</span>
