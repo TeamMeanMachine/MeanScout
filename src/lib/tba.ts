@@ -87,11 +87,11 @@ export async function tbaGetEventMatches(eventKey: string) {
       if (match.score_breakdown) {
         const redMetrics = Object.entries(match.score_breakdown.red)
           .filter(([key]) => /robot[123]/gi.test(key))
-          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+          .map(([name, value]) => ({ name: name.toLowerCase(), value: parseValueFromString(value) as Value }));
 
         const blueMetrics = Object.entries(match.score_breakdown.blue)
           .filter(([key]) => /robot[123]/gi.test(key))
-          .map(([name, value]) => ({ name, value: parseValueFromString(value) as Value }));
+          .map(([name, value]) => ({ name: name.toLowerCase(), value: parseValueFromString(value) as Value }));
 
         const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
           team: key.replace("frc", ""),

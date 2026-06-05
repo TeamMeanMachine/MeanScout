@@ -1,4 +1,4 @@
-import { type Team } from "$lib";
+import { type Team, type Value } from "$lib";
 import { z } from "zod";
 import { compSchema, type Comp } from "./comp";
 import { entrySchema, type Entry, type TbaMetrics } from "./entry";
@@ -297,29 +297,33 @@ export function mergeOldAndNewData({
         duplicateEntryIds.add(existingEntry.id);
       }
 
-      const tbaMetrics: TbaMetrics = [];
+      const tbaMetrics = new Map<string, Value>();
 
       if (existingEntry.type == "match") {
         for (const metric of existingEntry.tbaMetrics || []) {
-          tbaMetrics.push($state.snapshot(metric));
+          tbaMetrics.set(metric.name.toLowerCase(), metric.value);
         }
       }
 
       if (importedEntry.type == "match") {
         for (const metric of importedEntry.tbaMetrics || []) {
-          const metricIndex = tbaMetrics.findIndex((m) => m.name == metric.name);
-          if (metricIndex !== -1 && overwriteDuplicateEntries) {
-            tbaMetrics[metricIndex].value = $state.snapshot(metric).value;
-          } else {
-            tbaMetrics.push($state.snapshot(metric));
+          const existingMetric = tbaMetrics.get(metric.name.toLowerCase());
+          if (existingMetric === undefined || overwriteDuplicateEntries) {
+            tbaMetrics.set(metric.name.toLowerCase(), metric.value);
           }
         }
       }
 
       const newEntry = overwriteDuplicateEntries ? $state.snapshot(importedEntry) : $state.snapshot(existingEntry);
 
-      if (tbaMetrics.length && newEntry.type == "match") {
-        merged.entries.push({ ...newEntry, tbaMetrics });
+      if (tbaMetrics.size && newEntry.type == "match") {
+        merged.entries.push({
+          ...newEntry,
+          tbaMetrics: tbaMetrics
+            .entries()
+            .toArray()
+            .map(([key, value]) => ({ name: key.toLowerCase(), value })),
+        });
       } else {
         merged.entries.push(newEntry);
       }

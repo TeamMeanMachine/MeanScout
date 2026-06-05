@@ -24,7 +24,10 @@
   function addTbaMetric() {
     if (data.survey.type != "match" || !data.compRecord.tbaEventKey) return;
 
-    tbaMetricInput = tbaMetricInput.trim().replaceAll(/robot[123]/gi, "");
+    tbaMetricInput = tbaMetricInput
+      .trim()
+      .replaceAll(/robot[123]?/gi, "")
+      .toLowerCase();
     if (!tbaMetricInput) return;
 
     data = {
