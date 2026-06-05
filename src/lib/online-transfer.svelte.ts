@@ -2,6 +2,7 @@ import { dev } from "$app/environment";
 import { serializeDate } from "$lib";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
+import { compress, decompress } from "./compress";
 import type { AllData } from "./idb";
 import { importSchema, mergeOldAndNewData, type ImportedData } from "./import.svelte";
 import { matchIdentifierSchema } from "./match";
@@ -213,13 +214,14 @@ class OnlineTransfer {
     this.clientsScoutingStatus.clear();
   }
 
-  sendToAll(data: RTCMessage) {
+  async sendToAll(data: RTCMessage) {
     if (data.type == "candidate") return;
 
     const string = JSON.stringify(data, (key, value) => {
       if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     });
+    const compressed = await compress(string);
 
     const wsMessage: WSOutboundMessage =
       data.type == "request"
@@ -229,8 +231,13 @@ class OnlineTransfer {
           : { type: "scouting", to: [], status: data.status };
 
     for (const client of this.clients) {
-      if (client?.channel?.readyState == "open") {
-        client.channel.send(string);
+      if (
+        client?.channel?.readyState == "open" &&
+        (!client.connection?.sctp?.maxMessageSize || compressed.byteLength < client.connection.sctp.maxMessageSize)
+      ) {
+        const webrtcLogLabel = `[webrtc-${client.info.id.slice(0, 8)}]`;
+        console.log(webrtcLogLabel, "(channel) sending message", data);
+        client.channel.send(compressed);
       } else {
         if (!wsMessage.to) wsMessage.to = [client.info.id];
         else wsMessage.to.push(client.info.id);
@@ -245,16 +252,23 @@ class OnlineTransfer {
     }
   }
 
-  sendTo(remoteId: string, data: RTCMessage) {
+  async sendTo(remoteId: string, data: RTCMessage) {
+    const webrtcLogLabel = `[webrtc-${remoteId.slice(0, 8)}]`;
+
     const string = JSON.stringify(data, (key, value) => {
       if (key == "created" || key == "modified") return serializeDate(value);
       return value;
     });
+    const compressed = await compress(string);
 
     const client = this.getClient(remoteId);
 
-    if (client?.channel?.readyState == "open") {
-      client.channel.send(string);
+    if (
+      client?.channel?.readyState == "open" &&
+      (!client.connection?.sctp?.maxMessageSize || compressed.byteLength < client.connection.sctp.maxMessageSize)
+    ) {
+      console.log(webrtcLogLabel, "(channel) sending message", data);
+      client.channel.send(compressed);
     } else {
       switch (data.type) {
         case "request":
@@ -271,6 +285,7 @@ class OnlineTransfer {
           break;
       }
     }
+
     if (data.type !== "response") return;
     this.satisfyRequestsFromClient(remoteId, data);
   }
@@ -592,14 +607,7 @@ class OnlineTransfer {
     };
 
     connection.onicecandidate = (event) => {
-      if (client.channel?.readyState == "open") {
-        console.log(webrtcLogLabel, "(channel) sending ice candidate:", event.candidate);
-        client.channel.send(
-          JSON.stringify({ type: "candidate", candidate: event.candidate } satisfies RTCSignalMessage),
-        );
-      } else {
-        this.sendWsMessage({ type: "candidate", to: remoteId, candidate: event.candidate });
-      }
+      this.sendTo(remoteId, { type: "candidate", candidate: event.candidate });
     };
 
     connection.onicecandidateerror = (error) => {
@@ -660,11 +668,13 @@ class OnlineTransfer {
     client.connection = connection;
   }
 
-  private handleRtcMessage(remoteId: string, data: any) {
+  private async handleRtcMessage(remoteId: string, data: any) {
     const logLabel = `[webrtc-${remoteId.slice(0, 8)}] (channel)`;
 
+    const decompressed = await decompress(data);
+
     try {
-      const json = JSON.parse(data);
+      const json = JSON.parse(decompressed);
       const parsed = z.parse(rtcMessageSchema, json);
 
       if (parsed.type == "request") {
@@ -682,30 +692,30 @@ class OnlineTransfer {
         this.onrtcrequestmessage?.(remoteId, request);
       } else if (parsed.type == "response") {
         console.log(logLabel, "received response", parsed);
-        let data = this.dataFromClients.get(remoteId);
+        let clientData = this.dataFromClients.get(remoteId);
 
-        if (!data) {
-          data = {
+        if (!clientData) {
+          clientData = {
             comps: parsed.comps || [],
             surveys: parsed.surveys || [],
             fields: parsed.fields || [],
             entries: parsed.entries || [],
           };
 
-          this.dataFromClients.set(remoteId, data);
+          this.dataFromClients.set(remoteId, clientData);
         } else {
           const { merged } = mergeOldAndNewData({
-            existing: data,
+            existing: clientData,
             imported: parsed,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });
 
-          data = merged;
-          this.dataFromClients.set(remoteId, data);
+          clientData = merged;
+          this.dataFromClients.set(remoteId, clientData);
         }
 
-        this.onrtcresponsemessage?.(remoteId, data);
+        this.onrtcresponsemessage?.(remoteId, clientData);
       } else if (parsed.type == "candidate") {
         const client = this.getClient(remoteId);
 
@@ -749,7 +759,7 @@ class OnlineTransfer {
         this.clientsScoutingStatus.set(remoteId, status);
       }
     } catch (e) {
-      console.warn(logLabel, "received unusual message:", data, e);
+      console.warn(logLabel, "received unusual message:", { data, decompressed, e });
     }
   }
 }
