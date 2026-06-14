@@ -1,11 +1,13 @@
 import { SvelteMap } from "svelte/reactivity";
+import { objectStoreMap } from "./object-store-map.svelte";
 
 let db: IDBDatabase | undefined = undefined;
 
-const maps = {
-  teams: new SvelteMap<string, Readonly<Team>>(),
+/** All data from the meta DB. Should be affected only by the `metaDB` object. */
+let maps = {
   comps: new SvelteMap<string, Readonly<Comp>>(),
-} as const;
+  teams: new SvelteMap<string, Readonly<Team>>(),
+};
 
 export const metaDB = {
   /**
@@ -22,7 +24,7 @@ export const metaDB = {
 
       const openRequest = indexedDB.open("_meta");
       openRequest.onerror = () => {
-        reject(errorMessage(openRequest.error, "Could not open"));
+        reject(stringifyIDBError(openRequest.error, "Could not open"));
       };
 
       openRequest.onupgradeneeded = () => {
@@ -36,31 +38,27 @@ export const metaDB = {
       };
 
       openRequest.onsuccess = () => {
-        db = openRequest.result;
-
-        const getTx = db.transaction(["comps", "teams"]);
+        const getTx = openRequest.result.transaction(["comps", "teams"]);
         getTx.onabort = () => {
-          reject(errorMessage(getTx.error, "Could not get data after opening"));
+          reject(stringifyIDBError(getTx.error, "Could not get data after opening"));
         };
 
         const getComps = getTx.objectStore("comps").getAll();
         const getTeams = getTx.objectStore("teams").getAll();
 
         getTx.oncomplete = () => {
-          for (const comp of getComps.result) {
-            maps.comps.set(comp.id, comp);
-          }
-
-          for (const team of getTeams.result) {
-            maps.teams.set(team.id, team);
-          }
-
+          db = openRequest.result;
+          maps = {
+            comps: new SvelteMap(getComps.result.map((comp) => [comp.id, comp])),
+            teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
+          };
           resolve();
         };
       };
     });
   },
 
+  /** Should be called whenever the DB is externally affected (e.g. across browser tabs). */
   refresh() {
     return new Promise<void>((resolve, reject) => {
       if (!db) {
@@ -68,145 +66,37 @@ export const metaDB = {
         return;
       }
 
-      const getTx = transaction(["comps", "teams"]);
+      const getTx = db.transaction(["comps", "teams"]);
       getTx.onabort = () => {
-        reject(errorMessage(getTx.error, "Could not refresh data"));
+        reject(stringifyIDBError(getTx.error, "Could not refresh data"));
       };
 
       const getComps = getTx.objectStore("comps").getAll();
       const getTeams = getTx.objectStore("teams").getAll();
 
       getTx.oncomplete = () => {
-        maps.comps.clear();
-        maps.teams.clear();
-
-        for (const comp of getComps.result) {
-          maps.comps.set(comp.id, comp);
-        }
-
-        for (const team of getTeams.result) {
-          maps.teams.set(team.id, team);
-        }
-
+        maps = {
+          comps: new SvelteMap(getComps.result.map((comp) => [comp.id, comp])),
+          teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
+        };
         resolve();
       };
     });
   },
 
-  comps: storeMap(maps.comps, "comps"),
-  teams: storeMap(maps.teams, "teams"),
+  comps: objectStoreMap("comps", () => maps.comps, getDB),
+  teams: objectStoreMap("teams", () => maps.teams, getDB),
 };
 
-function transaction(storeNames: StoreName | StoreName[], mode?: IDBTransactionMode) {
-  if (!db) throw new Error("Meta DB: Not ready");
-  return db.transaction(storeNames, mode);
+function getDB() {
+  return db;
 }
 
-function errorMessage(error: DOMException | null, fallbackMessage: string) {
+function stringifyIDBError(error: DOMException | null, fallbackMessage: string) {
   return `Meta DB: ${fallbackMessage} - ${error?.name || "Error"}: ${error?.message}`;
 }
 
-function storeMap<Record extends { id: string }>(
-  map: SvelteMap<string, Readonly<Record>>,
-  storeName: keyof typeof maps,
-) {
-  const write = {
-    set(recordOrMany: Record | Record[]) {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-
-        const records = $state.snapshot(Array.isArray(recordOrMany) ? recordOrMany : [recordOrMany]);
-
-        for (const record of records) {
-          tx.objectStore(storeName).put(record);
-        }
-
-        tx.oncomplete = () => {
-          for (const record of records) {
-            map.set(record.id, record as Readonly<Record>);
-          }
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not set ${records.length} ${storeName}`));
-        };
-      });
-    },
-
-    delete(keyOrRecordOrMany: string | Record | (string | Record)[]) {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-
-        const keysOrRecords = Array.isArray(keyOrRecordOrMany) ? keyOrRecordOrMany : [keyOrRecordOrMany];
-        const keys = keysOrRecords.map((v) => (typeof v == "string" ? v : v.id));
-
-        for (const key of keys) {
-          tx.objectStore(storeName).delete(key);
-        }
-
-        tx.oncomplete = () => {
-          for (const key of keys) {
-            map.delete(key);
-          }
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not delete ${keys.length} ${storeName}`));
-        };
-      });
-    },
-
-    clear() {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-        tx.objectStore(storeName).clear();
-
-        tx.oncomplete = () => {
-          map.clear();
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not clear ${storeName}`));
-        };
-      });
-    },
-  };
-
-  return {
-    /** Underlying SvelteMap with mutable prop type-stripped. */
-    read: map as Omit<SvelteMap<string, Record>, keyof typeof write | "getOrInsert" | "getOrInsertComputed">,
-    /** Mutable methods that affect both IndexedDB and the SvelteMap. */
-    write,
-    /** Refreshes underlying SvelteMap with data from IndexedDB. */
-    refresh() {
-      return new Promise<void>((resolve, reject) => {
-        const getTx = transaction(storeName);
-        getTx.onabort = () => {
-          reject(errorMessage(getTx.error, `Could not refresh ${storeName}`));
-        };
-
-        const getRequest = getTx.objectStore(storeName).getAll();
-
-        getTx.oncomplete = () => {
-          map.clear();
-
-          for (const record of getRequest.result) {
-            map.set(record.id, record);
-          }
-
-          resolve();
-        };
-      });
-    },
-  };
-}
-
 // Store types
-
-type StoreName = "comps" | "teams";
 
 type Comp = {
   id: string;

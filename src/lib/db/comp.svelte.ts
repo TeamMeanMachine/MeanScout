@@ -1,22 +1,25 @@
 import type { TeamInsights } from "$lib";
 import type { MatchLevel } from "$lib/match";
 import { SvelteMap } from "svelte/reactivity";
+import { objectStoreMap } from "./object-store-map.svelte";
 
 let db: IDBDatabase | undefined = undefined;
 
-const maps = {
+/** All data from the currently opened comp DB. Should be affected only by the `compDB` object. */
+let maps = {
   teams: new SvelteMap<string, Readonly<Team>>(),
   matches: new SvelteMap<string, Readonly<Match>>(),
   guesses: new SvelteMap<string, Readonly<Guess>>(),
   surveys: new SvelteMap<string, Readonly<Survey>>(),
   entries: new SvelteMap<string, Readonly<Entry>>(),
-} as const;
+};
 
 export const compDB = {
   /**
-   * Attempts to open (or create) the specified comp database.
+   * Attempts to open (or create) the comp database with the specified id.
    * Will close existing DB connection if the new one is different.
    * Promise resolves after successfully opening DB and getting all data.
+   * Will do nothing but resolve if the DB is already opened.
    */
   open(id: string) {
     return new Promise<void>((resolve, reject) => {
@@ -37,20 +40,9 @@ export const compDB = {
         return;
       }
 
-      if (db) {
-        db.close();
-        db = undefined;
-
-        maps.teams.clear();
-        maps.matches.clear();
-        maps.guesses.clear();
-        maps.surveys.clear();
-        maps.entries.clear();
-      }
-
       const openRequest = indexedDB.open(id);
       openRequest.onerror = () => {
-        reject(errorMessage(openRequest.error, "Could not open"));
+        reject(stringifyIDBError(openRequest.error, "Could not open"));
       };
 
       openRequest.onupgradeneeded = () => {
@@ -78,11 +70,9 @@ export const compDB = {
       };
 
       openRequest.onsuccess = () => {
-        db = openRequest.result;
-
-        const getTx = db.transaction(["teams", "matches", "guesses", "surveys", "entries"]);
+        const getTx = openRequest.result.transaction(["teams", "matches", "guesses", "surveys", "entries"]);
         getTx.onabort = () => {
-          reject(errorMessage(getTx.error, "Could not get data afer opening"));
+          reject(stringifyIDBError(getTx.error, "Could not get data afer opening"));
         };
 
         const getTeams = getTx.objectStore("teams").getAll();
@@ -92,32 +82,23 @@ export const compDB = {
         const getEntries = getTx.objectStore("entries").getAll();
 
         getTx.oncomplete = () => {
-          for (const team of getTeams.result) {
-            maps.teams.set(team.id, team);
-          }
+          if (db) db.close();
+          db = openRequest.result;
 
-          for (const match of getMatches.result) {
-            maps.matches.set(match.id, match);
-          }
-
-          for (const guess of getGuesses.result) {
-            maps.guesses.set(guess.id, guess);
-          }
-
-          for (const survey of getSurveys.result) {
-            maps.surveys.set(survey.id, survey);
-          }
-
-          for (const entry of getEntries.result) {
-            maps.entries.set(entry.id, entry);
-          }
-
+          maps = {
+            teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
+            matches: new SvelteMap(getMatches.result.map((match) => [match.id, match])),
+            guesses: new SvelteMap(getGuesses.result.map((guess) => [guess.id, guess])),
+            surveys: new SvelteMap(getSurveys.result.map((survey) => [survey.id, survey])),
+            entries: new SvelteMap(getEntries.result.map((entry) => [entry.id, entry])),
+          };
           resolve();
         };
       };
     });
   },
 
+  /** Should be called whenever the DB is externally affected (e.g. across browser tabs). */
   refresh() {
     return new Promise<void>((resolve, reject) => {
       if (!db) {
@@ -125,9 +106,9 @@ export const compDB = {
         return;
       }
 
-      const getTx = transaction(["teams", "matches", "guesses", "surveys", "entries"]);
+      const getTx = db.transaction(["teams", "matches", "guesses", "surveys", "entries"]);
       getTx.onabort = () => {
-        reject(errorMessage(getTx.error, "Could not refresh data"));
+        reject(stringifyIDBError(getTx.error, "Could not refresh data"));
       };
 
       const getTeams = getTx.objectStore("teams").getAll();
@@ -137,154 +118,34 @@ export const compDB = {
       const getEntries = getTx.objectStore("entries").getAll();
 
       getTx.oncomplete = () => {
-        maps.teams.clear();
-        maps.matches.clear();
-        maps.guesses.clear();
-        maps.surveys.clear();
-        maps.entries.clear();
-
-        for (const team of getTeams.result) {
-          maps.teams.set(team.id, team);
-        }
-
-        for (const match of getMatches.result) {
-          maps.matches.set(match.id, match);
-        }
-
-        for (const guess of getGuesses.result) {
-          maps.guesses.set(guess.id, guess);
-        }
-
-        for (const survey of getSurveys.result) {
-          maps.surveys.set(survey.id, survey);
-        }
-
-        for (const entry of getEntries.result) {
-          maps.entries.set(entry.id, entry);
-        }
-
+        maps = {
+          teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
+          matches: new SvelteMap(getMatches.result.map((match) => [match.id, match])),
+          guesses: new SvelteMap(getGuesses.result.map((guess) => [guess.id, guess])),
+          surveys: new SvelteMap(getSurveys.result.map((survey) => [survey.id, survey])),
+          entries: new SvelteMap(getEntries.result.map((entry) => [entry.id, entry])),
+        };
         resolve();
       };
     });
   },
 
-  teams: storeMap(maps.teams, "teams"),
-  matches: storeMap(maps.matches, "matches"),
-  guesses: storeMap(maps.guesses, "guesses"),
-  surveys: storeMap(maps.surveys, "surveys"),
-  entries: storeMap(maps.entries, "entries"),
+  teams: objectStoreMap("teams", () => maps.teams, getDB),
+  matches: objectStoreMap("matches", () => maps.matches, getDB),
+  guesses: objectStoreMap("guesses", () => maps.guesses, getDB),
+  surveys: objectStoreMap("surveys", () => maps.surveys, getDB),
+  entries: objectStoreMap("entries", () => maps.entries, getDB),
 };
 
-function transaction(storeNames: StoreName | StoreName[], mode?: IDBTransactionMode) {
-  if (!db) throw new Error("Comp DB: Not ready");
-  return db.transaction(storeNames, mode);
+function getDB() {
+  return db;
 }
 
-function errorMessage(error: DOMException | null, fallbackMessage: string) {
+function stringifyIDBError(error: DOMException | null, fallbackMessage: string) {
   return `${db?.name || "Comp"} DB: ${fallbackMessage} - ${error?.name || "Error"}: ${error?.message}`;
 }
 
-function storeMap<Record extends { id: string }>(
-  map: SvelteMap<string, Readonly<Record>>,
-  storeName: keyof typeof maps,
-) {
-  const write = {
-    set(recordOrMany: Record | Record[]) {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-
-        const records = $state.snapshot(Array.isArray(recordOrMany) ? recordOrMany : [recordOrMany]);
-
-        for (const record of records) {
-          tx.objectStore(storeName).put(record);
-        }
-
-        tx.oncomplete = () => {
-          for (const record of records) {
-            map.set(record.id, record as Readonly<Record>);
-          }
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not set ${records.length} ${storeName}`));
-        };
-      });
-    },
-
-    delete(keyOrRecordOrMany: string | Record | (string | Record)[]) {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-
-        const keysOrRecords = Array.isArray(keyOrRecordOrMany) ? keyOrRecordOrMany : [keyOrRecordOrMany];
-        const keys = keysOrRecords.map((v) => (typeof v == "string" ? v : v.id));
-
-        for (const key of keys) {
-          tx.objectStore(storeName).delete(key);
-        }
-
-        tx.oncomplete = () => {
-          for (const key of keys) {
-            map.delete(key);
-          }
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not delete ${keys.length} ${storeName}`));
-        };
-      });
-    },
-
-    clear() {
-      return new Promise<void>((resolve, reject) => {
-        const tx = transaction(storeName, "readwrite");
-        tx.objectStore(storeName).clear();
-
-        tx.oncomplete = () => {
-          map.clear();
-          resolve();
-        };
-
-        tx.onerror = () => {
-          reject(errorMessage(tx.error, `Could not clear ${storeName}`));
-        };
-      });
-    },
-  };
-
-  return {
-    /** Underlying SvelteMap with mutable prop type-stripped. */
-    read: map as Omit<SvelteMap<string, Record>, keyof typeof write | "getOrInsert" | "getOrInsertComputed">,
-    /** Mutable methods that affect both IndexedDB and the SvelteMap. */
-    write,
-    /** Refreshes underlying SvelteMap with data from IndexedDB. */
-    refresh() {
-      return new Promise<void>((resolve, reject) => {
-        const getTx = transaction(storeName);
-        getTx.onabort = () => {
-          reject(errorMessage(getTx.error, `Could not refresh ${storeName}`));
-        };
-
-        const getRequest = getTx.objectStore(storeName).getAll();
-
-        getTx.oncomplete = () => {
-          map.clear();
-
-          for (const record of getRequest.result) {
-            map.set(record.id, record);
-          }
-
-          resolve();
-        };
-      });
-    },
-  };
-}
-
 // Store types
-
-type StoreName = "teams" | "matches" | "guesses" | "surveys" | "entries";
 
 type Team = {
   id: string;
