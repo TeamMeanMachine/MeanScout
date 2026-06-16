@@ -13,3 +13,4 @@ pnpm-lock.yaml
 yarn.lock
 
 /static/deps
+/src/lib/tba/schema.d.ts

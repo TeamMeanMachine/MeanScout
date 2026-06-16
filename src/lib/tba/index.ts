@@ -1,63 +1,57 @@
+import createClient, { type Middleware } from "openapi-fetch";
 import { get } from "svelte/store";
-import { parseValueFromString, type Team, type TeamInsights, type Value } from "./";
-import type { Alliance, TeamsInsights } from "./comp";
-import type { TbaMetrics } from "./entry";
-import type { Match } from "./match";
-import { tbaAuthKeyStore } from "./settings";
+import { parseValueFromString, type Team, type Value } from "../";
+import type { Alliance, TeamsInsights } from "../comp";
+import type { TbaMetrics } from "../entry";
+import type { Match } from "../match";
+import { tbaAuthKeyStore } from "../settings";
+import type { paths } from "./schema";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "QucqT0im61Z50YQnCpSdkifFqo2aoTKkQRyQSjlM1juuhLu6kr7jXlHjJsfIO78B";
 
-export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore) || TBA_AUTH_KEY) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: [["X-TBA-Auth-Key", authKey]],
-  });
-
-  const data = await response.json();
-
-  if (response.status == 200) {
-    return { status: "success" as const, data };
-  } else if (response.status == 401) {
-    return { status: "unauthorized" as const, error: data.Error };
-  } else if (response.status == 404) {
-    return { status: "not found" as const };
-  } else {
-    return { status: "error" as const };
-  }
-}
+const client = createClient<paths>({ baseUrl: API_URL });
+const middleware: Middleware = {
+  onRequest({ request }) {
+    request.headers.set("X-TBA-Auth-Key", get(tbaAuthKeyStore) || TBA_AUTH_KEY);
+    return request;
+  },
+};
+client.use(middleware);
 
 export async function tbaAuthKeyIsValid(authKey: string) {
-  const response = await tbaFetch("/status", authKey);
-  return response.status == "success";
+  const { data } = await client.GET("/status", { headers: [["X-TBA-Auth-Key", authKey]] });
+  return data !== undefined;
 }
 
-export async function tbaEventExists(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/simple`);
-  return response.status == "success";
+export async function tbaEventExists(event_key: string) {
+  const { data } = await client.GET("/event/{event_key}/simple", { params: { path: { event_key } } });
+  return data !== undefined;
 }
 
 export async function tbaGetTeamEvents(team: string) {
-  const response = await tbaFetch(`/team/frc${team}/events/simple`);
+  const team_key = `frc${parseInt(team)}`;
+  const response = await client.GET("/team/{team_key}/events/simple", { params: { path: { team_key } } });
 
-  if (response.status == "success" && Array.isArray(response.data)) {
+  if (response.data) {
     const lastYear = new Date().getFullYear() - 1;
 
     return {
       events: response.data
         .filter((event) => event.year >= lastYear)
         .map((event) => ({ name: `${event.year} ${event.name}`, key: event.key }))
-        .reverse(),
+        .toReversed(),
     };
   } else {
     return { error: `could not get events for team ${team}` };
   }
 }
 
-export async function tbaGetEventMatches(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/matches`);
+export async function tbaGetEventMatches(event_key: string) {
+  const { data } = await client.GET("/event/{event_key}/matches", { params: { path: { event_key } } });
 
-  if (response.status == "success" && Array.isArray(response.data)) {
-    return response.data.map((match) => {
+  if (data) {
+    return data.map((match) => {
       const newMatch: Match = {
         number: match.match_number,
         red1: match.alliances.red.team_keys[0]?.replace("frc", "") || "",
@@ -93,12 +87,12 @@ export async function tbaGetEventMatches(eventKey: string) {
           .filter(([key]) => /robot[123]/gi.test(key))
           .map(([name, value]) => ({ name: name.toLowerCase(), value: parseValueFromString(value) as Value }));
 
-        const redTeams = (match.alliances.red.team_keys as string[]).map((key: string, index: number) => ({
+        const redTeams = match.alliances.red.team_keys.map((key: string, index: number) => ({
           team: key.replace("frc", ""),
           tbaMetrics: teamBreakdownMetrics(redMetrics, index + 1),
         }));
 
-        const blueTeams = (match.alliances.blue.team_keys as string[]).map((key: string, index: number) => ({
+        const blueTeams = match.alliances.blue.team_keys.map((key: string, index: number) => ({
           team: key.replace("frc", ""),
           tbaMetrics: teamBreakdownMetrics(blueMetrics, index + 1),
         }));
@@ -114,68 +108,64 @@ export async function tbaGetEventMatches(eventKey: string) {
   }
 }
 
-export async function tbaGetEventTeams(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/teams/simple`);
+export async function tbaGetEventTeams(event_key: string) {
+  const { data } = await client.GET("/event/{event_key}/teams/simple", { params: { path: { event_key } } });
 
-  if (response.status == "success" && Array.isArray(response.data)) {
-    return response.data.map((team): Team => {
+  if (data) {
+    return data.map((team): Team => {
       return { number: team.key.replace("frc", ""), name: team.nickname };
     });
   }
 }
 
-export async function tbaGetEventAlliances(eventKey: string) {
-  const response = await tbaFetch(`/event/${eventKey}/alliances`);
+export async function tbaGetEventAlliances(event_key: string) {
+  const { data } = await client.GET("/event/{event_key}/alliances", { params: { path: { event_key } } });
 
-  if (response.status == "success" && Array.isArray(response.data)) {
-    return response.data.map((alliance): Alliance => {
-      return { teams: (alliance.picks as string[]).map((team) => team.replace("frc", "")) };
+  if (data) {
+    return data.map((alliance): Alliance => {
+      return { teams: alliance.picks.map((team) => team.replace("frc", "")) };
     });
   }
 }
 
-export async function tbaGetEventTeamInsights(eventKey: string) {
-  const [oprsResponse, coprsResponse] = await Promise.all([
-    tbaFetch(`/event/${eventKey}/oprs`),
-    tbaFetch(`/event/${eventKey}/coprs`),
+export async function tbaGetEventTeamInsights(event_key: string) {
+  const [{ data: oprData }, { data: coprData }] = await Promise.all([
+    client.GET("/event/{event_key}/oprs", { params: { path: { event_key } } }),
+    client.GET("/event/{event_key}/coprs", { params: { path: { event_key } } }),
   ]);
 
-  if (
-    oprsResponse.status == "success" &&
-    coprsResponse.status == "success" &&
-    (oprsResponse.data || coprsResponse.data)
-  ) {
+  if (oprData && coprData) {
     const teamsInsights: TeamsInsights = { oprs: {}, dprs: {}, ccwms: {}, coprs: {} };
 
-    if (oprsResponse.data.oprs) {
-      for (const frcTeam in oprsResponse.data.oprs as Record<string, number>) {
+    if (oprData.oprs) {
+      for (const frcTeam in oprData.oprs) {
         const team = frcTeam.replace("frc", "");
-        const value = oprsResponse.data.oprs[frcTeam];
+        const value = oprData.oprs[frcTeam];
         teamsInsights.oprs[team] = value;
       }
     }
 
-    if (oprsResponse.data.dprs) {
-      for (const frcTeam in oprsResponse.data.dprs as Record<string, number>) {
+    if (oprData.dprs) {
+      for (const frcTeam in oprData.dprs) {
         const team = frcTeam.replace("frc", "");
-        const value = oprsResponse.data.dprs[frcTeam];
+        const value = oprData.dprs[frcTeam];
         teamsInsights.dprs[team] = value;
       }
     }
 
-    if (oprsResponse.data.ccwms) {
-      for (const frcTeam in oprsResponse.data.ccwms as Record<string, number>) {
+    if (oprData.ccwms) {
+      for (const frcTeam in oprData.ccwms) {
         const team = frcTeam.replace("frc", "");
-        const value = oprsResponse.data.ccwms[frcTeam];
+        const value = oprData.ccwms[frcTeam];
         teamsInsights.ccwms[team] = value;
       }
     }
 
-    if (coprsResponse.data) {
-      for (const coprName in coprsResponse.data as Record<string, object>) {
-        const coprs = coprsResponse.data[coprName];
+    if (coprData) {
+      for (const coprName in coprData) {
+        const coprs = coprData[coprName];
 
-        for (const frcTeam in coprs as Record<string, number>) {
+        for (const frcTeam in coprs) {
           const team = frcTeam.replace("frc", "");
           const value = coprs[frcTeam];
 
