@@ -1,3 +1,4 @@
+import type { MetaDB } from "$lib/schema";
 import { SvelteMap } from "svelte/reactivity";
 import { objectStoreMap } from "./object-store-map.svelte";
 
@@ -5,8 +6,8 @@ let db: IDBDatabase | undefined = undefined;
 
 /** All data from the meta DB. Should be affected only by the `metaDB` object. */
 let maps = {
-  comps: new SvelteMap<string, Readonly<Comp>>(),
-  teams: new SvelteMap<string, Readonly<Team>>(),
+  events: new SvelteMap<string, Readonly<MetaDB.Event>>(),
+  teams: new SvelteMap<string, Readonly<MetaDB.Team>>(),
 };
 
 export const metaDB = {
@@ -28,28 +29,28 @@ export const metaDB = {
       };
 
       openRequest.onupgradeneeded = () => {
-        if (!openRequest.result.objectStoreNames.contains("comps")) {
-          openRequest.result.createObjectStore("comps", { keyPath: "id" });
-        }
+        const storeNames = openRequest.result.objectStoreNames;
 
-        if (!openRequest.result.objectStoreNames.contains("teams")) {
-          openRequest.result.createObjectStore("teams", { keyPath: "id" });
+        for (const mapName in maps) {
+          if (!storeNames.contains(mapName)) {
+            openRequest.result.createObjectStore(mapName, { keyPath: "id" });
+          }
         }
       };
 
       openRequest.onsuccess = () => {
-        const getTx = openRequest.result.transaction(["comps", "teams"]);
+        const getTx = openRequest.result.transaction(Object.keys(maps));
         getTx.onabort = () => {
           reject(stringifyIDBError(getTx.error, "Could not get data after opening"));
         };
 
-        const getComps = getTx.objectStore("comps").getAll();
+        const getEvents = getTx.objectStore("events").getAll();
         const getTeams = getTx.objectStore("teams").getAll();
 
         getTx.oncomplete = () => {
           db = openRequest.result;
           maps = {
-            comps: new SvelteMap(getComps.result.map((comp) => [comp.id, comp])),
+            events: new SvelteMap(getEvents.result.map((event) => [event.id, event])),
             teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
           };
           resolve();
@@ -58,7 +59,7 @@ export const metaDB = {
     });
   },
 
-  /** Should be called whenever the DB is externally affected (e.g. across browser tabs). */
+  /** Should be called whenever the DB is externally affected (e.g. from another browser tab). */
   refresh() {
     return new Promise<void>((resolve, reject) => {
       if (!db) {
@@ -66,17 +67,17 @@ export const metaDB = {
         return;
       }
 
-      const getTx = db.transaction(["comps", "teams"]);
+      const getTx = db.transaction(["events", "teams"]);
       getTx.onabort = () => {
         reject(stringifyIDBError(getTx.error, "Could not refresh data"));
       };
 
-      const getComps = getTx.objectStore("comps").getAll();
+      const getEvents = getTx.objectStore("events").getAll();
       const getTeams = getTx.objectStore("teams").getAll();
 
       getTx.oncomplete = () => {
         maps = {
-          comps: new SvelteMap(getComps.result.map((comp) => [comp.id, comp])),
+          events: new SvelteMap(getEvents.result.map((event) => [event.id, event])),
           teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
         };
         resolve();
@@ -84,7 +85,7 @@ export const metaDB = {
     });
   },
 
-  comps: objectStoreMap("comps", () => maps.comps, getDB),
+  events: objectStoreMap("events", () => maps.events, getDB),
   teams: objectStoreMap("teams", () => maps.teams, getDB),
 };
 
@@ -95,17 +96,3 @@ function getDB() {
 function stringifyIDBError(error: DOMException | null, fallbackMessage: string) {
   return `Meta DB: ${fallbackMessage} - ${error?.name || "Error"}: ${error?.message}`;
 }
-
-// Store types
-
-type Comp = {
-  id: string;
-  name: string;
-  tbaEventKey?: string | undefined;
-  modifiedAt: number;
-};
-
-type Team = {
-  id: string;
-  name: string;
-};

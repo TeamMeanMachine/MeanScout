@@ -1,2 +1,2 @@
-export { compDB } from "./comp.svelte";
-export { metaDB } from "./meta.svelte";
+export * from "./event.svelte";
+export * from "./meta.svelte";
