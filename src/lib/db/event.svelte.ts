@@ -1,6 +1,102 @@
-import type { EventDB } from "$lib/schema";
+import { Control, Input, Method } from "$lib/schema";
 import { SvelteMap } from "svelte/reactivity";
+import z from "zod";
 import { objectStoreMap } from "./object-store-map.svelte";
+
+const schemas = {
+  team: z.object({
+    id: z.string(),
+  }),
+
+  match: z.object({
+    id: z.string(),
+    number: z.number(),
+    set: z.number(),
+    level: z.literal(["qm", "ef", "qf", "sf", "f"]),
+    red: z.object({
+      teams: z.string().array(),
+      score: z.number().optional(),
+      breakdown: z.record(z.string(), z.any()).optional(),
+    }),
+    blue: z.object({
+      teams: z.string().array(),
+      score: z.number().optional(),
+      breakdown: z.record(z.string(), z.any()).optional(),
+    }),
+    pred: z
+      .looseObject({
+        winner: z.string(),
+        redWinProb: z.number(),
+        redScore: z.number(),
+        blueScore: z.number(),
+      })
+      .optional(),
+    startedAt: z.number().optional(),
+  }),
+
+  picklist: z.object({
+    id: z.string(),
+    name: z.string(),
+    weights: Input.weight.array(),
+    teams: z.record(z.string(), z.object({ note: z.string().optional(), omitted: z.boolean().optional() })),
+    customRanks: z.record(z.string(), z.string()).optional(),
+    createdBy: z.string(),
+    createdByTeam: z.string(),
+  }),
+
+  expression: z.object({
+    id: z.string(),
+    name: z.string(),
+    inputs: Input.any.array(),
+    method: Method.any,
+    aggregate: Method.reducer.optional(),
+    createdBy: z.string(),
+    createdByTeam: z.string(),
+  }),
+
+  form: z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.literal(["match", "pit"]),
+    controls: Control.any.array(),
+    createdBy: z.string(),
+    createdByTeam: z.string(),
+    modifiedAt: z.number(),
+  }),
+
+  entry: z.object({
+    id: z.string(),
+    formId: z.string(),
+    status: z.literal(["draft", "submitted", "exported", "deleted"]),
+    team: z.string(),
+    matchId: z.string().optional(),
+    absent: z.boolean().optional(),
+    values: z.record(z.string(), z.any()),
+    createdBy: z.string(),
+    createdByTeam: z.string(),
+    modifiedAt: z.number(),
+  }),
+
+  guess: z.object({
+    id: z.string(),
+    matchId: z.string(),
+    choice: z.literal(["red", "blue"]),
+    reason: z.string().optional(),
+    createdBy: z.string(),
+    createdByTeam: z.string(),
+    madeAt: z.number(),
+  }),
+};
+
+export namespace EventDB {
+  export type Team = z.infer<typeof schemas.team>;
+  export type Match = z.infer<typeof schemas.match>;
+  export type Picklist = z.infer<typeof schemas.picklist>;
+  export type Expression = z.infer<typeof schemas.expression>;
+  export type Form = z.infer<typeof schemas.form>;
+  export type Entry = z.infer<typeof schemas.entry>;
+  export type Guess = z.infer<typeof schemas.guess>;
+}
 
 let db: IDBDatabase | undefined = undefined;
 
@@ -15,7 +111,9 @@ let maps = {
   guesses: new SvelteMap<string, Readonly<EventDB.Guess>>(),
 };
 
-export const eventDB = {
+export const EventDB = {
+  schemas,
+
   /**
    * Attempts to open (or create) the event database with the specified id.
    * Will close existing DB connection if the new one is different.
@@ -62,34 +160,8 @@ export const eventDB = {
       };
 
       openRequest.onsuccess = () => {
-        const getTx = openRequest.result.transaction(Object.keys(maps));
-        getTx.onabort = () => {
-          reject(stringifyIDBError(getTx.error, "Could not get data afer opening"));
-        };
-
-        const getTeams = getTx.objectStore("teams").getAll();
-        const getMatches = getTx.objectStore("matches").getAll();
-        const getPicklists = getTx.objectStore("picklists").getAll();
-        const getExpressions = getTx.objectStore("expressions").getAll();
-        const getForms = getTx.objectStore("forms").getAll();
-        const getEntries = getTx.objectStore("entries").getAll();
-        const getGuesses = getTx.objectStore("guesses").getAll();
-
-        getTx.oncomplete = () => {
-          if (db) db.close();
-          db = openRequest.result;
-
-          maps = {
-            teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
-            matches: new SvelteMap(getMatches.result.map((match) => [match.id, match])),
-            picklists: new SvelteMap(getPicklists.result.map((picklist) => [picklist.id, picklist])),
-            expressions: new SvelteMap(getExpressions.result.map((expression) => [expression.id, expression])),
-            forms: new SvelteMap(getForms.result.map((form) => [form.id, form])),
-            entries: new SvelteMap(getEntries.result.map((entry) => [entry.id, entry])),
-            guesses: new SvelteMap(getGuesses.result.map((guess) => [guess.id, guess])),
-          };
-          resolve();
-        };
+        db = openRequest.result;
+        this.refresh().then(resolve).catch(reject);
       };
     });
   },
