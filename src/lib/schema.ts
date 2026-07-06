@@ -140,24 +140,22 @@ export namespace Input {
     aggregate: Method.reducer.optional(),
   });
 
-  export const insight = z.object({
-    type: z.literal(["opr", "epa"]),
+  export const stat = z.object({
+    type: z.literal(["rank", "stat", "opr", "epa"]),
     metric: z.string(),
     fallback: value.optional(),
   });
 
-  export const weight = z
-    .union([variable, score, expression, inline, insight])
-    .and(z.object({ percentage: z.number() }));
+  export const weight = z.union([variable, score, expression, inline, stat]).and(z.object({ percentage: z.number() }));
 
-  export const any = z.union([literal, variable, score, expression, inline, insight]);
+  export const any = z.union([literal, variable, score, expression, inline, stat]);
 
   export type Literal = z.infer<typeof literal>;
   export type Variable = z.infer<typeof variable>;
   export type Score = z.infer<typeof score>;
   export type Expression = z.infer<typeof expression>;
   export type Inline = z.infer<typeof inline>;
-  export type Insight = z.infer<typeof insight>;
+  export type Stat = z.infer<typeof stat>;
   export type Weight = z.infer<typeof weight>;
   export type Any = z.infer<typeof any>;
 }

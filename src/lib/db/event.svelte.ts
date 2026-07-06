@@ -6,7 +6,9 @@ import { objectStoreMap } from "./object-store-map.svelte";
 const schemas = {
   team: z.object({
     id: z.string(),
-    opr: z.record(z.string(), z.any()).optional(),
+    rank: z.number().optional(),
+    stat: z.record(z.string(), z.number()).optional(),
+    opr: z.record(z.string(), z.number()).optional(),
     epa: z.record(z.string(), z.any()).optional(),
   }),
 
