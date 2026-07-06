@@ -1,5 +1,5 @@
 import type { ClientInit } from "@sveltejs/kit";
-import { metaDB } from "$lib/db";
+import { MetaDB } from "$lib/db";
 import { idb } from "$lib/idb";
 import { onlineTransfer } from "$lib/online-transfer.svelte";
 import { scoutStore, teamStore, webRtcActiveStore, webRtcForceFallbackStore, webRtcRoomIdStore } from "$lib/settings";
@@ -15,5 +15,5 @@ export const init: ClientInit = async () => {
   }
 
   await idb.initAsync();
-  await metaDB.open();
+  await MetaDB.open();
 };

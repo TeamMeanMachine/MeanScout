@@ -6,12 +6,14 @@ import { objectStoreMap } from "./object-store-map.svelte";
 const schemas = {
   team: z.object({
     id: z.string(),
+    opr: z.record(z.string(), z.any()).optional(),
+    epa: z.record(z.string(), z.any()).optional(),
   }),
 
   match: z.object({
     id: z.string(),
+    // Will be dynamically combining number/set so it's less confusing in UI.
     number: z.number(),
-    set: z.number(),
     level: z.literal(["qm", "ef", "qf", "sf", "f"]),
     red: z.object({
       teams: z.string().array(),
@@ -23,15 +25,10 @@ const schemas = {
       score: z.number().optional(),
       breakdown: z.record(z.string(), z.any()).optional(),
     }),
-    pred: z
-      .looseObject({
-        winner: z.string(),
-        redWinProb: z.number(),
-        redScore: z.number(),
-        blueScore: z.number(),
-      })
-      .optional(),
+    prediction: z.record(z.string(), z.any()).optional(),
     startedAt: z.number().optional(),
+    videos: z.string().array().optional(),
+    modifiedAt: z.number(),
   }),
 
   picklist: z.object({
@@ -42,6 +39,7 @@ const schemas = {
     customRanks: z.record(z.string(), z.string()).optional(),
     createdBy: z.string(),
     createdByTeam: z.string(),
+    modifiedAt: z.number(),
   }),
 
   expression: z.object({
@@ -52,6 +50,7 @@ const schemas = {
     aggregate: Method.reducer.optional(),
     createdBy: z.string(),
     createdByTeam: z.string(),
+    modifiedAt: z.number(),
   }),
 
   form: z.object({
@@ -100,7 +99,7 @@ export namespace EventDB {
 
 let db: IDBDatabase | undefined = undefined;
 
-/** All data from the currently opened event DB. Should be affected only by the `eventDB` object. */
+/** All data from the currently opened event DB. Should be affected only by the `EventDB` object. */
 let maps = {
   teams: new SvelteMap<string, Readonly<EventDB.Team>>(),
   matches: new SvelteMap<string, Readonly<EventDB.Match>>(),
@@ -204,7 +203,7 @@ export const EventDB = {
 
   teams: objectStoreMap("teams", () => maps.teams, getDB),
   matches: objectStoreMap("matches", () => maps.matches, getDB),
-  picklists: objectStoreMap("piclists", () => maps.picklists, getDB),
+  picklists: objectStoreMap("picklists", () => maps.picklists, getDB),
   expressions: objectStoreMap("expressions", () => maps.expressions, getDB),
   forms: objectStoreMap("forms", () => maps.forms, getDB),
   entries: objectStoreMap("entries", () => maps.entries, getDB),

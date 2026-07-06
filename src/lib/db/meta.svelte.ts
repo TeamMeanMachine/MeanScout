@@ -23,7 +23,7 @@ export namespace MetaDB {
 
 let db: IDBDatabase | undefined = undefined;
 
-/** All data from the meta DB. Should be affected only by the `metaDB` object. */
+/** All data from the meta DB. Should be affected only by the `MetaDB` object. */
 let maps = {
   events: new SvelteMap<string, Readonly<MetaDB.Event>>(),
   teams: new SvelteMap<string, Readonly<MetaDB.Team>>(),

@@ -78,12 +78,19 @@ export namespace Method {
   ]);
 
   export const mapper = z.union([
-    z.object({ type: z.literal(["add", "sub", "mult", "div"]), value: z.number() }),
+    z.object({
+      type: z.literal(["add", "sub", "mult", "div", "gt", "gte", "lt", "lte", "eq", "neq"]),
+      get value() {
+        return Input.any;
+      },
+    }),
     z.object({ type: z.literal(["negate", "abs"]) }),
     z.object({
       type: z.literal("convert"),
-      converters: z.array(z.object({ from: value, to: value })),
-      default: value.optional(),
+      converters: z.object({ from: value, to: value }).array(),
+      get default() {
+        return Input.any;
+      },
     }),
   ]);
 
@@ -108,6 +115,14 @@ export namespace Input {
     aggregate: Method.reducer.optional(),
   });
 
+  export const score = z.object({
+    type: z.literal("score"),
+    metric: z.string(),
+    allianceWide: z.boolean().optional(),
+    fallback: value.optional(),
+    aggregate: Method.reducer.optional(),
+  });
+
   export const expression = z.object({
     type: z.literal("expression"),
     id: z.string(),
@@ -118,20 +133,31 @@ export namespace Input {
   export const inline = z.object({
     type: z.literal("inline"),
     get inputs() {
-      return z.array(any);
+      return any.array();
     },
     method: Method.any,
     fallback: value.optional(),
-    aggregate: z.union([z.boolean(), Method.reducer]).optional(),
+    aggregate: Method.reducer.optional(),
   });
 
-  export const weight = z.union([variable, expression, inline]).and(z.object({ percentage: z.number() }));
-  export const any = z.union([literal, variable, expression, inline]);
+  export const insight = z.object({
+    type: z.literal(["opr", "epa"]),
+    metric: z.string(),
+    fallback: value.optional(),
+  });
+
+  export const weight = z
+    .union([variable, score, expression, inline, insight])
+    .and(z.object({ percentage: z.number() }));
+
+  export const any = z.union([literal, variable, score, expression, inline, insight]);
 
   export type Literal = z.infer<typeof literal>;
   export type Variable = z.infer<typeof variable>;
+  export type Score = z.infer<typeof score>;
   export type Expression = z.infer<typeof expression>;
   export type Inline = z.infer<typeof inline>;
+  export type Insight = z.infer<typeof insight>;
   export type Weight = z.infer<typeof weight>;
   export type Any = z.infer<typeof any>;
 }
