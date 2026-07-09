@@ -10,6 +10,7 @@ const schemas = {
     stat: z.record(z.string(), z.number()).optional(),
     opr: z.record(z.string(), z.number()).optional(),
     epa: z.record(z.string(), z.any()).optional(),
+    images: z.string().array().optional(),
   }),
 
   match: z.object({
@@ -30,18 +31,18 @@ const schemas = {
     prediction: z.record(z.string(), z.any()).optional(),
     startedAt: z.number().optional(),
     videos: z.string().array().optional(),
-    modifiedAt: z.number(),
+    editedAt: z.number(),
   }),
 
   picklist: z.object({
     id: z.string(),
     name: z.string(),
     weights: Input.weight.array(),
-    teams: z.record(z.string(), z.object({ note: z.string().optional(), omitted: z.boolean().optional() })),
-    customRanks: z.record(z.string(), z.string()).optional(),
-    createdBy: z.string(),
-    createdByTeam: z.string(),
-    modifiedAt: z.number(),
+    notes: z.record(z.string(), z.string()),
+    omits: z.record(z.string(), z.boolean()),
+    customSort: z.record(z.string(), z.string()).optional(),
+    made: z.object({ by: z.string(), team: z.string() }),
+    editedAt: z.number(),
   }),
 
   expression: z.object({
@@ -50,9 +51,8 @@ const schemas = {
     inputs: Input.any.array(),
     method: Method.any,
     aggregate: Method.reducer.optional(),
-    createdBy: z.string(),
-    createdByTeam: z.string(),
-    modifiedAt: z.number(),
+    made: z.object({ by: z.string(), team: z.string() }),
+    editedAt: z.number(),
   }),
 
   form: z.object({
@@ -60,9 +60,8 @@ const schemas = {
     name: z.string(),
     type: z.literal(["match", "pit"]),
     controls: Control.any.array(),
-    createdBy: z.string(),
-    createdByTeam: z.string(),
-    modifiedAt: z.number(),
+    made: z.object({ by: z.string(), team: z.string() }),
+    editedAt: z.number(),
   }),
 
   entry: z.object({
@@ -73,9 +72,8 @@ const schemas = {
     matchId: z.string().optional(),
     absent: z.boolean().optional(),
     values: z.record(z.string(), z.any()),
-    createdBy: z.string(),
-    createdByTeam: z.string(),
-    modifiedAt: z.number(),
+    made: z.object({ by: z.string(), team: z.string() }),
+    editedAt: z.number(),
   }),
 
   guess: z.object({
@@ -83,9 +81,7 @@ const schemas = {
     matchId: z.string(),
     choice: z.literal(["red", "blue"]),
     reason: z.string().optional(),
-    createdBy: z.string(),
-    createdByTeam: z.string(),
-    madeAt: z.number(),
+    made: z.object({ at: z.number(), by: z.string(), team: z.string() }),
   }),
 };
 

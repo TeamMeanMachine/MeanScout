@@ -7,12 +7,13 @@ const schemas = {
     id: z.string(),
     name: z.string(),
     tbaEventKey: z.string().optional(),
-    modifiedAt: z.number(),
+    madeAt: z.number(),
   }),
 
   team: z.object({
     id: z.string(),
     name: z.string(),
+    avatar: z.base64().optional(),
   }),
 };
 
