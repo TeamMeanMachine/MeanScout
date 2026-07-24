@@ -1,7 +1,12 @@
 import z from "zod";
 
-export const value = z.union([z.string(), z.number(), z.boolean()]);
-export type Value = z.infer<typeof value>;
+export namespace Schema {
+  export const value = z.union([z.string(), z.number(), z.boolean()]);
+  export const timestamp = z.object({ at: z.number(), by: z.string(), team: z.string() });
+
+  export type Value = z.infer<typeof value>;
+  export type Timestamp = z.infer<typeof timestamp>;
+}
 
 export namespace Control {
   const base = z.object({
@@ -73,7 +78,7 @@ export namespace Method {
   export const reducer = z.union([
     z.object({ type: z.literal(["sum", "max", "median", "and", "or"]) }),
     z.object({ type: z.literal(["mean", "min", "mode", "range"]), ignoreZero: z.boolean().optional() }),
-    z.object({ type: z.literal("count"), value }),
+    z.object({ type: z.literal("count"), value: Schema.value }),
     z.object({ type: z.literal("stddev"), sample: z.boolean().optional() }),
   ]);
 
@@ -87,7 +92,7 @@ export namespace Method {
     z.object({ type: z.literal(["negate", "abs"]) }),
     z.object({
       type: z.literal("convert"),
-      converters: z.object({ from: value, to: value }).array(),
+      converters: z.object({ from: Schema.value, to: Schema.value }).array(),
       get default() {
         return Input.any;
       },
@@ -104,14 +109,14 @@ export namespace Method {
 export namespace Input {
   export const literal = z.object({
     type: z.literal("literal"),
-    value,
+    value: Schema.value,
   });
 
   export const variable = z.object({
     type: z.literal("variable"),
     formId: z.string(),
     variable: z.string(),
-    fallback: value.optional(),
+    fallback: Schema.value.optional(),
     aggregate: Method.reducer.optional(),
   });
 
@@ -119,14 +124,14 @@ export namespace Input {
     type: z.literal("score"),
     metric: z.string(),
     allianceWide: z.boolean().optional(),
-    fallback: value.optional(),
+    fallback: Schema.value.optional(),
     aggregate: Method.reducer.optional(),
   });
 
   export const expression = z.object({
     type: z.literal("expression"),
     id: z.string(),
-    fallback: value.optional(),
+    fallback: Schema.value.optional(),
     aggregate: z.union([z.boolean(), Method.reducer]).optional(),
   });
 
@@ -136,14 +141,14 @@ export namespace Input {
       return any.array();
     },
     method: Method.any,
-    fallback: value.optional(),
+    fallback: Schema.value.optional(),
     aggregate: Method.reducer.optional(),
   });
 
   export const stat = z.object({
     type: z.literal(["rank", "stat", "opr", "epa"]),
     metric: z.string(),
-    fallback: value.optional(),
+    fallback: Schema.value.optional(),
   });
 
   export const weight = z.union([variable, score, expression, inline, stat]).and(z.object({ percentage: z.number() }));

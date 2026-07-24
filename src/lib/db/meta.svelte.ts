@@ -1,3 +1,4 @@
+import { Schema } from "$lib/schema";
 import { SvelteMap } from "svelte/reactivity";
 import z from "zod";
 import { objectStoreMap } from "./object-store-map.svelte";
@@ -6,11 +7,13 @@ const schemas = {
   event: z.object({
     id: z.string(),
     name: z.string(),
-    tbaEventKey: z.string().optional(),
-    madeAt: z.number(),
+    // TBA/Statbotics event key.
+    key: z.string().optional(),
+    made: Schema.timestamp,
   }),
 
   team: z.object({
+    // Team number only.
     id: z.string(),
     name: z.string(),
     avatar: z.base64().optional(),

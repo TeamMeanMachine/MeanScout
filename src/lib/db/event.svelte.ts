@@ -1,10 +1,11 @@
-import { Control, Input, Method } from "$lib/schema";
+import { Control, Input, Method, Schema } from "$lib/schema";
 import { SvelteMap } from "svelte/reactivity";
 import z from "zod";
 import { objectStoreMap } from "./object-store-map.svelte";
 
 const schemas = {
   team: z.object({
+    // Team number only.
     id: z.string(),
     rank: z.number().optional(),
     stat: z.record(z.string(), z.number()).optional(),
@@ -14,6 +15,7 @@ const schemas = {
   }),
 
   match: z.object({
+    // TBA format: [COMP_LEVEL]m[MATCH_NUMBER]
     id: z.string(),
     // Will be dynamically combining number/set so it's less confusing in UI.
     number: z.number(),
@@ -29,9 +31,8 @@ const schemas = {
       breakdown: z.record(z.string(), z.any()).optional(),
     }),
     prediction: z.record(z.string(), z.any()).optional(),
-    startedAt: z.number().optional(),
+    start: z.number().optional(),
     videos: z.string().array().optional(),
-    editedAt: z.number(),
   }),
 
   picklist: z.object({
@@ -41,8 +42,8 @@ const schemas = {
     notes: z.record(z.string(), z.string()),
     omits: z.record(z.string(), z.boolean()),
     customSort: z.record(z.string(), z.string()).optional(),
-    made: z.object({ by: z.string(), team: z.string() }),
-    editedAt: z.number(),
+    made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
   }),
 
   expression: z.object({
@@ -51,8 +52,8 @@ const schemas = {
     inputs: Input.any.array(),
     method: Method.any,
     aggregate: Method.reducer.optional(),
-    made: z.object({ by: z.string(), team: z.string() }),
-    editedAt: z.number(),
+    made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
   }),
 
   form: z.object({
@@ -60,20 +61,21 @@ const schemas = {
     name: z.string(),
     type: z.literal(["match", "pit"]),
     controls: Control.any.array(),
-    made: z.object({ by: z.string(), team: z.string() }),
-    editedAt: z.number(),
+    made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
   }),
 
   entry: z.object({
     id: z.string(),
+    // May not need form id depending on how I implement this.
     formId: z.string(),
-    status: z.literal(["draft", "submitted", "exported", "deleted"]),
+    status: z.literal(["draft", "review", "done", "deleted"]),
     team: z.string(),
     matchId: z.string().optional(),
     absent: z.boolean().optional(),
     values: z.record(z.string(), z.any()),
-    made: z.object({ by: z.string(), team: z.string() }),
-    editedAt: z.number(),
+    made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
   }),
 
   guess: z.object({
@@ -81,7 +83,7 @@ const schemas = {
     matchId: z.string(),
     choice: z.literal(["red", "blue"]),
     reason: z.string().optional(),
-    made: z.object({ at: z.number(), by: z.string(), team: z.string() }),
+    made: Schema.timestamp,
   }),
 };
 
