@@ -416,6 +416,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/event/{event_key}/nexus_info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gets live match-queuing info for an event from Nexus (https://frc.nexus/), or `null` if no data is currently available for this event. */
+        get: operations["getEventNexusInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/event/{event_key}/oprs": {
         parameters: {
             query?: never;
@@ -3082,6 +3099,43 @@ export interface components {
         };
         /** @enum {string} */
         MobilityRobot_2023: "No" | "Yes";
+        /** @description Estimated timing for a match, as reported by Nexus. */
+        Nexus_Match_Timing: {
+            /** @description Estimated Unix timestamp (in milliseconds) of when the match will be queued, or null if unknown. */
+            estimated_queue_time_ms: number | null;
+            /** @description Estimated Unix timestamp (in milliseconds) of when the match will start, or null if unknown. */
+            estimated_start_time_ms: number | null;
+        };
+        /** @description Live match-queuing info for a single match, as reported by Nexus. */
+        Nexus_Match_Info: {
+            /** @description The match label as reported by Nexus, e.g. `Qualification 5`. */
+            label: string;
+            /**
+             * @description The current queuing status of the match.
+             * @enum {string}
+             */
+            status: "Queuing soon" | "Now queuing" | "On deck" | "On field";
+            /** @description Whether the match has been played. */
+            played: boolean;
+            times: components["schemas"]["Nexus_Match_Timing"];
+        };
+        /** @description The match currently being queued, as reported by Nexus. */
+        Nexus_Now_Queueing: {
+            /** @description TBA match key for the match currently being queued. */
+            match_key: string;
+            /** @description The match name as reported by Nexus, e.g. `Qualification 5`. */
+            match_name: string;
+        };
+        /** @description Live match-queuing info for an event, sourced from Nexus (https://frc.nexus/) and cached by TBA. */
+        Nexus_Event_Info: {
+            /** @description Unix timestamp (in milliseconds) of when this data was last fetched from Nexus. */
+            data_as_of_ms: number;
+            now_queueing: components["schemas"]["Nexus_Now_Queueing"] | null;
+            /** @description Map of TBA match key to live queuing info for that match. */
+            matches: {
+                [key: string]: components["schemas"]["Nexus_Match_Info"];
+            };
+        };
         NotablesInsight: {
             data: {
                 entries: {
@@ -4369,6 +4423,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getEventNexusInfo: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Value of the `ETag` header in the most recently cached response by the client. */
+                "If-None-Match"?: components["parameters"]["If-None-Match"];
+            };
+            path: {
+                /** @description TBA Event Key, eg `2016nytr` */
+                event_key: components["parameters"]["event_key"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    /** @description The `Cache-Control` header, in particular the `max-age` value, contains the number of seconds the result should be considered valid for. During this time subsequent calls should return from the local cache directly. */
+                    "Cache-Control"?: string;
+                    /** @description Specifies the version of the most recent response. Used by clients in the `If-None-Match` request header. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Nexus_Event_Info"] | null;
                 };
             };
             304: components["responses"]["NotModified"];

@@ -35,6 +35,23 @@ const schemas = {
     videos: z.string().array().optional(),
   }),
 
+  scenario: z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.literal(["playoffs"]),
+    alliances: z.object({ teams: z.string().array() }).array().optional(),
+    matches: z
+      .object({
+        red: z.number(),
+        blue: z.number(),
+        winner: z.literal(["red", "blue"]).optional(),
+      })
+      .array()
+      .optional(),
+    made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
+  }),
+
   picklist: z.object({
     id: z.string(),
     name: z.string(),
@@ -90,6 +107,7 @@ const schemas = {
 export namespace EventDB {
   export type Team = z.infer<typeof schemas.team>;
   export type Match = z.infer<typeof schemas.match>;
+  export type Scenario = z.infer<typeof schemas.scenario>;
   export type Picklist = z.infer<typeof schemas.picklist>;
   export type Expression = z.infer<typeof schemas.expression>;
   export type Form = z.infer<typeof schemas.form>;
@@ -103,6 +121,7 @@ let db: IDBDatabase | undefined = undefined;
 let maps = {
   teams: new SvelteMap<string, Readonly<EventDB.Team>>(),
   matches: new SvelteMap<string, Readonly<EventDB.Match>>(),
+  scenarios: new SvelteMap<string, Readonly<EventDB.Scenario>>(),
   picklists: new SvelteMap<string, Readonly<EventDB.Picklist>>(),
   expressions: new SvelteMap<string, Readonly<EventDB.Expression>>(),
   forms: new SvelteMap<string, Readonly<EventDB.Form>>(),
@@ -124,7 +143,7 @@ export const EventDB = {
       id = id.trim();
 
       if (db && db.name === id) {
-        resolve();
+        this.refresh().then(resolve).catch(reject);
         return;
       }
 
@@ -159,8 +178,9 @@ export const EventDB = {
       };
 
       openRequest.onsuccess = () => {
+        db?.close();
         db = openRequest.result;
-        this.refresh().then(resolve).catch(reject);
+        this.refresh().catch(console.error).finally(resolve);
       };
     });
   },
@@ -180,6 +200,7 @@ export const EventDB = {
 
       const getTeams = getTx.objectStore("teams").getAll();
       const getMatches = getTx.objectStore("matches").getAll();
+      const getScenarios = getTx.objectStore("scenarios").getAll();
       const getPicklists = getTx.objectStore("picklists").getAll();
       const getExpressions = getTx.objectStore("expressions").getAll();
       const getForms = getTx.objectStore("forms").getAll();
@@ -190,6 +211,7 @@ export const EventDB = {
         maps = {
           teams: new SvelteMap(getTeams.result.map((team) => [team.id, team])),
           matches: new SvelteMap(getMatches.result.map((match) => [match.id, match])),
+          scenarios: new SvelteMap(getScenarios.result.map((scenario) => [scenario.id, scenario])),
           picklists: new SvelteMap(getPicklists.result.map((picklist) => [picklist.id, picklist])),
           expressions: new SvelteMap(getExpressions.result.map((expression) => [expression.id, expression])),
           forms: new SvelteMap(getForms.result.map((form) => [form.id, form])),
@@ -203,11 +225,46 @@ export const EventDB = {
 
   teams: objectStoreMap("teams", () => maps.teams, getDB),
   matches: objectStoreMap("matches", () => maps.matches, getDB),
+  scenarios: objectStoreMap("scenarios", () => maps.scenarios, getDB),
   picklists: objectStoreMap("picklists", () => maps.picklists, getDB),
   expressions: objectStoreMap("expressions", () => maps.expressions, getDB),
   forms: objectStoreMap("forms", () => maps.forms, getDB),
   entries: objectStoreMap("entries", () => maps.entries, getDB),
   guesses: objectStoreMap("guesses", () => maps.guesses, getDB),
+
+  /** Deletes the DB with the given id. */
+  delete(id: string) {
+    return new Promise<void>((resolve, reject) => {
+      if (id.startsWith("_")) {
+        reject("Event DB: id must not start with an underscore");
+        return;
+      }
+
+      if (id.toLowerCase() === "meanscout") {
+        reject("Event DB: id must not be similar to 'MeanScout'");
+        return;
+      }
+
+      if (!id) {
+        reject("Event DB: empty id");
+        return;
+      }
+
+      if (db?.name === id) {
+        db.close();
+        db = undefined;
+      }
+
+      const deleteRequest = indexedDB.deleteDatabase(id);
+      deleteRequest.onerror = () => {
+        reject(stringifyIDBError(deleteRequest.error, `Could not delete Event DB with id ${id}`));
+      };
+
+      deleteRequest.onsuccess = () => {
+        resolve();
+      };
+    });
+  },
 };
 
 function getDB() {

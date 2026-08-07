@@ -25,6 +25,10 @@ export function objectStoreMap<T extends { id: string }>(
       return getMap();
     },
 
+    get size() {
+      return getMap().size;
+    },
+
     get(id: string): Readonly<T> | undefined {
       return getMap().get(id);
     },

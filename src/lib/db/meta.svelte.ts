@@ -9,6 +9,7 @@ const schemas = {
     name: z.string(),
     // TBA/Statbotics event key.
     key: z.string().optional(),
+    alliances: z.object({ teams: z.string().array() }).array().optional(),
     made: Schema.timestamp,
   }),
 
@@ -64,8 +65,9 @@ export const MetaDB = {
       };
 
       openRequest.onsuccess = () => {
+        db?.close();
         db = openRequest.result;
-        this.refresh().then(resolve).catch(reject);
+        this.refresh().catch(console.error).finally(resolve);
       };
     });
   },
