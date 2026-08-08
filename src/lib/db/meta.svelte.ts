@@ -17,7 +17,7 @@ const schemas = {
     // Team number only.
     id: z.string(),
     name: z.string(),
-    avatar: z.base64().optional(),
+    avatar: z.string().optional(),
   }),
 };
 

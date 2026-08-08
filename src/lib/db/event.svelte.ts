@@ -8,8 +8,8 @@ const schemas = {
     // Team number only.
     id: z.string(),
     rank: z.number().optional(),
-    stat: z.record(z.string(), z.number()).optional(),
-    opr: z.record(z.string(), z.number()).optional(),
+    stats: z.record(z.string(), z.number()).optional(),
+    oprs: z.record(z.string(), z.number()).optional(),
     epa: z.record(z.string(), z.any()).optional(),
     images: z.string().array().optional(),
   }),

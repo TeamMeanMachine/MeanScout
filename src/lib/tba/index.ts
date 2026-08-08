@@ -10,28 +10,28 @@ import type { paths } from "./schema";
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "QucqT0im61Z50YQnCpSdkifFqo2aoTKkQRyQSjlM1juuhLu6kr7jXlHjJsfIO78B";
 
-const client = createClient<paths>({ baseUrl: API_URL });
+export const TBA = createClient<paths>({ baseUrl: API_URL });
 const middleware: Middleware = {
   onRequest({ request }) {
     request.headers.set("X-TBA-Auth-Key", get(tbaAuthKeyStore) || TBA_AUTH_KEY);
     return request;
   },
 };
-client.use(middleware);
+TBA.use(middleware);
 
 export async function tbaAuthKeyIsValid(authKey: string) {
-  const { data } = await client.GET("/status", { headers: [["X-TBA-Auth-Key", authKey]] });
+  const { data } = await TBA.GET("/status", { headers: [["X-TBA-Auth-Key", authKey]] });
   return data !== undefined;
 }
 
 export async function tbaEventExists(event_key: string) {
-  const { data } = await client.GET("/event/{event_key}/simple", { params: { path: { event_key } } });
+  const { data } = await TBA.GET("/event/{event_key}/simple", { params: { path: { event_key } } });
   return data !== undefined;
 }
 
 export async function tbaGetTeamEvents(team: string) {
   const team_key = `frc${parseInt(team)}`;
-  const response = await client.GET("/team/{team_key}/events/simple", { params: { path: { team_key } } });
+  const response = await TBA.GET("/team/{team_key}/events/simple", { params: { path: { team_key } } });
 
   if (response.data) {
     const lastYear = new Date().getFullYear() - 1;
@@ -48,7 +48,7 @@ export async function tbaGetTeamEvents(team: string) {
 }
 
 export async function tbaGetEventMatches(event_key: string) {
-  const { data } = await client.GET("/event/{event_key}/matches", { params: { path: { event_key } } });
+  const { data } = await TBA.GET("/event/{event_key}/matches", { params: { path: { event_key } } });
 
   if (data) {
     return data.map((match) => {
@@ -109,7 +109,7 @@ export async function tbaGetEventMatches(event_key: string) {
 }
 
 export async function tbaGetEventTeams(event_key: string) {
-  const { data } = await client.GET("/event/{event_key}/teams/simple", { params: { path: { event_key } } });
+  const { data } = await TBA.GET("/event/{event_key}/teams/simple", { params: { path: { event_key } } });
 
   if (data) {
     return data.map((team): Team => {
@@ -119,7 +119,7 @@ export async function tbaGetEventTeams(event_key: string) {
 }
 
 export async function tbaGetEventAlliances(event_key: string) {
-  const { data } = await client.GET("/event/{event_key}/alliances", { params: { path: { event_key } } });
+  const { data } = await TBA.GET("/event/{event_key}/alliances", { params: { path: { event_key } } });
 
   if (data) {
     return data.map((alliance): Alliance => {
@@ -130,8 +130,8 @@ export async function tbaGetEventAlliances(event_key: string) {
 
 export async function tbaGetEventTeamInsights(event_key: string) {
   const [{ data: oprData }, { data: coprData }] = await Promise.all([
-    client.GET("/event/{event_key}/oprs", { params: { path: { event_key } } }),
-    client.GET("/event/{event_key}/coprs", { params: { path: { event_key } } }),
+    TBA.GET("/event/{event_key}/oprs", { params: { path: { event_key } } }),
+    TBA.GET("/event/{event_key}/coprs", { params: { path: { event_key } } }),
   ]);
 
   if (oprData && coprData) {

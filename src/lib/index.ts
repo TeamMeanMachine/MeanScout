@@ -17,6 +17,10 @@ export function rerunAllContextLoads() {
   invalidateAll();
 }
 
+export function nowSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
 export const schemaVersion = 17;
 
 export const valueSchema = z.string().or(z.number()).or(z.boolean());
