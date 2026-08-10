@@ -8,7 +8,6 @@
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
   import { idb } from "$lib/idb";
   import { scoutStore, teamStore } from "$lib/settings";
-  import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { TBA } from "$lib/tba";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -34,7 +33,7 @@
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      if (isLoadingTbaData || error) return;
+      if (isLoadingTbaData) return;
 
       name = name.trim();
       if (!name) {
@@ -52,75 +51,54 @@
 
       if (key) event.key = key;
 
+      if (alliances?.length) {
+        event.alliances = alliances;
+      }
+
+      if (metaTeams.size) {
+        MetaDB.teams.setMap(metaTeams);
+      }
+
       Promise.all([MetaDB.events.set(event), EventDB.open(id)])
-        .then()
         .catch((reason) => {
           error = `Could not create event: ${reason}`;
+        })
+        .then(() => {
+          const formId = idb.generateId({ randomChars: 0 });
+
+          const matchForm: EventDB.Form | undefined = createForms.match
+            ? {
+                id: "match-" + formId,
+                name: "Match Form",
+                type: "match",
+                controls: [],
+                made: { at: now, by: $scoutStore, team: $teamStore },
+              }
+            : undefined;
+
+          const pitForm: EventDB.Form | undefined = createForms.pit
+            ? {
+                id: "pit-" + formId,
+                name: "Pit Form",
+                type: "pit",
+                controls: [],
+                made: { at: now, by: $scoutStore, team: $teamStore },
+              }
+            : undefined;
+
+          return Promise.all([
+            EventDB.teams.setMap(eventTeams),
+            EventDB.matches.set(matches),
+            (matchForm || pitForm) &&
+              EventDB.forms.set([matchForm, pitForm].filter((f) => f !== undefined)).catch(console.error),
+          ]).finally(() => {
+            rerunOtherContextLoads();
+            goto(`#/beta/event/${event.id}`, { invalidateAll: true });
+          });
+        })
+        .catch((reason) => {
+          console.error("Event was created, but an error still occured:", reason);
         });
-
-      MetaDB.events
-        .set(event)
-        .catch((reason) => {
-          error = `Could not create event: ${reason}`;
-        })
-        .then(() => EventDB.open(id))
-        .catch((reason) => {
-          error = `Could not create event: ${reason}`;
-          MetaDB.events.delete(id);
-        })
-        .then(() => {});
-
-      const tx = idb.transaction(["comps", "surveys"], "readwrite");
-      const surveyStore = tx.objectStore("surveys");
-
-      tx.objectStore("comps").add($state.snapshot(event)).onerror = () => {
-        tx.abort();
-      };
-
-      if (createForms.match) {
-        const matchSurvey: MatchSurvey = {
-          id: `${id}-match`,
-          compId: id,
-          name: "Match Survey",
-          type: "match",
-          fieldIds: [],
-          expressions: [],
-          pickLists: [],
-          created: now,
-          modified: now,
-        };
-
-        surveyStore.add($state.snapshot(matchSurvey)).onerror = () => {
-          error = "Could not create match survey";
-          tx.abort();
-        };
-      }
-
-      if (createForms.pit) {
-        const pitSurvey: PitSurvey = {
-          id: `${id}-pit`,
-          compId: id,
-          name: "Pit Survey",
-          type: "pit",
-          fieldIds: [],
-          created: now,
-          modified: now,
-        };
-
-        surveyStore.add($state.snapshot(pitSurvey)).onerror = () => {
-          error = "Could not create pit survey";
-          tx.abort();
-        };
-      }
-
-      tx.onerror = () => {
-        error ||= `Could not create comp: ${tx.error?.message}`;
-      };
-
-      tx.oncomplete = () => {
-        rerunOtherContextLoads();
-        goto(`#/comp/${event.id}/admin`, { invalidateAll: true });
-      };
     },
   };
 
@@ -129,19 +107,19 @@
 
     isLoadingTbaData = true;
 
-    const params = { path: { event_key: key } };
+    const params = { params: { path: { event_key: key } } };
 
-    const getEvent = TBA.GET("/event/{event_key}/simple", { params }).then((response) => {
+    const getEvent = TBA.GET("/event/{event_key}/simple", params).then((response) => {
       if (!response.data) return;
       name = response.data.name + " " + response.data.year;
     });
 
-    const getAlliances = TBA.GET("/event/{event_key}/alliances", { params }).then((response) => {
+    const getAlliances = TBA.GET("/event/{event_key}/alliances", params).then((response) => {
       if (!response.data) return;
       alliances = response.data.map((alliance) => ({ teams: alliance.picks }));
     });
 
-    const getTeams = TBA.GET("/event/{event_key}/teams/simple", { params }).then((response) => {
+    const getTeams = TBA.GET("/event/{event_key}/teams/simple", params).then((response) => {
       if (!response.data) return;
 
       for (const team of response.data) {
@@ -155,29 +133,32 @@
       }
     });
 
-    const getMatches = TBA.GET("/event/{event_key}/matches", { params }).then((response) => {
+    const getMatches = TBA.GET("/event/{event_key}/matches", params).then((response) => {
       if (!response.data) return;
 
-      matches = response.data.map((match) => ({
-        id: match.key.split("_")[1],
-        number: match.match_number,
-        level: match.comp_level,
-        red: {
-          teams: match.alliances.red.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-          score: match.alliances.red.score < 0 ? undefined : match.alliances.red.score,
-          breakdown: match.score_breakdown?.red,
-        },
-        blue: {
-          teams: match.alliances.blue.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-          score: match.alliances.blue.score < 0 ? undefined : match.alliances.blue.score,
-          breakdown: match.score_breakdown?.blue,
-        },
-        start: match.actual_time || undefined,
-        videos: match.videos.map((v) => v.key),
-      }));
+      matches = response.data
+        .map(
+          (match): EventDB.Match => ({
+            id: match.key.split("_")[1].replace("qm", ""),
+            red: {
+              teams: match.alliances.red.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
+              score: match.alliances.red.score < 0 ? undefined : match.alliances.red.score,
+              breakdown: match.score_breakdown?.red,
+            },
+            blue: {
+              teams: match.alliances.blue.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
+              score: match.alliances.blue.score < 0 ? undefined : match.alliances.blue.score,
+              breakdown: match.score_breakdown?.blue,
+            },
+            start: match.actual_time || undefined,
+            winner: match.winning_alliance || undefined,
+            videos: match.videos.map((v) => v.key),
+          }),
+        )
+        .toSorted((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
     });
 
-    const getRankings = TBA.GET("/event/{event_key}/rankings", { params }).then((response) => {
+    const getRankings = TBA.GET("/event/{event_key}/rankings", params).then((response) => {
       if (!response.data) return;
 
       for (const ranking of response.data.rankings) {
@@ -215,7 +196,7 @@
       }
     });
 
-    const getOprs = TBA.GET("/event/{event_key}/oprs", { params }).then((response) => {
+    const getOprs = TBA.GET("/event/{event_key}/oprs", params).then((response) => {
       if (!response.data) return;
 
       const types = {
@@ -230,7 +211,7 @@
 
         for (const frcTeam in response.data[type]) {
           const teamId = frcTeam.replace("frc", "");
-          const value = response.data[type][frcTeam];
+          const value = +response.data[type][frcTeam].toFixed(2);
 
           const existingTeam = eventTeams.get(teamId);
           if (!existingTeam) {
@@ -244,7 +225,7 @@
       }
     });
 
-    const getCoprs = TBA.GET("/event/{event_key}/coprs", { params }).then((response) => {
+    const getCoprs = TBA.GET("/event/{event_key}/coprs", params).then((response) => {
       if (!response.data) return;
 
       for (const type in response.data) {
@@ -252,7 +233,7 @@
 
         for (const frcTeam in response.data[type]) {
           const teamId = frcTeam.replace("frc", "");
-          const value = response.data[type][frcTeam];
+          const value = +response.data[type][frcTeam].toFixed(2);
 
           const existingTeam = eventTeams.get(teamId);
           if (!existingTeam) {
@@ -266,7 +247,7 @@
       }
     });
 
-    const getMedia = TBA.GET("/event/{event_key}/team_media", { params }).then((response) => {
+    const getMedia = TBA.GET("/event/{event_key}/team_media", params).then((response) => {
       if (!response.data) return;
 
       for (const media of response.data) {
@@ -298,7 +279,7 @@
   }
 </script>
 
-<span>New comp</span>
+<span>New event</span>
 
 <label class="flex flex-col">
   Name

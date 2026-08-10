@@ -15,11 +15,8 @@ const schemas = {
   }),
 
   match: z.object({
-    // TBA format: [COMP_LEVEL]m[MATCH_NUMBER]
+    // TBA format: [COMP_LEVEL (except 'qm' is omitted)]m[MATCH_NUMBER]
     id: z.string(),
-    // Will be dynamically combining number/set so it's less confusing in UI.
-    number: z.number(),
-    level: z.literal(["qm", "ef", "qf", "sf", "f"]),
     red: z.object({
       teams: z.string().array(),
       score: z.number().optional(),
@@ -32,6 +29,7 @@ const schemas = {
     }),
     prediction: z.record(z.string(), z.any()).optional(),
     start: z.number().optional(),
+    winner: z.literal(["red", "blue"]).optional(),
     videos: z.string().array().optional(),
   }),
 

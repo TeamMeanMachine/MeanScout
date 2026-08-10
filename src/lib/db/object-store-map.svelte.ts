@@ -76,6 +76,43 @@ export function objectStoreMap<T extends { id: string }>(
       });
     },
 
+    /** Puts one or many records to the IDB object store. If successful, updates the underlying SvelteMap. */
+    setMap(mapOrMany: Map<any, T> | Map<any, T>[], ...more: (typeof mapOrMany)[]) {
+      return new Promise<void>((resolve, reject) => {
+        const db = getDB();
+
+        if (!db) {
+          reject("DB: Not ready");
+          return;
+        }
+
+        const tx = db.transaction(storeName, "readwrite");
+
+        const records = $state.snapshot([
+          ...(Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray()),
+          ...more.flatMap((mapOrMany) =>
+            Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray(),
+          ),
+        ]);
+
+        for (const record of records) {
+          tx.objectStore(storeName).put(record);
+        }
+
+        tx.oncomplete = () => {
+          const map = getMap();
+          for (const record of records) {
+            map.set(record.id, record as any);
+          }
+          resolve();
+        };
+
+        tx.onerror = () => {
+          reject(stringifyIDBError(db.name, tx.error, `Could not set ${records.length} ${storeName}`));
+        };
+      });
+    },
+
     /** Deletes one or many records within the IDB object store. If successful, updates the underlying SvelteMap. */
     delete(keyOrRecordOrMany: string | T | (string | T)[], ...more: (typeof keyOrRecordOrMany)[]) {
       return new Promise<void>((resolve, reject) => {
