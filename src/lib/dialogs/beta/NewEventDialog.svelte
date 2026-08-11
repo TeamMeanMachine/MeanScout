@@ -8,6 +8,7 @@
   import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
   import { idb } from "$lib/idb";
   import { scoutStore, teamStore } from "$lib/settings";
+  import { Statbotics } from "$lib/statbotics";
   import { TBA } from "$lib/tba";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -19,7 +20,7 @@
   let metaTeams = new SvelteMap<string, MetaDB.Team>();
 
   let eventTeams = new SvelteMap<string, EventDB.Team>();
-  let matches = $state<EventDB.Match[]>([]);
+  let matches = new SvelteMap<string, EventDB.Match>();
 
   let createForms = $state({ match: true, pit: true });
 
@@ -88,7 +89,7 @@
 
           return Promise.all([
             EventDB.teams.setMap(eventTeams),
-            EventDB.matches.set(matches),
+            EventDB.matches.setMap(matches),
             (matchForm || pitForm) &&
               EventDB.forms.set([matchForm, pitForm].filter((f) => f !== undefined)).catch(console.error),
           ]).finally(() => {
@@ -136,26 +137,34 @@
     const getMatches = TBA.GET("/event/{event_key}/matches", params).then((response) => {
       if (!response.data) return;
 
-      matches = response.data
-        .map(
-          (match): EventDB.Match => ({
-            id: match.key.split("_")[1].replace("qm", ""),
-            red: {
-              teams: match.alliances.red.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-              score: match.alliances.red.score < 0 ? undefined : match.alliances.red.score,
-              breakdown: match.score_breakdown?.red,
-            },
-            blue: {
-              teams: match.alliances.blue.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-              score: match.alliances.blue.score < 0 ? undefined : match.alliances.blue.score,
-              breakdown: match.score_breakdown?.blue,
-            },
-            start: match.actual_time || undefined,
-            winner: match.winning_alliance || undefined,
-            videos: match.videos.map((v) => v.key),
-          }),
-        )
-        .toSorted((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+      for (const match of response.data) {
+        const matchId = match.key.split("_")[1];
+        const existingMatch = matches.get(matchId);
+
+        matches.set(matchId, {
+          id: matchId,
+          red: {
+            teams: match.alliances.red.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
+            score: (match.alliances.red.score < 0 && existingMatch?.red.score) || match.alliances.red.score,
+            breakdown:
+              existingMatch?.red.breakdown || match.score_breakdown?.red
+                ? { ...existingMatch?.red.breakdown, ...match.score_breakdown?.red }
+                : undefined,
+          },
+          blue: {
+            teams: match.alliances.blue.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
+            score: (match.alliances.blue.score < 0 && existingMatch?.blue.score) || match.alliances.blue.score,
+            breakdown:
+              existingMatch?.blue.breakdown || match.score_breakdown?.blue
+                ? { ...existingMatch?.blue.breakdown, ...match.score_breakdown?.blue }
+                : undefined,
+          },
+          prediction: existingMatch?.prediction,
+          started: match.actual_time || existingMatch?.started,
+          winner: match.winning_alliance || existingMatch?.winner,
+          videos: [...new Set([...match.videos.map((v) => v.key), ...(existingMatch?.videos || [])])],
+        });
+      }
     });
 
     const getRankings = TBA.GET("/event/{event_key}/rankings", params).then((response) => {
@@ -273,18 +282,119 @@
       }
     });
 
-    Promise.allSettled([getEvent, getAlliances, getTeams, getMatches, getRankings, getOprs, getCoprs, getMedia])
+    const getStatboticsTeams = Statbotics.GET("/v3/team_events", { params: { query: { event: key } } }).then(
+      (response) => {
+        if (!response.data) return;
+
+        for (const team of response.data as {
+          team: number;
+          year: number;
+          event: string;
+          time: number;
+          team_name: string;
+          event_name: string;
+          country: string;
+          state: string;
+          district: string;
+          type: string;
+          week: number;
+          status: string;
+          first_event: boolean;
+          epa: Record<string, any>;
+          record: { qual?: { rank?: number } };
+        }[]) {
+          const teamId = team.team.toString();
+          const existingTeam = eventTeams.get(teamId);
+
+          if (!existingTeam) {
+            eventTeams.set(teamId, { id: teamId, rank: team.record?.qual?.rank || undefined, epa: team.epa });
+          } else {
+            eventTeams.set(teamId, { ...existingTeam, epa: team.epa || existingTeam.epa });
+          }
+
+          metaTeams.set(teamId, { id: teamId, ...metaTeams.get(teamId), name: team.team_name });
+        }
+      },
+    );
+
+    const getStatboticsMatches = Statbotics.GET("/v3/matches", { params: { query: { event: key } } }).then(
+      (response) => {
+        if (!response.data) return;
+
+        for (const match of response.data as {
+          key: string;
+          year: number;
+          event: string;
+          week: number;
+          elim: boolean;
+          comp_level: string;
+          set_number: number;
+          match_number: number;
+          match_name: string;
+          time: number;
+          predicted_time: number;
+          status: string;
+          video: string;
+          alliances: { red: { team_keys: number[] }; blue: { team_keys: number[] } };
+          pred: {
+            winner: "red" | "blue" | undefined;
+            red_win_prob: number;
+            red_score: number;
+            blue_score: number;
+            [key: `${"red" | "blue"}_${string}`]: any;
+          };
+          result: {
+            winner: "red" | "blue" | undefined;
+            red_score: number;
+            blue_score: number;
+            [key: `${"red" | "blue"}_${string}`]: any;
+          };
+        }[]) {
+          const matchId = match.key.split("_")[1];
+          const existingMatch = matches.get(matchId);
+
+          matches.set(matchId, {
+            id: matchId,
+            red: {
+              teams:
+                existingMatch?.red.teams || match.alliances.red.team_keys.map((teamNumber) => teamNumber.toString()),
+              score: existingMatch?.red.score || (match.result?.red_score != -1 && match.result.red_score) || undefined,
+              breakdown: existingMatch?.red.breakdown,
+            },
+            blue: {
+              teams:
+                existingMatch?.blue.teams || match.alliances.blue.team_keys.map((teamNumber) => teamNumber.toString()),
+              score:
+                existingMatch?.blue.score || (match.result?.blue_score != -1 && match.result.blue_score) || undefined,
+              breakdown: existingMatch?.blue.breakdown,
+            },
+            prediction: match.pred || existingMatch?.prediction,
+            started: existingMatch?.started,
+            winner: match.result.winner || existingMatch?.winner,
+            videos: match.video ? [...new Set([match.video, ...(existingMatch?.videos || [])])] : existingMatch?.videos,
+          });
+        }
+      },
+    );
+
+    Promise.allSettled([
+      getEvent,
+      getAlliances,
+      getTeams,
+      getMatches,
+      getRankings,
+      getOprs,
+      getCoprs,
+      getMedia,
+      getStatboticsTeams,
+      getStatboticsMatches,
+    ])
       .catch(console.error)
       .finally(() => (isLoadingTbaData = false));
   }
 </script>
 
 <span>New event</span>
-
-<label class="flex flex-col">
-  Name
-  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
-</label>
 
 <div class="flex flex-col">
   The Blue Alliance
@@ -314,10 +424,15 @@
   </Button>
 </div>
 
-{#if matches.length || eventTeams.size || alliances?.length}
+<label class="flex flex-col">
+  Name
+  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+</label>
+
+{#if matches.size || eventTeams.size || alliances?.length}
   <div class="flex flex-col gap-1 text-sm">
-    {#if matches.length}
-      <span>Matches: {matches.length}</span>
+    {#if matches.size}
+      <span>Matches: {matches.size}</span>
     {/if}
     {#if eventTeams.size}
       <span>Teams: {eventTeams.size}</span>

@@ -15,7 +15,7 @@ const schemas = {
   }),
 
   match: z.object({
-    // TBA format: [COMP_LEVEL (except 'qm' is omitted)]m[MATCH_NUMBER]
+    // TBA format: [COMP_LEVEL]m[MATCH_NUMBER]
     id: z.string(),
     red: z.object({
       teams: z.string().array(),
@@ -28,7 +28,7 @@ const schemas = {
       breakdown: z.record(z.string(), z.any()).optional(),
     }),
     prediction: z.record(z.string(), z.any()).optional(),
-    start: z.number().optional(),
+    started: z.number().optional(),
     winner: z.literal(["red", "blue"]).optional(),
     videos: z.string().array().optional(),
   }),

@@ -13,7 +13,9 @@
   import Button from "$lib/components/Button.svelte";
   import Header from "$lib/components/Header.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
+  import { MetaDB } from "$lib/db";
   import { openDialog } from "$lib/dialog";
+  import NewEventDialog from "$lib/dialogs/beta/NewEventDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
@@ -27,7 +29,43 @@
 
 <div class="mx-auto mt-17.25 mb-3 flex w-full max-w-(--breakpoint-sm) grow flex-col gap-6 p-3">
   <div class="flex flex-col gap-2">
-    <h2 class="font-bold">Comps</h2>
+    <h2 class="font-bold">Events <span class="text-xs font-light">(beta)</span></h2>
+
+    {#each MetaDB.events.toSorted((a, b) => b.made.at - a.made.at) as event (event.id)}
+      <Anchor route="beta/event/{event.id}">
+        <div class="flex grow flex-col">
+          <span>{event.name}</span>
+          <span class="text-xs font-light">{event.id}</span>
+        </div>
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    {/each}
+
+    <Button onclick={() => {}} class="relative">
+      <DownloadIcon
+        class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
+      />
+      <div class={["flex flex-col", onlineTransfer.dataFromClients.size ? "animate-pulse" : "animate-none"]}>
+        Receive
+        <span class="text-xs font-light">Data</span>
+      </div>
+      {#if onlineTransfer.dataFromClients.size}
+        <span class="absolute top-0 left-0.5 text-xs font-bold tracking-tighter italic">
+          {onlineTransfer.dataFromClients.size}
+        </span>
+      {/if}
+    </Button>
+    <Button onclick={() => openDialog(NewEventDialog, {})}>
+      <PlusIcon class="text-theme" />
+      <div class="flex flex-col">
+        Create
+        <span class="text-xs font-light">New</span>
+      </div>
+    </Button>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <h2 class="font-bold">Comps <span class="text-xs font-light">(legacy)</span></h2>
 
     {#if data.all.comps.length}
       {#each data.all.comps.toSorted((a, b) => b.modified - a.modified) as comp (comp.id)}
