@@ -5,87 +5,74 @@
   import Button from "$lib/components/Button.svelte";
   import { EventDB, MetaDB } from "$lib/db";
   import { openDialog, type DialogExports } from "$lib/dialog";
-  import EditCompTbaEventKeyDialog from "$lib/dialogs/EditCompTbaEventKeyDialog.svelte";
+  import SelectEventKeyDialog from "$lib/dialogs/beta/SelectEventKeyDialog.svelte";
   import { idb } from "$lib/idb";
   import { scoutStore, teamStore } from "$lib/settings";
   import { Statbotics } from "$lib/statbotics";
   import { TBA } from "$lib/tba";
+  import type { components } from "$lib/tba/schema";
   import { SvelteMap } from "svelte/reactivity";
 
-  let id = $state("");
-  let name = $state("");
-  let key = $state<string | undefined>();
-  let alliances = $state<MetaDB.Event["alliances"]>(undefined);
+  let event = $state<MetaDB.Event>({
+    id: idb.generateId({ randomChars: 0 }),
+    name: "",
+    made: { at: 0, by: $scoutStore, team: $teamStore },
+  });
 
   let metaTeams = new SvelteMap<string, MetaDB.Team>();
 
   let eventTeams = new SvelteMap<string, EventDB.Team>();
   let matches = new SvelteMap<string, EventDB.Match>();
 
-  let createForms = $state({ match: true, pit: true });
+  let forms = $state({ id: idb.generateId({ randomChars: 0 }), match: true, pit: true });
 
   let error = $state("");
 
-  let isLoadingTbaData = $state(false);
-
-  $effect(() => {
-    id = key || idb.generateId({ randomChars: 0 });
-  });
+  let loading = $state(false);
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      if (isLoadingTbaData) return;
-
-      name = name.trim();
-      if (!name) {
+      event.name = event.name.trim();
+      if (!event.name) {
         error = "Name can't be blank!";
         return;
       }
 
       const now = nowSeconds();
-
-      const event: MetaDB.Event = {
-        id,
-        name,
-        made: { at: now, by: $scoutStore, team: $teamStore },
-      };
-
-      if (key) event.key = key;
-
-      if (alliances?.length) {
-        event.alliances = alliances;
-      }
+      event.made.at = now;
 
       if (metaTeams.size) {
         MetaDB.teams.setMap(metaTeams);
       }
 
-      Promise.all([MetaDB.events.set(event), EventDB.open(id)])
+      Promise.all([MetaDB.events.set(event), EventDB.open(event.id)])
         .catch((reason) => {
           error = `Could not create event: ${reason}`;
         })
         .then(() => {
-          const formId = idb.generateId({ randomChars: 0 });
+          const existingForms = EventDB.forms.read.values();
 
-          const matchForm: EventDB.Form | undefined = createForms.match
-            ? {
-                id: "match-" + formId,
-                name: "Match Form",
-                type: "match",
-                controls: [],
-                made: { at: now, by: $scoutStore, team: $teamStore },
-              }
-            : undefined;
+          const matchForm: EventDB.Form | undefined =
+            forms.match && !existingForms.some((f) => f.type == "match")
+              ? {
+                  id: "match-" + forms.id,
+                  name: "Match Form",
+                  type: "match",
+                  controls: [],
+                  made: { at: now, by: $scoutStore, team: $teamStore },
+                }
+              : undefined;
 
-          const pitForm: EventDB.Form | undefined = createForms.pit
-            ? {
-                id: "pit-" + formId,
-                name: "Pit Form",
-                type: "pit",
-                controls: [],
-                made: { at: now, by: $scoutStore, team: $teamStore },
-              }
-            : undefined;
+          const pitForm: EventDB.Form | undefined =
+            forms.pit && !existingForms.some((f) => f.type == "pit")
+              ? {
+                  id: "pit-" + forms.id,
+                  name: "Pit Form",
+                  type: "pit",
+                  controls: [],
+                  made: { at: now, by: $scoutStore, team: $teamStore },
+                }
+              : undefined;
 
           return Promise.all([
             EventDB.teams.setMap(eventTeams),
@@ -103,86 +90,92 @@
     },
   };
 
-  function getDataFromTbaEvent() {
-    if (!key) return;
+  function getDataFromTbaEvent(tbaEvent: components["schemas"]["Event"] | undefined) {
+    delete event.remapTeams;
+    delete event.alliances;
+    metaTeams.clear();
+    eventTeams.clear();
+    matches.clear();
 
-    isLoadingTbaData = true;
+    if (!tbaEvent) {
+      delete event.key;
+      event.id = idb.generateId({ randomChars: 0 });
+      event.name = "";
+      return;
+    }
 
-    const params = { params: { path: { event_key: key } } };
+    event.key = tbaEvent.key;
+    event.id = tbaEvent.key;
+    event.name = `${tbaEvent.year} ${tbaEvent.short_name || tbaEvent.name}`;
 
-    const getEvent = TBA.GET("/event/{event_key}/simple", params).then((response) => {
-      if (!response.data) return;
-      name = response.data.name + " " + response.data.year;
-    });
+    if (tbaEvent.remap_teams) {
+      event.remapTeams = {};
+      for (const frcTeam in tbaEvent.remap_teams) {
+        event.remapTeams[frcTeam.replace("frc", "")] = tbaEvent.remap_teams[frcTeam].replace("frc", "");
+      }
+    }
+
+    loading = true;
+
+    const params = { params: { path: { event_key: event.key } } };
 
     const getAlliances = TBA.GET("/event/{event_key}/alliances", params).then((response) => {
-      if (!response.data) return;
-      alliances = response.data.map((alliance) => ({ teams: alliance.picks }));
+      if (!response.data?.length) return;
+      event.alliances = response.data.map((alliance) => ({ teams: alliance.picks.map(parseTeam) }));
     });
 
     const getTeams = TBA.GET("/event/{event_key}/teams/simple", params).then((response) => {
-      if (!response.data) return;
-
+      if (!response.data?.length) return;
       for (const team of response.data) {
-        const teamId = team.key.replace("frc", "");
-
-        if (!eventTeams.has(teamId)) {
-          eventTeams.set(teamId, { id: teamId });
+        const eventTeamId = parseTeam(team.key);
+        if (!eventTeams.has(eventTeamId)) {
+          eventTeams.set(eventTeamId, { id: eventTeamId });
         }
-
-        metaTeams.set(teamId, { id: teamId, ...metaTeams.get(teamId), name: team.nickname });
+        const metaTeamId = parseInt(eventTeamId).toString();
+        const existingMetaTeam = metaTeams.get(metaTeamId);
+        metaTeams.set(metaTeamId, {
+          id: metaTeamId,
+          ...metaTeams.get(metaTeamId),
+          name: existingMetaTeam?.name || team.nickname,
+        });
       }
     });
 
     const getMatches = TBA.GET("/event/{event_key}/matches", params).then((response) => {
-      if (!response.data) return;
-
+      if (!response.data?.length) return;
       for (const match of response.data) {
         const matchId = match.key.split("_")[1];
-        const existingMatch = matches.get(matchId);
-
         matches.set(matchId, {
           id: matchId,
           red: {
-            teams: match.alliances.red.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-            score: (match.alliances.red.score < 0 && existingMatch?.red.score) || match.alliances.red.score,
-            breakdown:
-              existingMatch?.red.breakdown || match.score_breakdown?.red
-                ? { ...existingMatch?.red.breakdown, ...match.score_breakdown?.red }
-                : undefined,
+            teams: match.alliances.red.team_keys.map(parseTeam),
+            score: match.alliances.red.score < 0 ? undefined : match.alliances.red.score,
+            breakdown: match.score_breakdown?.red,
           },
           blue: {
-            teams: match.alliances.blue.team_keys.map((frcTeam) => frcTeam.replace("frc", "")),
-            score: (match.alliances.blue.score < 0 && existingMatch?.blue.score) || match.alliances.blue.score,
-            breakdown:
-              existingMatch?.blue.breakdown || match.score_breakdown?.blue
-                ? { ...existingMatch?.blue.breakdown, ...match.score_breakdown?.blue }
-                : undefined,
+            teams: match.alliances.blue.team_keys.map(parseTeam),
+            score: match.alliances.blue.score < 0 ? undefined : match.alliances.blue.score,
+            breakdown: match.score_breakdown?.blue,
           },
-          prediction: existingMatch?.prediction,
-          started: match.actual_time || existingMatch?.started,
-          winner: match.winning_alliance || existingMatch?.winner,
-          videos: [...new Set([...match.videos.map((v) => v.key), ...(existingMatch?.videos || [])])],
+          started: match.actual_time || undefined,
+          winner: match.winning_alliance || undefined,
+          videos: match.videos.length ? match.videos.map((v) => v.key) : undefined,
         });
       }
     });
 
     const getRankings = TBA.GET("/event/{event_key}/rankings", params).then((response) => {
       if (!response.data) return;
-
       for (const ranking of response.data.rankings) {
-        const teamId = ranking.team_key.replace("frc", "");
-
+        const teamId = parseTeam(ranking.team_key);
         let team = eventTeams.get(teamId);
         if (!team) {
           team = { id: teamId };
           eventTeams.set(teamId, team);
         }
-
         if (ranking.rank) {
           team.rank = ranking.rank;
         }
-
         if (response.data.sort_order_info?.length) {
           for (let i = 0; i < response.data.sort_order_info.length; i++) {
             if (!team.stats) {
@@ -192,7 +185,6 @@
             }
           }
         }
-
         if (response.data.extra_stats_info?.length) {
           for (let i = 0; i < response.data.extra_stats_info.length; i++) {
             if (!team.stats) {
@@ -207,21 +199,17 @@
 
     const getOprs = TBA.GET("/event/{event_key}/oprs", params).then((response) => {
       if (!response.data) return;
-
       const types = {
         oprs: "opr",
         dprs: "dpr",
         ccwms: "ccwm",
       } as const;
-
       for (const type of ["oprs", "dprs", "ccwms"] as const) {
         if (!response.data[type]) continue;
         const singularType = types[type];
-
         for (const frcTeam in response.data[type]) {
-          const teamId = frcTeam.replace("frc", "");
+          const teamId = parseTeam(frcTeam);
           const value = +response.data[type][frcTeam].toFixed(2);
-
           const existingTeam = eventTeams.get(teamId);
           if (!existingTeam) {
             eventTeams.set(teamId, { id: teamId, oprs: { [singularType]: value } });
@@ -236,14 +224,11 @@
 
     const getCoprs = TBA.GET("/event/{event_key}/coprs", params).then((response) => {
       if (!response.data) return;
-
       for (const type in response.data) {
         if (!response.data[type]) continue;
-
         for (const frcTeam in response.data[type]) {
-          const teamId = frcTeam.replace("frc", "");
+          const teamId = parseTeam(frcTeam);
           const value = +response.data[type][frcTeam].toFixed(2);
-
           const existingTeam = eventTeams.get(teamId);
           if (!existingTeam) {
             eventTeams.set(teamId, { id: teamId, oprs: { [type]: value } });
@@ -257,233 +242,166 @@
     });
 
     const getMedia = TBA.GET("/event/{event_key}/team_media", params).then((response) => {
-      if (!response.data) return;
-
+      if (!response.data?.length) return;
       for (const media of response.data) {
-        const teamId = media.team_keys[0].replace("frc", "");
-
+        const eventTeamId = parseTeam(media.team_keys[0]);
         if (media.type == "avatar" && media.details?.base64Image) {
-          metaTeams.set(teamId, { id: teamId, name: "", ...metaTeams.get(teamId), avatar: media.details.base64Image });
+          const metaTeamId = parseInt(eventTeamId).toString();
+          metaTeams.set(metaTeamId, {
+            id: metaTeamId,
+            name: "",
+            ...metaTeams.get(metaTeamId),
+            avatar: media.details.base64Image,
+          });
           continue;
         }
-
         if (media.type == "imgur" && media.direct_url) {
-          const existingTeam = eventTeams.get(teamId);
+          const existingTeam = eventTeams.get(eventTeamId);
           if (!existingTeam) {
-            eventTeams.set(teamId, { id: teamId, images: [media.direct_url] });
+            eventTeams.set(eventTeamId, { id: eventTeamId, images: [media.direct_url] });
           } else if (!existingTeam.images) {
             existingTeam.images = [media.direct_url];
           } else {
             existingTeam.images.push(media.direct_url);
           }
-
           continue;
         }
       }
     });
 
-    const getStatboticsTeams = Statbotics.GET("/v3/team_events", { params: { query: { event: key } } }).then(
+    const getStatboticsTeams = Statbotics.GET("/v3/team_events", { params: { query: { event: event.key } } }).then(
       (response) => {
-        if (!response.data) return;
-
-        for (const team of response.data as {
-          team: number;
-          year: number;
-          event: string;
-          time: number;
-          team_name: string;
-          event_name: string;
-          country: string;
-          state: string;
-          district: string;
-          type: string;
-          week: number;
-          status: string;
-          first_event: boolean;
-          epa: Record<string, any>;
-          record: { qual?: { rank?: number } };
-        }[]) {
-          const teamId = team.team.toString();
-          const existingTeam = eventTeams.get(teamId);
-
-          if (!existingTeam) {
-            eventTeams.set(teamId, { id: teamId, rank: team.record?.qual?.rank || undefined, epa: team.epa });
-          } else {
-            eventTeams.set(teamId, { ...existingTeam, epa: team.epa || existingTeam.epa });
+        if (!response.data?.length) return;
+        for (const team of response.data as Statbotics.TeamEvent[]) {
+          let teamId = team.team.toString();
+          if (event.remapTeams && Object.values(event.remapTeams).includes(team.team_name)) {
+            teamId = team.team_name;
+            event.remapTeams[team.team] = teamId;
           }
-
-          metaTeams.set(teamId, { id: teamId, ...metaTeams.get(teamId), name: team.team_name });
+          const existingTeam = eventTeams.get(teamId);
+          if (!existingTeam) continue;
+          existingTeam.epa = team.epa || existingTeam.epa;
         }
       },
     );
 
-    const getStatboticsMatches = Statbotics.GET("/v3/matches", { params: { query: { event: key } } }).then(
+    const getStatboticsMatches = Statbotics.GET("/v3/matches", { params: { query: { event: event.key } } }).then(
       (response) => {
-        if (!response.data) return;
-
-        for (const match of response.data as {
-          key: string;
-          year: number;
-          event: string;
-          week: number;
-          elim: boolean;
-          comp_level: string;
-          set_number: number;
-          match_number: number;
-          match_name: string;
-          time: number;
-          predicted_time: number;
-          status: string;
-          video: string;
-          alliances: { red: { team_keys: number[] }; blue: { team_keys: number[] } };
-          pred: {
-            winner: "red" | "blue" | undefined;
-            red_win_prob: number;
-            red_score: number;
-            blue_score: number;
-            [key: `${"red" | "blue"}_${string}`]: any;
-          };
-          result: {
-            winner: "red" | "blue" | undefined;
-            red_score: number;
-            blue_score: number;
-            [key: `${"red" | "blue"}_${string}`]: any;
-          };
-        }[]) {
+        if (!response.data?.length) return;
+        for (const match of response.data as Statbotics.Match[]) {
           const matchId = match.key.split("_")[1];
           const existingMatch = matches.get(matchId);
-
-          matches.set(matchId, {
-            id: matchId,
-            red: {
-              teams:
-                existingMatch?.red.teams || match.alliances.red.team_keys.map((teamNumber) => teamNumber.toString()),
-              score: existingMatch?.red.score || (match.result?.red_score != -1 && match.result.red_score) || undefined,
-              breakdown: existingMatch?.red.breakdown,
-            },
-            blue: {
-              teams:
-                existingMatch?.blue.teams || match.alliances.blue.team_keys.map((teamNumber) => teamNumber.toString()),
-              score:
-                existingMatch?.blue.score || (match.result?.blue_score != -1 && match.result.blue_score) || undefined,
-              breakdown: existingMatch?.blue.breakdown,
-            },
-            prediction: match.pred || existingMatch?.prediction,
-            started: existingMatch?.started,
-            winner: match.result.winner || existingMatch?.winner,
-            videos: match.video ? [...new Set([match.video, ...(existingMatch?.videos || [])])] : existingMatch?.videos,
-          });
+          if (!existingMatch) continue;
+          existingMatch.prediction = match.pred || existingMatch.prediction;
         }
       },
     );
 
-    Promise.allSettled([
-      getEvent,
-      getAlliances,
-      getTeams,
-      getMatches,
-      getRankings,
-      getOprs,
-      getCoprs,
-      getMedia,
-      getStatboticsTeams,
-      getStatboticsMatches,
-    ])
+    Promise.allSettled([getAlliances, getTeams, getMatches, getRankings, getOprs, getCoprs, getMedia])
       .catch(console.error)
-      .finally(() => (isLoadingTbaData = false));
+      .then(() => Promise.allSettled([getStatboticsTeams, getStatboticsMatches]))
+      .catch(console.error)
+      .finally(() => (loading = false));
+  }
+
+  function parseTeam(frcTeam: string | number) {
+    let team = frcTeam.toString().replace("frc", "");
+    return event.remapTeams?.[team] || team;
   }
 </script>
 
 <span>New event</span>
 
-<div class="flex flex-col">
-  The Blue Alliance
-  <Button
-    onclick={() => {
-      openDialog(EditCompTbaEventKeyDialog, {
-        tbaEventKey: key,
-        onedit(tbaEventKey) {
-          key = tbaEventKey;
-          getDataFromTbaEvent();
-        },
-      });
-    }}
-  >
+<Button
+  onclick={() => {
+    openDialog(SelectEventKeyDialog, {
+      current: event.key,
+      onselect: getDataFromTbaEvent,
+    });
+  }}
+  class="min-h-16"
+>
+  {#if loading}
+    <LoaderIcon class="animate-spin text-theme" />
+  {:else}
     <CalendarDaysIcon class="text-theme" />
-    <div class="flex grow flex-col">
-      {#if key}
-        {key}
-        <span class="text-xs font-light">Edit event</span>
-      {:else}
-        Add event
+  {/if}
+
+  <div class="flex grow flex-col">
+    {#if event.key}
+      {event.key}
+      <span class="text-xs font-light">Edit event key</span>
+    {:else}
+      Select event key
+      <span class="text-xs font-light">The Blue Alliance</span>
+    {/if}
+  </div>
+
+  {#if eventTeams.size || matches.size || event.alliances?.length}
+    <div class="flex flex-col items-end text-xs font-light">
+      {#if eventTeams.size}
+        <div>{eventTeams.size} teams</div>
+      {/if}
+      {#if matches.size}
+        <div>{matches.size} matches</div>
+      {/if}
+      {#if event.alliances?.length}
+        <div>{event.alliances.length} alliances</div>
       {/if}
     </div>
-    {#if isLoadingTbaData}
-      <LoaderIcon class="animate-spin text-theme" />
-    {/if}
-  </Button>
-</div>
+  {/if}
+</Button>
 
 <label class="flex flex-col">
   Name
-  <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+  <input bind:value={event.name} class="bg-neutral-800 p-2 text-theme" />
 </label>
-
-{#if matches.size || eventTeams.size || alliances?.length}
-  <div class="flex flex-col gap-1 text-sm">
-    {#if matches.size}
-      <span>Matches: {matches.size}</span>
-    {/if}
-    {#if eventTeams.size}
-      <span>Teams: {eventTeams.size}</span>
-    {/if}
-    {#if alliances?.length}
-      <span>Alliances: {alliances.length}</span>
-    {/if}
-  </div>
-{/if}
 
 <div class="flex flex-wrap items-end gap-2 text-sm">
   <label class="flex grow flex-col">
     ID
-    <input bind:value={id} class="bg-neutral-800 p-2 text-theme" />
+    <input bind:value={event.id} class="bg-neutral-800 p-2 text-theme" />
   </label>
   <div class="flex gap-2">
-    {#if key}
-      <Button onclick={() => (id = key!)}>
-        <span class={id == key ? "font-bold" : "font-light"}>Event</span>
+    {#if event.key}
+      <Button
+        onclick={() => {
+          event.id = event.key!;
+          forms.id = idb.generateId({ randomChars: 0 });
+        }}
+      >
+        <span class={event.id == event.key ? "font-bold" : "font-light"}>Event</span>
       </Button>
     {/if}
-    <Button onclick={() => (id = idb.generateId({ randomChars: 0 }))}>
-      <span class={id != key ? "font-bold" : "font-light"}>Random</span>
+    <Button
+      onclick={() => {
+        event.id = idb.generateId({ randomChars: 0 });
+        forms.id = event.id;
+      }}
+    >
+      <span class={event.id != event.key ? "font-bold" : "font-light"}>Random</span>
     </Button>
   </div>
 </div>
 
 <div class="flex flex-col">
-  <span>Create Surveys</span>
+  Forms
   <div class="flex flex-wrap gap-2">
-    <Button onclick={() => (createForms.match = !createForms.match)} class="grow basis-26">
-      {#if createForms.match}
+    <Button onclick={() => (forms.match = !forms.match)} class="grow basis-26">
+      {#if forms.match}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
         <SquareIcon class="text-neutral-500" />
       {/if}
-      <div class="flex flex-col">
-        <span class={createForms.match ? "font-bold" : "font-light"}>Match</span>
-        <span class="text-xs font-light">{id}-match</span>
-      </div>
+      <span class={forms.match ? "font-bold" : "font-light"}>Match</span>
     </Button>
-    <Button onclick={() => (createForms.pit = !createForms.pit)} class="grow basis-26">
-      {#if createForms.pit}
+    <Button onclick={() => (forms.pit = !forms.pit)} class="grow basis-26">
+      {#if forms.pit}
         <SquareCheckBigIcon class="text-theme" />
       {:else}
         <SquareIcon class="text-neutral-500" />
       {/if}
-      <div class="flex flex-col">
-        <span class={createForms.pit ? "font-bold" : "font-light"}>Pit</span>
-        <span class="text-xs font-light">{id}-pit</span>
-      </div>
+      <span class={forms.pit ? "font-bold" : "font-light"}>Pit</span>
     </Button>
   </div>
 </div>

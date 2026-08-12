@@ -14,3 +14,4 @@ yarn.lock
 
 /static/deps
 /src/lib/tba/schema.d.ts
+/src/lib/statbotics/schema.d.ts

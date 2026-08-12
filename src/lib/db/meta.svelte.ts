@@ -9,6 +9,7 @@ const schemas = {
     name: z.string(),
     // TBA/Statbotics event key.
     key: z.string().optional(),
+    remapTeams: z.record(z.string(), z.string()).optional(),
     alliances: z.object({ teams: z.string().array() }).array().optional(),
     made: Schema.timestamp,
   }),
