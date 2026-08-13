@@ -14,7 +14,7 @@
   import Header from "$lib/components/Header.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { MetaDB } from "$lib/db";
-  import { openDialog } from "$lib/dialog";
+  import { Dialog, openDialog } from "$lib/dialog";
   import NewEventDialog from "$lib/dialogs/beta/NewEventDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
@@ -55,7 +55,7 @@
         </span>
       {/if}
     </Button>
-    <Button onclick={() => openDialog(NewEventDialog, {})}>
+    <Button onclick={() => Dialog.open(NewEventDialog)}>
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create

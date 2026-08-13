@@ -70,7 +70,7 @@
 
   :is(input, select, textarea, a, button):focus-visible {
     /* Using :focus-visible is better than :focus, only showing outline on inputs/keyboard navigation */
-    @apply z-10 outline-2 outline-neutral-300;
+    @apply z-10 outline-2 -outline-offset-2 outline-neutral-400;
   }
 
   @media (hover: hover) {
@@ -79,7 +79,7 @@
       (hover: hover) prevents that from happening.
     */
     :is(input, select, textarea, a, button):hover {
-      @apply z-10 outline-2 outline-neutral-300;
+      @apply z-10 outline-2 -outline-offset-2 outline-neutral-400;
     }
   }
 

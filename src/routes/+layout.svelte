@@ -2,8 +2,9 @@
   import "./layout.css";
   import { onNavigate } from "$app/navigation";
   import { rerunAllContextLoads } from "$lib";
+  import BetaDialogBox from "$lib/components/BetaDialogBox.svelte";
   import DialogBox from "$lib/components/DialogBox.svelte";
-  import { closeAllDialogs, subscribeDialog, type DialogState } from "$lib/dialog";
+  import { closeAllDialogs, Dialog, subscribeDialog, type DialogState } from "$lib/dialog";
   import { importData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcAutoReceiveStore } from "$lib/settings";
@@ -28,7 +29,10 @@
     dialogStack = state;
   });
 
-  onNavigate(closeAllDialogs);
+  onNavigate(() => {
+    Dialog.stack.clear();
+    closeAllDialogs();
+  });
 
   onlineTransfer.onrtcresponsemessage = (id, response) => {
     if ($webRtcAutoReceiveStore && response.entries.length) {
@@ -64,6 +68,10 @@
     onlineTransfer.onrtcresponsemessage = undefined;
   });
 </script>
+
+{#each Dialog.stack as [Content, props]}
+  <BetaDialogBox {Content} {props} />
+{/each}
 
 {#each dialogStack as { component, props }}
   <DialogBox {component} {props} />

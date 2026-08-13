@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { CalendarDaysIcon, LoaderIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { CalendarDaysIcon, LoaderIcon, PlusIcon, SquareCheckBigIcon, SquareIcon, XIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { nowSeconds, rerunOtherContextLoads } from "$lib";
   import Button from "$lib/components/Button.svelte";
   import { EventDB, MetaDB } from "$lib/db";
-  import { openDialog, type DialogExports } from "$lib/dialog";
+  import { Dialog } from "$lib/dialog";
   import SelectEventKeyDialog from "$lib/dialogs/beta/SelectEventKeyDialog.svelte";
   import { idb } from "$lib/idb";
   import { scoutStore, teamStore } from "$lib/settings";
@@ -13,9 +13,11 @@
   import type { components } from "$lib/tba/schema";
   import { SvelteMap } from "svelte/reactivity";
 
+  const ctx = Dialog.getContext();
+
   let event = $state<MetaDB.Event>({
     id: idb.generateId({ randomChars: 0 }),
-    name: "",
+    name: "Event",
     made: { at: 0, by: $scoutStore, team: $teamStore },
   });
 
@@ -30,8 +32,8 @@
 
   let loading = $state(false);
 
-  export const { onconfirm }: DialogExports = {
-    onconfirm() {
+  export const { onformsubmit }: Dialog.Exports = {
+    onformsubmit() {
       event.name = event.name.trim();
       if (!event.name) {
         error = "Name can't be blank!";
@@ -310,102 +312,116 @@
   }
 </script>
 
-<span>New event</span>
+<div class="flex items-center justify-between border-b border-neutral-600 p-3">
+  <span class="font-bold">New event</span>
+  <Button onclick={ctx.close}>
+    <XIcon class="size-5 text-theme" />
+  </Button>
+</div>
 
-<Button
-  onclick={() => {
-    openDialog(SelectEventKeyDialog, {
-      current: event.key,
-      onselect: getDataFromTbaEvent,
-    });
-  }}
-  class="min-h-16"
->
-  {#if loading}
-    <LoaderIcon class="animate-spin text-theme" />
-  {:else}
-    <CalendarDaysIcon class="text-theme" />
-  {/if}
-
-  <div class="flex grow flex-col">
-    {#if event.key}
-      {event.key}
-      <span class="text-xs font-light">Edit event key</span>
+<div class="flex flex-col gap-2 overflow-y-auto p-3">
+  <Button
+    onclick={() => {
+      Dialog.open(SelectEventKeyDialog, {
+        current: event.key,
+        onselect: getDataFromTbaEvent,
+      });
+    }}
+    autofocus
+    class="min-h-16"
+  >
+    {#if loading}
+      <LoaderIcon class="animate-spin text-theme" />
     {:else}
-      Select event key
-      <span class="text-xs font-light">The Blue Alliance</span>
+      <CalendarDaysIcon class="text-theme" />
     {/if}
-  </div>
 
-  {#if eventTeams.size || matches.size || event.alliances?.length}
-    <div class="flex flex-col items-end text-xs font-light">
-      {#if eventTeams.size}
-        <div>{eventTeams.size} teams</div>
-      {/if}
-      {#if matches.size}
-        <div>{matches.size} matches</div>
-      {/if}
-      {#if event.alliances?.length}
-        <div>{event.alliances.length} alliances</div>
+    <div class="flex grow flex-col">
+      {#if event.key}
+        {event.key}
+        <span class="text-xs font-light">Edit event key</span>
+      {:else}
+        Select event key
+        <span class="text-xs font-light">The Blue Alliance</span>
       {/if}
     </div>
-  {/if}
-</Button>
 
-<label class="flex flex-col">
-  Name
-  <input bind:value={event.name} class="bg-neutral-800 p-2 text-theme" />
-</label>
+    {#if eventTeams.size || matches.size || event.alliances?.length}
+      <div class="flex flex-col items-end text-xs font-light">
+        {#if eventTeams.size}
+          <div>{eventTeams.size} teams</div>
+        {/if}
+        {#if matches.size}
+          <div>{matches.size} matches</div>
+        {/if}
+        {#if event.alliances?.length}
+          <div>{event.alliances.length} alliances</div>
+        {/if}
+      </div>
+    {/if}
+  </Button>
 
-<div class="flex flex-wrap items-end gap-2 text-sm">
-  <label class="flex grow flex-col">
-    ID
-    <input bind:value={event.id} class="bg-neutral-800 p-2 text-theme" />
+  <label class="flex flex-col">
+    Name
+    <input bind:value={event.name} class="bg-neutral-800 p-2 text-theme" />
   </label>
-  <div class="flex gap-2">
-    {#if event.key}
+
+  <div class="flex flex-wrap items-end gap-2 text-sm">
+    <label class="flex grow flex-col">
+      ID
+      <input bind:value={event.id} size={8} class="grow bg-neutral-800 p-2 text-theme" />
+    </label>
+    <div class="flex gap-2">
+      {#if event.key}
+        <Button
+          onclick={() => {
+            event.id = event.key!;
+            forms.id = idb.generateId({ randomChars: 0 });
+          }}
+        >
+          <span class={event.id == event.key ? "font-bold" : "font-light"}>Event</span>
+        </Button>
+      {/if}
       <Button
         onclick={() => {
-          event.id = event.key!;
-          forms.id = idb.generateId({ randomChars: 0 });
+          event.id = idb.generateId({ randomChars: 0 });
+          forms.id = event.id;
         }}
       >
-        <span class={event.id == event.key ? "font-bold" : "font-light"}>Event</span>
+        <span class={event.id != event.key ? "font-bold" : "font-light"}>Random</span>
       </Button>
-    {/if}
-    <Button
-      onclick={() => {
-        event.id = idb.generateId({ randomChars: 0 });
-        forms.id = event.id;
-      }}
-    >
-      <span class={event.id != event.key ? "font-bold" : "font-light"}>Random</span>
-    </Button>
+    </div>
   </div>
+
+  <div class="flex flex-col">
+    Forms
+    <div class="flex flex-wrap gap-2">
+      <Button onclick={() => (forms.match = !forms.match)} class="grow basis-26">
+        {#if forms.match}
+          <SquareCheckBigIcon class="text-theme" />
+        {:else}
+          <SquareIcon class="text-neutral-500" />
+        {/if}
+        <span class={forms.match ? "font-bold" : "font-light"}>Match</span>
+      </Button>
+      <Button onclick={() => (forms.pit = !forms.pit)} class="grow basis-26">
+        {#if forms.pit}
+          <SquareCheckBigIcon class="text-theme" />
+        {:else}
+          <SquareIcon class="text-neutral-500" />
+        {/if}
+        <span class={forms.pit ? "font-bold" : "font-light"}>Pit</span>
+      </Button>
+    </div>
+  </div>
+
+  {#if error}
+    <span>{error}</span>
+  {/if}
 </div>
 
-<div class="flex flex-col">
-  Forms
-  <div class="flex flex-wrap gap-2">
-    <Button onclick={() => (forms.match = !forms.match)} class="grow basis-26">
-      {#if forms.match}
-        <SquareCheckBigIcon class="text-theme" />
-      {:else}
-        <SquareIcon class="text-neutral-500" />
-      {/if}
-      <span class={forms.match ? "font-bold" : "font-light"}>Match</span>
-    </Button>
-    <Button onclick={() => (forms.pit = !forms.pit)} class="grow basis-26">
-      {#if forms.pit}
-        <SquareCheckBigIcon class="text-theme" />
-      {:else}
-        <SquareIcon class="text-neutral-500" />
-      {/if}
-      <span class={forms.pit ? "font-bold" : "font-light"}>Pit</span>
-    </Button>
-  </div>
+<div class="border-t border-neutral-600 p-3">
+  <Button type="submit">
+    <PlusIcon class="text-theme" /> Create
+  </Button>
 </div>
-
-{#if error}
-  <span>{error}</span>
-{/if}
