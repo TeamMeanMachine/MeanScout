@@ -12,6 +12,7 @@ const schemas = {
     remapTeams: z.record(z.string(), z.string()).optional(),
     alliances: z.object({ teams: z.string().array() }).array().optional(),
     made: Schema.timestamp,
+    edited: Schema.timestamp.optional(),
   }),
 
   team: z.object({
