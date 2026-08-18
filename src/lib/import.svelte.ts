@@ -11,25 +11,8 @@ import { surveySchema, type MatchSurvey, type PitSurvey } from "./survey";
 export const importSchema = z
   .object({
     // Beta
-    metaDB: z.object({
-      version: z.number(),
-      teams: MetaDB.schemas.team.array().optional(),
-      events: MetaDB.schemas.event.array().optional(),
-    }),
-    eventDBs: z.record(
-      z.string(),
-      z.object({
-        version: z.number(),
-        teams: EventDB.schemas.team.array().optional(),
-        matches: EventDB.schemas.match.array().optional(),
-        scenarios: EventDB.schemas.scenario.array().optional(),
-        picklists: EventDB.schemas.picklist.array().optional(),
-        expressions: EventDB.schemas.expression.array().optional(),
-        forms: EventDB.schemas.form.array().optional(),
-        entries: EventDB.schemas.entry.array().optional(),
-        guesses: EventDB.schemas.guess.array().optional(),
-      }),
-    ),
+    metaDB: MetaDB.bulkSchema,
+    eventDBs: z.record(z.string(), EventDB.bulkSchema),
     // Legacy
     comps: compSchema.array(),
     surveys: surveySchema.array(),
@@ -103,28 +86,6 @@ export function importData({ existing, imported, overwriteDuplicateEntries }: Im
   });
 }
 
-function mergeDataSets<T extends { id: string }>(
-  incoming: T[],
-  existing: T[] | undefined,
-  mergeFunc: (i: T, e: T) => T,
-) {
-  const merged: T[] = [];
-
-  if (incoming.length) {
-    for (const incomingData of incoming) {
-      const existingData = existing?.find((d) => d.id == incomingData.id);
-      if (!existingData) {
-        merged.push($state.snapshot(incomingData) as T);
-        continue;
-      }
-
-      merged.push($state.snapshot(mergeFunc(incomingData, existingData)) as T);
-    }
-  }
-
-  return merged;
-}
-
 export function mergeOldAndNewData({
   imported,
   existing,
@@ -133,140 +94,22 @@ export function mergeOldAndNewData({
 }: ImportDataParams & { includeExisting: boolean }) {
   const merged: ImportedData = {};
 
-  if (imported.metaDB) {
-    if (!merged.metaDB) merged.metaDB = { version: 0 };
+  const mergedMetaDB = mergeMetaDB(imported.metaDB, existing.metaDB, includeExisting);
+  if (mergedMetaDB) merged.metaDB = mergedMetaDB;
 
-    if (imported.metaDB.teams?.length) {
-      merged.metaDB.teams = mergeDataSets(imported.metaDB.teams, existing.metaDB?.teams, (i, e) => ({
-        ...e,
-        name: i.name || e.name,
-        avatar: i.avatar || e.avatar,
-      }));
-    }
-
-    if (imported.metaDB.events?.length) {
-      merged.metaDB.events = mergeDataSets(imported.metaDB.events, existing.metaDB?.events, (i, e) => ({
-        ...e,
-        name: i.name || e.name,
-        key: i.key || e.key,
-        remapTeams: i.remapTeams || e.remapTeams ? { ...e.remapTeams, ...i.remapTeams } : undefined,
-        alliances: i.alliances || e.alliances,
-        edited: i.edited || e.edited,
-      }));
+  for (const eventId in imported.eventDBs) {
+    const mergedEventDB = mergeEventDB(imported.eventDBs[eventId], existing.eventDBs?.[eventId], includeExisting);
+    if (mergedEventDB) {
+      merged.eventDBs ||= {};
+      merged.eventDBs[eventId] = mergedEventDB;
     }
   }
 
-  if (imported.eventDBs) {
-    if (!merged.eventDBs) merged.eventDBs = {};
-
-    for (const eventId in imported.eventDBs) {
-      if (!merged.eventDBs[eventId]) merged.eventDBs[eventId] = { version: 0 };
-      const incomingDB = imported.eventDBs[eventId];
-      const existingDB = existing.eventDBs?.[eventId];
-      const mergedDB = merged.eventDBs[eventId];
-
-      if (incomingDB.teams?.length) {
-        mergedDB.teams = mergeDataSets(incomingDB.teams, existingDB?.teams, (i, e) => ({
-          ...e,
-          rank: i.rank || e.rank,
-          stats: i.stats || e.stats ? { ...e.stats, ...i.stats } : undefined,
-          oprs: i.oprs || e.oprs ? { ...e.oprs, ...i.oprs } : undefined,
-          epa: i.epa || e.epa ? { ...e.epa, ...i.epa } : undefined,
-          images:
-            i.images?.length || e.images?.length ? [...new Set([...(e.images || []), ...(i.images || [])])] : undefined,
-        }));
-      }
-
-      if (incomingDB.matches?.length) {
-        mergedDB.matches = mergeDataSets(incomingDB.matches, existingDB?.matches, (i, e) => ({
-          ...e,
-          red: {
-            ...e.red,
-            score: i.red.score || e.red.score || undefined,
-            breakdown: i.red.breakdown || e.red.breakdown,
-          },
-          blue: {
-            ...e.blue,
-            score: i.blue.score || e.blue.score || undefined,
-            breakdown: i.blue.breakdown || e.blue.breakdown,
-          },
-          prediction: i.prediction || e.prediction,
-          started: i.started || e.started || undefined,
-          winner: i.winner || e.winner,
-          videos:
-            i.videos?.length || e.videos?.length ? [...new Set([...(e.videos || []), ...(i.videos || [])])] : undefined,
-        }));
-      }
-
-      if (incomingDB.scenarios?.length) {
-        mergedDB.scenarios = mergeDataSets(incomingDB.scenarios, existingDB?.scenarios, (i, e) => ({
-          ...e,
-          name: i.name || e.name,
-          type: i.type || e.type,
-          alliances: i.alliances || e.alliances,
-          matches: i.matches || e.matches,
-          edited: i.edited || e.edited,
-        }));
-      }
-
-      if (incomingDB.picklists?.length) {
-        mergedDB.picklists = mergeDataSets(incomingDB.picklists, existingDB?.picklists, (i, e) => {
-          const notes = $state.snapshot(e.notes);
-          for (const team in i.notes) {
-            notes[team] = i.notes[team] || e.notes[team];
-          }
-          const omits = $state.snapshot(e.omits);
-          for (const team in i.omits) {
-            omits[team] = i.omits[team] || e.omits[team];
-          }
-          return {
-            ...e,
-            name: i.name || e.name,
-            weights: i.weights.length ? i.weights : e.weights,
-            notes,
-            omits,
-            customSort: i.customSort || e.customSort,
-            edited: i.edited || e.edited,
-          };
-        });
-      }
-
-      if (incomingDB.expressions?.length) {
-        mergedDB.expressions = mergeDataSets(incomingDB.expressions, existingDB?.expressions, (i, e) => ({
-          ...e,
-          name: i.name || e.name,
-          inputs: i.inputs.length ? i.inputs : e.inputs,
-          method: i.method || e.method,
-          aggregate: i.aggregate || e.aggregate,
-          edited: i.edited || e.edited,
-        }));
-      }
-
-      if (incomingDB.forms?.length) {
-        mergedDB.forms = mergeDataSets(incomingDB.forms, existingDB?.forms, (i, e) => ({
-          ...e,
-          name: i.name || e.name,
-          type: i.type || e.type,
-          controls: i.controls.length ? i.controls : e.controls,
-          edited: i.edited || e.edited,
-        }));
-      }
-
-      if (incomingDB.entries?.length) {
-        mergedDB.entries = mergeDataSets(incomingDB.entries, existingDB?.entries, (i, e) => ({
-          ...e,
-          status: i.status || e.status,
-          team: i.team || e.team,
-          matchId: i.matchId ?? e.matchId,
-          absent: i.absent ?? e.absent,
-          values: { ...e.values, ...i.values },
-          edited: i.edited || e.edited,
-        }));
-      }
-
-      if (incomingDB.guesses?.length) {
-        mergedDB.guesses = mergeDataSets(incomingDB.guesses, existingDB?.guesses, (_, e) => e);
-      }
+  if (includeExisting) {
+    for (const eventId in existing.eventDBs) {
+      if (merged.eventDBs && eventId in merged.eventDBs) continue;
+      merged.eventDBs ||= {};
+      merged.eventDBs[eventId] = existing.eventDBs[eventId];
     }
   }
 
@@ -539,4 +382,120 @@ export function mergeOldAndNewData({
   }
 
   return { merged, fieldsToDelete, duplicateEntryIds };
+}
+
+function mergeMetaDB(incoming: MetaDB.Bulk | undefined, existing: MetaDB.Bulk | undefined, appendExisting: boolean) {
+  if (!(incoming || existing)) return;
+
+  if (incoming) {
+    if (incoming.version < MetaDB.version) {
+      // Migrate up!
+    } else if (incoming.version > MetaDB.version) {
+      // App outdated!
+      return;
+    }
+  } else if (appendExisting) {
+    return existing;
+  }
+
+  const merged: MetaDB.Bulk = { version: MetaDB.version };
+
+  if (incoming?.teams?.length || existing?.teams?.length) {
+    merged.teams = mergeObjects(incoming?.teams, existing?.teams, MetaDB.merge.team, appendExisting);
+  }
+
+  if (incoming?.events?.length || existing?.events?.length) {
+    merged.events = mergeObjects(incoming?.events, existing?.events, MetaDB.merge.event, appendExisting);
+  }
+
+  return merged;
+}
+
+function mergeEventDB(incoming: EventDB.Bulk | undefined, existing: EventDB.Bulk | undefined, appendExisting: boolean) {
+  if (!(incoming || existing)) return;
+
+  if (incoming) {
+    if (incoming.version < EventDB.version) {
+      // Migrate up!
+    } else if (incoming.version > EventDB.version) {
+      // App outdated!
+      return;
+    }
+  } else if (appendExisting) {
+    return existing;
+  }
+
+  const merged: EventDB.Bulk = { version: EventDB.version };
+
+  if (incoming?.teams?.length || existing?.teams?.length) {
+    merged.teams = mergeObjects(incoming?.teams, existing?.teams, EventDB.merge.team, appendExisting);
+  }
+
+  if (incoming?.matches?.length || existing?.matches?.length) {
+    merged.matches = mergeObjects(incoming?.matches, existing?.matches, EventDB.merge.match, appendExisting);
+  }
+
+  if (incoming?.scenarios?.length || existing?.scenarios?.length) {
+    merged.scenarios = mergeObjects(incoming?.scenarios, existing?.scenarios, EventDB.merge.scenario, appendExisting);
+  }
+
+  if (incoming?.picklists?.length || existing?.picklists?.length) {
+    merged.picklists = mergeObjects(incoming?.picklists, existing?.picklists, EventDB.merge.picklist, appendExisting);
+  }
+
+  if (incoming?.expressions?.length || existing?.expressions?.length) {
+    merged.expressions = mergeObjects(
+      incoming?.expressions,
+      existing?.expressions,
+      EventDB.merge.expression,
+      appendExisting,
+    );
+  }
+
+  if (incoming?.forms?.length || existing?.forms?.length) {
+    merged.forms = mergeObjects(incoming?.forms, existing?.forms, EventDB.merge.form, appendExisting);
+  }
+
+  if (incoming?.entries?.length || existing?.entries?.length) {
+    merged.entries = mergeObjects(incoming?.entries, existing?.entries, EventDB.merge.entry, appendExisting);
+  }
+
+  if (incoming?.guesses?.length || existing?.guesses?.length) {
+    merged.guesses = mergeObjects(incoming?.guesses, existing?.guesses, EventDB.merge.guess, appendExisting);
+  }
+
+  return merged;
+}
+
+function mergeObjects<
+  T extends keyof Omit<NonNullable<EventDB.Bulk>, "version">,
+  U extends NonNullable<EventDB.Bulk[T]>[number],
+>(
+  incomingArray: U[] | undefined,
+  existingArray: U[] | undefined,
+  mergeFunc: (incomingObject: U, existingObject: U) => U,
+  appendExisting: boolean,
+) {
+  if (!(incomingArray?.length || !existingArray?.length)) {
+    return;
+  }
+
+  const mergedArray: U[] = [];
+
+  if (incomingArray?.length) {
+    for (const incomingObject of incomingArray) {
+      const existingObject = existingArray?.find((existingObject) => existingObject.id == incomingObject.id);
+      mergedArray.push(existingObject ? mergeFunc(incomingObject, existingObject) : incomingObject);
+    }
+  }
+
+  if (existingArray?.length && appendExisting) {
+    mergedArray.push(
+      ...existingArray.filter(
+        (existingObject) => !mergedArray?.some((mergedObject) => existingObject.id == mergedObject.id),
+      ),
+    );
+  }
+
+  return mergedArray;
 }

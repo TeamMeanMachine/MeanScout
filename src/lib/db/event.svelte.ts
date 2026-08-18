@@ -3,6 +3,8 @@ import { SvelteMap } from "svelte/reactivity";
 import z from "zod";
 import { objectStoreMap } from "./object-store-map.svelte";
 
+const version = 1;
+
 const schemas = {
   team: z.object({
     // Team number only.
@@ -102,6 +104,18 @@ const schemas = {
   }),
 };
 
+const bulkSchema = z.object({
+  version: z.number(),
+  teams: schemas.team.array().optional(),
+  matches: schemas.match.array().optional(),
+  scenarios: schemas.scenario.array().optional(),
+  picklists: schemas.picklist.array().optional(),
+  expressions: schemas.expression.array().optional(),
+  forms: schemas.form.array().optional(),
+  entries: schemas.entry.array().optional(),
+  guesses: schemas.guess.array().optional(),
+});
+
 export namespace EventDB {
   export type Team = z.infer<typeof schemas.team>;
   export type Match = z.infer<typeof schemas.match>;
@@ -111,7 +125,102 @@ export namespace EventDB {
   export type Form = z.infer<typeof schemas.form>;
   export type Entry = z.infer<typeof schemas.entry>;
   export type Guess = z.infer<typeof schemas.guess>;
+
+  export type Bulk = z.infer<typeof bulkSchema>;
 }
+
+const merge = {
+  team: (incoming: EventDB.Team, existing: EventDB.Team): EventDB.Team => ({
+    ...existing,
+    rank: incoming.rank || existing.rank,
+    stats: incoming.stats || existing.stats ? { ...existing.stats, ...incoming.stats } : undefined,
+    oprs: incoming.oprs || existing.oprs ? { ...existing.oprs, ...incoming.oprs } : undefined,
+    epa: incoming.epa || existing.epa ? { ...existing.epa, ...incoming.epa } : undefined,
+    images:
+      incoming.images?.length || existing.images?.length
+        ? [...new Set([...(existing.images || []), ...(incoming.images || [])])]
+        : undefined,
+  }),
+
+  match: (incoming: EventDB.Match, existing: EventDB.Match): EventDB.Match => ({
+    ...existing,
+    red: {
+      ...existing.red,
+      score: incoming.red.score || existing.red.score || undefined,
+      breakdown: incoming.red.breakdown || existing.red.breakdown,
+    },
+    blue: {
+      ...existing.blue,
+      score: incoming.blue.score || existing.blue.score || undefined,
+      breakdown: incoming.blue.breakdown || existing.blue.breakdown,
+    },
+    prediction: incoming.prediction || existing.prediction,
+    started: incoming.started || existing.started || undefined,
+    winner: incoming.winner || existing.winner,
+    videos:
+      incoming.videos?.length || existing.videos?.length
+        ? [...new Set([...(existing.videos || []), ...(incoming.videos || [])])]
+        : undefined,
+  }),
+
+  scenario: (incoming: EventDB.Scenario, existing: EventDB.Scenario): EventDB.Scenario => ({
+    ...existing,
+    name: incoming.name || existing.name,
+    type: incoming.type || existing.type,
+    alliances: incoming.alliances || existing.alliances,
+    matches: incoming.matches || existing.matches,
+    edited: incoming.edited || existing.edited,
+  }),
+
+  picklist: (incoming: EventDB.Picklist, existing: EventDB.Picklist): EventDB.Picklist => {
+    const notes = structuredClone(existing.notes);
+    for (const team in incoming.notes) {
+      notes[team] = incoming.notes[team] || existing.notes[team];
+    }
+    const omits = structuredClone(existing.omits);
+    for (const team in incoming.omits) {
+      omits[team] = incoming.omits[team] || existing.omits[team];
+    }
+    return {
+      ...existing,
+      name: incoming.name || existing.name,
+      weights: incoming.weights.length ? incoming.weights : existing.weights,
+      notes,
+      omits,
+      customSort: incoming.customSort || existing.customSort,
+      edited: incoming.edited || existing.edited,
+    };
+  },
+
+  expression: (incoming: EventDB.Expression, existing: EventDB.Expression): EventDB.Expression => ({
+    ...existing,
+    name: incoming.name || existing.name,
+    inputs: incoming.inputs.length ? incoming.inputs : existing.inputs,
+    method: incoming.method || existing.method,
+    aggregate: incoming.aggregate || existing.aggregate,
+    edited: incoming.edited || existing.edited,
+  }),
+
+  form: (incoming: EventDB.Form, existing: EventDB.Form): EventDB.Form => ({
+    ...existing,
+    name: incoming.name || existing.name,
+    type: incoming.type || existing.type,
+    controls: incoming.controls.length ? incoming.controls : existing.controls,
+    edited: incoming.edited || existing.edited,
+  }),
+
+  entry: (incoming: EventDB.Entry, existing: EventDB.Entry): EventDB.Entry => ({
+    ...existing,
+    status: incoming.status || existing.status,
+    team: incoming.team || existing.team,
+    matchId: incoming.matchId ?? existing.matchId,
+    absent: incoming.absent ?? existing.absent,
+    values: { ...existing.values, ...incoming.values },
+    edited: incoming.edited || existing.edited,
+  }),
+
+  guess: (_: EventDB.Guess, existing: EventDB.Guess) => existing,
+};
 
 let db: IDBDatabase | undefined = undefined;
 
@@ -128,7 +237,10 @@ let maps = {
 };
 
 export const EventDB = {
+  version,
   schemas,
+  bulkSchema,
+  merge,
 
   /**
    * Attempts to open (or create) the event database with the specified id.
@@ -160,7 +272,7 @@ export const EventDB = {
         return;
       }
 
-      const openRequest = indexedDB.open(id);
+      const openRequest = indexedDB.open(id, version);
       openRequest.onerror = () => {
         reject(stringifyIDBError(openRequest.error, "Could not open"));
       };

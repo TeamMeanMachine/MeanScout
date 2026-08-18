@@ -3,6 +3,8 @@ import { SvelteMap } from "svelte/reactivity";
 import z from "zod";
 import { objectStoreMap } from "./object-store-map.svelte";
 
+const version = 1;
+
 const schemas = {
   event: z.object({
     id: z.string(),
@@ -23,10 +25,36 @@ const schemas = {
   }),
 };
 
+const bulkSchema = z.object({
+  version: z.number(),
+  teams: schemas.team.array().optional(),
+  events: schemas.event.array().optional(),
+});
+
 export namespace MetaDB {
   export type Event = z.infer<typeof schemas.event>;
   export type Team = z.infer<typeof schemas.team>;
+
+  export type Bulk = z.infer<typeof bulkSchema>;
 }
+
+const merge = {
+  team: (incoming: MetaDB.Team, existing: MetaDB.Team): MetaDB.Team => ({
+    ...existing,
+    name: incoming.name || existing.name,
+    avatar: incoming.avatar || existing.avatar,
+  }),
+
+  event: (incoming: MetaDB.Event, existing: MetaDB.Event): MetaDB.Event => ({
+    ...existing,
+    name: incoming.name || existing.name,
+    key: incoming.key || existing.key,
+    remapTeams:
+      incoming.remapTeams || existing.remapTeams ? { ...existing.remapTeams, ...incoming.remapTeams } : undefined,
+    alliances: incoming.alliances || existing.alliances,
+    edited: incoming.edited || existing.edited,
+  }),
+};
 
 let db: IDBDatabase | undefined = undefined;
 
@@ -37,7 +65,10 @@ let maps = {
 };
 
 export const MetaDB = {
+  version,
   schemas,
+  bulkSchema,
+  merge,
 
   /**
    * Attempts to open (or create) the `_meta` database.
@@ -51,7 +82,7 @@ export const MetaDB = {
         return;
       }
 
-      const openRequest = indexedDB.open("_meta");
+      const openRequest = indexedDB.open("_meta", version);
       openRequest.onerror = () => {
         reject(stringifyIDBError(openRequest.error, "Could not open"));
       };
