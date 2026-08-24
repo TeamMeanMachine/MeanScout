@@ -35,24 +35,28 @@ export namespace MetaDB {
   export type Event = z.infer<typeof schemas.event>;
   export type Team = z.infer<typeof schemas.team>;
 
+  export type Schemas = {
+    [T in keyof typeof schemas]: z.infer<(typeof schemas)[T]>;
+  };
   export type Bulk = z.infer<typeof bulkSchema>;
 }
 
-const merge = {
-  team: (incoming: MetaDB.Team, existing: MetaDB.Team): MetaDB.Team => ({
-    ...existing,
-    name: incoming.name || existing.name,
-    avatar: incoming.avatar || existing.avatar,
+const merge: {
+  [Name in keyof MetaDB.Schemas]: (i: MetaDB.Schemas[Name], e: MetaDB.Schemas[Name]) => MetaDB.Schemas[Name];
+} = {
+  event: (i, e): typeof i => ({
+    ...e,
+    name: i.name || e.name,
+    key: i.key || e.key,
+    remapTeams: i.remapTeams || e.remapTeams ? { ...e.remapTeams, ...i.remapTeams } : undefined,
+    alliances: i.alliances || e.alliances,
+    edited: i.edited || e.edited,
   }),
 
-  event: (incoming: MetaDB.Event, existing: MetaDB.Event): MetaDB.Event => ({
-    ...existing,
-    name: incoming.name || existing.name,
-    key: incoming.key || existing.key,
-    remapTeams:
-      incoming.remapTeams || existing.remapTeams ? { ...existing.remapTeams, ...incoming.remapTeams } : undefined,
-    alliances: incoming.alliances || existing.alliances,
-    edited: incoming.edited || existing.edited,
+  team: (i, e): typeof i => ({
+    ...e,
+    name: i.name || e.name,
+    avatar: i.avatar || e.avatar,
   }),
 };
 

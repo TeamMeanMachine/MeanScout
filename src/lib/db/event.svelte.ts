@@ -126,100 +126,99 @@ export namespace EventDB {
   export type Entry = z.infer<typeof schemas.entry>;
   export type Guess = z.infer<typeof schemas.guess>;
 
+  export type Schemas = {
+    [T in keyof typeof schemas]: z.infer<(typeof schemas)[T]>;
+  };
   export type Bulk = z.infer<typeof bulkSchema>;
 }
 
-const merge = {
-  team: (incoming: EventDB.Team, existing: EventDB.Team): EventDB.Team => ({
-    ...existing,
-    rank: incoming.rank || existing.rank,
-    stats: incoming.stats || existing.stats ? { ...existing.stats, ...incoming.stats } : undefined,
-    oprs: incoming.oprs || existing.oprs ? { ...existing.oprs, ...incoming.oprs } : undefined,
-    epa: incoming.epa || existing.epa ? { ...existing.epa, ...incoming.epa } : undefined,
-    images:
-      incoming.images?.length || existing.images?.length
-        ? [...new Set([...(existing.images || []), ...(incoming.images || [])])]
-        : undefined,
+const merge: {
+  [Name in keyof EventDB.Schemas]: (i: EventDB.Schemas[Name], e: EventDB.Schemas[Name]) => EventDB.Schemas[Name];
+} = {
+  team: (i, e): typeof i => ({
+    ...e,
+    rank: i.rank || e.rank,
+    stats: i.stats || e.stats ? { ...e.stats, ...i.stats } : undefined,
+    oprs: i.oprs || e.oprs ? { ...e.oprs, ...i.oprs } : undefined,
+    epa: i.epa || e.epa ? { ...e.epa, ...i.epa } : undefined,
+    images: i.images?.length || e.images?.length ? [...new Set([...(e.images || []), ...(i.images || [])])] : undefined,
   }),
 
-  match: (incoming: EventDB.Match, existing: EventDB.Match): EventDB.Match => ({
-    ...existing,
+  match: (i, e): typeof i => ({
+    ...e,
     red: {
-      ...existing.red,
-      score: incoming.red.score || existing.red.score || undefined,
-      breakdown: incoming.red.breakdown || existing.red.breakdown,
+      ...e.red,
+      score: i.red.score || e.red.score || undefined,
+      breakdown: i.red.breakdown || e.red.breakdown,
     },
     blue: {
-      ...existing.blue,
-      score: incoming.blue.score || existing.blue.score || undefined,
-      breakdown: incoming.blue.breakdown || existing.blue.breakdown,
+      ...e.blue,
+      score: i.blue.score || e.blue.score || undefined,
+      breakdown: i.blue.breakdown || e.blue.breakdown,
     },
-    prediction: incoming.prediction || existing.prediction,
-    started: incoming.started || existing.started || undefined,
-    winner: incoming.winner || existing.winner,
-    videos:
-      incoming.videos?.length || existing.videos?.length
-        ? [...new Set([...(existing.videos || []), ...(incoming.videos || [])])]
-        : undefined,
+    prediction: i.prediction || e.prediction,
+    started: i.started || e.started || undefined,
+    winner: i.winner || e.winner,
+    videos: i.videos?.length || e.videos?.length ? [...new Set([...(e.videos || []), ...(i.videos || [])])] : undefined,
   }),
 
-  scenario: (incoming: EventDB.Scenario, existing: EventDB.Scenario): EventDB.Scenario => ({
-    ...existing,
-    name: incoming.name || existing.name,
-    type: incoming.type || existing.type,
-    alliances: incoming.alliances || existing.alliances,
-    matches: incoming.matches || existing.matches,
-    edited: incoming.edited || existing.edited,
+  scenario: (i, e): typeof i => ({
+    ...e,
+    name: i.name || e.name,
+    type: i.type || e.type,
+    alliances: i.alliances || e.alliances,
+    matches: i.matches || e.matches,
+    edited: i.edited || e.edited,
   }),
 
-  picklist: (incoming: EventDB.Picklist, existing: EventDB.Picklist): EventDB.Picklist => {
-    const notes = structuredClone(existing.notes);
-    for (const team in incoming.notes) {
-      notes[team] = incoming.notes[team] || existing.notes[team];
+  picklist: (i, e): typeof i => {
+    const notes = structuredClone(e.notes);
+    for (const team in i.notes) {
+      notes[team] = i.notes[team] || e.notes[team];
     }
-    const omits = structuredClone(existing.omits);
-    for (const team in incoming.omits) {
-      omits[team] = incoming.omits[team] || existing.omits[team];
+    const omits = structuredClone(e.omits);
+    for (const team in i.omits) {
+      omits[team] = i.omits[team] || e.omits[team];
     }
     return {
-      ...existing,
-      name: incoming.name || existing.name,
-      weights: incoming.weights.length ? incoming.weights : existing.weights,
+      ...e,
+      name: i.name || e.name,
+      weights: i.weights.length ? i.weights : e.weights,
       notes,
       omits,
-      customSort: incoming.customSort || existing.customSort,
-      edited: incoming.edited || existing.edited,
+      customSort: i.customSort || e.customSort,
+      edited: i.edited || e.edited,
     };
   },
 
-  expression: (incoming: EventDB.Expression, existing: EventDB.Expression): EventDB.Expression => ({
-    ...existing,
-    name: incoming.name || existing.name,
-    inputs: incoming.inputs.length ? incoming.inputs : existing.inputs,
-    method: incoming.method || existing.method,
-    aggregate: incoming.aggregate || existing.aggregate,
-    edited: incoming.edited || existing.edited,
+  expression: (i, e): typeof i => ({
+    ...e,
+    name: i.name || e.name,
+    inputs: i.inputs.length ? i.inputs : e.inputs,
+    method: i.method || e.method,
+    aggregate: i.aggregate || e.aggregate,
+    edited: i.edited || e.edited,
   }),
 
-  form: (incoming: EventDB.Form, existing: EventDB.Form): EventDB.Form => ({
-    ...existing,
-    name: incoming.name || existing.name,
-    type: incoming.type || existing.type,
-    controls: incoming.controls.length ? incoming.controls : existing.controls,
-    edited: incoming.edited || existing.edited,
+  form: (i, e): typeof i => ({
+    ...e,
+    name: i.name || e.name,
+    type: i.type || e.type,
+    controls: i.controls.length ? i.controls : e.controls,
+    edited: i.edited || e.edited,
   }),
 
-  entry: (incoming: EventDB.Entry, existing: EventDB.Entry): EventDB.Entry => ({
-    ...existing,
-    status: incoming.status || existing.status,
-    team: incoming.team || existing.team,
-    matchId: incoming.matchId ?? existing.matchId,
-    absent: incoming.absent ?? existing.absent,
-    values: { ...existing.values, ...incoming.values },
-    edited: incoming.edited || existing.edited,
+  entry: (i, e): typeof i => ({
+    ...e,
+    status: i.status || e.status,
+    team: i.team || e.team,
+    matchId: i.matchId ?? e.matchId,
+    absent: i.absent ?? e.absent,
+    values: { ...e.values, ...i.values },
+    edited: i.edited || e.edited,
   }),
 
-  guess: (_: EventDB.Guess, existing: EventDB.Guess) => existing,
+  guess: (i, e): typeof i => e,
 };
 
 let db: IDBDatabase | undefined = undefined;

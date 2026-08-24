@@ -12,7 +12,7 @@ export const importSchema = z
   .object({
     // Beta
     metaDB: MetaDB.bulkSchema,
-    eventDBs: z.record(z.string(), EventDB.bulkSchema),
+    eventDBs: z.record(z.string(), EventDB.bulkSchema.optional()),
     // Legacy
     comps: compSchema.array(),
     surveys: surveySchema.array(),
@@ -94,22 +94,22 @@ export function mergeOldAndNewData({
 }: ImportDataParams & { includeExisting: boolean }) {
   const merged: ImportedData = {};
 
-  const mergedMetaDB = mergeMetaDB(imported.metaDB, existing.metaDB, includeExisting);
-  if (mergedMetaDB) merged.metaDB = mergedMetaDB;
+  merged.metaDB = mergeMetaDB(imported.metaDB, existing.metaDB, includeExisting);
 
   for (const eventId in imported.eventDBs) {
-    const mergedEventDB = mergeEventDB(imported.eventDBs[eventId], existing.eventDBs?.[eventId], includeExisting);
-    if (mergedEventDB) {
-      merged.eventDBs ||= {};
-      merged.eventDBs[eventId] = mergedEventDB;
-    }
+    merged.eventDBs = {
+      ...merged.eventDBs,
+      [eventId]: mergeEventDB(imported.eventDBs[eventId], existing.eventDBs?.[eventId], includeExisting),
+    };
   }
 
   if (includeExisting) {
     for (const eventId in existing.eventDBs) {
       if (merged.eventDBs && eventId in merged.eventDBs) continue;
-      merged.eventDBs ||= {};
-      merged.eventDBs[eventId] = existing.eventDBs[eventId];
+      merged.eventDBs = {
+        ...merged.eventDBs,
+        [eventId]: existing.eventDBs[eventId],
+      };
     }
   }
 
@@ -401,11 +401,11 @@ function mergeMetaDB(incoming: MetaDB.Bulk | undefined, existing: MetaDB.Bulk | 
   const merged: MetaDB.Bulk = { version: MetaDB.version };
 
   if (incoming?.teams?.length || existing?.teams?.length) {
-    merged.teams = mergeObjects(incoming?.teams, existing?.teams, MetaDB.merge.team, appendExisting);
+    merged.teams = mergeArray(incoming?.teams, existing?.teams, MetaDB.merge.team, appendExisting);
   }
 
   if (incoming?.events?.length || existing?.events?.length) {
-    merged.events = mergeObjects(incoming?.events, existing?.events, MetaDB.merge.event, appendExisting);
+    merged.events = mergeArray(incoming?.events, existing?.events, MetaDB.merge.event, appendExisting);
   }
 
   return merged;
@@ -428,23 +428,23 @@ function mergeEventDB(incoming: EventDB.Bulk | undefined, existing: EventDB.Bulk
   const merged: EventDB.Bulk = { version: EventDB.version };
 
   if (incoming?.teams?.length || existing?.teams?.length) {
-    merged.teams = mergeObjects(incoming?.teams, existing?.teams, EventDB.merge.team, appendExisting);
+    merged.teams = mergeArray(incoming?.teams, existing?.teams, EventDB.merge.team, appendExisting);
   }
 
   if (incoming?.matches?.length || existing?.matches?.length) {
-    merged.matches = mergeObjects(incoming?.matches, existing?.matches, EventDB.merge.match, appendExisting);
+    merged.matches = mergeArray(incoming?.matches, existing?.matches, EventDB.merge.match, appendExisting);
   }
 
   if (incoming?.scenarios?.length || existing?.scenarios?.length) {
-    merged.scenarios = mergeObjects(incoming?.scenarios, existing?.scenarios, EventDB.merge.scenario, appendExisting);
+    merged.scenarios = mergeArray(incoming?.scenarios, existing?.scenarios, EventDB.merge.scenario, appendExisting);
   }
 
   if (incoming?.picklists?.length || existing?.picklists?.length) {
-    merged.picklists = mergeObjects(incoming?.picklists, existing?.picklists, EventDB.merge.picklist, appendExisting);
+    merged.picklists = mergeArray(incoming?.picklists, existing?.picklists, EventDB.merge.picklist, appendExisting);
   }
 
   if (incoming?.expressions?.length || existing?.expressions?.length) {
-    merged.expressions = mergeObjects(
+    merged.expressions = mergeArray(
       incoming?.expressions,
       existing?.expressions,
       EventDB.merge.expression,
@@ -453,48 +453,41 @@ function mergeEventDB(incoming: EventDB.Bulk | undefined, existing: EventDB.Bulk
   }
 
   if (incoming?.forms?.length || existing?.forms?.length) {
-    merged.forms = mergeObjects(incoming?.forms, existing?.forms, EventDB.merge.form, appendExisting);
+    merged.forms = mergeArray(incoming?.forms, existing?.forms, EventDB.merge.form, appendExisting);
   }
 
   if (incoming?.entries?.length || existing?.entries?.length) {
-    merged.entries = mergeObjects(incoming?.entries, existing?.entries, EventDB.merge.entry, appendExisting);
+    merged.entries = mergeArray(incoming?.entries, existing?.entries, EventDB.merge.entry, appendExisting);
   }
 
   if (incoming?.guesses?.length || existing?.guesses?.length) {
-    merged.guesses = mergeObjects(incoming?.guesses, existing?.guesses, EventDB.merge.guess, appendExisting);
+    merged.guesses = mergeArray(incoming?.guesses, existing?.guesses, EventDB.merge.guess, appendExisting);
   }
 
   return merged;
 }
 
-function mergeObjects<
-  T extends keyof Omit<NonNullable<EventDB.Bulk>, "version">,
-  U extends NonNullable<EventDB.Bulk[T]>[number],
->(
-  incomingArray: U[] | undefined,
-  existingArray: U[] | undefined,
-  mergeFunc: (incomingObject: U, existingObject: U) => U,
+function mergeArray<T extends { id: string }>(
+  incoming: T[] | undefined,
+  existing: T[] | undefined,
+  mergeObject: (i: T, e: T) => T,
   appendExisting: boolean,
 ) {
-  if (!(incomingArray?.length || !existingArray?.length)) {
+  if (!(incoming?.length || !existing?.length)) {
     return;
   }
 
-  const mergedArray: U[] = [];
+  const mergedArray: T[] = [];
 
-  if (incomingArray?.length) {
-    for (const incomingObject of incomingArray) {
-      const existingObject = existingArray?.find((existingObject) => existingObject.id == incomingObject.id);
-      mergedArray.push(existingObject ? mergeFunc(incomingObject, existingObject) : incomingObject);
+  if (incoming?.length) {
+    for (const i of incoming) {
+      const e = existing?.find((e) => e.id == i.id);
+      mergedArray.push(e ? mergeObject(i, e) : i);
     }
   }
 
-  if (existingArray?.length && appendExisting) {
-    mergedArray.push(
-      ...existingArray.filter(
-        (existingObject) => !mergedArray?.some((mergedObject) => existingObject.id == mergedObject.id),
-      ),
-    );
+  if (existing?.length && appendExisting) {
+    mergedArray.push(...existing.filter((e) => !mergedArray?.some((m) => e.id == m.id)));
   }
 
   return mergedArray;
