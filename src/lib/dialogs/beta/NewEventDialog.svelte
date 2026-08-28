@@ -7,6 +7,7 @@
   import { Dialog } from "$lib/dialog";
   import SelectEventKeyDialog from "$lib/dialogs/beta/SelectEventKeyDialog.svelte";
   import { idb } from "$lib/idb";
+  import type { Schema } from "$lib/schema";
   import { scoutStore, teamStore } from "$lib/settings";
   import { Statbotics } from "$lib/statbotics";
   import { TBA } from "$lib/tba";
@@ -24,7 +25,7 @@
   let metaTeams = new SvelteMap<string, MetaDB.Team>();
 
   let eventTeams = new SvelteMap<string, EventDB.Team>();
-  let matches = new SvelteMap<string, EventDB.Match>();
+  let matches = new SvelteMap<Schema.MatchId, EventDB.Match>();
 
   let forms = $state({ id: idb.generateId({ randomChars: 0 }), match: true, pit: true });
 
@@ -146,7 +147,7 @@
     const getMatches = TBA.GET("/event/{event_key}/matches", params).then((response) => {
       if (!response.data?.length) return;
       for (const match of response.data) {
-        const matchId = match.key.split("_")[1];
+        const matchId = match.key.split("_")[1] as Schema.MatchId;
         matches.set(matchId, {
           id: matchId,
           red: {
@@ -291,7 +292,7 @@
       (response) => {
         if (!response.data?.length) return;
         for (const match of response.data as Statbotics.Match[]) {
-          const matchId = match.key.split("_")[1];
+          const matchId = match.key.split("_")[1] as Schema.MatchId;
           const existingMatch = matches.get(matchId);
           if (!existingMatch) continue;
           existingMatch.prediction = match.pred || existingMatch.prediction;

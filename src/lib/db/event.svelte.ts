@@ -17,8 +17,7 @@ const schemas = {
   }),
 
   match: z.object({
-    // TBA format: [COMP_LEVEL]m[MATCH_NUMBER]
-    id: z.string(),
+    id: Schema.matchId,
     red: z.object({
       teams: z.string().array(),
       score: z.number().optional(),
@@ -88,7 +87,7 @@ const schemas = {
     formId: z.string(),
     status: z.literal(["draft", "review", "done", "deleted"]),
     team: z.string(),
-    matchId: z.string().optional(),
+    matchId: Schema.matchId.optional(),
     absent: z.boolean().optional(),
     values: z.record(z.string(), z.any()),
     made: Schema.timestamp,
@@ -97,7 +96,7 @@ const schemas = {
 
   guess: z.object({
     id: z.string(),
-    matchId: z.string(),
+    matchId: Schema.matchId,
     choice: z.literal(["red", "blue"]),
     reason: z.string().optional(),
     made: Schema.timestamp,
@@ -117,19 +116,19 @@ const bulkSchema = z.object({
 });
 
 export namespace EventDB {
-  export type Team = z.infer<typeof schemas.team>;
-  export type Match = z.infer<typeof schemas.match>;
-  export type Scenario = z.infer<typeof schemas.scenario>;
-  export type Picklist = z.infer<typeof schemas.picklist>;
-  export type Expression = z.infer<typeof schemas.expression>;
-  export type Form = z.infer<typeof schemas.form>;
-  export type Entry = z.infer<typeof schemas.entry>;
-  export type Guess = z.infer<typeof schemas.guess>;
-
   export type Schemas = {
     [T in keyof typeof schemas]: z.infer<(typeof schemas)[T]>;
   };
   export type Bulk = z.infer<typeof bulkSchema>;
+
+  export type Team = Schemas["team"];
+  export type Match = Schemas["match"];
+  export type Scenario = Schemas["scenario"];
+  export type Picklist = Schemas["picklist"];
+  export type Expression = Schemas["expression"];
+  export type Form = Schemas["form"];
+  export type Entry = Schemas["entry"];
+  export type Guess = Schemas["guess"];
 }
 
 const merge: {
@@ -226,7 +225,7 @@ let db: IDBDatabase | undefined = undefined;
 /** All data from the currently opened event DB. Should be affected only by the `EventDB` object. */
 let maps = {
   teams: new SvelteMap<string, Readonly<EventDB.Team>>(),
-  matches: new SvelteMap<string, Readonly<EventDB.Match>>(),
+  matches: new SvelteMap<Schema.MatchId, Readonly<EventDB.Match>>(),
   scenarios: new SvelteMap<string, Readonly<EventDB.Scenario>>(),
   picklists: new SvelteMap<string, Readonly<EventDB.Picklist>>(),
   expressions: new SvelteMap<string, Readonly<EventDB.Expression>>(),

@@ -32,13 +32,13 @@ const bulkSchema = z.object({
 });
 
 export namespace MetaDB {
-  export type Event = z.infer<typeof schemas.event>;
-  export type Team = z.infer<typeof schemas.team>;
-
   export type Schemas = {
     [T in keyof typeof schemas]: z.infer<(typeof schemas)[T]>;
   };
   export type Bulk = z.infer<typeof bulkSchema>;
+
+  export type Event = Schemas["event"];
+  export type Team = Schemas["team"];
 }
 
 const merge: {

@@ -3,9 +3,15 @@ import z from "zod";
 export namespace Schema {
   export const value = z.union([z.string(), z.number(), z.boolean()]);
   export const timestamp = z.object({ at: z.number(), by: z.string(), team: z.string() });
+  export const matchId = z.templateLiteral([
+    z.literal(["qm", "ef", "qf", "sf", "f"]),
+    z.number(),
+    z.templateLiteral(["m", z.number()]).optional(),
+  ]);
 
   export type Value = z.infer<typeof value>;
   export type Timestamp = z.infer<typeof timestamp>;
+  export type MatchId = z.infer<typeof matchId>;
 }
 
 export namespace Control {
