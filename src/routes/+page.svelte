@@ -32,7 +32,7 @@
     <h2 class="font-bold">Events <span class="text-xs font-light">(beta)</span></h2>
 
     {#each MetaDB.events.toSorted((a, b) => b.made.at - a.made.at) as event (event.id)}
-      <Anchor route="beta/event/{event.id}">
+      <Anchor route="event/{event.id}">
         <div class="flex grow flex-col">
           <span>{event.name}</span>
           <span class="text-xs font-light">{event.id}</span>

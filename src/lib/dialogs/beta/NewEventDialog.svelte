@@ -84,7 +84,7 @@
               EventDB.forms.set([matchForm, pitForm].filter((f) => f !== undefined)).catch(console.error),
           ]).finally(() => {
             rerunOtherContextLoads();
-            goto(`#/beta/event/${event.id}`, { invalidateAll: true });
+            goto(`#/event/${event.id}`, { invalidateAll: true });
           });
         })
         .catch((reason) => {
