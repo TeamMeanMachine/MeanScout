@@ -11,6 +11,7 @@ const schemas = {
     name: z.string(),
     // TBA/Statbotics event key.
     key: z.string().optional(),
+    scoutAliases: z.record(z.string(), z.record(z.string(), z.string())).optional(),
     remapTeams: z.record(z.string(), z.string()).optional(),
     alliances: z.object({ teams: z.string().array() }).array().optional(),
     made: Schema.timestamp,
@@ -44,14 +45,27 @@ export namespace MetaDB {
 const merge: {
   [Name in keyof MetaDB.Schemas]: (i: MetaDB.Schemas[Name], e: MetaDB.Schemas[Name]) => MetaDB.Schemas[Name];
 } = {
-  event: (i, e): typeof i => ({
-    ...e,
-    name: i.name || e.name,
-    key: i.key || e.key,
-    remapTeams: i.remapTeams || e.remapTeams ? { ...e.remapTeams, ...i.remapTeams } : undefined,
-    alliances: i.alliances || e.alliances,
-    edited: i.edited || e.edited,
-  }),
+  event: (i, e): typeof i => {
+    let scoutAliases: (typeof i)["scoutAliases"] = undefined;
+    if (i.scoutAliases && e.scoutAliases) {
+      scoutAliases = structuredClone(e.scoutAliases);
+      for (const team in i.scoutAliases) {
+        scoutAliases[team] = { ...e.scoutAliases[team], ...i.scoutAliases[team] };
+      }
+    } else {
+      scoutAliases = i.scoutAliases || e.scoutAliases;
+    }
+
+    return {
+      ...e,
+      name: i.name || e.name,
+      key: i.key || e.key,
+      scoutAliases,
+      remapTeams: i.remapTeams || e.remapTeams ? { ...e.remapTeams, ...i.remapTeams } : undefined,
+      alliances: i.alliances || e.alliances,
+      edited: i.edited || e.edited,
+    };
+  },
 
   team: (i, e): typeof i => ({
     ...e,
