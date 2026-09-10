@@ -72,7 +72,7 @@
 </script>
 
 <div class="flex items-center justify-between border-b border-neutral-600 p-3">
-  <div class="flex gap-2">
+  <div class="w-80 flex gap-2">
     <span class="font-bold">Choose TBA event</span>
     {#if loading}
       <LoaderIcon class="animate-spin text-theme" />

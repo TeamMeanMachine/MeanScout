@@ -132,92 +132,104 @@ export namespace EventDB {
 }
 
 const merge: {
-  [Name in keyof EventDB.Schemas]: (i: EventDB.Schemas[Name], e: EventDB.Schemas[Name]) => EventDB.Schemas[Name];
+  [Name in keyof EventDB.Schemas]: (
+    i: EventDB.Schemas[Name],
+    e: Readonly<EventDB.Schemas[Name]> | undefined,
+  ) => EventDB.Schemas[Name];
 } = {
   team: (i, e): typeof i => ({
-    ...e,
-    rank: i.rank || e.rank,
-    stats: i.stats || e.stats ? { ...e.stats, ...i.stats } : undefined,
-    oprs: i.oprs || e.oprs ? { ...e.oprs, ...i.oprs } : undefined,
-    epa: i.epa || e.epa ? { ...e.epa, ...i.epa } : undefined,
-    images: i.images?.length || e.images?.length ? [...new Set([...(e.images || []), ...(i.images || [])])] : undefined,
+    id: e?.id || i.id,
+    rank: i.rank || e?.rank,
+    stats: i.stats || e?.stats ? { ...e?.stats, ...i.stats } : undefined,
+    oprs: i.oprs || e?.oprs ? { ...e?.oprs, ...i.oprs } : undefined,
+    epa: i.epa || e?.epa ? { ...e?.epa, ...i.epa } : undefined,
+    images:
+      i.images?.length || e?.images?.length ? [...new Set([...(e?.images || []), ...(i.images || [])])] : undefined,
   }),
 
   match: (i, e): typeof i => ({
-    ...e,
+    id: e?.id || i.id,
     red: {
-      ...e.red,
-      score: i.red.score || e.red.score || undefined,
-      breakdown: i.red.breakdown || e.red.breakdown,
+      teams: e?.red.teams || i.red.teams,
+      score: i.red.score || e?.red.score || undefined,
+      breakdown: i.red.breakdown || e?.red.breakdown,
     },
     blue: {
-      ...e.blue,
-      score: i.blue.score || e.blue.score || undefined,
-      breakdown: i.blue.breakdown || e.blue.breakdown,
+      teams: e?.blue.teams || i.blue.teams,
+      score: i.blue.score || e?.blue.score || undefined,
+      breakdown: i.blue.breakdown || e?.blue.breakdown,
     },
-    prediction: i.prediction || e.prediction,
-    started: i.started || e.started || undefined,
-    winner: i.winner || e.winner,
-    videos: i.videos?.length || e.videos?.length ? [...new Set([...(e.videos || []), ...(i.videos || [])])] : undefined,
+    prediction: i.prediction || e?.prediction,
+    started: i.started || e?.started || undefined,
+    winner: i.winner || e?.winner,
+    videos:
+      i.videos?.length || e?.videos?.length ? [...new Set([...(e?.videos || []), ...(i.videos || [])])] : undefined,
   }),
 
   scenario: (i, e): typeof i => ({
-    ...e,
-    name: i.name || e.name,
-    type: i.type || e.type,
-    alliances: i.alliances || e.alliances,
-    matches: i.matches || e.matches,
-    edited: i.edited || e.edited,
+    id: e?.id || i.id,
+    made: e?.made || i.made,
+    name: i.name || e?.name || "Scenario",
+    type: i.type || e?.type || "playoffs",
+    alliances: i.alliances || e?.alliances,
+    matches: i.matches || e?.matches,
+    edited: i.edited || e?.edited,
   }),
 
   picklist: (i, e): typeof i => {
-    const notes = structuredClone(e.notes);
+    const notes = structuredClone(e?.notes || i.notes);
     for (const team in i.notes) {
-      notes[team] = i.notes[team] || e.notes[team];
+      notes[team] = i.notes[team] || e?.notes[team] || "";
     }
-    const omits = structuredClone(e.omits);
+    const omits = structuredClone(e?.omits || i.omits);
     for (const team in i.omits) {
-      omits[team] = i.omits[team] || e.omits[team];
+      omits[team] = i.omits[team] || e?.omits[team] || true;
     }
     return {
-      ...e,
-      name: i.name || e.name,
-      weights: i.weights.length ? i.weights : e.weights,
+      id: e?.id || i.id,
+      made: e?.made || i.made,
+      name: i.name || e?.name || "Picklist",
+      weights: i.weights.length ? i.weights : e?.weights || [],
       notes,
       omits,
-      customSort: i.customSort || e.customSort,
-      edited: i.edited || e.edited,
+      customSort: i.customSort || e?.customSort,
+      edited: i.edited || e?.edited,
     };
   },
 
   expression: (i, e): typeof i => ({
-    ...e,
-    name: i.name || e.name,
-    inputs: i.inputs.length ? i.inputs : e.inputs,
-    method: i.method || e.method,
-    aggregate: i.aggregate || e.aggregate,
-    edited: i.edited || e.edited,
+    id: e?.id || i.id,
+    made: e?.made || i.made,
+    name: i.name || e?.name || "Expression",
+    inputs: i.inputs.length ? i.inputs : e?.inputs || [],
+    method: i.method || e?.method,
+    aggregate: i.aggregate || e?.aggregate,
+    edited: i.edited || e?.edited,
   }),
 
   form: (i, e): typeof i => ({
-    ...e,
-    name: i.name || e.name,
-    type: i.type || e.type,
-    controls: i.controls.length ? i.controls : e.controls,
-    edited: i.edited || e.edited,
+    id: e?.id || i.id,
+    made: e?.made || i.made,
+    name: i.name || e?.name || "Form",
+    type: i.type || e?.type || "match",
+    controls: i.controls.length ? i.controls : e?.controls || [],
+    edited: i.edited || e?.edited,
   }),
 
   entry: (i, e): typeof i => ({
     ...e,
-    status: i.status || e.status,
-    team: i.team || e.team,
-    matchId: i.matchId ?? e.matchId,
-    absent: i.absent ?? e.absent,
-    values: { ...e.values, ...i.values },
-    edited: i.edited || e.edited,
+    id: e?.id || i.id,
+    formId: e?.formId || i.formId,
+    made: e?.made || i.made,
+    status: i.status || e?.status || "review",
+    team: i.team || e?.team || "NOTEAM",
+    matchId: i.matchId ?? e?.matchId,
+    absent: i.absent ?? e?.absent,
+    values: { ...e?.values, ...i.values },
+    edited: i.edited || e?.edited,
   }),
 
-  guess: (i, e): typeof i => e,
+  guess: (i, e): typeof i => e || i,
 };
 
 let db: IDBDatabase | undefined = undefined;
@@ -331,14 +343,14 @@ export const EventDB = {
     });
   },
 
-  teams: objectStoreMap("teams", () => maps.teams, getDB),
-  matches: objectStoreMap("matches", () => maps.matches, getDB),
-  scenarios: objectStoreMap("scenarios", () => maps.scenarios, getDB),
-  picklists: objectStoreMap("picklists", () => maps.picklists, getDB),
-  expressions: objectStoreMap("expressions", () => maps.expressions, getDB),
-  forms: objectStoreMap("forms", () => maps.forms, getDB),
-  entries: objectStoreMap("entries", () => maps.entries, getDB),
-  guesses: objectStoreMap("guesses", () => maps.guesses, getDB),
+  teams: objectStoreMap("teams", () => maps.teams, getDB, merge.team),
+  matches: objectStoreMap("matches", () => maps.matches, getDB, merge.match),
+  scenarios: objectStoreMap("scenarios", () => maps.scenarios, getDB, merge.scenario),
+  picklists: objectStoreMap("picklists", () => maps.picklists, getDB, merge.picklist),
+  expressions: objectStoreMap("expressions", () => maps.expressions, getDB, merge.expression),
+  forms: objectStoreMap("forms", () => maps.forms, getDB, merge.form),
+  entries: objectStoreMap("entries", () => maps.entries, getDB, merge.entry),
+  guesses: objectStoreMap("guesses", () => maps.guesses, getDB, merge.guess),
 
   /** Deletes the DB with the given id. */
   delete(id: string) {

@@ -1,2 +1,2 @@
-export * from "./event.svelte";
-export * from "./meta.svelte";
+export * from "./event";
+export * from "./meta";

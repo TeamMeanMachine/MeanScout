@@ -28,8 +28,8 @@ const schemas = {
 
 const bulkSchema = z.object({
   version: z.number(),
-  teams: schemas.team.array().optional(),
   events: schemas.event.array().optional(),
+  teams: schemas.team.array().optional(),
 });
 
 export namespace MetaDB {
@@ -43,34 +43,38 @@ export namespace MetaDB {
 }
 
 const merge: {
-  [Name in keyof MetaDB.Schemas]: (i: MetaDB.Schemas[Name], e: MetaDB.Schemas[Name]) => MetaDB.Schemas[Name];
+  [Name in keyof MetaDB.Schemas]: (
+    i: MetaDB.Schemas[Name],
+    e: Readonly<MetaDB.Schemas[Name]> | undefined,
+  ) => MetaDB.Schemas[Name];
 } = {
   event: (i, e): typeof i => {
     let scoutAliases: (typeof i)["scoutAliases"] = undefined;
-    if (i.scoutAliases && e.scoutAliases) {
+    if (i.scoutAliases && e?.scoutAliases) {
       scoutAliases = structuredClone(e.scoutAliases);
       for (const team in i.scoutAliases) {
         scoutAliases[team] = { ...e.scoutAliases[team], ...i.scoutAliases[team] };
       }
     } else {
-      scoutAliases = i.scoutAliases || e.scoutAliases;
+      scoutAliases = i.scoutAliases || e?.scoutAliases;
     }
 
     return {
-      ...e,
-      name: i.name || e.name,
-      key: i.key || e.key,
+      id: e?.id || i.id,
+      made: e?.made || i.made,
+      name: i.name || e?.name || "Event",
+      key: i.key || e?.key,
       scoutAliases,
-      remapTeams: i.remapTeams || e.remapTeams ? { ...e.remapTeams, ...i.remapTeams } : undefined,
-      alliances: i.alliances || e.alliances,
-      edited: i.edited || e.edited,
+      remapTeams: i.remapTeams || e?.remapTeams ? { ...e?.remapTeams, ...i.remapTeams } : undefined,
+      alliances: i.alliances || e?.alliances,
+      edited: i.edited || e?.edited,
     };
   },
 
   team: (i, e): typeof i => ({
-    ...e,
-    name: i.name || e.name,
-    avatar: i.avatar || e.avatar,
+    id: e?.id || i.id,
+    name: i.name || e?.name || "",
+    avatar: i.avatar || e?.avatar,
   }),
 };
 
@@ -149,8 +153,8 @@ export const MetaDB = {
     });
   },
 
-  events: objectStoreMap("events", () => maps.events, getDB),
-  teams: objectStoreMap("teams", () => maps.teams, getDB),
+  events: objectStoreMap("events", () => maps.events, getDB, merge.event),
+  teams: objectStoreMap("teams", () => maps.teams, getDB, merge.team),
 };
 
 function getDB() {

@@ -5,11 +5,13 @@ import type { SvelteMap } from "svelte/reactivity";
  * @param storeName Name of object store to be mapped to.
  * @param getMap Returns a SvelteMap.
  * @param getDB Returns a database connection (or undefined).
+ * @param merge Merges two similar records (incoming and existing) together into a new one.
  */
 export function objectStoreMap<T extends { id: string }>(
   storeName: string,
   getMap: () => SvelteMap<string, Readonly<T>>,
   getDB: () => IDBDatabase | undefined,
+  merge: (i: T, e: Readonly<T> | undefined) => T,
 ) {
   function stringifyIDBError(dbName: string | undefined, error: DOMException | null, fallbackMessage: string) {
     return `${dbName ? `${dbName} DB` : "DB"}: ${fallbackMessage} - ${error?.name || "Error"}: ${error?.message}`;
@@ -51,12 +53,17 @@ export function objectStoreMap<T extends { id: string }>(
           return;
         }
 
-        const tx = db.transaction(storeName, "readwrite");
-
         const records = $state.snapshot([
           ...(Array.isArray(recordOrMany) ? recordOrMany : [recordOrMany]),
           ...more.flatMap((v) => v),
         ]);
+
+        if (!records.length) {
+          resolve();
+          return;
+        }
+
+        const tx = db.transaction(storeName, "readwrite");
 
         for (const record of records) {
           tx.objectStore(storeName).put(record);
@@ -65,6 +72,48 @@ export function objectStoreMap<T extends { id: string }>(
         tx.oncomplete = () => {
           const map = getMap();
           for (const record of records) {
+            map.set(record.id, record as any);
+          }
+          resolve();
+        };
+
+        tx.onerror = () => {
+          reject(stringifyIDBError(db.name, tx.error, `Could not set ${records.length} ${storeName}`));
+        };
+      });
+    },
+
+    /** Merges one or many records to the IDB object store. If successful, updates the underlying SvelteMap. */
+    merge(recordOrMany: T | T[], ...more: (typeof recordOrMany)[]) {
+      return new Promise<void>((resolve, reject) => {
+        const db = getDB();
+
+        if (!db) {
+          reject("DB: Not ready");
+          return;
+        }
+
+        const records = $state.snapshot([
+          ...(Array.isArray(recordOrMany) ? recordOrMany : [recordOrMany]),
+          ...more.flatMap((v) => v),
+        ]);
+
+        if (!records.length) {
+          resolve();
+          return;
+        }
+
+        const merged = records.map((i) => merge(i as T, this.get(i.id)));
+
+        const tx = db.transaction(storeName, "readwrite");
+
+        for (const record of merged) {
+          tx.objectStore(storeName).put(record);
+        }
+
+        tx.oncomplete = () => {
+          const map = getMap();
+          for (const record of merged) {
             map.set(record.id, record as any);
           }
           resolve();
@@ -86,14 +135,19 @@ export function objectStoreMap<T extends { id: string }>(
           return;
         }
 
-        const tx = db.transaction(storeName, "readwrite");
-
         const records = $state.snapshot([
           ...(Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray()),
           ...more.flatMap((mapOrMany) =>
             Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray(),
           ),
         ]);
+
+        if (!records.length) {
+          resolve();
+          return;
+        }
+
+        const tx = db.transaction(storeName, "readwrite");
 
         for (const record of records) {
           tx.objectStore(storeName).put(record);
@@ -102,6 +156,50 @@ export function objectStoreMap<T extends { id: string }>(
         tx.oncomplete = () => {
           const map = getMap();
           for (const record of records) {
+            map.set(record.id, record as any);
+          }
+          resolve();
+        };
+
+        tx.onerror = () => {
+          reject(stringifyIDBError(db.name, tx.error, `Could not set ${records.length} ${storeName}`));
+        };
+      });
+    },
+
+    /** Merges one or many records to the IDB object store. If successful, updates the underlying SvelteMap. */
+    mergeMap(mapOrMany: Map<any, T> | Map<any, T>[], ...more: (typeof mapOrMany)[]) {
+      return new Promise<void>((resolve, reject) => {
+        const db = getDB();
+
+        if (!db) {
+          reject("DB: Not ready");
+          return;
+        }
+
+        const records = $state.snapshot([
+          ...(Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray()),
+          ...more.flatMap((mapOrMany) =>
+            Array.isArray(mapOrMany) ? mapOrMany.flatMap((v) => v.values().toArray()) : mapOrMany.values().toArray(),
+          ),
+        ]);
+
+        if (!records.length) {
+          resolve();
+          return;
+        }
+
+        const merged = records.map((i) => merge(i as T, this.get(i.id)));
+
+        const tx = db.transaction(storeName, "readwrite");
+
+        for (const record of merged) {
+          tx.objectStore(storeName).put(record);
+        }
+
+        tx.oncomplete = () => {
+          const map = getMap();
+          for (const record of merged) {
             map.set(record.id, record as any);
           }
           resolve();
@@ -123,13 +221,18 @@ export function objectStoreMap<T extends { id: string }>(
           return;
         }
 
-        const tx = db.transaction(storeName, "readwrite");
-
         const keysOrRecords = [
           ...(Array.isArray(keyOrRecordOrMany) ? keyOrRecordOrMany : [keyOrRecordOrMany]),
           ...more.flatMap((v) => v),
         ];
         const keys = keysOrRecords.map((v) => (typeof v == "string" ? v : v.id));
+
+        if (!keys.length) {
+          resolve();
+          return;
+        }
+
+        const tx = db.transaction(storeName, "readwrite");
 
         for (const key of keys) {
           tx.objectStore(storeName).delete(key);

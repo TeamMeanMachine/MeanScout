@@ -22,7 +22,7 @@
   bind:this={box}
   closedby="any"
   onclose={() => Dialog.stack.delete(Content)}
-  class="m-auto max-h-dvh w-135 max-w-[100vw] overflow-y-hidden border border-neutral-600 bg-neutral-900 shadow-2xl shadow-black backdrop:bg-black backdrop:opacity-45"
+  class="m-auto flex max-h-dvh max-w-dvw flex-col overflow-y-hidden border border-neutral-600 bg-neutral-900 shadow-2xl shadow-black backdrop:bg-black backdrop:opacity-45"
 >
   <form
     method="dialog"
@@ -30,7 +30,7 @@
       e.preventDefault();
       content.onformsubmit?.();
     }}
-    class="flex max-h-dvh flex-col overflow-y-auto"
+    class="contents"
   >
     <Content bind:this={content} {...props} />
   </form>

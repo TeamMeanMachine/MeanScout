@@ -33,7 +33,7 @@
 
 <header class="fixed top-0 right-0 left-0 z-20 flex w-full flex-col border-b border-neutral-600 bg-neutral-900 py-2">
   <div class={["mx-auto flex min-h-10 w-full items-center gap-6 px-3", classes]}>
-    <div class="flex gap-2">
+    <div class="flex gap-2 truncate">
       <img src="./logo.svg" alt="" width="25" height="25" />
 
       <div class="flex flex-col truncate">

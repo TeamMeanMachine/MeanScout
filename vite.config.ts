@@ -10,13 +10,13 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     sveltekit(),
-    {
-      name: "full-reload-always",
-      handleHotUpdate({ server }) {
-        server.ws.send({ type: "full-reload" });
-        return [];
-      },
-    },
+    // {
+    //   name: "full-reload-always",
+    //   handleHotUpdate({ server }) {
+    //     server.ws.send({ type: "full-reload" });
+    //     return [];
+    //   },
+    // },
   ],
   server:
     process.env.NODE_ENV === "development"

@@ -15,14 +15,13 @@
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { MetaDB } from "$lib/db";
   import { Dialog, openDialog } from "$lib/dialog";
-  import NewEventDialog from "$lib/dialogs/beta/NewEventDialog.svelte";
   import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "$lib/dialogs/NewCompDialog.svelte";
+  import NewEventDialog from "$lib/dialogsBeta/NewEventDialog.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcActiveStore } from "$lib/settings";
-  import type { PageProps } from "./$types";
 
-  let { data }: PageProps = $props();
+  let { data } = $props();
 </script>
 
 <Header class="max-w-(--breakpoint-sm)" />
@@ -32,7 +31,7 @@
     <h2 class="font-bold">Events <span class="text-xs font-light">(beta)</span></h2>
 
     {#each MetaDB.events.toSorted((a, b) => b.made.at - a.made.at) as event (event.id)}
-      <Anchor route="event/{event.id}">
+      <Anchor to="/event/[eventId]" params={{ eventId: event.id }}>
         <div class="flex grow flex-col">
           <span>{event.name}</span>
           <span class="text-xs font-light">{event.id}</span>
@@ -41,7 +40,7 @@
       </Anchor>
     {/each}
 
-    <Button onclick={() => {}} class="relative">
+    <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })} class="relative">
       <DownloadIcon
         class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
       />
@@ -66,19 +65,15 @@
 
   <div class="flex flex-col gap-2">
     <h2 class="font-bold">Comps <span class="text-xs font-light">(legacy)</span></h2>
-
-    {#if data.all.comps.length}
-      {#each data.all.comps.toSorted((a, b) => b.modified - a.modified) as comp (comp.id)}
-        <Anchor route="comp/{comp.id}">
-          <div class="flex grow flex-col">
-            <span>{comp.name}</span>
-            <span class="text-xs font-light">{comp.id}</span>
-          </div>
-          <ArrowRightIcon class="text-theme" />
-        </Anchor>
-      {/each}
-    {/if}
-
+    {#each data.all.comps.toSorted((a, b) => b.modified - a.modified) as comp (comp.id)}
+      <Anchor to="/comp/[compId]" params={{ compId: comp.id }}>
+        <div class="flex grow flex-col">
+          <span>{comp.name}</span>
+          <span class="text-xs font-light">{comp.id}</span>
+        </div>
+        <ArrowRightIcon class="text-theme" />
+      </Anchor>
+    {/each}
     <Button onclick={() => openDialog(BulkImportDialog, { existing: data.all, request: "all" })} class="relative">
       <DownloadIcon
         class={["text-theme", onlineTransfer.dataFromClients.size ? "animate-bounce-down" : "animate-none"]}
