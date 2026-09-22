@@ -13,7 +13,7 @@ type IDBStoreRecordMap = {
 
 export type IDBStoreName = keyof IDBStoreRecordMap;
 
-export type AllData = {
+type AllData = {
   comps: Comp[];
   surveys: Survey[];
   fields: Field[];

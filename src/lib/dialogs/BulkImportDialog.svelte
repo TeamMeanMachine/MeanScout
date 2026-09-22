@@ -1,4 +1,6 @@
 <script lang="ts">
+  /** TODO */
+
   import { DownloadIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon, Undo2Icon, XIcon } from "@lucide/svelte";
   import { rerunAllContextLoads, sessionStorageStore } from "$lib";
   import Button from "$lib/components/Button.svelte";
@@ -6,8 +8,7 @@
   import QrCodeReader from "$lib/components/QRCodeReader.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import type { AllData } from "$lib/idb";
-  import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
+  import { anyDataInBulk, importData, importSchema, type ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
   import { z } from "zod";
@@ -17,7 +18,7 @@
     existing,
     request,
   }: {
-    existing: AllData;
+    existing: ImportedData;
     request: "entries" | "configs" | "all";
   } = $props();
 
@@ -32,29 +33,10 @@
   let files = $state<FileList | undefined>();
   let error = $state("");
 
-  const anyImported = $derived.by(() => {
-    return imported.comps?.length || imported.surveys?.length || imported.fields?.length || imported.entries?.length;
-  });
+  const anyImported = $derived(anyDataInBulk(imported));
 
-  const importedIds = $derived({
-    comps: new Set(imported.comps?.map((c) => c.id)),
-    surveys: new Set(imported.surveys?.map((s) => s.id)),
-    fields: new Set(imported.fields?.map((f) => f.id)),
-    entries: new Set(imported.entries?.map((e) => e.id)),
-  });
-
-  const existingIds = $derived({
-    comps: new Set(existing.comps.map((c) => c.id)),
-    surveys: new Set(existing.surveys.map((s) => s.id)),
-    fields: new Set(existing.fields.map((f) => f.id)),
-    entries: new Set(existing.entries.map((e) => e.id)),
-  });
-
-  const duplicateIds = $derived({
-    comps: importedIds.comps.intersection(existingIds.comps),
-    surveys: importedIds.surveys.intersection(existingIds.surveys),
-    fields: importedIds.fields.intersection(existingIds.fields),
-    entries: importedIds.entries.intersection(existingIds.entries),
+  const duplicateEntryIds = $derived.by(() => {
+    return new Set(imported.entries?.map((e) => e.id)).intersection(new Set(existing.entries?.map((e) => e.id)));
   });
 
   function changeTab(to: "room" | "qrfcode" | "file") {
@@ -267,7 +249,7 @@
 {#if currentTab != "room" && anyImported}
   <ImportViewer {imported} {existing} {overwriteDuplicateEntries} />
 
-  {#if duplicateIds.entries.size}
+  {#if duplicateEntryIds.size}
     <Button
       onclick={() => (overwriteDuplicateEntries = !overwriteDuplicateEntries)}
       class={["grow basis-0", overwriteDuplicateEntries ? "font-bold" : "font-light"]}

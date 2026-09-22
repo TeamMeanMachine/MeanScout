@@ -15,7 +15,7 @@
   <div class="flex flex-col gap-3">
     {#if data.compRecord.teams.length}
       <div class="grid gap-2" style="grid-template-columns: min-content auto">
-        {#each data.compRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true }, ), ) as team (team.number)}
+        {#each data.compRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true } ) ) as team (team.number)}
           <Button
             onclick={() => {
               openDialog(EditTeamDialog, {

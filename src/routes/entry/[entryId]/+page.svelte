@@ -304,7 +304,10 @@
 
             tx.oncomplete = () => {
               if ($webRtcActiveStore && $webRtcAutoSendStore) {
-                onlineTransfer.sendToAll({ type: "response", version: schemaVersion, entries: [submittedEntry] });
+                onlineTransfer.sendToAll({
+                  type: "response",
+                  data: { version: schemaVersion, entries: [submittedEntry] },
+                });
                 onlineTransfer.localScoutingStatus = undefined;
                 onlineTransfer.sendToAll({ type: "scouting", status: "done" });
               }

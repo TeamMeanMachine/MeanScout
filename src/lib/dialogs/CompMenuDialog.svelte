@@ -40,10 +40,12 @@
       onclick={() => {
         openDialog(BulkExportDialog, {
           send: "configs",
-          comps: [pageData.compRecord],
-          surveys: pageData.surveyRecords,
-          fields: pageData.fieldRecords,
-          entries: pageData.entryRecords,
+          data: {
+            comps: [pageData.compRecord],
+            surveys: pageData.surveyRecords,
+            fields: pageData.fieldRecords,
+            entries: pageData.entryRecords,
+          },
         });
       }}
       class="relative grow"
@@ -61,10 +63,12 @@
       onclick={() => {
         openDialog(BulkExportDialog, {
           send: "entries",
-          comps: [pageData.compRecord],
-          surveys: pageData.surveyRecords,
-          fields: pageData.fieldRecords,
-          entries: pageData.entryRecords,
+          data: {
+            comps: [pageData.compRecord],
+            surveys: pageData.surveyRecords,
+            fields: pageData.fieldRecords,
+            entries: pageData.entryRecords,
+          },
         });
       }}
       class="relative grow"
@@ -82,10 +86,12 @@
       onclick={() => {
         openDialog(BulkExportDialog, {
           send: "all",
-          comps: [pageData.compRecord],
-          surveys: pageData.surveyRecords,
-          fields: pageData.fieldRecords,
-          entries: pageData.entryRecords,
+          data: {
+            comps: [pageData.compRecord],
+            surveys: pageData.surveyRecords,
+            fields: pageData.fieldRecords,
+            entries: pageData.entryRecords,
+          },
         });
       }}
       class="relative"

@@ -3,16 +3,16 @@ import { serializeDate } from "$lib";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
 import { compress, decompress } from "./compress";
-import type { AllData } from "./idb";
 import { importSchema, mergeOldAndNewData, type ImportedData } from "./import.svelte";
 import { matchIdentifierSchema } from "./match";
+import { Schema } from "./schema";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
 
 const scoutingStatusSchema = z.object({
   team: z.string(),
-  match: matchIdentifierSchema.optional(),
+  match: z.union([matchIdentifierSchema, Schema.matchId]).optional(),
   prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
 });
 export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
@@ -34,7 +34,7 @@ const wsInboundMessageSchema = z.discriminatedUnion("type", [
     from: z.string(),
     request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
   }),
-  z.object({ type: z.literal("response"), from: z.string(), ...importSchema.shape }),
+  z.object({ type: z.literal("response"), from: z.string(), data: importSchema }),
   z.object({ type: z.literal("scouting"), from: z.string(), status: z.literal("done").or(scoutingStatusSchema) }),
 ]);
 
@@ -49,7 +49,7 @@ type WSOutboundMessage =
   | WSOutboundCandidateMessage
   | { type: "batch"; messages: WSOutboundCandidateMessage[] }
   | { type: "request"; to?: string[]; request: "entries" | "configs" | "all" }
-  | ({ type: "response"; to?: string[] } & ImportedData)
+  | { type: "response"; to?: string[]; data: ImportedData }
   | { type: "scouting"; to?: string[]; status: "done" | ScoutingStatus };
 
 const rtcRequestMessageSchema = z.object({
@@ -61,7 +61,7 @@ export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
 
 const rtcResponseMessageSchema = z.object({
   type: z.literal("response"),
-  ...importSchema.shape,
+  data: importSchema,
 });
 
 export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
@@ -131,7 +131,7 @@ class OnlineTransfer {
   requestsFromClients = $state(new SvelteMap<string, "entries" | "configs" | "all">());
 
   /** Reactive map of any remote clients' data. */
-  dataFromClients = $state(new SvelteMap<string, AllData>());
+  dataFromClients = $state(new SvelteMap<string, ImportedData>());
 
   /** Reactive map of clients' scouting status, updated on preparing/starting/stopping scouting. */
   clientsScoutingStatus = $state(new SvelteMap<string, ScoutingStatus>());
@@ -227,7 +227,7 @@ class OnlineTransfer {
       data.type == "request"
         ? { type: "request", to: [], request: data.request }
         : data.type == "response"
-          ? { ...data, to: [] }
+          ? { ...data, to: [], data: {} }
           : { type: "scouting", to: [], status: data.status };
 
     for (const client of this.clients) {
@@ -291,11 +291,25 @@ class OnlineTransfer {
   }
 
   onrtcrequestmessage: ((id: string, request: "entries" | "configs" | "all") => void) | undefined;
-  onrtcresponsemessage: ((id: string, response: AllData) => void) | undefined;
+  onrtcresponsemessage: ((id: string, response: ImportedData) => void) | undefined;
 
-  private satisfyRequestsFromClient(remoteId: string, data: RTCResponseMessage) {
-    const sentEntries = !!data.entries?.length;
-    const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
+  private satisfyRequestsFromClient(remoteId: string, message: RTCResponseMessage) {
+    const sentEntries = !!message.data.entries?.length || !!message.data.eventDB?.entries?.length;
+
+    const sentConfigs =
+      !!message.data.comps?.length ||
+      !!message.data.surveys?.length ||
+      !!message.data.fields?.length ||
+      !!message.data.metaDB?.events?.length ||
+      !!message.data.metaDB?.teams?.length ||
+      !!message.data.eventDB?.teams?.length ||
+      !!message.data.eventDB?.matches?.length ||
+      !!message.data.eventDB?.scenarios?.length ||
+      !!message.data.eventDB?.picklists?.length ||
+      !!message.data.eventDB?.expressions?.length ||
+      !!message.data.eventDB?.forms?.length ||
+      !!message.data.eventDB?.guesses?.length;
+
     const sentAny = sentEntries || sentConfigs;
 
     const request = this.requestsFromClients.get(remoteId);
@@ -474,17 +488,12 @@ class OnlineTransfer {
         let data = this.dataFromClients.get(message.from);
 
         if (!data) {
-          data = {
-            comps: message.comps || [],
-            surveys: message.surveys || [],
-            fields: message.fields || [],
-            entries: message.entries || [],
-          };
+          data = message.data;
           this.dataFromClients.set(message.from, data);
         } else {
           const { merged } = mergeOldAndNewData({
             existing: data,
-            imported: message,
+            imported: message.data,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });
@@ -695,18 +704,12 @@ class OnlineTransfer {
         let clientData = this.dataFromClients.get(remoteId);
 
         if (!clientData) {
-          clientData = {
-            comps: parsed.comps || [],
-            surveys: parsed.surveys || [],
-            fields: parsed.fields || [],
-            entries: parsed.entries || [],
-          };
-
+          clientData = parsed.data;
           this.dataFromClients.set(remoteId, clientData);
         } else {
           const { merged } = mergeOldAndNewData({
             existing: clientData,
-            imported: parsed,
+            imported: parsed.data,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });

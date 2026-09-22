@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { z } from "zod";
 import type { Comp } from "./comp";
 import type { Entry } from "./entry";
+import { Schema } from "./schema";
 import { teamStore } from "./settings";
 
 export const matchValueSchema = z.number().int().gt(0);
@@ -36,6 +37,21 @@ type EntryMatchIdentifier = {
   matchLevel?: MatchLevel | undefined;
 };
 
+function convertIdToLegacy(matchId: Schema.MatchId): MatchIdentifier {
+  const result = Schema.matchIdRegExp.exec(matchId);
+  if (!result) {
+    return { number: 0 };
+  }
+
+  const [level, number, mNumber] = result;
+
+  if (mNumber) {
+    return { number: parseInt(mNumber), set: parseInt(number), level: level as any };
+  }
+
+  return { number: parseInt(number), level: level as any };
+}
+
 /**
   Ascending comparison. Returns:
   - 0, if matches share identifiers
@@ -43,14 +59,16 @@ type EntryMatchIdentifier = {
   - greater than 0, if match a is AFTER match b
  */
 export function compareMatches(
-  a: MatchIdentifier | EntryMatchIdentifier | number,
-  b: MatchIdentifier | EntryMatchIdentifier | number,
+  a: MatchIdentifier | EntryMatchIdentifier | Schema.MatchId | number,
+  b: MatchIdentifier | EntryMatchIdentifier | Schema.MatchId | number,
 ) {
   let aTransformed: MatchIdentifier;
   let bTransformed: MatchIdentifier;
 
   if (typeof a == "number") {
     aTransformed = { number: a };
+  } else if (typeof a == "string") {
+    aTransformed = convertIdToLegacy(a);
   } else if ("match" in a) {
     aTransformed = { number: a.match, set: a.matchSet, level: a.matchLevel };
   } else {
@@ -59,6 +77,8 @@ export function compareMatches(
 
   if (typeof b == "number") {
     bTransformed = { number: b };
+  } else if (typeof b == "string") {
+    bTransformed = convertIdToLegacy(b);
   } else if ("match" in b) {
     bTransformed = { number: b.match, set: b.matchSet, level: b.matchLevel };
   } else {

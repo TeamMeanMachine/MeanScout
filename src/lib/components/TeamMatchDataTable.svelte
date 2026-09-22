@@ -390,7 +390,7 @@
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
               <Anchor
                 route={matchUrl(match, pageData.compRecord.id)}
-                class="w-13 justify-center py-1.5 text-nowrap! font-light"
+                class="w-13 justify-center py-1.5 font-light text-nowrap!"
               >
                 {#if match.level && match.level != "qm"}
                   {match.level}{match.set || 1}-{match.number}

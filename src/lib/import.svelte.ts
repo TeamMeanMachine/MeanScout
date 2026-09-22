@@ -12,7 +12,7 @@ export const importSchema = z
   .object({
     // Beta
     metaDB: MetaDB.bulkSchema,
-    eventDBs: z.record(z.string(), EventDB.bulkSchema.optional()),
+    eventDB: EventDB.bulkSchema,
     // Legacy
     comps: compSchema.array(),
     surveys: surveySchema.array(),
@@ -23,66 +23,115 @@ export const importSchema = z
   .partial();
 export type ImportedData = z.infer<typeof importSchema>;
 
+export function anyDataInBulk(bulk: ImportedData) {
+  const meta = !!bulk.metaDB?.events?.length || !!bulk.metaDB?.teams?.length;
+
+  const event =
+    !!bulk.eventDB?.teams?.length ||
+    !!bulk.eventDB?.matches?.length ||
+    !!bulk.eventDB?.scenarios?.length ||
+    !!bulk.eventDB?.picklists?.length ||
+    !!bulk.eventDB?.expressions?.length ||
+    !!bulk.eventDB?.forms?.length ||
+    !!bulk.eventDB?.entries?.length ||
+    !!bulk.eventDB?.guesses?.length;
+
+  const legacy = !!bulk.comps?.length || !!bulk.surveys?.length || !!bulk.fields?.length || !!bulk.entries?.length;
+
+  return { meta, event, legacy };
+}
+
 type ImportDataParams = {
-  existing: ImportedData;
+  existing?: ImportedData;
   imported: ImportedData;
   overwriteDuplicateEntries: boolean;
 };
 
 export function importData({ existing, imported, overwriteDuplicateEntries }: ImportDataParams) {
-  return new Promise<{ duplicateEntryIds: Set<string> }>((resolve, reject) => {
-    const { merged, fieldsToDelete, duplicateEntryIds } = mergeOldAndNewData({
+  return new Promise<{ duplicateLegacyEntries: Set<string>; duplicateEventEntries: Set<string> }>((resolve, reject) => {
+    const { merged, fieldsToDelete, duplicateLegacyEntries, duplicateEventEntries } = mergeOldAndNewData({
       existing,
       imported,
       overwriteDuplicateEntries,
       includeExisting: false,
     });
 
-    if (
-      !merged.comps?.length &&
-      !merged.surveys?.length &&
-      !merged.fields?.length &&
-      !merged.entries?.length &&
-      !fieldsToDelete.size
-    ) {
+    const anyData = anyDataInBulk(merged);
+
+    if (!(anyData.meta || anyData.event || anyData.legacy || fieldsToDelete.size)) {
       reject("No data to import");
       return;
     }
 
-    const transaction = idb.transaction(["comps", "surveys", "fields", "entries"], "readwrite");
-    transaction.onabort = (e) => {
-      console.error(e);
-      reject("Could not import data");
-    };
+    let newPromise: Promise<any> | undefined = undefined;
+    let legacyPromise: Promise<void> | undefined = undefined;
 
-    transaction.oncomplete = () => {
-      resolve({ duplicateEntryIds });
-    };
-
-    const compStore = transaction.objectStore("comps");
-    const surveyStore = transaction.objectStore("surveys");
-    const fieldStore = transaction.objectStore("fields");
-    const entryStore = transaction.objectStore("entries");
-
-    for (const comp of merged?.comps || []) {
-      compStore.put($state.snapshot(comp));
+    if (anyData.meta || anyData.event) {
+      if (merged.eventDB) {
+        newPromise = EventDB.open(merged.eventDB.id).then(() =>
+          Promise.all([
+            merged.metaDB?.events && MetaDB.events.set(merged.metaDB.events),
+            merged.metaDB?.teams && MetaDB.teams.set(merged.metaDB.teams),
+            merged.eventDB?.teams && EventDB.teams.set(merged.eventDB.teams),
+            merged.eventDB?.matches && EventDB.matches.set(merged.eventDB.matches),
+            merged.eventDB?.scenarios && EventDB.scenarios.set(merged.eventDB.scenarios),
+            merged.eventDB?.picklists && EventDB.picklists.set(merged.eventDB.picklists),
+            merged.eventDB?.expressions && EventDB.expressions.set(merged.eventDB.expressions),
+            merged.eventDB?.forms && EventDB.forms.set(merged.eventDB.forms),
+            merged.eventDB?.entries && EventDB.entries.set(merged.eventDB.entries),
+            merged.eventDB?.guesses && EventDB.guesses.set(merged.eventDB.guesses),
+          ]),
+        );
+      } else {
+        newPromise = Promise.all([
+          merged.metaDB?.events && MetaDB.events.set(merged.metaDB.events),
+          merged.metaDB?.teams && MetaDB.teams.set(merged.metaDB.teams),
+        ]);
+      }
     }
 
-    for (const survey of merged?.surveys || []) {
-      surveyStore.put($state.snapshot(survey));
+    if (anyData.legacy || fieldsToDelete.size) {
+      legacyPromise = new Promise((resolve, reject) => {
+        const transaction = idb.transaction(["comps", "surveys", "fields", "entries"], "readwrite");
+        transaction.onabort = (e) => {
+          console.error(e);
+          reject("Could not import data");
+        };
+
+        transaction.oncomplete = () => {
+          resolve();
+        };
+
+        const compStore = transaction.objectStore("comps");
+        const surveyStore = transaction.objectStore("surveys");
+        const fieldStore = transaction.objectStore("fields");
+        const entryStore = transaction.objectStore("entries");
+
+        for (const comp of merged?.comps || []) {
+          compStore.put($state.snapshot(comp));
+        }
+
+        for (const survey of merged?.surveys || []) {
+          surveyStore.put($state.snapshot(survey));
+        }
+
+        for (const field of merged?.fields || []) {
+          fieldStore.put($state.snapshot(field));
+        }
+
+        for (const entry of merged?.entries || []) {
+          entryStore.put($state.snapshot(entry));
+        }
+
+        for (const fieldId of fieldsToDelete) {
+          fieldStore.delete(fieldId);
+        }
+      });
     }
 
-    for (const field of merged?.fields || []) {
-      fieldStore.put($state.snapshot(field));
-    }
-
-    for (const entry of merged?.entries || []) {
-      entryStore.put($state.snapshot(entry));
-    }
-
-    for (const fieldId of fieldsToDelete) {
-      fieldStore.delete(fieldId);
-    }
+    Promise.all([newPromise, legacyPromise])
+      .then(() => resolve({ duplicateLegacyEntries, duplicateEventEntries }))
+      .catch(reject);
   });
 }
 
@@ -92,32 +141,22 @@ export function mergeOldAndNewData({
   overwriteDuplicateEntries,
   includeExisting,
 }: ImportDataParams & { includeExisting: boolean }) {
+  const fieldsToDelete = new Set<string>();
+  const duplicateLegacyEntries = new Set<string>();
+  let duplicateEventEntries = new Set<string>();
+
+  if (!existing) return { merged: imported, fieldsToDelete, duplicateLegacyEntries, duplicateEventEntries };
+
   const merged: ImportedData = {};
 
   merged.metaDB = mergeMetaDB(imported.metaDB, existing.metaDB, includeExisting);
+  merged.eventDB = mergeEventDB(imported.eventDB, existing.eventDB, includeExisting);
 
-  for (const eventId in imported.eventDBs) {
-    merged.eventDBs = {
-      ...merged.eventDBs,
-      [eventId]: mergeEventDB(imported.eventDBs[eventId], existing.eventDBs?.[eventId], includeExisting),
-    };
-  }
-
-  if (includeExisting) {
-    for (const eventId in existing.eventDBs) {
-      if (merged.eventDBs && eventId in merged.eventDBs) continue;
-      merged.eventDBs = {
-        ...merged.eventDBs,
-        [eventId]: existing.eventDBs[eventId],
-      };
-    }
-  }
+  const existingEventEntryIds = new Set(existing.eventDB?.entries?.map((e) => e.id));
+  const incomingEventEntryIds = new Set(imported.eventDB?.entries?.map((i) => i.id));
+  duplicateEventEntries = incomingEventEntryIds.intersection(existingEventEntryIds);
 
   const now = Date.now();
-
-  const duplicateEntryIds = new Set<string>();
-
-  const fieldsToDelete = new Set<string>();
 
   if (imported.comps?.length) {
     const importedComps = $state.snapshot(imported.comps);
@@ -320,7 +359,7 @@ export function mergeOldAndNewData({
         merged.entries.push(importedEntry);
         continue;
       } else {
-        duplicateEntryIds.add(existingEntry.id);
+        duplicateLegacyEntries.add(existingEntry.id);
       }
 
       const tbaMetrics = new Map<string, Value>();
@@ -381,7 +420,7 @@ export function mergeOldAndNewData({
     merged.fields = merged.fields?.filter((f) => !fieldsToDelete.has(f.id));
   }
 
-  return { merged, fieldsToDelete, duplicateEntryIds };
+  return { merged, fieldsToDelete, duplicateLegacyEntries, duplicateEventEntries };
 }
 
 function mergeMetaDB(incoming: MetaDB.Bulk | undefined, existing: MetaDB.Bulk | undefined, appendExisting: boolean) {
@@ -412,7 +451,8 @@ function mergeMetaDB(incoming: MetaDB.Bulk | undefined, existing: MetaDB.Bulk | 
 }
 
 function mergeEventDB(incoming: EventDB.Bulk | undefined, existing: EventDB.Bulk | undefined, appendExisting: boolean) {
-  if (!(incoming || existing)) return;
+  const id = incoming?.id || existing?.id;
+  if (!id) return;
 
   if (incoming) {
     if (incoming.version < EventDB.version) {
@@ -425,7 +465,7 @@ function mergeEventDB(incoming: EventDB.Bulk | undefined, existing: EventDB.Bulk
     return existing;
   }
 
-  const merged: EventDB.Bulk = { version: EventDB.version };
+  const merged: EventDB.Bulk = { id, version: EventDB.version };
 
   if (incoming?.teams?.length || existing?.teams?.length) {
     merged.teams = mergeArray(incoming?.teams, existing?.teams, EventDB.merge.team, appendExisting);

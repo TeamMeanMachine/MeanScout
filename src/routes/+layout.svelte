@@ -4,8 +4,9 @@
   import { rerunAllContextLoads } from "$lib";
   import BetaDialogBox from "$lib/components/BetaDialogBox.svelte";
   import DialogBox from "$lib/components/DialogBox.svelte";
+  import { EventDB } from "$lib/db";
   import { closeAllDialogs, Dialog, subscribeDialog, type DialogState } from "$lib/dialog";
-  import { importData } from "$lib/import.svelte";
+  import { anyDataInBulk, importData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcAutoReceiveStore } from "$lib/settings";
   import { onDestroy } from "svelte";
@@ -35,24 +36,38 @@
   });
 
   onlineTransfer.onrtcresponsemessage = (id, response) => {
-    if ($webRtcAutoReceiveStore && response.entries.length) {
+    const areResponseEntriesInCurrentEvent =
+      EventDB.id && EventDB.id == response.eventDB?.id && response.eventDB.entries?.length;
+    if ($webRtcAutoReceiveStore && (response.entries?.length || areResponseEntriesInCurrentEvent)) {
       importData({
         existing: data.all,
-        imported: { comps: [], surveys: [], fields: [], entries: response.entries },
+        imported: {
+          comps: [],
+          surveys: [],
+          fields: [],
+          entries: response.entries,
+          eventDB:
+            areResponseEntriesInCurrentEvent && response.eventDB
+              ? { id: response.eventDB.id, version: response.eventDB.version, entries: response.eventDB.entries }
+              : undefined,
+        },
         overwriteDuplicateEntries: false,
       })
-        .then(({ duplicateEntryIds }) => {
+        .then(({ duplicateLegacyEntries, duplicateEventEntries }) => {
           const filteredResponse = {
             ...response,
-            entries: response.entries.filter((e) => duplicateEntryIds.has(e.id)),
+            entries: response.entries?.filter((e) => duplicateLegacyEntries.has(e.id)),
+            eventDB: response.eventDB
+              ? {
+                  ...response.eventDB,
+                  entries: response.eventDB.entries?.filter((e) => duplicateEventEntries.has(e.id)),
+                }
+              : undefined,
           };
 
-          if (
-            filteredResponse.comps.length ||
-            filteredResponse.surveys.length ||
-            filteredResponse.fields.length ||
-            filteredResponse.entries.length
-          ) {
+          const anyData = anyDataInBulk(filteredResponse);
+
+          if (anyData.meta || anyData.event || anyData.legacy) {
             onlineTransfer.dataFromClients.set(id, filteredResponse);
           } else {
             onlineTransfer.dataFromClients.delete(id);

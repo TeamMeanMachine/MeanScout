@@ -2,7 +2,6 @@ import { z } from "zod";
 import { convertOprToLabel, serializeDate, teamSchema, type TeamInsights } from "./";
 import type { Entry } from "./entry";
 import type { Field } from "./field";
-import type { AllData } from "./idb";
 import { matchSchema } from "./match";
 import type { Survey } from "./survey";
 
@@ -35,7 +34,12 @@ export const compSchema = z.object({
 export type Comp = z.infer<typeof compSchema>;
 
 export type CompPageData = {
-  all: AllData;
+  all: {
+    comps: Comp[];
+    surveys: Survey[];
+    fields: Field[];
+    entries: Entry[];
+  };
   compRecord: Comp;
   surveyRecords: Survey[];
   fieldRecords: Field[];

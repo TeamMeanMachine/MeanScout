@@ -20,12 +20,11 @@
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { EventDB, MetaDB } from "$lib/db";
   import { Dialog, openDialog } from "$lib/dialog";
+  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
+  import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
   import { fetchEventData } from "$lib/fetch";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcActiveStore } from "$lib/settings";
-
-  // import BulkExportDialog from "./BulkExportDialog.svelte";
-  // import BulkImportDialog from "./BulkImportDialog.svelte";
 
   let {
     event,
@@ -97,13 +96,10 @@
     <div class="flex flex-wrap gap-1">
       <Button
         onclick={() => {
-          // openDialog(BulkExportDialog, {
-          //   send: "all",
-          //   comps: [pageData.compRecord],
-          //   surveys: pageData.surveyRecords,
-          //   fields: pageData.fieldRecords,
-          //   entries: pageData.entryRecords,
-          // });
+          openDialog(BulkExportDialog, {
+            send: "all",
+            data: {},
+          });
         }}
         class="relative grow basis-40"
       >
@@ -118,10 +114,10 @@
 
       <Button
         onclick={() => {
-          // openDialog(BulkImportDialog, {
-          //   request: "all",
-          //   existing: pageData.all,
-          // });
+          openDialog(BulkImportDialog, {
+            request: "all",
+            existing: {},
+          });
         }}
         class="relative grow basis-40"
       >

@@ -69,7 +69,7 @@
       onclick={() => {
         openDialog(BulkExportDialog, {
           send: "entries",
-          entries: [entry],
+          data: { entries: [entry] },
           onexport: onchange,
         });
       }}

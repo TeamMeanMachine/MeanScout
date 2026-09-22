@@ -49,7 +49,7 @@
       <div class="flex flex-col gap-2">
         {#if data.entryRecords.some((e) => e.status != "draft")}
           <Button
-            onclick={() => openDialog(BulkExportDialog, { send: "entries", entries: data.entryRecords })}
+            onclick={() => openDialog(BulkExportDialog, { send: "entries", data: { entries: data.entryRecords } })}
             class="relative"
           >
             <ShareIcon

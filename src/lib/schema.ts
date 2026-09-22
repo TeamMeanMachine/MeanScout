@@ -8,6 +8,7 @@ export namespace Schema {
     z.number(),
     z.templateLiteral(["m", z.number()]).optional(),
   ]);
+  export const matchIdRegExp = /(qm|ef|qf|sf|f)([0-9]+)(?:m([0-9]+))?/i;
 
   export type Value = z.infer<typeof value>;
   export type Timestamp = z.infer<typeof timestamp>;

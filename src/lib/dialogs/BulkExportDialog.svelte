@@ -1,4 +1,6 @@
 <script lang="ts">
+  /** TODO */
+
   import {
     FileBracesIcon,
     LogOutIcon,
@@ -9,31 +11,22 @@
     XIcon,
   } from "@lucide/svelte";
   import { download, rerunAllContextLoads, schemaVersion, serializeDate, sessionStorageStore, share } from "$lib";
-  import type { Comp } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
   import RoomWidget from "$lib/components/RoomWidget.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
-  import type { Field } from "$lib/field";
   import { idb } from "$lib/idb";
+  import type { ImportedData } from "$lib/import.svelte";
   import { onlineTransfer } from "$lib/online-transfer.svelte";
   import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
 
   let {
     send,
-    comps,
-    surveys,
-    fields,
-    entries,
+    data,
     onexport,
   }: {
     send: "entries" | "configs" | "all";
-    comps?: Comp[];
-    surveys?: Survey[];
-    fields?: Field[];
-    entries?: Entry[];
+    data: ImportedData;
     onexport?: () => void;
   } = $props();
 
@@ -44,17 +37,17 @@
   let currentTab = $state(onlineTransfer.requestsFromClients.size ? "room" : $storedTab);
 
   // svelte-ignore state_referenced_locally
-  const completedEntries = entries?.filter((e) => e.status != "draft");
+  const completedEntries = data.entries?.filter((e) => e.status != "draft");
   // svelte-ignore state_referenced_locally
-  const unexportedEntries = entries?.filter((e) => e.status == "submitted");
+  const unexportedEntries = data.entries?.filter((e) => e.status == "submitted");
 
   // svelte-ignore state_referenced_locally
   const defaultExportedData = JSON.stringify(
     $state.snapshot({
       version: schemaVersion,
-      comps: send != "entries" ? comps : undefined,
-      surveys: send != "entries" ? surveys : undefined,
-      fields: send != "entries" ? fields : undefined,
+      comps: send != "entries" ? data.comps : undefined,
+      surveys: send != "entries" ? data.surveys : undefined,
+      fields: send != "entries" ? data.fields : undefined,
       entries: send != "configs" ? completedEntries : undefined,
     }),
     (key, value) => {
@@ -90,22 +83,17 @@
     if (sending == "entries") {
       onlineTransfer.sendTo(id, {
         type: "response",
-        entries: entries?.filter((e) => e.status != "draft"),
+        data: { entries: completedEntries },
       });
     } else if (sending == "configs") {
       onlineTransfer.sendTo(id, {
         type: "response",
-        comps,
-        surveys,
-        fields,
+        data: { comps: data.comps, surveys: data.surveys, fields: data.fields },
       });
     } else {
       onlineTransfer.sendTo(id, {
         type: "response",
-        comps,
-        surveys,
-        fields,
-        entries: completedEntries,
+        data: { comps: data.comps, surveys: data.surveys, fields: data.fields, entries: completedEntries },
       });
     }
 
@@ -125,25 +113,25 @@
   }
 
   function compsDescriptor() {
-    if (!comps?.length) return undefined;
-    if (comps.length == 1) return comps[0].name;
-    return `c${comps.length}`;
+    if (!data.comps?.length) return undefined;
+    if (data.comps.length == 1) return data.comps[0].name;
+    return `c${data.comps.length}`;
   }
 
   function surveysDescriptor() {
-    if (!surveys?.length) return undefined;
-    if (surveys.length == 1) return surveys[0].name;
-    return `s${surveys.length}`;
+    if (!data.surveys?.length) return undefined;
+    if (data.surveys.length == 1) return data.surveys[0].name;
+    return `s${data.surveys.length}`;
   }
 
   function fieldsDescriptor() {
-    if (!fields?.length) return undefined;
-    return `f${fields.length}`;
+    if (!data.fields?.length) return undefined;
+    return `f${data.fields.length}`;
   }
 
   function entriesDescriptor() {
-    if (!entries?.length) return undefined;
-    return `e${entries.length}`;
+    if (!data.entries?.length) return undefined;
+    return `e${data.entries.length}`;
   }
 
   export const { onconfirm }: DialogExports = {
@@ -157,16 +145,16 @@
             entryStore.put({ ...$state.snapshot(entry), status: "exported", modified: now });
           }
 
-          if (comps?.length) {
+          if (data.comps?.length) {
             const compStore = tx.objectStore("entries");
-            for (const comp of comps) {
+            for (const comp of data.comps) {
               compStore.put({ ...$state.snapshot(comp), modified: now });
             }
           }
 
-          if (surveys?.length) {
+          if (data.surveys?.length) {
             const surveyStore = tx.objectStore("entries");
-            for (const survey of surveys) {
+            for (const survey of data.surveys) {
               surveyStore.put({ ...$state.snapshot(survey), modified: now });
             }
           }

@@ -4,8 +4,7 @@
   import Button from "$lib/components/Button.svelte";
   import ImportViewer from "$lib/components/ImportViewer.svelte";
   import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { AllData } from "$lib/idb";
-  import { importData } from "$lib/import.svelte";
+  import { anyDataInBulk, importData, type ImportedData } from "$lib/import.svelte";
   import type { ClientInfo } from "$lib/online-transfer.svelte";
 
   let {
@@ -14,35 +13,20 @@
     existing,
     onhandle,
   }: {
-    data: AllData;
+    data: ImportedData;
     client: ClientInfo;
-    existing: AllData;
+    existing: ImportedData;
     onhandle(): void;
   } = $props();
 
-  const importedIds = $derived({
-    comps: new Set(data.comps.map((c) => c.id)),
-    surveys: new Set(data.surveys.map((s) => s.id)),
-    fields: new Set(data.fields.map((f) => f.id)),
-    entries: new Set(data.entries.map((e) => e.id)),
-  });
-
-  const existingIds = $derived({
-    comps: new Set(existing.comps.map((c) => c.id)),
-    surveys: new Set(existing.surveys.map((s) => s.id)),
-    fields: new Set(existing.fields.map((f) => f.id)),
-    entries: new Set(existing.entries.map((e) => e.id)),
-  });
-
-  const duplicateIds = $derived({
-    comps: importedIds.comps.intersection(existingIds.comps),
-    surveys: importedIds.surveys.intersection(existingIds.surveys),
-    fields: importedIds.fields.intersection(existingIds.fields),
-    entries: importedIds.entries.intersection(existingIds.entries),
+  const duplicateEntryIds = $derived.by(() => {
+    return new Set(data.entries?.map((e) => e.id)).intersection(new Set(existing.entries?.map((e) => e.id)));
   });
 
   let overwriteDuplicateEntries = $state(true);
   let error = $state("");
+
+  const anyImported = $derived(anyDataInBulk(data));
 
   export const { onconfirm }: DialogExports = {
     onconfirm() {
@@ -50,8 +34,8 @@
         return;
       }
 
-      if (!data.comps?.length && !data.surveys?.length && !data.fields?.length && !data.entries?.length) {
-        error = "No data in data";
+      if (!anyImported) {
+        error = "No data found";
         return;
       }
 
@@ -70,7 +54,7 @@
 
 <ImportViewer imported={data} {existing} {overwriteDuplicateEntries} {client} />
 
-{#if duplicateIds.entries.size}
+{#if duplicateEntryIds.size}
   <Button
     onclick={() => (overwriteDuplicateEntries = !overwriteDuplicateEntries)}
     class={["grow basis-0", overwriteDuplicateEntries ? "font-bold" : "font-light"]}

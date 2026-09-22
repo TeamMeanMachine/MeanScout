@@ -1,7 +1,8 @@
 <script lang="ts">
+  /** TODO */
+
   import { ChevronRightIcon } from "@lucide/svelte";
   import type { Entry } from "$lib/entry";
-  import type { AllData } from "$lib/idb";
   import type { ImportedData } from "$lib/import.svelte";
   import { compareMatches } from "$lib/match";
   import type { ClientInfo } from "$lib/online-transfer.svelte";
@@ -14,7 +15,7 @@
     client,
   }: {
     imported: ImportedData;
-    existing: AllData;
+    existing: ImportedData;
     overwriteDuplicateEntries: boolean;
     client?: ClientInfo;
   } = $props();

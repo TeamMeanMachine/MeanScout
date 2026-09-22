@@ -104,6 +104,7 @@ const schemas = {
 };
 
 const bulkSchema = z.object({
+  id: z.string(),
   version: z.number(),
   teams: schemas.team.array().optional(),
   matches: schemas.match.array().optional(),
@@ -247,6 +248,9 @@ let maps = {
 };
 
 export const EventDB = {
+  get id() {
+    return getDB()?.name;
+  },
   version,
   schemas,
   bulkSchema,
