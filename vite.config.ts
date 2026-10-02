@@ -7,22 +7,5 @@ process.env.VITE_GIT_COMMIT_DATE = child_process.execSync("git log -1 --format=%
 process.env.VITE_GIT_COMMIT_HASH = child_process.execSync("git rev-parse --short HEAD").toString().trimEnd();
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    sveltekit(),
-    {
-      name: "full-reload-always",
-      handleHotUpdate({ server }) {
-        server.ws.send({ type: "full-reload" });
-        return [];
-      },
-    },
-  ],
-  server:
-    process.env.NODE_ENV === "development"
-      ? {
-          allowedHosts: ["key-ostrich-sharp.ngrok-free.app"],
-          host: true,
-        }
-      : undefined,
+  plugins: [tailwindcss(), sveltekit()],
 });

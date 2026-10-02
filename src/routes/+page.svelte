@@ -55,11 +55,16 @@
         </span>
       {/if}
     </Button>
-    <Button onclick={() => openDialog(NewCompDialog, {})}>
+    <Button onclick={() => openDialog(NewCompDialog, { existing: data.all })}>
       <PlusIcon class="text-theme" />
       <div class="flex flex-col">
         Create
-        <span class="text-xs font-light">New</span>
+        <span class="text-xs font-light">
+          New
+          {#if data.all.comps.length}
+            or duplicate
+          {/if}
+        </span>
       </div>
     </Button>
   </div>

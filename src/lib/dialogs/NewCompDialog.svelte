@@ -5,11 +5,13 @@
   import { type Alliance, type Comp, type TeamsInsights } from "$lib/comp";
   import Button from "$lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "$lib/dialog";
-  import { idb } from "$lib/idb";
+  import { idb, type AllData } from "$lib/idb";
   import type { Match } from "$lib/match";
   import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "$lib/tba";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
+
+  let { existing }: { existing: AllData } = $props();
 
   let name = $state("");
   let event = $state<string | undefined>();
@@ -20,6 +22,8 @@
   let insights = $state<TeamsInsights | undefined>(undefined);
 
   let createSurveys = $state({ match: true, pit: true });
+
+  let duplicatingCompId = $state<string>();
 
   let error = $state("");
 
@@ -54,12 +58,25 @@
       if (alliances) comp.alliances = alliances;
       if (insights) comp.teamsInsights = insights;
 
-      const tx = idb.transaction(["comps", "surveys"], "readwrite");
-      const surveyStore = tx.objectStore("surveys");
+      const tx = idb.transaction(["comps", "surveys", "fields"], "readwrite");
+      tx.onerror = () => {
+        error ||= `Could not create comp: ${tx.error?.message}`;
+      };
+      tx.oncomplete = () => {
+        rerunOtherContextLoads();
+        goto(`#/comp/${comp.id}/admin`, { invalidateAll: true });
+      };
+
+      if (duplicatingCompId) {
+        createDuplicates(tx, comp);
+        return;
+      }
 
       tx.objectStore("comps").add($state.snapshot(comp)).onerror = () => {
         tx.abort();
       };
+
+      const surveyStore = tx.objectStore("surveys");
 
       if (createSurveys.match) {
         const matchSurvey: MatchSurvey = {
@@ -96,17 +113,169 @@
           tx.abort();
         };
       }
-
-      tx.onerror = () => {
-        error ||= `Could not create comp: ${tx.error?.message}`;
-      };
-
-      tx.oncomplete = () => {
-        rerunOtherContextLoads();
-        goto(`#/comp/${comp.id}/admin`, { invalidateAll: true });
-      };
     },
   };
+
+  function createDuplicates(tx: IDBTransaction, comp: Comp) {
+    const now = Date.now();
+    const duplicatingComp = existing.comps.find((c) => c.id == duplicatingCompId);
+    if (!duplicatingComp) {
+      error = "Could not duplicate comp: not found";
+      tx.abort();
+      return;
+    }
+
+    if (duplicatingComp.scouts) {
+      comp.scouts = $state.snapshot(duplicatingComp.scouts);
+    }
+
+    tx.objectStore("comps").add($state.snapshot(comp)).onerror = () => {
+      error = "Could not create duplicate comp";
+      tx.abort();
+    };
+
+    const duplicatingSurveys = existing.surveys
+      .filter((c) => c.compId == duplicatingCompId)
+      .map((survey) => ({ survey, fields: existing.fields.filter((f) => f.surveyId == survey.id) }));
+    if (!duplicatingSurveys.length) return;
+
+    const surveyStore = tx.objectStore("surveys");
+    const fieldStore = tx.objectStore("fields");
+
+    if (createSurveys.match && !duplicatingSurveys.some((s) => s.survey.type == "match")) {
+      const matchSurvey: MatchSurvey = {
+        id: `${id}-match`,
+        compId: id,
+        name: "Match Survey",
+        type: "match",
+        fieldIds: [],
+        expressions: [],
+        pickLists: [],
+        created: now,
+        modified: now,
+      };
+
+      surveyStore.add($state.snapshot(matchSurvey)).onerror = () => {
+        error = "Could not create match survey";
+        tx.abort();
+      };
+    }
+
+    if (createSurveys.pit && !duplicatingSurveys.some((s) => s.survey.type == "pit")) {
+      const pitSurvey: PitSurvey = {
+        id: `${id}-pit`,
+        compId: id,
+        name: "Pit Survey",
+        type: "pit",
+        fieldIds: [],
+        created: now,
+        modified: now,
+      };
+
+      surveyStore.add($state.snapshot(pitSurvey)).onerror = () => {
+        error = "Could not create pit survey";
+        tx.abort();
+      };
+    }
+
+    for (const duplicatedSurvey of duplicatingSurveys) {
+      const duplicatedId = duplicatedSurvey.survey.id;
+      const oldNewFieldIdMap = new Map<string, string>();
+
+      const survey: (typeof duplicatedSurvey)["survey"] = {
+        ...duplicatedSurvey.survey,
+        id:
+          duplicatedId.endsWith("-match") || duplicatedId.endsWith("-pit")
+            ? `${id}-${duplicatedSurvey.survey.type}`
+            : idb.generateId(),
+        compId: id,
+        fieldIds: duplicatedSurvey.survey.fieldIds.map((id, index) => {
+          const newId = oldNewFieldIdMap.get(id) || idb.generateId() + index;
+          oldNewFieldIdMap.set(id, newId);
+          return newId;
+        }),
+        created: now,
+        modified: now,
+      };
+
+      const fields = duplicatedSurvey.fields.map((f, index): typeof f => {
+        const newId = oldNewFieldIdMap.get(f.id) || idb.generateId() + index;
+        oldNewFieldIdMap.set(f.id, newId);
+        if (f.type == "group") {
+          return {
+            ...f,
+            id: newId,
+            surveyId: survey.id,
+            fieldIds: f.fieldIds.map((innerId, innerIndex) => {
+              const newId = oldNewFieldIdMap.get(innerId) || idb.generateId() + (index + innerIndex);
+              oldNewFieldIdMap.set(innerId, newId);
+              return newId;
+            }),
+          };
+        }
+        return {
+          ...f,
+          id: newId,
+          surveyId: survey.id,
+        };
+      });
+
+      for (const field of fields) {
+        fieldStore.put($state.snapshot(field)).onerror = () => {
+          error = "Could not create duplicated field";
+          tx.abort();
+        };
+      }
+
+      if (survey.type == "match") {
+        survey.pickLists = survey.pickLists.map((pl) => {
+          return {
+            ...pl,
+            customRanks: undefined,
+            omittedTeams: undefined,
+            weights: pl.weights.map((w, index) => {
+              if (w.from == "field") {
+                const newId = oldNewFieldIdMap.get(w.fieldId) || idb.generateId() + index;
+                oldNewFieldIdMap.set(w.fieldId, newId);
+                w.fieldId = newId;
+              }
+              return w;
+            }),
+          };
+        });
+
+        survey.expressions = survey.expressions.map((ex) => {
+          return {
+            ...ex,
+            input:
+              ex.input.from == "fields"
+                ? {
+                    ...ex.input,
+                    fieldIds: ex.input.fieldIds.map((id, index) => {
+                      const newId = oldNewFieldIdMap.get(id) || idb.generateId() + index;
+                      oldNewFieldIdMap.set(id, newId);
+                      return newId;
+                    }),
+                  }
+                : ex.input,
+            inputs: ex.inputs?.map((i, index) => {
+              if (i.from == "field") {
+                const newId = oldNewFieldIdMap.get(i.fieldId) || idb.generateId() + index;
+                oldNewFieldIdMap.set(i.fieldId, newId);
+                i.fieldId = newId;
+              }
+              return i;
+            }),
+          };
+        });
+      }
+
+      surveyStore.put($state.snapshot(survey)).onerror = () => {
+        error = "Could not create duplicated survey";
+        tx.abort();
+      };
+    }
+  }
 
   async function getDataFromTbaEvent() {
     if (!event) return;
@@ -139,7 +308,12 @@
   }
 </script>
 
-<span>New comp</span>
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <span>{duplicatingCompId == undefined ? "New" : "Duplicate"} comp</span>
+  {#if duplicatingCompId == undefined && existing.comps.length}
+    <Button onclick={() => (duplicatingCompId = "")} class="text-sm">Duplicate</Button>
+  {/if}
+</div>
 
 <label class="flex flex-col">
   Name
@@ -235,6 +409,26 @@
     </Button>
   </div>
 </div>
+
+{#if duplicatingCompId != undefined && existing.comps.length}
+  <div class="flex flex-col">
+    Duplicate
+    <span class="text-xs font-light">Only copies fields, pick lists, expressions</span>
+    <div class="flex flex-col gap-2">
+      {#each existing.comps as comp (comp.id)}
+        {const selected = $derived(duplicatingCompId == comp.id)}
+        <Button onclick={() => (duplicatingCompId = selected ? "" : comp.id)} class={[selected && "font-bold"]}>
+          {#if selected}
+            <SquareCheckBigIcon class="text-theme" />
+          {:else}
+            <SquareIcon class="text-neutral-500" />
+          {/if}
+          {comp.name}
+        </Button>
+      {/each}
+    </div>
+  </div>
+{/if}
 
 {#if error}
   <span>{error}</span>
