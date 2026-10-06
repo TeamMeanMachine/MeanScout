@@ -1,4 +1,4 @@
-import type { ClientInit } from "@sveltejs/kit";
+import type { ClientInit } from "@sveltejs/kit/hooks";
 import { idb } from "$lib/idb";
 import { onlineTransfer } from "$lib/online-transfer.svelte";
 import { scoutStore, teamStore, webRtcActiveStore, webRtcForceFallbackStore, webRtcRoomIdStore } from "$lib/settings";
