@@ -1,4 +1,4 @@
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 import { writable } from "svelte/store";
 import { supportsCompressionApi } from "./compress";
 
@@ -8,6 +8,7 @@ function localStorageStore<T extends string>(
   subscriber?: ((val: T) => void) | undefined,
 ) {
   const value = browser ? (localStorage.getItem(key) as T) || defaultValue : defaultValue;
+
   const store = writable<T>(value);
   store.subscribe((val) => browser && localStorage.setItem(key, val));
   if (subscriber) store.subscribe(subscriber);

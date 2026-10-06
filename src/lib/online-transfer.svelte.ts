@@ -1,4 +1,4 @@
-import { dev } from "$app/environment";
+import { dev } from "$app/env";
 import { serializeDate } from "$lib";
 import { SvelteMap } from "svelte/reactivity";
 import { z } from "zod";
@@ -28,7 +28,11 @@ const wsInboundMessageSchema = z.discriminatedUnion("type", [
   inboundCandidateMessageSchema,
   z.object({ type: z.literal("leave"), id: z.string() }),
   z.object({ type: z.literal("error"), error: z.string() }),
-  z.object({ type: z.literal("batch"), messages: z.array(inboundCandidateMessageSchema) }),
+  z.object({
+    type: z.literal("batch"),
+    messages: z.array(inboundCandidateMessageSchema),
+  }),
+
   z.object({
     type: z.literal("request"),
     from: z.string(),
@@ -44,13 +48,29 @@ type WSOutboundCandidateMessage = { type: "candidate"; to: string; candidate: RT
 
 type WSOutboundMessage =
   | { type: "info"; info: { name: string; team: string } }
-  | { type: "offer"; to: string; offer: RTCSessionDescription | null }
-  | { type: "answer"; to: string; answer: RTCSessionDescription | null }
+  | {
+      type: "offer";
+      to: string;
+      offer: RTCSessionDescription | null;
+    }
+  | {
+      type: "answer";
+      to: string;
+      answer: RTCSessionDescription | null;
+    }
   | WSOutboundCandidateMessage
   | { type: "batch"; messages: WSOutboundCandidateMessage[] }
-  | { type: "request"; to?: string[]; request: "entries" | "configs" | "all" }
+  | {
+      type: "request";
+      to?: string[];
+      request: "entries" | "configs" | "all";
+    }
   | ({ type: "response"; to?: string[] } & ImportedData)
-  | { type: "scouting"; to?: string[]; status: "done" | ScoutingStatus };
+  | {
+      type: "scouting";
+      to?: string[];
+      status: "done" | ScoutingStatus;
+    };
 
 const rtcRequestMessageSchema = z.object({
   type: z.literal("request"),
