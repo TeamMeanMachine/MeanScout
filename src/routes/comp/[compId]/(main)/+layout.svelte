@@ -1,10 +1,10 @@
 <script lang="ts">
   import { ChartBarBigIcon, ListOrderedIcon, NotepadTextIcon, UserSearchIcon, UsersIcon } from "@lucide/svelte";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Header from "#lib/components/Header.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import CompMenuDialog from "#lib/dialogs/CompMenuDialog.svelte";
   import { page } from "$app/state";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Header from "$lib/components/Header.svelte";
-  import { openDialog } from "$lib/dialog";
-  import CompMenuDialog from "$lib/dialogs/CompMenuDialog.svelte";
 
   let { data, children } = $props();
 

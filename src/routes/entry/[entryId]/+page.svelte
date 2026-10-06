@@ -8,21 +8,21 @@
     UserSearchIcon,
     UsersIcon,
   } from "@lucide/svelte";
+  import { getTeamName, rerunOtherContextLoads, schemaVersion, type Team } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import FieldValueEditor from "#lib/components/FieldValueEditor.svelte";
+  import Header from "#lib/components/Header.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import DeleteEntryDialog from "#lib/dialogs/DeleteEntryDialog.svelte";
+  import SelectMatchDialog from "#lib/dialogs/SelectMatchDialog.svelte";
+  import SelectScoutDialog from "#lib/dialogs/SelectScoutDialog.svelte";
+  import SelectTeamDialog from "#lib/dialogs/SelectTeamDialog.svelte";
+  import SubmitEntryDialog from "#lib/dialogs/SubmitEntryDialog.svelte";
+  import { idb } from "#lib/idb.js";
+  import { getAllMatches, type MatchIdentifier } from "#lib/match.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { scoutStore, teamStore, webRtcActiveStore, webRtcAutoSendStore } from "#lib/settings.js";
   import { goto, onNavigate } from "$app/navigation";
-  import { getTeamName, rerunOtherContextLoads, schemaVersion, type Team } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
-  import Header from "$lib/components/Header.svelte";
-  import { openDialog } from "$lib/dialog";
-  import DeleteEntryDialog from "$lib/dialogs/DeleteEntryDialog.svelte";
-  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
-  import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
-  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
-  import SubmitEntryDialog from "$lib/dialogs/SubmitEntryDialog.svelte";
-  import { idb } from "$lib/idb";
-  import { getAllMatches, type MatchIdentifier } from "$lib/match";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { scoutStore, teamStore, webRtcActiveStore, webRtcAutoSendStore } from "$lib/settings";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { PageData, PageProps } from "./$types";

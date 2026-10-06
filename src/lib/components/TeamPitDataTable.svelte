@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { type Team } from "$lib";
-  import type { CompPageData } from "$lib/comp";
-  import type { Entry, PitEntry } from "$lib/entry";
-  import { getFieldsWithDetails } from "$lib/field";
-  import type { PitSurvey } from "$lib/survey";
+  import { type Team } from "#lib";
+  import type { CompPageData } from "#lib/comp.js";
+  import type { Entry, PitEntry } from "#lib/entry.js";
+  import { getFieldsWithDetails } from "#lib/field.js";
+  import type { PitSurvey } from "#lib/survey.js";
 
   let {
     pageData,

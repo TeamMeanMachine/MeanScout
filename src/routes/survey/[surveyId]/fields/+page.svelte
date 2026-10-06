@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import EditFieldDialog from "$lib/dialogs/EditFieldDialog.svelte";
-  import NewFieldDialog from "$lib/dialogs/NewFieldDialog.svelte";
-  import { fieldIcons, fieldTypes, type Field, type GroupField } from "$lib/field";
-  import { idb } from "$lib/idb";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import EditFieldDialog from "#lib/dialogs/EditFieldDialog.svelte";
+  import NewFieldDialog from "#lib/dialogs/NewFieldDialog.svelte";
+  import { fieldIcons, fieldTypes, type Field, type GroupField } from "#lib/field.js";
+  import { idb } from "#lib/idb.js";
   import Sortable from "sortablejs";
   import type { PageProps } from "./$types";
 

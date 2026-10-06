@@ -1,7 +1,13 @@
 import type { ClientInit } from "@sveltejs/kit/hooks";
-import { idb } from "$lib/idb";
-import { onlineTransfer } from "$lib/online-transfer.svelte";
-import { scoutStore, teamStore, webRtcActiveStore, webRtcForceFallbackStore, webRtcRoomIdStore } from "$lib/settings";
+import { idb } from "#lib/idb.js";
+import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+import {
+  scoutStore,
+  teamStore,
+  webRtcActiveStore,
+  webRtcForceFallbackStore,
+  webRtcRoomIdStore,
+} from "#lib/settings.js";
 import { get } from "svelte/store";
 
 export const init: ClientInit = async () => {

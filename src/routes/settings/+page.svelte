@@ -13,11 +13,10 @@
     UsersIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { goto } from "$app/navigation";
-  import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
-  import { supportsCompressionApi } from "$lib/compress";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import Header from "#lib/components/Header.svelte";
+  import { supportsCompressionApi } from "#lib/compress.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
   import {
     cameraStore,
     scoutStore,
@@ -27,8 +26,9 @@
     teamStore,
     useCompressionStore,
     webRtcForceFallbackStore,
-  } from "$lib/settings";
-  import { tbaAuthKeyIsValid } from "$lib/tba";
+  } from "#lib/settings.js";
+  import { tbaAuthKeyIsValid } from "#lib/tba.js";
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
 
   const backLink = sessionStorage.getItem("home") || "";

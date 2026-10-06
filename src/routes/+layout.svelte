@@ -1,12 +1,12 @@
 <script lang="ts">
   import "./layout.css";
+  import { rerunAllContextLoads } from "#lib";
+  import DialogBox from "#lib/components/DialogBox.svelte";
+  import { closeAllDialogs, subscribeDialog, type DialogState } from "#lib/dialog.js";
+  import { importData } from "#lib/import.svelte.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { webRtcAutoReceiveStore } from "#lib/settings.js";
   import { onNavigate } from "$app/navigation";
-  import { rerunAllContextLoads } from "$lib";
-  import DialogBox from "$lib/components/DialogBox.svelte";
-  import { closeAllDialogs, subscribeDialog, type DialogState } from "$lib/dialog";
-  import { importData } from "$lib/import.svelte";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcAutoReceiveStore } from "$lib/settings";
   import { onDestroy } from "svelte";
 
   let { data, children } = $props();

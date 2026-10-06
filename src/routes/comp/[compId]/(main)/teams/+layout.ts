@@ -1,4 +1,4 @@
-import { getTeamName, type Team } from "$lib";
+import { getTeamName, type Team } from "#lib";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {

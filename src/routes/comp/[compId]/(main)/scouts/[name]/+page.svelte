@@ -1,9 +1,9 @@
 <script lang="ts">
   import { CheckIcon } from "@lucide/svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { compareMatches } from "$lib/match";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import ViewEntryDialog from "#lib/dialogs/ViewEntryDialog.svelte";
+  import { compareMatches } from "#lib/match.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

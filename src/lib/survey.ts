@@ -1,4 +1,4 @@
-import { serializeDate } from "$lib";
+import { serializeDate } from "#lib";
 import { z } from "zod";
 import { expressionSchema, sortExpressions } from "./expression";
 import { isNumericField, type SingleFieldWithDetails } from "./field";

@@ -12,22 +12,22 @@
     UserSearchIcon,
     XIcon,
   } from "@lucide/svelte";
+  import { getTeamName, isValidTeam, rerunAllContextLoads, rerunOtherContextLoads, type Team } from "#lib";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, openDialog } from "#lib/dialog.js";
+  import SelectMatchDialog from "#lib/dialogs/SelectMatchDialog.svelte";
+  import SelectScoutDialog from "#lib/dialogs/SelectScoutDialog.svelte";
+  import SelectTeamDialog from "#lib/dialogs/SelectTeamDialog.svelte";
+  import ViewEntryDialog from "#lib/dialogs/ViewEntryDialog.svelte";
+  import { type Entry, type MatchEntry, type PitEntry } from "#lib/entry.js";
+  import { getDefaultFieldValue, getFieldsWithDetails } from "#lib/field.js";
+  import { idb } from "#lib/idb.js";
+  import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier } from "#lib/match.js";
+  import { onlineTransfer, type ScoutingStatus } from "#lib/online-transfer.svelte.js";
+  import { scoutStore, targetStore, teamStore, type Target } from "#lib/settings.js";
+  import type { MatchSurvey, PitSurvey } from "#lib/survey.js";
   import { goto } from "$app/navigation";
-  import { getTeamName, isValidTeam, rerunAllContextLoads, rerunOtherContextLoads, type Team } from "$lib";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, openDialog } from "$lib/dialog";
-  import SelectMatchDialog from "$lib/dialogs/SelectMatchDialog.svelte";
-  import SelectScoutDialog from "$lib/dialogs/SelectScoutDialog.svelte";
-  import SelectTeamDialog from "$lib/dialogs/SelectTeamDialog.svelte";
-  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { type Entry, type MatchEntry, type PitEntry } from "$lib/entry";
-  import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import { compareMatches, matchIdentifierSchema, matchUrl, type MatchIdentifier } from "$lib/match";
-  import { onlineTransfer, type ScoutingStatus } from "$lib/online-transfer.svelte";
-  import { scoutStore, targetStore, teamStore, type Target } from "$lib/settings";
-  import type { MatchSurvey, PitSurvey } from "$lib/survey";
   import { untrack } from "svelte";
   import { fly, slide, type FlyParams } from "svelte/transition";
   import { z } from "zod";

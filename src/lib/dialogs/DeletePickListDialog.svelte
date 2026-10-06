@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
 
   let {
     ondelete,

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import EditExpressionDialog from "$lib/dialogs/EditExpressionDialog.svelte";
-  import EditPickListDialog from "$lib/dialogs/EditPickListDialog.svelte";
-  import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
-  import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
-  import { sortExpressions, type Expression } from "$lib/expression";
-  import { idb } from "$lib/idb";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import EditExpressionDialog from "#lib/dialogs/EditExpressionDialog.svelte";
+  import EditPickListDialog from "#lib/dialogs/EditPickListDialog.svelte";
+  import NewExpressionDialog from "#lib/dialogs/NewExpressionDialog.svelte";
+  import NewPickListDialog from "#lib/dialogs/NewPickListDialog.svelte";
+  import { sortExpressions, type Expression } from "#lib/expression.js";
+  import { idb } from "#lib/idb.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

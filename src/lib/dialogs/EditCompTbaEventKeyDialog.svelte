@@ -1,9 +1,9 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon, LoaderIcon } from "@lucide/svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { teamStore } from "$lib/settings";
-  import { tbaEventExists, tbaGetTeamEvents } from "$lib/tba";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { teamStore } from "#lib/settings.js";
+  import { tbaEventExists, tbaGetTeamEvents } from "#lib/tba.js";
   import { onMount } from "svelte";
 
   let {

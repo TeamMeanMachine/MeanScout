@@ -1,12 +1,12 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import ImportViewer from "$lib/components/ImportViewer.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { AllData } from "$lib/idb";
-  import { importData } from "$lib/import.svelte";
-  import type { ClientInfo } from "$lib/online-transfer.svelte";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import ImportViewer from "#lib/components/ImportViewer.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import type { AllData } from "#lib/idb.js";
+  import { importData } from "#lib/import.svelte.js";
+  import type { ClientInfo } from "#lib/online-transfer.svelte.js";
 
   let {
     data,

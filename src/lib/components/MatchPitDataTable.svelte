@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { CompPageData } from "$lib/comp";
-  import type { Entry, PitEntry } from "$lib/entry";
-  import { getFieldsWithDetails } from "$lib/field";
-  import { type Match } from "$lib/match";
-  import type { PitSurvey } from "$lib/survey";
+  import type { CompPageData } from "#lib/comp.js";
+  import type { Entry, PitEntry } from "#lib/entry.js";
+  import { getFieldsWithDetails } from "#lib/field.js";
+  import { type Match } from "#lib/match.js";
+  import type { PitSurvey } from "#lib/survey.js";
   import Anchor from "./Anchor.svelte";
 
   let {

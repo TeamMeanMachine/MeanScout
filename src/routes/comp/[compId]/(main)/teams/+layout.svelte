@@ -1,12 +1,12 @@
 <script lang="ts">
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { allianceTeamLabels, rerunAllContextLoads, type Team } from "#lib";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import NewTeamsDialog from "#lib/dialogs/NewTeamsDialog.svelte";
+  import { idb } from "#lib/idb.js";
   import { afterNavigate, goto } from "$app/navigation";
-  import { allianceTeamLabels, rerunAllContextLoads, type Team } from "$lib";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
-  import { idb } from "$lib/idb";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();

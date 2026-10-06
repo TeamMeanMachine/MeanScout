@@ -1,4 +1,4 @@
-import { idb } from "$lib/idb";
+import { idb } from "#lib/idb.js";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async () => {

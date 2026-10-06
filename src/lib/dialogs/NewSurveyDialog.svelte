@@ -1,11 +1,11 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
+  import { rerunOtherContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import type { DialogExports } from "#lib/dialog.js";
+  import { idb } from "#lib/idb.js";
+  import { surveyTypes, type Survey, type SurveyType } from "#lib/survey.js";
   import { goto } from "$app/navigation";
-  import { rerunOtherContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import type { DialogExports } from "$lib/dialog";
-  import { idb } from "$lib/idb";
-  import { surveyTypes, type Survey, type SurveyType } from "$lib/survey";
 
   let {
     compId,

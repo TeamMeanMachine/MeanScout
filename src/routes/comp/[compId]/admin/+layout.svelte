@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Header from "#lib/components/Header.svelte";
   import { page } from "$app/state";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Header from "$lib/components/Header.svelte";
 
   let { data, children } = $props();
 

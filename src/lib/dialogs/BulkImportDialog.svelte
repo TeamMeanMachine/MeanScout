@@ -1,15 +1,15 @@
 <script lang="ts">
   import { DownloadIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon, Undo2Icon, XIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads, sessionStorageStore } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import ImportViewer from "$lib/components/ImportViewer.svelte";
-  import QrCodeReader from "$lib/components/QRCodeReader.svelte";
-  import RoomWidget from "$lib/components/RoomWidget.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
-  import type { AllData } from "$lib/idb";
-  import { importData, importSchema, type ImportedData } from "$lib/import.svelte";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
+  import { rerunAllContextLoads, sessionStorageStore } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import ImportViewer from "#lib/components/ImportViewer.svelte";
+  import QrCodeReader from "#lib/components/QRCodeReader.svelte";
+  import RoomWidget from "#lib/components/RoomWidget.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.js";
+  import type { AllData } from "#lib/idb.js";
+  import { importData, importSchema, type ImportedData } from "#lib/import.svelte.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { webRtcActiveStore, webRtcAutoReceiveStore } from "#lib/settings.js";
   import { z } from "zod";
   import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 

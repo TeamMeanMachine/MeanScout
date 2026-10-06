@@ -38,5 +38,9 @@
     "qrcode": "^1.5.4",
     "sortablejs": "^1.15.6",
     "zod": "^4.0.13"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
   }
 }

@@ -1,15 +1,15 @@
 <script lang="ts">
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
+  import { getTeamName, rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
+  import ViewEntryDialog from "#lib/dialogs/ViewEntryDialog.svelte";
+  import { entryStatuses, type Entry, type EntryStatus } from "#lib/entry.js";
+  import { idb } from "#lib/idb.js";
+  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "#lib/match.js";
+  import { targets, type Target } from "#lib/settings.js";
   import { goto } from "$app/navigation";
-  import { getTeamName, rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
-  import ViewEntryDialog from "$lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, type Entry, type EntryStatus } from "$lib/entry";
-  import { idb } from "$lib/idb";
-  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "$lib/match";
-  import { targets, type Target } from "$lib/settings";
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import type { PageProps } from "./$types";

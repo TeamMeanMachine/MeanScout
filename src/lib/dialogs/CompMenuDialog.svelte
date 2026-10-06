@@ -10,15 +10,15 @@
     SettingsIcon,
     ShareIcon,
   } from "@lucide/svelte";
-  import { appUpdate } from "$lib/app-update.svelte";
-  import type { CompPageData } from "$lib/comp";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import FetchTbaDataButton from "$lib/components/FetchTbaDataButton.svelte";
-  import RoomWidget from "$lib/components/RoomWidget.svelte";
-  import { openDialog } from "$lib/dialog";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore } from "$lib/settings";
+  import { appUpdate } from "#lib/app-update.svelte.js";
+  import type { CompPageData } from "#lib/comp.js";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import FetchTbaDataButton from "#lib/components/FetchTbaDataButton.svelte";
+  import RoomWidget from "#lib/components/RoomWidget.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { webRtcActiveStore } from "#lib/settings.js";
   import BulkExportDialog from "./BulkExportDialog.svelte";
   import BulkImportDialog from "./BulkImportDialog.svelte";
 

@@ -1,16 +1,16 @@
 <script lang="ts">
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { allianceTeamLabels, convertOprToLabel, rerunAllContextLoads, rerunOtherContextLoads } from "#lib";
+  import { getTeamInsights } from "#lib/comp.js";
+  import Button from "#lib/components/Button.svelte";
+  import TeamMatchDataTable from "#lib/components/TeamMatchDataTable.svelte";
+  import TeamPitDataTable from "#lib/components/TeamPitDataTable.svelte";
+  import TimeChart from "#lib/components/TimeChart.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
+  import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
+  import { idb } from "#lib/idb.js";
   import { goto } from "$app/navigation";
-  import { allianceTeamLabels, convertOprToLabel, rerunAllContextLoads, rerunOtherContextLoads } from "$lib";
-  import { getTeamInsights } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import TeamMatchDataTable from "$lib/components/TeamMatchDataTable.svelte";
-  import TeamPitDataTable from "$lib/components/TeamPitDataTable.svelte";
-  import TimeChart from "$lib/components/TimeChart.svelte";
-  import { openDialog } from "$lib/dialog";
-  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
-  import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
-  import { idb } from "$lib/idb";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

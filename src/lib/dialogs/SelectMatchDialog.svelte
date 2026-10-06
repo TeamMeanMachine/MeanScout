@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { compareMatches, matchLevels, type Match, type MatchIdentifier } from "$lib/match";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { compareMatches, matchLevels, type Match, type MatchIdentifier } from "#lib/match.js";
 
   let {
     matches,

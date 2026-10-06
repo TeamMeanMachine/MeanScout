@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Trash2Icon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import DeleteCompDialog from "$lib/dialogs/DeleteCompDialog.svelte";
-  import { idb } from "$lib/idb";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import DeleteCompDialog from "#lib/dialogs/DeleteCompDialog.svelte";
+  import { idb } from "#lib/idb.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

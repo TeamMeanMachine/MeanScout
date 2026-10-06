@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ArrowBigDownDashIcon, EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
   import Anchor from "./Anchor.svelte";
   import Button from "./Button.svelte";
-  import "$lib/app-update.svelte";
-  import { appUpdate } from "$lib/app-update.svelte";
+  import "#lib/app-update.svelte.js";
+  import { appUpdate } from "#lib/app-update.svelte.js";
 
   let {
     title = "MeanScout",

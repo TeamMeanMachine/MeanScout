@@ -1,9 +1,9 @@
 import { error } from "@sveltejs/kit";
-import { type Value } from "$lib";
-import type { Comp } from "$lib/comp";
-import type { Entry, MatchEntry, PitEntry } from "$lib/entry";
-import { getDefaultFieldValue, getFieldsWithDetails } from "$lib/field";
-import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import { type Value } from "#lib";
+import type { Comp } from "#lib/comp.js";
+import type { Entry, MatchEntry, PitEntry } from "#lib/entry.js";
+import { getDefaultFieldValue, getFieldsWithDetails } from "#lib/field.js";
+import type { MatchSurvey, PitSurvey } from "#lib/survey.js";
 import type { PageLoad } from "./$types";
 
 type EntryPageData = {

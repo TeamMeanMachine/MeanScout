@@ -10,11 +10,11 @@
     SquareIcon,
     Trash2Icon,
   } from "@lucide/svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import { type Field, type GroupField } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import type { Survey } from "$lib/survey";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { type Field, type GroupField } from "#lib/field.js";
+  import { idb } from "#lib/idb.js";
+  import type { Survey } from "#lib/survey.js";
 
   let {
     surveyRecord,

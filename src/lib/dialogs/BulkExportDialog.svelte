@@ -8,18 +8,18 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { download, rerunAllContextLoads, schemaVersion, serializeDate, sessionStorageStore, share } from "$lib";
-  import type { Comp } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import QrCodeDisplay from "$lib/components/QRCodeDisplay.svelte";
-  import RoomWidget from "$lib/components/RoomWidget.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Entry } from "$lib/entry";
-  import type { Field } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
-  import { webRtcActiveStore, webRtcAutoReceiveStore } from "$lib/settings";
-  import type { Survey } from "$lib/survey";
+  import { download, rerunAllContextLoads, schemaVersion, serializeDate, sessionStorageStore, share } from "#lib";
+  import type { Comp } from "#lib/comp.js";
+  import Button from "#lib/components/Button.svelte";
+  import QrCodeDisplay from "#lib/components/QRCodeDisplay.svelte";
+  import RoomWidget from "#lib/components/RoomWidget.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import type { Entry } from "#lib/entry.js";
+  import type { Field } from "#lib/field.js";
+  import { idb } from "#lib/idb.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { webRtcActiveStore, webRtcAutoReceiveStore } from "#lib/settings.js";
+  import type { Survey } from "#lib/survey.js";
 
   let {
     send,

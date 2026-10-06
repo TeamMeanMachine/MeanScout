@@ -1,16 +1,16 @@
 <script lang="ts">
   import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
+  import { getTeamName, rerunOtherContextLoads } from "#lib";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import MatchDataTable from "#lib/components/MatchDataTable.svelte";
+  import MatchPitDataTable from "#lib/components/MatchPitDataTable.svelte";
+  import MatchRanksChart from "#lib/components/MatchRanksChart.svelte";
+  import { openDialog } from "#lib/dialog.js";
+  import EditMatchDialog from "#lib/dialogs/EditMatchDialog.svelte";
+  import { idb } from "#lib/idb.js";
+  import { compareMatches, matchUrl } from "#lib/match.js";
   import { goto } from "$app/navigation";
-  import { getTeamName, rerunOtherContextLoads } from "$lib";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import MatchDataTable from "$lib/components/MatchDataTable.svelte";
-  import MatchPitDataTable from "$lib/components/MatchPitDataTable.svelte";
-  import MatchRanksChart from "$lib/components/MatchRanksChart.svelte";
-  import { openDialog } from "$lib/dialog";
-  import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
-  import { idb } from "$lib/idb";
-  import { compareMatches, matchUrl } from "$lib/match";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

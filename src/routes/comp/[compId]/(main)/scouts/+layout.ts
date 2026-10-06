@@ -1,5 +1,5 @@
-import type { MatchEntry } from "$lib/entry";
-import { getPredictionsPerMatch, getPredictionsPerScout } from "$lib/prediction";
+import type { MatchEntry } from "#lib/entry.js";
+import { getPredictionsPerMatch, getPredictionsPerScout } from "#lib/prediction.js";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {

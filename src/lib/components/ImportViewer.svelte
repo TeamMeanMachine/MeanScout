@@ -1,10 +1,10 @@
 <script lang="ts">
   import { ChevronRightIcon } from "@lucide/svelte";
-  import type { Entry } from "$lib/entry";
-  import type { AllData } from "$lib/idb";
-  import type { ImportedData } from "$lib/import.svelte";
-  import { compareMatches } from "$lib/match";
-  import type { ClientInfo } from "$lib/online-transfer.svelte";
+  import type { Entry } from "#lib/entry.js";
+  import type { AllData } from "#lib/idb.js";
+  import type { ImportedData } from "#lib/import.svelte.js";
+  import { compareMatches } from "#lib/match.js";
+  import type { ClientInfo } from "#lib/online-transfer.svelte.js";
   import Button from "./Button.svelte";
 
   let {

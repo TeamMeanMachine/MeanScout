@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
   import { slide } from "svelte/transition";
 
   let {

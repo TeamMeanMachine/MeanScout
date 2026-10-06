@@ -1,6 +1,6 @@
-import { sortExpressions } from "$lib/expression";
-import { getFieldsWithDetails } from "$lib/field";
-import { groupRanks } from "$lib/survey";
+import { sortExpressions } from "#lib/expression.js";
+import { getFieldsWithDetails } from "#lib/field.js";
+import { groupRanks } from "#lib/survey.js";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {

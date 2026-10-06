@@ -1,9 +1,9 @@
 <script lang="ts">
   import { PlusIcon, UserMinusIcon } from "@lucide/svelte";
-  import { allianceTeamLabels, type Team } from "$lib";
-  import type { Alliance } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { allianceTeamLabels, type Team } from "#lib";
+  import type { Alliance } from "#lib/comp.js";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.js";
 
   let {
     team,
