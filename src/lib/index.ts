@@ -1,12 +1,12 @@
 import { browser } from "$app/env";
-import { invalidateAll } from "$app/navigation";
+import { refreshAll } from "$app/navigation";
 import { writable } from "svelte/store";
 import { z } from "zod";
 
 const bc = new BroadcastChannel("invalidate");
-bc.onmessage = () => invalidateAll();
+bc.onmessage = () => refreshAll();
 
-/** Reload data on other browsing contexts (assuming `invalidateAll` was already called on this one). */
+/** Reload data on other browsing contexts (assuming `refreshAll` was already called on this one). */
 export function rerunOtherContextLoads() {
   bc.postMessage(undefined);
 }
@@ -14,7 +14,7 @@ export function rerunOtherContextLoads() {
 /** Reloads data on all browsing contexts (including this one). */
 export function rerunAllContextLoads() {
   bc.postMessage(undefined);
-  invalidateAll();
+  refreshAll();
 }
 
 export const schemaVersion = 17;

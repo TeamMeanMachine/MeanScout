@@ -90,7 +90,7 @@
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();
-                goto(`#/comp/${data.compRecord.id}/teams`, { replaceState: true, invalidateAll: true });
+                goto(`#/comp/${data.compRecord.id}/teams`, { refreshAll: true, replace: true });
               };
             },
           });

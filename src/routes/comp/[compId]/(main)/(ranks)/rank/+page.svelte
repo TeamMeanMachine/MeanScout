@@ -41,7 +41,7 @@
           ).onsuccess = () => {
             rerunOtherContextLoads();
             const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(data.surveyRecord.id)}`;
-            goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { replaceState: true, invalidateAll: true });
+            goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { refreshAll: true, replace: true });
           };
         },
         onreset() {
@@ -67,7 +67,7 @@
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();
-            goto(`#/comp/${data.compRecord.id}/ranks`, { replaceState: true, invalidateAll: true });
+            goto(`#/comp/${data.compRecord.id}/ranks`, { refreshAll: true, replace: true });
           };
         },
       });
@@ -132,10 +132,7 @@
           ).onsuccess = () => {
             rerunOtherContextLoads();
             const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(data.surveyRecord.id)}`;
-            goto(`${path}&expression=${encodeURIComponent(expression.name)}`, {
-              replaceState: true,
-              invalidateAll: true,
-            });
+            goto(`${path}&expression=${encodeURIComponent(expression.name)}`, { refreshAll: true, replace: true });
           };
         },
         ondelete() {
@@ -148,7 +145,7 @@
             }),
           ).onsuccess = () => {
             rerunOtherContextLoads();
-            goto(`#/comp/${data.compRecord.id}/ranks`, { replaceState: true, invalidateAll: true });
+            goto(`#/comp/${data.compRecord.id}/ranks`, { refreshAll: true, replace: true });
           };
         },
       });

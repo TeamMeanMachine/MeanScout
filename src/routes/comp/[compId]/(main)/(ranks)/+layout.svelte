@@ -130,7 +130,7 @@
         ).onsuccess = () => {
           rerunOtherContextLoads();
           const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(surveyRecord.id)}`;
-          goto(`${path}&expression=${encodeURIComponent(expression.name)}`, { invalidateAll: true });
+          goto(`${path}&expression=${encodeURIComponent(expression.name)}`, { refreshAll: true });
         };
       },
     });
@@ -208,7 +208,7 @@
                             ).onsuccess = () => {
                               rerunOtherContextLoads();
                               const path = `#/comp/${data.compRecord.id}/rank?surveyId=${encodeURIComponent(survey.id)}`;
-                              goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { invalidateAll: true });
+                              goto(`${path}&picklist=${encodeURIComponent(pickList.name)}`, { refreshAll: true });
                             };
                           },
                         });

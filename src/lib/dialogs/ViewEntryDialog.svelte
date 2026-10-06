@@ -57,7 +57,7 @@
       idb.put("surveys", { ...$state.snapshot(surveyRecord), modified: now });
       sessionStorage.removeItem(`${surveyRecord.id}-new-entry-state`);
       sessionStorage.removeItem("new-entry");
-      goto(`#/entry/${entry.id}`, { invalidateAll: true });
+      goto(`#/entry/${entry.id}`, { refreshAll: true });
       rerunOtherContextLoads();
     };
   }

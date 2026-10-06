@@ -3,7 +3,7 @@
   import type { DialogExports } from "#lib/dialog.ts";
   import { idb } from "#lib/idb.ts";
   import type { Survey } from "#lib/survey.ts";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto } from "$app/navigation";
 
   let {
     surveyRecord,
@@ -24,7 +24,7 @@
 
       deleteTransaction.oncomplete = () => {
         rerunOtherContextLoads();
-        goto(`#/comp/${surveyRecord.compId}`, { invalidateAll: true });
+        goto(`#/comp/${surveyRecord.compId}`, { refreshAll: true });
       };
 
       const surveyRequest = deleteTransaction.objectStore("surveys").delete(surveyRecord.id);

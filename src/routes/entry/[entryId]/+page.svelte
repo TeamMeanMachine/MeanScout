@@ -312,7 +312,7 @@
               }
 
               rerunOtherContextLoads();
-              goto(`#/comp/${data.compRecord.id}`, { invalidateAll: true });
+              goto(`#/comp/${data.compRecord.id}`, { refreshAll: true });
             };
 
             tx.onerror = (error) => {
@@ -342,8 +342,8 @@
               onlineTransfer.localScoutingStatus = undefined;
               onlineTransfer.sendToAll({ type: "scouting", status: "done" });
               goto(sessionStorage.getItem("home") || `#/comp/${data.compRecord.id}`, {
-                invalidateAll: true,
-                replaceState: true,
+                refreshAll: true,
+                replace: true,
               });
             };
           },

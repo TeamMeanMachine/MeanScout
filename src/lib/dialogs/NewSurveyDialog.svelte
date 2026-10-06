@@ -67,7 +67,7 @@
 
       addRequest.onsuccess = () => {
         rerunOtherContextLoads();
-        goto(`#/survey/${survey.id}`, { invalidateAll: true });
+        goto(`#/survey/${survey.id}`, { refreshAll: true });
       };
     },
   };

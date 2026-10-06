@@ -64,7 +64,7 @@
       };
       tx.oncomplete = () => {
         rerunOtherContextLoads();
-        goto(`#/comp/${comp.id}/admin`, { invalidateAll: true });
+        goto(`#/comp/${comp.id}/admin`, { refreshAll: true });
       };
 
       if (duplicatingCompId) {

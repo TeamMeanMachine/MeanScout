@@ -314,7 +314,7 @@
       idb.put("surveys", { ...$state.snapshot(newEntry.survey), modified: Date.now() }).onsuccess = () => {
         rerunOtherContextLoads();
         sessionStorage.setItem("home", `#/comp/${data.compRecord.id}`);
-        goto(`#/entry/${entry.id}`, { invalidateAll: true });
+        goto(`#/entry/${entry.id}`, { refreshAll: true });
       };
     };
   }

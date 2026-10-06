@@ -105,7 +105,7 @@
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();
-                goto(`#/${matchUrl(match, data.compRecord.id)}`, { replaceState: true, invalidateAll: true });
+                goto(`#/${matchUrl(match, data.compRecord.id)}`, { refreshAll: true, replace: true });
               };
             },
             ondelete() {
@@ -118,7 +118,7 @@
                 }),
               ).onsuccess = () => {
                 rerunOtherContextLoads();
-                goto(`#/comp/${data.compRecord.id}/matches`, { replaceState: true, invalidateAll: true });
+                goto(`#/comp/${data.compRecord.id}/matches`, { refreshAll: true, replace: true });
               };
             },
           });
