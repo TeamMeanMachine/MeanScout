@@ -103,6 +103,8 @@
   });
 
   onNavigate((navigation) => {
+    if (navigation.shallow) return;
+
     if (
       onlineTransfer.localScoutingStatus &&
       navigation.from?.route.id !== navigation.to?.route.id &&

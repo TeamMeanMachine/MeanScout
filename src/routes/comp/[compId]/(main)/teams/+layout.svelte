@@ -42,7 +42,8 @@
     );
   }
 
-  afterNavigate(({ from, to }) => {
+  afterNavigate(({ from, to, shallow }) => {
+    if (shallow) return;
     if (!data.team) return;
     const [fromId, toId] = [from?.route.id, to?.route.id];
     if (fromId == toId) return;
@@ -117,7 +118,6 @@
     <div class="mb-6 flex flex-col gap-2 px-3 pt-1">
       {#each filteredTeams as team}
         {@const viewing = team.number == data.team?.number}
-
         {@const allianceWithIndex = data.compRecord.alliances
           ?.map((a, i) => ({ ...a, i }))
           .find((a) => a.teams.includes(team.number))}

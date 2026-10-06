@@ -113,10 +113,12 @@
     return winner ? "font-bold" : "font-light";
   }
 
-  afterNavigate(({ from, to }) => {
+  afterNavigate(({ from, to, shallow }) => {
+    if (shallow) return;
     if (!data.match) return;
     const [fromId, toId] = [from?.route.id, to?.route.id];
     const baseRouteId = "/comp/[compId]/(main)/matches";
+
     if (fromId == toId || (fromId?.startsWith(baseRouteId) && toId?.startsWith(baseRouteId))) return;
 
     document
