@@ -1,6 +1,6 @@
 <script lang="ts">
-  import FieldValueEditor from "$lib/components/FieldValueEditor.svelte";
-  import { getDefaultFieldValue } from "$lib/field";
+  import FieldValueEditor from "#lib/components/FieldValueEditor.svelte";
+  import { getDefaultFieldValue } from "#lib/field.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

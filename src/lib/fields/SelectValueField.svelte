@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
-  import Button from "$lib/components/Button.svelte";
-  import type { SelectField } from "$lib/field";
+  import Button from "#lib/components/Button.svelte";
+  import type { SelectField } from "#lib/field.ts";
 
   let {
     field,

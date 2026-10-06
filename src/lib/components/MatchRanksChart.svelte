@@ -7,15 +7,15 @@
     getTeamName,
     rerunAllContextLoads,
     sessionStorageStore,
-  } from "$lib";
-  import { getTeamsInsights, type CompPageData } from "$lib/comp";
-  import { openDialog } from "$lib/dialog";
-  import AddTeamToAllianceDialog from "$lib/dialogs/AddTeamToAllianceDialog.svelte";
-  import { type MatchEntry } from "$lib/entry";
-  import { sortExpressions, type Expression } from "$lib/expression";
-  import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import type { Match } from "$lib/match";
+  } from "#lib";
+  import { getTeamsInsights, type CompPageData } from "#lib/comp.ts";
+  import { openDialog } from "#lib/dialog.ts";
+  import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
+  import { type MatchEntry } from "#lib/entry.ts";
+  import { sortExpressions, type Expression } from "#lib/expression.ts";
+  import { getFieldsWithDetails, type SingleFieldWithDetails } from "#lib/field.ts";
+  import { idb } from "#lib/idb.ts";
+  import type { Match } from "#lib/match.ts";
   import {
     colors,
     getExpressionData,
@@ -25,8 +25,8 @@
     type PickList,
     type RankData,
     type TeamRank,
-  } from "$lib/rank";
-  import { groupRanks, type MatchSurvey } from "$lib/survey";
+  } from "#lib/rank.ts";
+  import { groupRanks, type MatchSurvey } from "#lib/survey.ts";
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import Anchor from "./Anchor.svelte";

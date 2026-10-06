@@ -159,15 +159,13 @@ export function getPickListData(
   const normalizedPickListData = normalizeTeamData(pickListData);
 
   const teamRanks = Object.keys(normalizedPickListData)
-    .map(
-      (team): PickListTeamRank => ({
-        team,
-        teamName: getTeamName(team, compRecord.teams) || "",
-        percentage: normalizedPickListData[team],
-        inputs: weightsData[team],
-        rank: 0,
-      }),
-    )
+    .map((team): PickListTeamRank => ({
+      team,
+      teamName: getTeamName(team, compRecord.teams) || "",
+      percentage: normalizedPickListData[team],
+      inputs: weightsData[team],
+      rank: 0,
+    }))
     .toSorted((a, b) => b.percentage - a.percentage)
     .map((team, index) => {
       team.rank = index + 1;
@@ -225,22 +223,20 @@ export function getExpressionData(
   const minValue = Math.min(...values);
 
   let teamRanks = Object.keys(expressionData)
-    .map(
-      (team): ExpressionTeamRank => ({
-        team,
-        teamName: getTeamName(team, compRecord.teams) || "",
-        value: expressionData[team].value,
-        percentage: Math.abs(
-          ((expressionData[team].value - Math.min(minValue, 0)) /
-            (maxValue || minValue || expressionData[team].value || 1)) *
-            100,
-        ),
-        inputs: expressionData[team].inputs.map((input) => {
-          return { value: Number(input), percentage: 0 };
-        }),
-        rank: 0,
+    .map((team): ExpressionTeamRank => ({
+      team,
+      teamName: getTeamName(team, compRecord.teams) || "",
+      value: expressionData[team].value,
+      percentage: Math.abs(
+        ((expressionData[team].value - Math.min(minValue, 0)) /
+          (maxValue || minValue || expressionData[team].value || 1)) *
+          100,
+      ),
+      inputs: expressionData[team].inputs.map((input) => {
+        return { value: Number(input), percentage: 0 };
       }),
-    )
+      rank: 0,
+    }))
     .toSorted((a, b) => b.value - a.value)
     .map((team, index) => {
       team.rank = index + 1;

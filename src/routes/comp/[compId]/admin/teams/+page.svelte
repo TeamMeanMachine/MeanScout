@@ -1,11 +1,11 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import EditTeamDialog from "$lib/dialogs/EditTeamDialog.svelte";
-  import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
-  import { idb } from "$lib/idb";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
+  import NewTeamsDialog from "#lib/dialogs/NewTeamsDialog.svelte";
+  import { idb } from "#lib/idb.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -15,7 +15,7 @@
   <div class="flex flex-col gap-3">
     {#if data.compRecord.teams.length}
       <div class="grid gap-2" style="grid-template-columns: min-content auto">
-        {#each data.compRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true }, ), ) as team (team.number)}
+        {#each data.compRecord.teams.toSorted( (a, b) => a.number.localeCompare( b.number, "en", { numeric: true } ) ) as team (team.number)}
           <Button
             onclick={() => {
               openDialog(EditTeamDialog, {

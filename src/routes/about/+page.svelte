@@ -1,8 +1,8 @@
 <script lang="ts">
   import { SquareArrowOutUpRightIcon } from "@lucide/svelte";
-  import { sessionStorageStore } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import Header from "$lib/components/Header.svelte";
+  import { sessionStorageStore } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import Header from "#lib/components/Header.svelte";
 
   const backLink = sessionStorage.getItem("home") || "";
 

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { DownloadIcon, PlusIcon, ShareIcon, SquarePenIcon } from "@lucide/svelte";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
+  import BulkImportDialog from "#lib/dialogs/BulkImportDialog.svelte";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import { page } from "$app/state";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import BulkExportDialog from "$lib/dialogs/BulkExportDialog.svelte";
-  import BulkImportDialog from "$lib/dialogs/BulkImportDialog.svelte";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();

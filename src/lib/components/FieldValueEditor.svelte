@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { Field } from "$lib/field";
-  import NumberValueField from "$lib/fields/NumberValueField.svelte";
-  import RatingValueField from "$lib/fields/RatingValueField.svelte";
-  import SelectValueField from "$lib/fields/SelectValueField.svelte";
-  import TextValueField from "$lib/fields/TextValueField.svelte";
-  import TimerValueField from "$lib/fields/TimerValueField.svelte";
-  import ToggleValueField from "$lib/fields/ToggleValueField.svelte";
+  import type { Field } from "#lib/field.ts";
+  import NumberValueField from "#lib/fields/NumberValueField.svelte";
+  import RatingValueField from "#lib/fields/RatingValueField.svelte";
+  import SelectValueField from "#lib/fields/SelectValueField.svelte";
+  import TextValueField from "#lib/fields/TextValueField.svelte";
+  import TimerValueField from "#lib/fields/TimerValueField.svelte";
+  import ToggleValueField from "#lib/fields/ToggleValueField.svelte";
 
   let {
     field,

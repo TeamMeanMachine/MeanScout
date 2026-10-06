@@ -1,4 +1,4 @@
-import { getTeamName, type Team } from "$lib";
+import { getTeamName, type Team } from "#lib";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {
@@ -13,12 +13,10 @@ export const load: LayoutLoad = async (event) => {
   const teams = [
     ...new Set([...data.compRecord.teams.map((team) => team.number), ...teamsFromMatches, ...teamsFromEntries]),
   ]
-    .map(
-      (team: string): Team => ({
-        number: team,
-        name: getTeamName(team, data.compRecord.teams) || "",
-      }),
-    )
+    .map((team: string): Team => ({
+      number: team,
+      name: getTeamName(team, data.compRecord.teams) || "",
+    }))
     .toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
   const team = teams.find((t) => t.number == event.params.number);

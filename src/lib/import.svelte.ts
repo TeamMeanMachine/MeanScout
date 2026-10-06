@@ -1,4 +1,4 @@
-import { type Team, type Value } from "$lib";
+import { type Team, type Value } from "#lib";
 import { z } from "zod";
 import { compSchema, type Comp } from "./comp";
 import { entrySchema, type Entry, type TbaMetrics } from "./entry";

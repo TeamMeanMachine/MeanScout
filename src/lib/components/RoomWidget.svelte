@@ -1,7 +1,7 @@
 <script lang="ts">
   import { LogInIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { onlineTransfer } from "$lib/online-transfer.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import {
     scoutStore,
     teamStore,
@@ -9,7 +9,7 @@
     webRtcAutoReceiveStore,
     webRtcForceFallbackStore,
     webRtcRoomIdStore,
-  } from "$lib/settings";
+  } from "#lib/settings.ts";
 
   let {
     hideTitle,

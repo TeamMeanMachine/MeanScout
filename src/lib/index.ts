@@ -1,4 +1,4 @@
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 import { invalidateAll } from "$app/navigation";
 import { writable } from "svelte/store";
 import { z } from "zod";
@@ -28,12 +28,9 @@ const teamInsightsSchema = z.object({
   ccwm: z.optional(z.number()),
   coprs: z.optional(z.record(z.string(), z.number())),
 });
-export type TeamInsights = z.infer<typeof teamInsightsSchema>;
 
-export const teamSchema = z.object({
-  number: z.string(),
-  name: z.string(),
-});
+export type TeamInsights = z.infer<typeof teamInsightsSchema>;
+export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
 
 export function isValidTeam(team: string) {
@@ -67,6 +64,7 @@ export function parseValueFromString(value: any) {
 
 export function sessionStorageStore<T extends string>(key: string, defaultValue: T) {
   const value = browser ? ((sessionStorage.getItem(key) as T) ?? defaultValue) : defaultValue;
+
   const store = writable<T>(value);
   store.subscribe((val) => browser && sessionStorage.setItem(key, val));
   return store;

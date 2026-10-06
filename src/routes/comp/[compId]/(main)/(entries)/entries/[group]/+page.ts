@@ -1,5 +1,5 @@
 import { error } from "@sveltejs/kit";
-import { groupEntries } from "$lib/entry";
+import { groupEntries } from "#lib/entry.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { rerunAllContextLoads } from "#lib";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import EditMatchDialog from "#lib/dialogs/EditMatchDialog.svelte";
+  import { idb } from "#lib/idb.ts";
+  import { compareMatches, matchUrl, type Match } from "#lib/match.ts";
+  import { teamStore } from "#lib/settings.ts";
   import { afterNavigate, goto } from "$app/navigation";
-  import { rerunAllContextLoads } from "$lib";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import EditMatchDialog from "$lib/dialogs/EditMatchDialog.svelte";
-  import { idb } from "$lib/idb";
-  import { compareMatches, matchUrl, type Match } from "$lib/match";
-  import { teamStore } from "$lib/settings";
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import type { LayoutProps } from "./$types";
@@ -113,10 +113,12 @@
     return winner ? "font-bold" : "font-light";
   }
 
-  afterNavigate(({ from, to }) => {
+  afterNavigate(({ from, to, shallow }) => {
+    if (shallow) return;
     if (!data.match) return;
     const [fromId, toId] = [from?.route.id, to?.route.id];
     const baseRouteId = "/comp/[compId]/(main)/matches";
+
     if (fromId == toId || (fromId?.startsWith(baseRouteId) && toId?.startsWith(baseRouteId))) return;
 
     document

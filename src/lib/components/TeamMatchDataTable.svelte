@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { Team, Value } from "$lib";
-  import type { CompPageData } from "$lib/comp";
-  import type { Entry, MatchEntry } from "$lib/entry";
-  import { sortExpressions } from "$lib/expression";
-  import { getFieldsWithDetails } from "$lib/field";
-  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "$lib/match";
-  import { getExpressionData } from "$lib/rank";
-  import type { MatchSurvey } from "$lib/survey";
+  import type { Team, Value } from "#lib";
+  import type { CompPageData } from "#lib/comp.ts";
+  import type { Entry, MatchEntry } from "#lib/entry.ts";
+  import { sortExpressions } from "#lib/expression.ts";
+  import { getFieldsWithDetails } from "#lib/field.ts";
+  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "#lib/match.ts";
+  import { getExpressionData } from "#lib/rank.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import Anchor from "./Anchor.svelte";
 
   let {
@@ -390,7 +390,7 @@
             <th class="sticky left-0 border-x border-b border-neutral-700 bg-neutral-800 p-1 text-sm">
               <Anchor
                 route={matchUrl(match, pageData.compRecord.id)}
-                class="w-13 justify-center py-1.5 text-nowrap! font-light"
+                class="w-13 justify-center py-1.5 font-light text-nowrap!"
               >
                 {#if match.level && match.level != "qm"}
                   {match.level}{match.set || 1}-{match.number}

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { convertOprToLabel, rerunOtherContextLoads } from "#lib";
+  import { getTeamsInsights } from "#lib/comp.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import NewExpressionDialog from "#lib/dialogs/NewExpressionDialog.svelte";
+  import NewPickListDialog from "#lib/dialogs/NewPickListDialog.svelte";
+  import type { EntryExpression, SurveyExpression } from "#lib/expression.ts";
+  import { type SingleFieldWithDetails } from "#lib/field.ts";
+  import { idb } from "#lib/idb.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import { goto } from "$app/navigation";
-  import { convertOprToLabel, rerunOtherContextLoads } from "$lib";
-  import { getTeamsInsights } from "$lib/comp";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import NewExpressionDialog from "$lib/dialogs/NewExpressionDialog.svelte";
-  import NewPickListDialog from "$lib/dialogs/NewPickListDialog.svelte";
-  import type { EntryExpression, SurveyExpression } from "$lib/expression";
-  import { type SingleFieldWithDetails } from "$lib/field";
-  import { idb } from "$lib/idb";
-  import type { MatchSurvey } from "$lib/survey";
   import { untrack } from "svelte";
   import type { LayoutProps } from "./$types";
 

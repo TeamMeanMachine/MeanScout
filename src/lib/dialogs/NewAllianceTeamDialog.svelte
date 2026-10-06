@@ -1,8 +1,8 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
-  import { getTeamName, type Team } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { getTeamName, type Team } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
 
   let {
     teams,

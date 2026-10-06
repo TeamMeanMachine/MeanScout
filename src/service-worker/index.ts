@@ -1,21 +1,17 @@
 // https://svelte.dev/docs/kit/service-workers
 
-/// <reference types="@sveltejs/kit" />
-/// <reference no-default-lib="true"/>
-/// <reference lib="esnext" />
-/// <reference lib="webworker" />
-
-import { build, files, prerendered, version } from "$service-worker";
-
-const sw = self as unknown as ServiceWorkerGlobalScope;
+import { version } from "$app/env";
+import { assets, immutable } from "$app/manifest";
+import { asset } from "$app/paths";
+import { self } from "$app/service-worker";
 
 const CACHE_NAME = `MeanScout-${version}`;
-const ASSETS = [...build, ...files, ...prerendered];
-const ORIGIN = new URL(sw.location.href).origin;
+const ASSETS = [...immutable.map((asset) => asset.path), ...assets.map((a) => asset(a.path))];
+const ORIGIN = new URL(self.location.href).origin;
 
-sw.oninstall = (e) => e.waitUntil(oninstall());
-sw.onactivate = (e) => e.waitUntil(onactivate());
-sw.onfetch = (e) => {
+self.oninstall = (e) => e.waitUntil(oninstall());
+self.onactivate = (e) => e.waitUntil(onactivate());
+self.onfetch = (e) => {
   if (new URL(e.request.url).origin !== ORIGIN) {
     return;
   }
@@ -28,13 +24,13 @@ sw.onfetch = (e) => {
 };
 
 async function oninstall() {
-  await sw.skipWaiting();
+  await self.skipWaiting();
   const cache = await caches.open(CACHE_NAME);
   await cache.addAll(ASSETS);
 }
 
 async function onactivate() {
-  await sw.clients.claim();
+  await self.clients.claim();
   const keys = await caches.keys();
 
   for (const key of keys) {

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon, SquarePenIcon } from "@lucide/svelte";
-  import { parseValueFromString } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "$lib/dialog";
+  import { parseValueFromString } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
   import {
     mapExpressionTypes,
     reduceExpressionTypes,
     type EntryExpression,
     type Expression,
     type SurveyExpression,
-  } from "$lib/expression";
-  import { type SingleFieldWithDetails } from "$lib/field";
-  import type { MatchSurvey } from "$lib/survey";
+  } from "#lib/expression.ts";
+  import { type SingleFieldWithDetails } from "#lib/field.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
 
   let {

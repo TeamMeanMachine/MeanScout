@@ -6,15 +6,15 @@
     TrendingDownIcon,
     TrendingUpIcon,
   } from "@lucide/svelte";
+  import type { Team } from "#lib";
+  import type { CompPageData } from "#lib/comp.ts";
+  import type { Entry, MatchEntry } from "#lib/entry.ts";
+  import { sortExpressions, type Expression } from "#lib/expression.ts";
+  import { getFieldsWithDetails, type SingleFieldWithDetails } from "#lib/field.ts";
+  import { compareMatches, getAllMatches, matchUrl, type MatchIdentifier } from "#lib/match.ts";
+  import { colors, getExpressionData, getFieldData } from "#lib/rank.ts";
+  import { groupRanks, type MatchSurvey } from "#lib/survey.ts";
   import { goto } from "$app/navigation";
-  import type { Team } from "$lib";
-  import type { CompPageData } from "$lib/comp";
-  import type { Entry, MatchEntry } from "$lib/entry";
-  import { sortExpressions, type Expression } from "$lib/expression";
-  import { getFieldsWithDetails, type SingleFieldWithDetails } from "$lib/field";
-  import { compareMatches, getAllMatches, matchUrl, type MatchIdentifier } from "$lib/match";
-  import { colors, getExpressionData, getFieldData } from "$lib/rank";
-  import { groupRanks, type MatchSurvey } from "$lib/survey";
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import Anchor from "./Anchor.svelte";

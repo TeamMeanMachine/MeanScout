@@ -1,12 +1,12 @@
 <script lang="ts">
   import { PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { allianceTeamLabels, rerunAllContextLoads, type Team } from "#lib";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import NewTeamsDialog from "#lib/dialogs/NewTeamsDialog.svelte";
+  import { idb } from "#lib/idb.ts";
   import { afterNavigate, goto } from "$app/navigation";
-  import { allianceTeamLabels, rerunAllContextLoads, type Team } from "$lib";
-  import Anchor from "$lib/components/Anchor.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import NewTeamsDialog from "$lib/dialogs/NewTeamsDialog.svelte";
-  import { idb } from "$lib/idb";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
@@ -42,7 +42,8 @@
     );
   }
 
-  afterNavigate(({ from, to }) => {
+  afterNavigate(({ from, to, shallow }) => {
+    if (shallow) return;
     if (!data.team) return;
     const [fromId, toId] = [from?.route.id, to?.route.id];
     if (fromId == toId) return;
@@ -117,7 +118,6 @@
     <div class="mb-6 flex flex-col gap-2 px-3 pt-1">
       {#each filteredTeams as team}
         {@const viewing = team.number == data.team?.number}
-
         {@const allianceWithIndex = data.compRecord.alliances
           ?.map((a, i) => ({ ...a, i }))
           .find((a) => a.teams.includes(team.number))}

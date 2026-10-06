@@ -1,12 +1,12 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import { getTeamsInsights, type Comp } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { EntryExpression, Expression, SurveyExpression } from "$lib/expression";
-  import { isNumericField, type SingleFieldWithDetails } from "$lib/field";
-  import type { PickList } from "$lib/rank";
-  import type { MatchSurvey } from "$lib/survey";
+  import { getTeamsInsights, type Comp } from "#lib/comp.ts";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
+  import type { EntryExpression, Expression, SurveyExpression } from "#lib/expression.ts";
+  import { isNumericField, type SingleFieldWithDetails } from "#lib/field.ts";
+  import type { PickList } from "#lib/rank.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
 
   let {
     compRecord,

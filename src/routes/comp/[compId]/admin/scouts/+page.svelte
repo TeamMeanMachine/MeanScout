@@ -1,10 +1,10 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "$lib";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog } from "$lib/dialog";
-  import NewScoutsDialog from "$lib/dialogs/NewScoutsDialog.svelte";
-  import { idb } from "$lib/idb";
+  import { rerunAllContextLoads } from "#lib";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog } from "#lib/dialog.ts";
+  import NewScoutsDialog from "#lib/dialogs/NewScoutsDialog.svelte";
+  import { idb } from "#lib/idb.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

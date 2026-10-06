@@ -1,8 +1,8 @@
 import { error } from "@sveltejs/kit";
-import type { Comp } from "$lib/comp";
-import type { MatchEntry, PitEntry } from "$lib/entry";
-import { getFieldsWithDetails, type Field } from "$lib/field";
-import type { MatchSurvey, PitSurvey } from "$lib/survey";
+import type { Comp } from "#lib/comp.ts";
+import type { MatchEntry, PitEntry } from "#lib/entry.ts";
+import { getFieldsWithDetails, type Field } from "#lib/field.ts";
+import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
 import type { LayoutLoad } from "./$types";
 
 type SurveyPageData = {

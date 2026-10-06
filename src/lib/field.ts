@@ -6,7 +6,7 @@ import {
   StarIcon,
   TextCursorInputIcon,
   TimerIcon,
-  type Icon,
+  type LucideIcon,
 } from "@lucide/svelte";
 import { z } from "zod";
 import type { Survey } from "./survey";
@@ -87,7 +87,7 @@ export type GroupField = z.infer<typeof groupFieldSchema>;
 export const fieldSchema = z.discriminatedUnion("type", [...singleFieldSchema.options, groupFieldSchema]);
 export type Field = z.infer<typeof fieldSchema>;
 
-export const fieldIcons: Record<FieldType, typeof Icon> = {
+export const fieldIcons: Record<FieldType, LucideIcon> = {
   toggle: SquareCheckBigIcon,
   number: HashIcon,
   select: CircleChevronDownIcon,

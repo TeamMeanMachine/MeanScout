@@ -1,4 +1,4 @@
-import { getAllMatches } from "$lib/match";
+import { getAllMatches } from "#lib/match.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {

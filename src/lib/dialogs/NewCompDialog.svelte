@@ -1,14 +1,14 @@
 <script lang="ts">
   import { CalendarDaysIcon, LoaderIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { rerunOtherContextLoads, type Team } from "#lib";
+  import { type Alliance, type Comp, type TeamsInsights } from "#lib/comp.ts";
+  import Button from "#lib/components/Button.svelte";
+  import { openDialog, type DialogExports } from "#lib/dialog.ts";
+  import { idb, type AllData } from "#lib/idb.ts";
+  import type { Match } from "#lib/match.ts";
+  import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
+  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "#lib/tba.ts";
   import { goto } from "$app/navigation";
-  import { rerunOtherContextLoads, type Team } from "$lib";
-  import { type Alliance, type Comp, type TeamsInsights } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import { openDialog, type DialogExports } from "$lib/dialog";
-  import { idb, type AllData } from "$lib/idb";
-  import type { Match } from "$lib/match";
-  import type { MatchSurvey, PitSurvey } from "$lib/survey";
-  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "$lib/tba";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 
   let { existing }: { existing: AllData } = $props();

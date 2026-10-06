@@ -1,9 +1,9 @@
 <script lang="ts">
   import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
-  import { allianceTeamLabels, isValidTeam } from "$lib";
-  import type { Comp } from "$lib/comp";
-  import Button from "$lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "$lib/dialog";
+  import { allianceTeamLabels, isValidTeam } from "#lib";
+  import type { Comp } from "#lib/comp.ts";
+  import Button from "#lib/components/Button.svelte";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
   import { slide } from "svelte/transition";
 
   let {

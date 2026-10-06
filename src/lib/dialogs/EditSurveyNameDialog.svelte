@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "$lib/dialog";
-  import type { Survey } from "$lib/survey";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
+  import type { Survey } from "#lib/survey.ts";
 
   let {
     surveyRecord,
