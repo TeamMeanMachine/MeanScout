@@ -2,7 +2,7 @@
   import { ChartBarBigIcon, ListOrderedIcon, NotepadTextIcon, UserSearchIcon, UsersIcon } from "@lucide/svelte";
   import Anchor from "#lib/components/Anchor.svelte";
   import Header from "#lib/components/Header.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import CompMenuDialog from "#lib/dialogs/CompMenuDialog.svelte";
   import { page } from "$app/state";
 

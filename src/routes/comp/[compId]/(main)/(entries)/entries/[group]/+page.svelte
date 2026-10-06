@@ -2,13 +2,13 @@
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
   import { getTeamName, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
   import ViewEntryDialog from "#lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, type Entry, type EntryStatus } from "#lib/entry.js";
-  import { idb } from "#lib/idb.js";
-  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "#lib/match.js";
-  import { targets, type Target } from "#lib/settings.js";
+  import { entryStatuses, type Entry, type EntryStatus } from "#lib/entry.ts";
+  import { idb } from "#lib/idb.ts";
+  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "#lib/match.ts";
+  import { targets, type Target } from "#lib/settings.ts";
   import { goto } from "$app/navigation";
   import { slide } from "svelte/transition";
   import { z } from "zod";

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
-  import type { Entry } from "#lib/entry.js";
-  import { idb } from "#lib/idb.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
+  import type { Entry } from "#lib/entry.ts";
+  import { idb } from "#lib/idb.ts";
 
   let {
     entryRecord,

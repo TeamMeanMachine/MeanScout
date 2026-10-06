@@ -2,9 +2,9 @@
   import { CircleCheckBigIcon, CircleIcon } from "@lucide/svelte";
   import { rerunOtherContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import type { DialogExports } from "#lib/dialog.js";
-  import { idb } from "#lib/idb.js";
-  import { surveyTypes, type Survey, type SurveyType } from "#lib/survey.js";
+  import type { DialogExports } from "#lib/dialog.ts";
+  import { idb } from "#lib/idb.ts";
+  import { surveyTypes, type Survey, type SurveyType } from "#lib/survey.ts";
   import { goto } from "$app/navigation";
 
   let {

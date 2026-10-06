@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TextField } from "#lib/field.js";
+  import type { TextField } from "#lib/field.ts";
 
   let {
     field,

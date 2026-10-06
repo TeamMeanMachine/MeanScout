@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
 
   let {
     scouts,

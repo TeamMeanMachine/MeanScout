@@ -1,15 +1,15 @@
 <script lang="ts">
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
   import { allianceTeamLabels, convertOprToLabel, rerunAllContextLoads, rerunOtherContextLoads } from "#lib";
-  import { getTeamInsights } from "#lib/comp.js";
+  import { getTeamInsights } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import TeamMatchDataTable from "#lib/components/TeamMatchDataTable.svelte";
   import TeamPitDataTable from "#lib/components/TeamPitDataTable.svelte";
   import TimeChart from "#lib/components/TimeChart.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
   import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
-  import { idb } from "#lib/idb.js";
+  import { idb } from "#lib/idb.ts";
   import { goto } from "$app/navigation";
   import type { PageProps } from "./$types";
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
-  import type { ToggleField } from "#lib/field.js";
+  import type { ToggleField } from "#lib/field.ts";
 
   let {
     field,

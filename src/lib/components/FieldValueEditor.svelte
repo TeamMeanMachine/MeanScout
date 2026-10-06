@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Field } from "#lib/field.js";
+  import type { Field } from "#lib/field.ts";
   import NumberValueField from "#lib/fields/NumberValueField.svelte";
   import RatingValueField from "#lib/fields/RatingValueField.svelte";
   import SelectValueField from "#lib/fields/SelectValueField.svelte";

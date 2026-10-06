@@ -3,11 +3,11 @@
   import { rerunAllContextLoads } from "#lib";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import EditMatchDialog from "#lib/dialogs/EditMatchDialog.svelte";
-  import { idb } from "#lib/idb.js";
-  import { compareMatches, matchUrl, type Match } from "#lib/match.js";
-  import { teamStore } from "#lib/settings.js";
+  import { idb } from "#lib/idb.ts";
+  import { compareMatches, matchUrl, type Match } from "#lib/match.ts";
+  import { teamStore } from "#lib/settings.ts";
   import { afterNavigate, goto } from "$app/navigation";
   import { slide } from "svelte/transition";
   import { z } from "zod";

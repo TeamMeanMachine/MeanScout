@@ -1,9 +1,9 @@
 import { error } from "@sveltejs/kit";
 import { convertOprToLabel } from "#lib";
-import type { MatchEntry } from "#lib/entry.js";
-import { sortExpressions } from "#lib/expression.js";
-import { getFieldsWithDetails } from "#lib/field.js";
-import { getExpressionData, getFieldData, getOprData, getPickListData } from "#lib/rank.js";
+import type { MatchEntry } from "#lib/entry.ts";
+import { sortExpressions } from "#lib/expression.ts";
+import { getFieldsWithDetails } from "#lib/field.ts";
+import { getExpressionData, getFieldData, getOprData, getPickListData } from "#lib/rank.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {

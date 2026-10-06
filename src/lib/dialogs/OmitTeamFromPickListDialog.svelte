@@ -2,7 +2,7 @@
   import { ListPlusIcon } from "@lucide/svelte";
   import type { Team } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
 
   let {
     team,

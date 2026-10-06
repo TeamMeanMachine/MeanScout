@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type DialogExports } from "#lib/dialog.js";
-  import type { Match } from "#lib/match.js";
+  import { type DialogExports } from "#lib/dialog.ts";
+  import type { Match } from "#lib/match.ts";
 
   let {
     match,

@@ -8,16 +8,16 @@
     PlusIcon,
     SettingsIcon,
   } from "@lucide/svelte";
-  import { appUpdate } from "#lib/app-update.svelte.js";
+  import { appUpdate } from "#lib/app-update.svelte.ts";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
   import Header from "#lib/components/Header.svelte";
   import RoomWidget from "#lib/components/RoomWidget.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import BulkImportDialog from "#lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "#lib/dialogs/NewCompDialog.svelte";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
-  import { webRtcActiveStore } from "#lib/settings.js";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
+  import { webRtcActiveStore } from "#lib/settings.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

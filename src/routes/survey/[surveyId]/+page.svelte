@@ -2,9 +2,9 @@
   import { PlusIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
   import { rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import EditSurveyNameDialog from "#lib/dialogs/EditSurveyNameDialog.svelte";
-  import { idb } from "#lib/idb.js";
+  import { idb } from "#lib/idb.ts";
   import type { PageData, PageProps } from "./$types";
 
   let { data }: PageProps = $props();

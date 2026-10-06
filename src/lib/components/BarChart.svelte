@@ -14,13 +14,13 @@
     XIcon,
   } from "@lucide/svelte";
   import { allianceTeamLabels, convertOprToLabel, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "#lib";
-  import type { CompPageData } from "#lib/comp.js";
-  import { openDialog } from "#lib/dialog.js";
+  import type { CompPageData } from "#lib/comp.ts";
+  import { openDialog } from "#lib/dialog.ts";
   import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
   import OmitTeamFromPickListDialog from "#lib/dialogs/OmitTeamFromPickListDialog.svelte";
-  import { getFieldsWithDetails } from "#lib/field.js";
-  import { idb } from "#lib/idb.js";
-  import { colors, type RankData, type TeamRank } from "#lib/rank.js";
+  import { getFieldsWithDetails } from "#lib/field.ts";
+  import { idb } from "#lib/idb.ts";
+  import { colors, type RankData, type TeamRank } from "#lib/rank.ts";
   import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
   import { untrack } from "svelte";
   import { flip } from "svelte/animate";

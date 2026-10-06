@@ -1,7 +1,7 @@
 <script lang="ts">
   import { StarIcon } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
-  import type { RatingField } from "#lib/field.js";
+  import type { RatingField } from "#lib/field.ts";
 
   let {
     field,

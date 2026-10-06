@@ -1,11 +1,11 @@
 <script lang="ts">
   import { SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
-  import { type DialogExports } from "#lib/dialog.js";
-  import { type Entry } from "#lib/entry.js";
-  import { getDefaultFieldValue, type SingleFieldWithDetails } from "#lib/field.js";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
-  import { webRtcActiveStore, webRtcAutoSendStore } from "#lib/settings.js";
+  import { type DialogExports } from "#lib/dialog.ts";
+  import { type Entry } from "#lib/entry.ts";
+  import { getDefaultFieldValue, type SingleFieldWithDetails } from "#lib/field.ts";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
+  import { webRtcActiveStore, webRtcAutoSendStore } from "#lib/settings.ts";
 
   let {
     orderedSingleFields,

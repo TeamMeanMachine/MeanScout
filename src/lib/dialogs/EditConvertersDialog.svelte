@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ArrowRightIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
-  import type { ConvertExpressionMethod } from "#lib/expression.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
+  import type { ConvertExpressionMethod } from "#lib/expression.ts";
 
   let {
     expressionMethod,

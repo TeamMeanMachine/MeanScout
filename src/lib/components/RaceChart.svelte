@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ArrowLeftIcon, ArrowRightIcon, PauseIcon, PlayIcon } from "@lucide/svelte";
   import { getOrdinal, sessionStorageStore } from "#lib";
-  import type { CompPageData } from "#lib/comp.js";
-  import type { MatchEntry } from "#lib/entry.js";
-  import { getFieldsWithDetails } from "#lib/field.js";
-  import { compareMatches } from "#lib/match.js";
-  import { getExpressionData, getFieldData, getPickListData, type RankData } from "#lib/rank.js";
-  import type { MatchSurvey } from "#lib/survey.js";
+  import type { CompPageData } from "#lib/comp.ts";
+  import type { MatchEntry } from "#lib/entry.ts";
+  import { getFieldsWithDetails } from "#lib/field.ts";
+  import { compareMatches } from "#lib/match.ts";
+  import { getExpressionData, getFieldData, getPickListData, type RankData } from "#lib/rank.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import { onDestroy, onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { linear } from "svelte/easing";

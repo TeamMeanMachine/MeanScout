@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Comp } from "#lib/comp.js";
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import type { Comp } from "#lib/comp.ts";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
 
   let {
     compRecord,

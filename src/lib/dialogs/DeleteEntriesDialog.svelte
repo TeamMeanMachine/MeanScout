@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
-  import { idb } from "#lib/idb.js";
-  import type { Survey } from "#lib/survey.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
+  import { idb } from "#lib/idb.ts";
+  import type { Survey } from "#lib/survey.ts";
 
   let {
     surveyRecord,

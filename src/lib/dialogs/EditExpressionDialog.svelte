@@ -2,16 +2,16 @@
   import { SquareCheckBigIcon, SquareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { parseValueFromString } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.js";
+  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
   import {
     mapExpressionTypes,
     reduceExpressionTypes,
     type EntryExpression,
     type Expression,
     type SurveyExpression,
-  } from "#lib/expression.js";
-  import type { SingleFieldWithDetails } from "#lib/field.js";
-  import type { MatchSurvey } from "#lib/survey.js";
+  } from "#lib/expression.ts";
+  import type { SingleFieldWithDetails } from "#lib/field.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import DeleteExpressionDialog from "./DeleteExpressionDialog.svelte";
   import EditConvertersDialog from "./EditConvertersDialog.svelte";
 

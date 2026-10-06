@@ -1,8 +1,8 @@
 <script lang="ts">
   import { rerunOtherContextLoads } from "#lib";
-  import type { Comp } from "#lib/comp.js";
-  import type { DialogExports } from "#lib/dialog.js";
-  import { idb } from "#lib/idb.js";
+  import type { Comp } from "#lib/comp.ts";
+  import type { DialogExports } from "#lib/dialog.ts";
+  import { idb } from "#lib/idb.ts";
   import { goto } from "$app/navigation";
 
   let {

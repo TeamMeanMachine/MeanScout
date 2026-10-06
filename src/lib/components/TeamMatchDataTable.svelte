@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Team, Value } from "#lib";
-  import type { CompPageData } from "#lib/comp.js";
-  import type { Entry, MatchEntry } from "#lib/entry.js";
-  import { sortExpressions } from "#lib/expression.js";
-  import { getFieldsWithDetails } from "#lib/field.js";
-  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "#lib/match.js";
-  import { getExpressionData } from "#lib/rank.js";
-  import type { MatchSurvey } from "#lib/survey.js";
+  import type { CompPageData } from "#lib/comp.ts";
+  import type { Entry, MatchEntry } from "#lib/entry.ts";
+  import { sortExpressions } from "#lib/expression.ts";
+  import { getFieldsWithDetails } from "#lib/field.ts";
+  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "#lib/match.ts";
+  import { getExpressionData } from "#lib/rank.ts";
+  import type { MatchSurvey } from "#lib/survey.ts";
   import Anchor from "./Anchor.svelte";
 
   let {

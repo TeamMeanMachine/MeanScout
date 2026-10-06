@@ -5,11 +5,11 @@
   import ImportViewer from "#lib/components/ImportViewer.svelte";
   import QrCodeReader from "#lib/components/QRCodeReader.svelte";
   import RoomWidget from "#lib/components/RoomWidget.svelte";
-  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.js";
-  import type { AllData } from "#lib/idb.js";
-  import { importData, importSchema, type ImportedData } from "#lib/import.svelte.js";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
-  import { webRtcActiveStore, webRtcAutoReceiveStore } from "#lib/settings.js";
+  import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
+  import type { AllData } from "#lib/idb.ts";
+  import { importData, importSchema, type ImportedData } from "#lib/import.svelte.ts";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
+  import { webRtcActiveStore, webRtcAutoReceiveStore } from "#lib/settings.ts";
   import { z } from "zod";
   import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 

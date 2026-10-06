@@ -4,11 +4,11 @@
   import BarChart from "#lib/components/BarChart.svelte";
   import Button from "#lib/components/Button.svelte";
   import RaceChart from "#lib/components/RaceChart.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import EditExpressionDialog from "#lib/dialogs/EditExpressionDialog.svelte";
   import EditPickListDialog from "#lib/dialogs/EditPickListDialog.svelte";
-  import { type Expression } from "#lib/expression.js";
-  import { idb } from "#lib/idb.js";
+  import { type Expression } from "#lib/expression.ts";
+  import { idb } from "#lib/idb.ts";
   import { goto } from "$app/navigation";
   import type { PageProps } from "./$types";
 

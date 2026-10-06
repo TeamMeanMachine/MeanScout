@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Team } from "#lib";
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
 
   let {
     teams,

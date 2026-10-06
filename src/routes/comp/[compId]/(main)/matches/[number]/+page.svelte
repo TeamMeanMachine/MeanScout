@@ -6,10 +6,10 @@
   import MatchDataTable from "#lib/components/MatchDataTable.svelte";
   import MatchPitDataTable from "#lib/components/MatchPitDataTable.svelte";
   import MatchRanksChart from "#lib/components/MatchRanksChart.svelte";
-  import { openDialog } from "#lib/dialog.js";
+  import { openDialog } from "#lib/dialog.ts";
   import EditMatchDialog from "#lib/dialogs/EditMatchDialog.svelte";
-  import { idb } from "#lib/idb.js";
-  import { compareMatches, matchUrl } from "#lib/match.js";
+  import { idb } from "#lib/idb.ts";
+  import { compareMatches, matchUrl } from "#lib/match.ts";
   import { goto } from "$app/navigation";
   import type { PageProps } from "./$types";
 

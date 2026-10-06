@@ -1,8 +1,8 @@
 <script lang="ts">
   import { rerunOtherContextLoads } from "#lib";
-  import type { DialogExports } from "#lib/dialog.js";
-  import { idb } from "#lib/idb.js";
-  import type { Survey } from "#lib/survey.js";
+  import type { DialogExports } from "#lib/dialog.ts";
+  import { idb } from "#lib/idb.ts";
+  import type { Survey } from "#lib/survey.ts";
   import { goto, invalidateAll } from "$app/navigation";
 
   let {

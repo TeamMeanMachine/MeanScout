@@ -2,10 +2,10 @@
   import "./layout.css";
   import { rerunAllContextLoads } from "#lib";
   import DialogBox from "#lib/components/DialogBox.svelte";
-  import { closeAllDialogs, subscribeDialog, type DialogState } from "#lib/dialog.js";
-  import { importData } from "#lib/import.svelte.js";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
-  import { webRtcAutoReceiveStore } from "#lib/settings.js";
+  import { closeAllDialogs, subscribeDialog, type DialogState } from "#lib/dialog.ts";
+  import { importData } from "#lib/import.svelte.ts";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
+  import { webRtcAutoReceiveStore } from "#lib/settings.ts";
   import { onNavigate } from "$app/navigation";
   import { onDestroy } from "svelte";
 

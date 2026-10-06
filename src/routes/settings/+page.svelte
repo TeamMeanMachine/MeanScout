@@ -15,8 +15,8 @@
   } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
   import Header from "#lib/components/Header.svelte";
-  import { supportsCompressionApi } from "#lib/compress.js";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.js";
+  import { supportsCompressionApi } from "#lib/compress.ts";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import {
     cameraStore,
     scoutStore,
@@ -26,8 +26,8 @@
     teamStore,
     useCompressionStore,
     webRtcForceFallbackStore,
-  } from "#lib/settings.js";
-  import { tbaAuthKeyIsValid } from "#lib/tba.js";
+  } from "#lib/settings.ts";
+  import { tbaAuthKeyIsValid } from "#lib/tba.ts";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
 

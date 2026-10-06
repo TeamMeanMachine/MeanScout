@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getTeamName, isValidTeam, type Team } from "#lib";
   import Button from "#lib/components/Button.svelte";
-  import { closeDialog, type DialogExports } from "#lib/dialog.js";
+  import { closeDialog, type DialogExports } from "#lib/dialog.ts";
   import { slide } from "svelte/transition";
 
   let {
