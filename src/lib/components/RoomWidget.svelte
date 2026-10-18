@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LogInIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import { ChevronsLeftRightEllipsisIcon, LogInIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import {
@@ -68,7 +68,12 @@
 </script>
 
 {#if !hideTitle}
-  <h2 class="font-bold">{$webRtcActiveStore ? "Room" : "Join a room"}</h2>
+  <h2 class="font-bold">
+    {$webRtcActiveStore ? "Room" : "Join a room"}
+    {#if onlineTransfer.state == "connected"}
+      <ChevronsLeftRightEllipsisIcon class="inline size-4" />
+    {/if}
+  </h2>
 {/if}
 
 <div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
@@ -88,13 +93,16 @@
         Others <span class="text-xs tracking-tighter">({onlineTransfer.clients.length})</span>
       </span>
       {#each onlineTransfer.clients as client (client.info.id)}
-        <div class="flex flex-col">
+        <div class="flex items-center gap-2">
           <span>
             {client.info.name}
             {#if client.info.team}
               <span class="text-xs font-light">({client.info.team})</span>
             {/if}
           </span>
+          {#if client.state == "connected"}
+            <ChevronsLeftRightEllipsisIcon class="size-4" />
+          {/if}
         </div>
       {:else}
         <span class="text-sm font-light">Nobody else is active in this room.</span>

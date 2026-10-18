@@ -90,22 +90,17 @@
     if (sending == "entries") {
       onlineTransfer.sendTo(id, {
         type: "response",
-        entries: entries?.filter((e) => e.status != "draft"),
+        data: { entries: entries?.filter((e) => e.status != "draft") },
       });
     } else if (sending == "configs") {
       onlineTransfer.sendTo(id, {
         type: "response",
-        comps,
-        surveys,
-        fields,
+        data: { comps, surveys, fields },
       });
     } else {
       onlineTransfer.sendTo(id, {
         type: "response",
-        comps,
-        surveys,
-        fields,
-        entries: completedEntries,
+        data: { comps, surveys, fields, entries: completedEntries },
       });
     }
 

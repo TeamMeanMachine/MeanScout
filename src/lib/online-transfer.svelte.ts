@@ -1,11 +1,13 @@
 import { serializeDate } from "#lib";
-import { dev } from "$app/env";
+import { browser, dev } from "$app/env";
 import { SvelteMap } from "svelte/reactivity";
+import { get } from "svelte/store";
 import { z } from "zod";
 import { compress, decompress } from "./compress";
 import type { AllData } from "./idb";
 import { importSchema, mergeOldAndNewData, type ImportedData } from "./import.svelte";
 import { matchIdentifierSchema } from "./match";
+import { scoutStore, teamStore, webRtcActiveStore, webRtcForceFallbackStore, webRtcRoomIdStore } from "./settings";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;
@@ -13,7 +15,7 @@ export type ClientInfo = z.infer<typeof clientInfoSchema>;
 const scoutingStatusSchema = z.object({
   team: z.string(),
   match: matchIdentifierSchema.optional(),
-  prediction: z.union([z.literal("red"), z.literal("blue")]).optional(),
+  prediction: z.literal(["red", "blue"]).optional(),
 });
 export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
 
@@ -28,17 +30,9 @@ const wsInboundMessageSchema = z.discriminatedUnion("type", [
   inboundCandidateMessageSchema,
   z.object({ type: z.literal("leave"), id: z.string() }),
   z.object({ type: z.literal("error"), error: z.string() }),
-  z.object({
-    type: z.literal("batch"),
-    messages: z.array(inboundCandidateMessageSchema),
-  }),
-
-  z.object({
-    type: z.literal("request"),
-    from: z.string(),
-    request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
-  }),
-  z.object({ type: z.literal("response"), from: z.string(), ...importSchema.shape }),
+  z.object({ type: z.literal("batch"), messages: z.array(inboundCandidateMessageSchema) }),
+  z.object({ type: z.literal("request"), from: z.string(), request: z.literal(["entries", "configs", "all"]) }),
+  z.object({ type: z.literal("response"), from: z.string(), data: importSchema }),
   z.object({ type: z.literal("scouting"), from: z.string(), status: z.literal("done").or(scoutingStatusSchema) }),
 ]);
 
@@ -48,29 +42,13 @@ type WSOutboundCandidateMessage = { type: "candidate"; to: string; candidate: RT
 
 type WSOutboundMessage =
   | { type: "info"; info: { name: string; team: string } }
-  | {
-      type: "offer";
-      to: string;
-      offer: RTCSessionDescription | null;
-    }
-  | {
-      type: "answer";
-      to: string;
-      answer: RTCSessionDescription | null;
-    }
+  | { type: "offer"; to: string; offer: RTCSessionDescription | null }
+  | { type: "answer"; to: string; answer: RTCSessionDescription | null }
   | WSOutboundCandidateMessage
   | { type: "batch"; messages: WSOutboundCandidateMessage[] }
-  | {
-      type: "request";
-      to?: string[];
-      request: "entries" | "configs" | "all";
-    }
-  | ({ type: "response"; to?: string[] } & ImportedData)
-  | {
-      type: "scouting";
-      to?: string[];
-      status: "done" | ScoutingStatus;
-    };
+  | { type: "request"; to?: string[]; request: "entries" | "configs" | "all" }
+  | { type: "response"; to?: string[]; data: ImportedData }
+  | { type: "scouting"; to?: string[]; status: "done" | ScoutingStatus };
 
 const rtcRequestMessageSchema = z.object({
   type: z.literal("request"),
@@ -81,7 +59,7 @@ export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
 
 const rtcResponseMessageSchema = z.object({
   type: z.literal("response"),
-  ...importSchema.shape,
+  data: importSchema,
 });
 
 export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
@@ -116,6 +94,8 @@ type Client = {
   connection?: RTCPeerConnection;
   /** Should only exist when the client is ready for RTC data transfer. */
   channel?: RTCDataChannel;
+
+  state: "connected" | undefined;
 };
 
 // Should maybe set up a developers settings page to control things like this.
@@ -129,6 +109,8 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 class OnlineTransfer {
   /** Connection to the signaling server. */
   private ws: WebSocket | undefined = undefined;
+  private pingPongHandle: number | undefined = undefined;
+  state = $state<"connected">();
 
   /** Temporary list of batched outbound candidate messages. */
   private signalBatch: { messages: WSOutboundCandidateMessage[]; timer: number | undefined; timeout: number } = {
@@ -166,6 +148,46 @@ class OnlineTransfer {
     };
   });
 
+  constructor() {
+    if (!browser) return;
+    document.addEventListener("visibilitychange", () => {
+      const webRtcActive = get(webRtcActiveStore);
+      if (document.hidden || !webRtcActive) return;
+
+      if (this.ws?.readyState == WebSocket.OPEN) {
+        console.log("[websocket] still alive after app was unhidden");
+
+        const clientsToRestart: ClientInfo[] = [];
+
+        this.clients = this.clients.filter((client) => {
+          const webrtcLogLabel = `[webrtc-${client.info.id.slice(0, 8)}]`;
+          if (client.connection?.connectionState == "connected" && client.channel?.readyState == "open") {
+            console.log(webrtcLogLabel, "still connected");
+            return true;
+          }
+
+          console.log(webrtcLogLabel, "disconnected, will reconnect");
+          client.channel?.close();
+          client.connection?.close();
+          clientsToRestart.push(client.info);
+          return false;
+        });
+
+        for (const client of clientsToRestart) {
+          this.addClient(client, { connectNow: true });
+        }
+      } else {
+        console.log("[websocket] died while app was hidden");
+        onlineTransfer.leaveRoom();
+
+        const room = get(webRtcRoomIdStore);
+        const name = get(scoutStore);
+        const team = get(teamStore);
+        onlineTransfer.joinRoom({ room, name, team, forceFallback: get(webRtcForceFallbackStore) == "true" });
+      }
+    });
+  }
+
   getClient(id: string) {
     return this.clients.find((c) => c.info.id === id);
   }
@@ -188,26 +210,27 @@ class OnlineTransfer {
 
     ws.onopen = () => {
       console.log("[websocket] opened");
+      this.state = "connected";
+
+      this.pingPongHandle = window.setInterval(() => {
+        ws.send("ping");
+        console.debug("[websocket] ping");
+      }, 5000);
     };
 
     ws.onerror = (error) => {
       console.error("[websocket] error:", error);
+      this.state = undefined;
+      window.clearInterval(this.pingPongHandle);
+      this.pingPongHandle = undefined;
     };
 
     ws.onclose = () => {
       console.log("[websocket] closed");
       this.ws = undefined;
-
-      for (const client of this.clients) {
-        client.channel?.close();
-        client.connection?.close();
-      }
-
-      this.clients = [];
-      this.localId = undefined;
-      this.dataFromClients.clear();
-      this.requestsFromClients.clear();
-      this.clientsScoutingStatus.clear();
+      this.state = undefined;
+      window.clearInterval(this.pingPongHandle);
+      this.pingPongHandle = undefined;
     };
 
     ws.onmessage = ({ data }) => this.handleWsMessage(data);
@@ -216,10 +239,14 @@ class OnlineTransfer {
   leaveRoom() {
     console.log("[websocket] manually closed");
 
+    window.clearInterval(this.pingPongHandle);
+    this.pingPongHandle = undefined;
+
     if (this.ws) {
       this.ws.onclose = null;
       this.ws.close();
       this.ws = undefined;
+      this.state = undefined;
     }
 
     for (const client of this.clients) {
@@ -253,6 +280,7 @@ class OnlineTransfer {
     for (const client of this.clients) {
       if (
         client?.channel?.readyState == "open" &&
+        client.connection?.connectionState == "connected" &&
         (!client.connection?.sctp?.maxMessageSize || compressed.byteLength < client.connection.sctp.maxMessageSize)
       ) {
         const webrtcLogLabel = `[webrtc-${client.info.id.slice(0, 8)}]`;
@@ -285,6 +313,7 @@ class OnlineTransfer {
 
     if (
       client?.channel?.readyState == "open" &&
+      client.connection?.connectionState == "connected" &&
       (!client.connection?.sctp?.maxMessageSize || compressed.byteLength < client.connection.sctp.maxMessageSize)
     ) {
       console.log(webrtcLogLabel, "(channel) sending message", data);
@@ -313,9 +342,9 @@ class OnlineTransfer {
   onrtcrequestmessage: ((id: string, request: "entries" | "configs" | "all") => void) | undefined;
   onrtcresponsemessage: ((id: string, response: AllData) => void) | undefined;
 
-  private satisfyRequestsFromClient(remoteId: string, data: RTCResponseMessage) {
-    const sentEntries = !!data.entries?.length;
-    const sentConfigs = !!data.comps?.length || !!data.surveys?.length || !!data.fields?.length;
+  private satisfyRequestsFromClient(remoteId: string, message: RTCResponseMessage) {
+    const sentEntries = !!message.data.entries?.length;
+    const sentConfigs = !!message.data.comps?.length || !!message.data.surveys?.length || !!message.data.fields?.length;
     const sentAny = sentEntries || sentConfigs;
 
     const request = this.requestsFromClients.get(remoteId);
@@ -359,7 +388,12 @@ class OnlineTransfer {
 
   private handleWsMessage(data: any) {
     if (typeof data !== "string") {
-      console.error("[websocket] received invalid message: not a string");
+      console.error("[websocket] received invalid message: not a string", data);
+      return;
+    }
+
+    if (data == "pong") {
+      console.debug("[websocket] pong");
       return;
     }
 
@@ -495,16 +529,16 @@ class OnlineTransfer {
 
         if (!data) {
           data = {
-            comps: message.comps || [],
-            surveys: message.surveys || [],
-            fields: message.fields || [],
-            entries: message.entries || [],
+            comps: message.data.comps || [],
+            surveys: message.data.surveys || [],
+            fields: message.data.fields || [],
+            entries: message.data.entries || [],
           };
           this.dataFromClients.set(message.from, data);
         } else {
           const { merged } = mergeOldAndNewData({
             existing: data,
-            imported: message,
+            imported: message.data,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });
@@ -555,7 +589,7 @@ class OnlineTransfer {
       existingClient.info.name = info.name;
       existingClient.info.team = info.team;
     } else {
-      const client = $state<Client>({ info });
+      const client = $state<Client>({ info, state: undefined });
       this.clients.push(client);
       if (options?.connectNow) {
         this.connectToClient(info.id);
@@ -605,6 +639,11 @@ class OnlineTransfer {
 
     connection.onconnectionstatechange = () => {
       console.log(webrtcLogLabel, "connection state:", connection.connectionState);
+      if (connection.connectionState == "connected" && client.channel?.readyState == "open") {
+        client.state = "connected";
+      } else {
+        client.state = undefined;
+      }
     };
 
     connection.ondatachannel = ({ channel }) => {
@@ -619,10 +658,19 @@ class OnlineTransfer {
       channel.onmessage = ({ data }) => this.handleRtcMessage(remoteId, data);
       channel.onopen = () => {
         client.channel = channel;
+        client.state = "connected";
         console.log(webrtcLogLabel, "(channel) opened with", remoteId);
         if (this.localScoutingStatus) {
           this.sendTo(remoteId, { type: "scouting", status: this.localScoutingStatus });
         }
+      };
+      channel.onerror = (e) => {
+        console.error(webrtcLogLabel, "(channel) error", e);
+      };
+      channel.onclose = () => {
+        client.channel = undefined;
+        client.state = undefined;
+        console.log(webrtcLogLabel, "(channel) closed");
       };
     };
 
@@ -678,10 +726,19 @@ class OnlineTransfer {
         }
 
         client.channel = channel;
+        client.state = "connected";
         console.log(webrtcLogLabel, "(channel) created with", remoteId);
         if (this.localScoutingStatus) {
           this.sendTo(remoteId, { type: "scouting", status: this.localScoutingStatus });
         }
+      };
+      channel.onerror = (e) => {
+        console.error(webrtcLogLabel, "(channel) error", e);
+      };
+      channel.onclose = () => {
+        client.channel = undefined;
+        client.state = undefined;
+        console.log(webrtcLogLabel, "(channel) closed");
       };
     }
 
@@ -716,17 +773,17 @@ class OnlineTransfer {
 
         if (!clientData) {
           clientData = {
-            comps: parsed.comps || [],
-            surveys: parsed.surveys || [],
-            fields: parsed.fields || [],
-            entries: parsed.entries || [],
+            comps: parsed.data.comps || [],
+            surveys: parsed.data.surveys || [],
+            fields: parsed.data.fields || [],
+            entries: parsed.data.entries || [],
           };
 
           this.dataFromClients.set(remoteId, clientData);
         } else {
           const { merged } = mergeOldAndNewData({
             existing: clientData,
-            imported: parsed,
+            imported: parsed.data,
             overwriteDuplicateEntries: true,
             includeExisting: true,
           });

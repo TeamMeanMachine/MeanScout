@@ -32,15 +32,20 @@
 
   onlineTransfer.onrtcresponsemessage = (id, response) => {
     if ($webRtcAutoReceiveStore && response.entries.length) {
+      const newEntries = response.entries.filter(
+        (existingEntry) => !data.all.entries.some((newEntry) => newEntry.id == existingEntry.id),
+      );
+
       importData({
         existing: data.all,
-        imported: { comps: [], surveys: [], fields: [], entries: response.entries },
+        imported: { comps: [], surveys: [], fields: [], entries: newEntries },
         overwriteDuplicateEntries: false,
       })
-        .then(({ duplicateEntryIds }) => {
+        .catch(console.error)
+        .finally(() => {
           const filteredResponse = {
             ...response,
-            entries: response.entries.filter((e) => duplicateEntryIds.has(e.id)),
+            entries: response.entries.filter((e) => !newEntries.some((newEntry) => newEntry.id == e.id)),
           };
 
           if (
@@ -55,8 +60,7 @@
           }
 
           rerunAllContextLoads();
-        })
-        .catch(console.error);
+        });
     }
   };
 
