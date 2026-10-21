@@ -19,72 +19,36 @@ const scoutingStatusSchema = z.object({
 });
 export type ScoutingStatus = z.infer<typeof scoutingStatusSchema>;
 
-const inboundCandidateMessageSchema = z.object({ type: z.literal("candidate"), from: z.string(), candidate: z.any() });
-
 const wsInboundMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("init"), id: z.string(), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("clients"), clients: z.array(clientInfoSchema) }),
   z.object({ type: z.literal("info"), info: clientInfoSchema }),
   z.object({ type: z.literal("offer"), from: z.string(), offer: z.any() }),
   z.object({ type: z.literal("answer"), from: z.string(), answer: z.any() }),
-  inboundCandidateMessageSchema,
+  z.object({ type: z.literal("candidates"), from: z.string(), candidates: z.any().array() }),
   z.object({ type: z.literal("leave"), id: z.string() }),
   z.object({ type: z.literal("error"), error: z.string() }),
-  z.object({ type: z.literal("batch"), messages: z.array(inboundCandidateMessageSchema) }),
   z.object({ type: z.literal("request"), from: z.string(), request: z.literal(["entries", "configs", "all"]) }),
   z.object({ type: z.literal("response"), from: z.string(), data: importSchema }),
   z.object({ type: z.literal("scouting"), from: z.string(), status: z.literal("done").or(scoutingStatusSchema) }),
 ]);
-
 type WSInboundMessage = z.infer<typeof wsInboundMessageSchema>;
-
-type WSOutboundCandidateMessage = { type: "candidate"; to: string; candidate: RTCIceCandidate | null };
 
 type WSOutboundMessage =
   | { type: "info"; info: { name: string; team: string } }
   | { type: "offer"; to: string; offer: RTCSessionDescription | null }
   | { type: "answer"; to: string; answer: RTCSessionDescription | null }
-  | WSOutboundCandidateMessage
-  | { type: "batch"; messages: WSOutboundCandidateMessage[] }
+  | { type: "candidates"; candidates: Record<string, (RTCIceCandidate | null)[]> }
   | { type: "request"; to?: string[]; request: "entries" | "configs" | "all" }
   | { type: "response"; to?: string[]; data: ImportedData }
   | { type: "scouting"; to?: string[]; status: "done" | ScoutingStatus };
 
-const rtcRequestMessageSchema = z.object({
-  type: z.literal("request"),
-  request: z.union([z.literal("entries"), z.literal("configs"), z.literal("all")]),
-});
-
-export type RTCRequestMessage = z.infer<typeof rtcRequestMessageSchema>;
-
-const rtcResponseMessageSchema = z.object({
-  type: z.literal("response"),
-  data: importSchema,
-});
-
-export type RTCResponseMessage = z.infer<typeof rtcResponseMessageSchema>;
-
-const rtcSignalMessageSchema = z.object({
-  type: z.literal("candidate"),
-  candidate: z.any(),
-});
-
-export type RTCSignalMessage = z.infer<typeof rtcSignalMessageSchema>;
-
-const rtcScoutingMessageSchema = z.object({
-  type: z.literal("scouting"),
-  status: z.literal("done").or(scoutingStatusSchema),
-});
-
-export type RTCScoutingMessage = z.infer<typeof rtcScoutingMessageSchema>;
-
 const rtcMessageSchema = z.discriminatedUnion("type", [
-  rtcRequestMessageSchema,
-  rtcResponseMessageSchema,
-  rtcSignalMessageSchema,
-  rtcScoutingMessageSchema,
+  z.object({ type: z.literal("request"), request: z.literal(["entries", "configs", "all"]) }),
+  z.object({ type: z.literal("response"), data: importSchema }),
+  z.object({ type: z.literal("candidates"), candidates: z.any().array() }),
+  z.object({ type: z.literal("scouting"), status: z.literal("done").or(scoutingStatusSchema) }),
 ]);
-
 export type RTCMessage = z.infer<typeof rtcMessageSchema>;
 
 /** Contains everything about a client: basic metadata such as id and name, and potentially an active connection/channel. */
@@ -109,15 +73,14 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 class OnlineTransfer {
   /** Connection to the signaling server. */
   private ws: WebSocket | undefined = undefined;
-  private pingPongHandle: number | undefined = undefined;
   state = $state<"connected">();
 
   /** Temporary list of batched outbound candidate messages. */
-  private signalBatch: { messages: WSOutboundCandidateMessage[]; timer: number | undefined; timeout: number } = {
-    messages: [],
-    timer: undefined,
-    timeout: 100,
-  };
+  private candidateBatch: {
+    candidates: Record<string, (RTCIceCandidate | null)[]>;
+    timer: number | undefined;
+    timeout: number;
+  } = { candidates: {}, timer: undefined, timeout: 100 };
 
   private forceFallback = false;
 
@@ -155,18 +118,15 @@ class OnlineTransfer {
       if (document.hidden || !webRtcActive) return;
 
       if (this.ws?.readyState == WebSocket.OPEN) {
-        console.log("[websocket] still alive after app was unhidden");
-
         const clientsToRestart: ClientInfo[] = [];
 
         this.clients = this.clients.filter((client) => {
           const webrtcLogLabel = `[webrtc-${client.info.id.slice(0, 8)}]`;
           if (client.connection?.connectionState == "connected" && client.channel?.readyState == "open") {
-            console.log(webrtcLogLabel, "still connected");
             return true;
           }
 
-          console.log(webrtcLogLabel, "disconnected, will reconnect");
+          console.log(webrtcLogLabel, "disconnected while app was hidden, will reconnect");
           client.channel?.close();
           client.connection?.close();
           clientsToRestart.push(client.info);
@@ -211,26 +171,17 @@ class OnlineTransfer {
     ws.onopen = () => {
       console.log("[websocket] opened");
       this.state = "connected";
-
-      this.pingPongHandle = window.setInterval(() => {
-        ws.send("ping");
-        console.debug("[websocket] ping");
-      }, 5000);
     };
 
     ws.onerror = (error) => {
       console.error("[websocket] error:", error);
       this.state = undefined;
-      window.clearInterval(this.pingPongHandle);
-      this.pingPongHandle = undefined;
     };
 
     ws.onclose = () => {
       console.log("[websocket] closed");
       this.ws = undefined;
       this.state = undefined;
-      window.clearInterval(this.pingPongHandle);
-      this.pingPongHandle = undefined;
     };
 
     ws.onmessage = ({ data }) => this.handleWsMessage(data);
@@ -238,9 +189,6 @@ class OnlineTransfer {
 
   leaveRoom() {
     console.log("[websocket] manually closed");
-
-    window.clearInterval(this.pingPongHandle);
-    this.pingPongHandle = undefined;
 
     if (this.ws) {
       this.ws.onclose = null;
@@ -261,9 +209,7 @@ class OnlineTransfer {
     this.clientsScoutingStatus.clear();
   }
 
-  async sendToAll(data: RTCMessage) {
-    if (data.type == "candidate") return;
-
+  async sendToAll(data: Exclude<RTCMessage, { type: "candidates" }>) {
     const string = JSON.stringify(data, (key, value) => {
       if (key == "created" || key == "modified") return serializeDate(value);
       return value;
@@ -326,8 +272,8 @@ class OnlineTransfer {
         case "response":
           this.sendWsMessage({ ...data, to: [remoteId] });
           break;
-        case "candidate":
-          this.sendWsMessage({ ...data, to: remoteId });
+        case "candidates":
+          this.sendWsMessage({ ...data, candidates: { [remoteId]: data.candidates } });
           break;
         case "scouting":
           this.sendWsMessage(data);
@@ -342,7 +288,7 @@ class OnlineTransfer {
   onrtcrequestmessage: ((id: string, request: "entries" | "configs" | "all") => void) | undefined;
   onrtcresponsemessage: ((id: string, response: AllData) => void) | undefined;
 
-  private satisfyRequestsFromClient(remoteId: string, message: RTCResponseMessage) {
+  private satisfyRequestsFromClient(remoteId: string, message: Extract<RTCMessage, { type: "response" }>) {
     const sentEntries = !!message.data.entries?.length;
     const sentConfigs = !!message.data.comps?.length || !!message.data.surveys?.length || !!message.data.fields?.length;
     const sentAny = sentEntries || sentConfigs;
@@ -359,20 +305,24 @@ class OnlineTransfer {
   }
 
   sendWsMessage(message: WSOutboundMessage) {
-    if (!this.ws) return;
+    if (!this.ws) {
+      console.error("[websocket] could not send message, no websocket");
+      return;
+    }
 
-    if (message.type == "candidate") {
-      console.log("[websocket] batching ice candidate", message.candidate);
-      this.signalBatch.messages.push(message);
+    if (message.type == "candidates") {
+      for (const id in message.candidates) {
+        this.candidateBatch.candidates[id] = [...(this.candidateBatch.candidates[id] || []), ...message.candidates[id]];
+      }
 
-      if (!this.signalBatch.timer) {
-        this.signalBatch.timer = window.setTimeout(() => {
-          const batchMessage = { type: "batch", messages: this.signalBatch.messages };
-          console.log("[websocket] sending batch message", batchMessage);
+      if (!this.candidateBatch.timer) {
+        this.candidateBatch.timer = window.setTimeout(() => {
+          const batchMessage: WSOutboundMessage = { type: "candidates", candidates: this.candidateBatch.candidates };
+          console.log("[websocket] sending batched ice candidates", batchMessage);
           this.ws?.send(JSON.stringify(batchMessage));
-          this.signalBatch.messages = [];
-          this.signalBatch.timer = undefined;
-        }, this.signalBatch.timeout);
+          this.candidateBatch.candidates = {};
+          this.candidateBatch.timer = undefined;
+        }, this.candidateBatch.timeout);
       }
 
       return;
@@ -389,11 +339,6 @@ class OnlineTransfer {
   private handleWsMessage(data: any) {
     if (typeof data !== "string") {
       console.error("[websocket] received invalid message: not a string", data);
-      return;
-    }
-
-    if (data == "pong") {
-      console.debug("[websocket] pong");
       return;
     }
 
@@ -469,26 +414,35 @@ class OnlineTransfer {
           console.log("[websocket] received remote offer, but ignoring");
           break;
         }
-        console.log("[websocket] received remote offer, connecting", message.offer);
+        console.log("[websocket] received remote offer, sending answer", message);
         this.connectToClient(message.from, message.offer);
         break;
       case "answer":
-      case "candidate":
         if (this.forceFallback) {
-          console.log("[websocket] received remote answer/candidate, but ignoring");
+          console.log("[websocket] received remote answer, but ignoring");
           break;
         }
+        console.log("[websocket] received remote answer", message);
+        const answerConn = this.getClient(message.from)?.connection;
+        if (!answerConn) {
+          console.error("[websocket] couldn't receive answer, no connection", message);
+          break;
+        }
+        answerConn.setRemoteDescription(message.answer);
+        break;
+      case "candidates":
+        if (this.forceFallback) {
+          console.log("[websocket] received candidate, but ignoring");
+          break;
+        }
+        console.log("[websocket] received remote candidates", message.candidates);
         const connection = this.getClient(message.from)?.connection;
         if (!connection) {
-          console.error("[websocket] couldn't receive answer/candidate signal, no connection", message);
+          console.error("[websocket] couldn't handle batched candidates, no connection", message);
           break;
         }
-        if (message.type == "answer") {
-          console.log("[websocket] received remote answer", message.answer);
-          connection.setRemoteDescription(message.answer);
-        } else if (message.type == "candidate") {
-          console.log("[websocket] received remote candidate", message.candidate);
-          connection.addIceCandidate(message.candidate);
+        for (const candidate of message.candidates) {
+          connection.addIceCandidate(candidate);
         }
         break;
       case "leave":
@@ -499,17 +453,6 @@ class OnlineTransfer {
         this.dataFromClients.delete(message.id);
         this.clientsScoutingStatus.delete(message.id);
         this.removeClient(message.id);
-        break;
-      case "batch":
-        console.log("[websocket] received remote candidates", message.messages);
-        for (const msg of message.messages) {
-          let connection = this.getClient(msg.from)?.connection;
-          if (!connection) {
-            console.warn("[websocket] couldn't handle message from batch, no connection:", msg);
-            break;
-          }
-          connection.addIceCandidate(msg.candidate);
-        }
         break;
       case "request":
         console.log("[websocket] received fallback request", message);
@@ -526,7 +469,6 @@ class OnlineTransfer {
       case "response":
         console.log("[websocket] received fallback response", message);
         let data = this.dataFromClients.get(message.from);
-
         if (!data) {
           data = {
             comps: message.data.comps || [],
@@ -545,7 +487,6 @@ class OnlineTransfer {
           data = merged;
           this.dataFromClients.set(message.from, data);
         }
-
         this.onrtcresponsemessage?.(message.from, data);
         break;
       case "scouting":
@@ -554,21 +495,17 @@ class OnlineTransfer {
           console.error("[websocket] couldn't receive scouting status, client does not exist:", message);
           return;
         }
-
         console.log("[websocket] received fallback scouting status", message);
-
         if (message.status === "done") {
           this.clientsScoutingStatus.delete(message.from);
           return;
         }
-
         let status = $state(this.clientsScoutingStatus.get(message.from));
         if (!status) {
           status = { team: message.status.team };
         } else {
           status.team = message.status.team;
         }
-
         if (message.status.match) {
           status.match = message.status.match;
           status.prediction = message.status.prediction;
@@ -576,7 +513,6 @@ class OnlineTransfer {
           status.match = undefined;
           status.prediction = undefined;
         }
-
         this.clientsScoutingStatus.set(message.from, status);
         break;
     }
@@ -675,7 +611,7 @@ class OnlineTransfer {
     };
 
     connection.onicecandidate = (event) => {
-      this.sendTo(remoteId, { type: "candidate", candidate: event.candidate });
+      this.sendTo(remoteId, { type: "candidates", candidates: [event.candidate] });
     };
 
     connection.onicecandidateerror = (error) => {
@@ -707,7 +643,6 @@ class OnlineTransfer {
     };
 
     if (remoteOffer) {
-      console.log("[websocket] received remote offer, sending answer");
       connection
         .setRemoteDescription(remoteOffer)
         .then(() => connection.createAnswer())
@@ -793,7 +728,7 @@ class OnlineTransfer {
         }
 
         this.onrtcresponsemessage?.(remoteId, clientData);
-      } else if (parsed.type == "candidate") {
+      } else if (parsed.type == "candidates") {
         const client = this.getClient(remoteId);
 
         if (!client || !client.channel || !client.connection) {
@@ -802,7 +737,9 @@ class OnlineTransfer {
         }
 
         console.log(logLabel, "received ice candidate:", parsed);
-        client.connection.addIceCandidate(parsed.candidate);
+        for (const candidate of parsed.candidates) {
+          client.connection.addIceCandidate(candidate);
+        }
       } else if (parsed.type == "scouting") {
         const client = this.getClient(remoteId);
 
