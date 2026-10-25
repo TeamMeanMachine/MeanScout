@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { DownloadIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon, Undo2Icon, XIcon } from "@lucide/svelte";
+  import {
+    ChevronsLeftRightEllipsisIcon,
+    DownloadIcon,
+    LogOutIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    Undo2Icon,
+    XIcon,
+  } from "@lucide/svelte";
   import { rerunAllContextLoads, sessionStorageStore } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import ImportViewer from "#lib/components/ImportViewer.svelte";
@@ -88,12 +96,12 @@
   }
 
   function requestFromAll() {
-    if (!onlineTransfer.localId) return;
+    if (onlineTransfer.state != "connected") return;
     onlineTransfer.sendToAll({ type: "request", request });
   }
 
   function requestFrom(id: string) {
-    if (!onlineTransfer.localId) return;
+    if (onlineTransfer.state != "connected") return;
     onlineTransfer.sendTo(id, { type: "request", request });
   }
 
@@ -138,7 +146,7 @@
 </div>
 
 {#if currentTab == "room"}
-  {#if onlineTransfer.localId}
+  {#if onlineTransfer.state == "connected"}
     <div class="-m-1 flex h-100 flex-col gap-3 overflow-auto p-1">
       {#if onlineTransfer.clients.length}
         <div class="flex flex-col">
@@ -174,6 +182,12 @@
                 }}
                 class="grow"
               >
+                {#if client.state == "connected"}
+                  <ChevronsLeftRightEllipsisIcon class="size-4" />
+                {:else}
+                  <div class="size-4"></div>
+                {/if}
+
                 <div class="flex grow flex-col">
                   {client.info.name}
                   {#if client.info.team}

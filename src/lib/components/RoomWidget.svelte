@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { ChevronsLeftRightEllipsisIcon, LogInIcon, LogOutIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
+  import {
+    ChevronsLeftRightEllipsisIcon,
+    LoaderIcon,
+    LogInIcon,
+    LogOutIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+  } from "@lucide/svelte";
   import Button from "#lib/components/Button.svelte";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import {
@@ -26,6 +33,11 @@
   let error = $state("");
 
   function joinRoom() {
+    if ($webRtcActiveStore == "true") {
+      leaveRoom();
+      return;
+    }
+
     scoutInput = scoutInput.trim();
     if (!scoutInput) {
       error = "No name";
@@ -68,16 +80,11 @@
 </script>
 
 {#if !hideTitle}
-  <h2 class="font-bold">
-    {$webRtcActiveStore ? "Room" : "Join a room"}
-    {#if onlineTransfer.state == "connected"}
-      <ChevronsLeftRightEllipsisIcon class="inline size-4" />
-    {/if}
-  </h2>
+  <h2 class="font-bold">{onlineTransfer.state == "connected" ? "Room" : "Join a room"}</h2>
 {/if}
 
 <div class="-m-1 flex h-[400px] flex-col gap-3 overflow-auto p-1">
-  {#if $webRtcActiveStore}
+  {#if onlineTransfer.state == "connected"}
     <div class="flex flex-col">
       <span class="text-sm font-light">You</span>
       <span>
@@ -138,14 +145,18 @@
   </div>
 </Button>
 
-{#if $webRtcActiveStore}
+{#if onlineTransfer.state == "connected"}
   <Button onclick={leaveRoom}>
     <LogOutIcon class="text-theme" />
     Leave
   </Button>
 {:else}
   <Button onclick={joinRoom} class="font-bold">
-    <LogInIcon class="text-theme" />
+    {#if $webRtcActiveStore}
+      <LoaderIcon class="animate-spin text-theme" />
+    {:else}
+      <LogInIcon class="text-theme" />
+    {/if}
     Join
   </Button>
 {/if}

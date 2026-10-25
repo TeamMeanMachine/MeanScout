@@ -73,6 +73,8 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 class OnlineTransfer {
   /** Connection to the signaling server. */
   private ws: WebSocket | undefined = undefined;
+
+  /** Reactive connection state to the signaling server. */
   state = $state<"connected">();
 
   /** Temporary list of batched outbound candidate messages. */
@@ -85,8 +87,9 @@ class OnlineTransfer {
   private forceFallback = false;
 
   /** This client's id, only set when connected to the signaling server. Reactive. */
-  localId = $state<string | undefined>(undefined);
+  private localId = $state<string | undefined>(undefined);
 
+  /** Reactive state for this client's scouting status. */
   localScoutingStatus = $state<ScoutingStatus | undefined>(undefined);
 
   /** Reactive list of remote clients. */
@@ -103,7 +106,7 @@ class OnlineTransfer {
 
   /** Reactive counts of different requests. */
   requestCounts = $derived.by(() => {
-    const messages = Object.groupBy(onlineTransfer.requestsFromClients.values(), (r) => r);
+    const messages = Object.groupBy(this.requestsFromClients.values(), (r) => r);
     return {
       entries: messages.entries?.length || 0,
       configs: messages.configs?.length || 0,
@@ -138,12 +141,11 @@ class OnlineTransfer {
         }
       } else {
         console.log("[websocket] died while app was hidden");
-        onlineTransfer.leaveRoom();
-
+        this.reset();
         const room = get(webRtcRoomIdStore);
         const name = get(scoutStore);
         const team = get(teamStore);
-        onlineTransfer.joinRoom({ room, name, team, forceFallback: get(webRtcForceFallbackStore) == "true" });
+        this.joinRoom({ room, name, team, forceFallback: get(webRtcForceFallbackStore) == "true" });
       }
     });
   }
@@ -175,13 +177,12 @@ class OnlineTransfer {
 
     ws.onerror = (error) => {
       console.error("[websocket] error:", error);
-      this.state = undefined;
+      this.reset();
     };
 
     ws.onclose = () => {
       console.log("[websocket] closed");
-      this.ws = undefined;
-      this.state = undefined;
+      this.reset();
     };
 
     ws.onmessage = ({ data }) => this.handleWsMessage(data);
@@ -189,24 +190,7 @@ class OnlineTransfer {
 
   leaveRoom() {
     console.log("[websocket] manually closed");
-
-    if (this.ws) {
-      this.ws.onclose = null;
-      this.ws.close();
-      this.ws = undefined;
-      this.state = undefined;
-    }
-
-    for (const client of this.clients) {
-      client.channel?.close();
-      client.connection?.close();
-    }
-
-    this.clients = [];
-    this.localId = undefined;
-    this.dataFromClients.clear();
-    this.requestsFromClients.clear();
-    this.clientsScoutingStatus.clear();
+    this.reset();
   }
 
   async sendToAll(data: Exclude<RTCMessage, { type: "candidates" }>) {
@@ -262,7 +246,7 @@ class OnlineTransfer {
       client.connection?.connectionState == "connected" &&
       (!client.connection?.sctp?.maxMessageSize || compressed.byteLength < client.connection.sctp.maxMessageSize)
     ) {
-      console.log(webrtcLogLabel, "(channel) sending message", data);
+      console.log(webrtcLogLabel, "(channel) sending message", compressed.byteLength, "bytes", data);
       client.channel.send(compressed);
     } else {
       switch (data.type) {
@@ -287,6 +271,26 @@ class OnlineTransfer {
 
   onrtcrequestmessage: ((id: string, request: "entries" | "configs" | "all") => void) | undefined;
   onrtcresponsemessage: ((id: string, response: AllData) => void) | undefined;
+
+  private reset() {
+    if (this.ws) {
+      this.ws.onclose = null;
+      this.ws.close();
+      this.ws = undefined;
+    }
+
+    for (const client of this.clients) {
+      client.channel?.close();
+      client.connection?.close();
+    }
+
+    this.clients = [];
+    this.dataFromClients.clear();
+    this.requestsFromClients.clear();
+    this.clientsScoutingStatus.clear();
+    this.state = undefined;
+    this.localId = undefined;
+  }
 
   private satisfyRequestsFromClient(remoteId: string, message: Extract<RTCMessage, { type: "response" }>) {
     const sentEntries = !!message.data.entries?.length;
@@ -388,7 +392,7 @@ class OnlineTransfer {
 
     switch (message.type) {
       case "clients":
-        console.log("[websocket] received clients", message.clients);
+        console.log("[websocket] received clients", message);
         this.clients = this.clients.filter((existingClient) => {
           if (message.clients.some((c) => c.id === existingClient.info.id)) {
             return true;
@@ -406,23 +410,23 @@ class OnlineTransfer {
         }
         break;
       case "info":
-        console.log("[websocket] received client info", message.info);
+        console.log("[websocket] received client info", message);
         this.addClient(message.info);
         break;
       case "offer":
         if (this.forceFallback) {
-          console.log("[websocket] received remote offer, but ignoring");
+          console.log("[websocket] received webrtc offer, but ignoring", message);
           break;
         }
-        console.log("[websocket] received remote offer, sending answer", message);
+        console.log("[websocket] received webrtc offer, sending answer", message);
         this.connectToClient(message.from, message.offer);
         break;
       case "answer":
         if (this.forceFallback) {
-          console.log("[websocket] received remote answer, but ignoring");
+          console.log("[websocket] received webrtc answer, but ignoring", message);
           break;
         }
-        console.log("[websocket] received remote answer", message);
+        console.log("[websocket] received webrtc answer", message);
         const answerConn = this.getClient(message.from)?.connection;
         if (!answerConn) {
           console.error("[websocket] couldn't receive answer, no connection", message);
@@ -432,13 +436,13 @@ class OnlineTransfer {
         break;
       case "candidates":
         if (this.forceFallback) {
-          console.log("[websocket] received candidate, but ignoring");
+          console.log("[websocket] received webrtc candidates, but ignoring", message);
           break;
         }
-        console.log("[websocket] received remote candidates", message.candidates);
+        console.log("[websocket] received webrtc candidates", message);
         const connection = this.getClient(message.from)?.connection;
         if (!connection) {
-          console.error("[websocket] couldn't handle batched candidates, no connection", message);
+          console.error("[websocket] couldn't handle webrtc candidates, no connection", message);
           break;
         }
         for (const candidate of message.candidates) {
@@ -446,6 +450,7 @@ class OnlineTransfer {
         }
         break;
       case "leave":
+        console.log("[websocket] received client leave", message);
         client = this.getClient(message.id);
         client?.channel?.close();
         client?.connection?.close();

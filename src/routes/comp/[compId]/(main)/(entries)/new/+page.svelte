@@ -115,7 +115,7 @@
     newEntry.type == "match" && newEntry.state.match && newEntry.state.prediction;
 
     untrack(() => {
-      if (!onlineTransfer.localId) return;
+      if (onlineTransfer.state != "connected") return;
 
       let status: ScoutingStatus = { team: newEntry.state.team };
 

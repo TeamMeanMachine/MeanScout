@@ -305,14 +305,14 @@
             tx.objectStore("comps").put({ ...$state.snapshot(data.compRecord), modified: now });
 
             tx.oncomplete = () => {
-              if ($webRtcActiveStore && $webRtcAutoSendStore) {
+              if (onlineTransfer.state == "connected" && $webRtcAutoSendStore) {
                 onlineTransfer.sendToAll({
                   type: "response",
                   data: { version: schemaVersion, entries: [submittedEntry] },
                 });
-                onlineTransfer.localScoutingStatus = undefined;
                 onlineTransfer.sendToAll({ type: "scouting", status: "done" });
               }
+              onlineTransfer.localScoutingStatus = undefined;
 
               rerunOtherContextLoads();
               goto(`#/comp/${data.compRecord.id}`, { refreshAll: true });

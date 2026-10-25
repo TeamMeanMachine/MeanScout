@@ -210,7 +210,7 @@
       onclick={() => {
         forceFallbackInput = forceFallbackInput ? "" : "true";
       }}
-      disabled={!!onlineTransfer.localId}
+      disabled={onlineTransfer.state == "connected"}
       class={["w-full sm:w-fit", forceFallbackInput == "true" ? "font-bold" : "font-light"]}
     >
       {#if forceFallbackInput == "true"}

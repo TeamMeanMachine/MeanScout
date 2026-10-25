@@ -18,7 +18,6 @@
   import RoomWidget from "#lib/components/RoomWidget.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
-  import { webRtcActiveStore } from "#lib/settings.ts";
   import BulkExportDialog from "./BulkExportDialog.svelte";
   import BulkImportDialog from "./BulkImportDialog.svelte";
 
@@ -121,15 +120,15 @@
   </Button>
 
   <Button onclick={() => openDialog(RoomWidget, {})} class="relative">
-    <ChevronsLeftRightEllipsisIcon class={["text-theme", $webRtcActiveStore ? "animate-pulse" : ""]} />
+    <ChevronsLeftRightEllipsisIcon class={["text-theme", onlineTransfer.state == "connected" ? "animate-pulse" : ""]} />
     <div class="flex grow flex-col">
-      {#if $webRtcActiveStore}
+      {#if onlineTransfer.state == "connected"}
         View room
       {:else}
         Join a room
       {/if}
     </div>
-    {#if $webRtcActiveStore}
+    {#if onlineTransfer.state == "connected"}
       <span class="absolute bottom-0 left-0.5 text-xs font-light tracking-tighter italic">
         {onlineTransfer.clients.length}
       </span>

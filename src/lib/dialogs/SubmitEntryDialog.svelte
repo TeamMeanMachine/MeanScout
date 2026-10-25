@@ -5,7 +5,7 @@
   import { type Entry } from "#lib/entry.ts";
   import { getDefaultFieldValue, type SingleFieldWithDetails } from "#lib/field.ts";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
-  import { webRtcActiveStore, webRtcAutoSendStore } from "#lib/settings.ts";
+  import { webRtcAutoSendStore } from "#lib/settings.ts";
 
   let {
     orderedSingleFields,
@@ -44,7 +44,7 @@
 
 <span>Complete this entry?</span>
 
-{#if $webRtcActiveStore}
+{#if onlineTransfer.state == "connected"}
   <Button onclick={() => ($webRtcAutoSendStore = $webRtcAutoSendStore ? "" : "entries")}>
     {#if $webRtcAutoSendStore}
       <SquareCheckBigIcon class="text-theme" />
