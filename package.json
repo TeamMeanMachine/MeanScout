@@ -11,7 +11,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
-    "lint": "prettier --check ."
+    "lint": "prettier --check .",
+    "gen-tba-schema": "npx openapi-typescript https://www.thebluealliance.com/swagger/api_v3.json -o ./src/lib/tba/schema.d.ts"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
@@ -35,6 +36,7 @@
     "@lucide/svelte": "^1.7.0",
     "fractional-indexing-jittered": "^1.0.0",
     "jsqr": "^1.4.0",
+    "openapi-fetch": "^0.17.0",
     "qrcode": "^1.5.4",
     "sortablejs": "^1.15.6",
     "zod": "^4.0.13"

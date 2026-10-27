@@ -7,7 +7,12 @@
   import { idb, type AllData } from "#lib/idb.ts";
   import type { Match } from "#lib/match.ts";
   import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
-  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "#lib/tba.ts";
+  import {
+    tbaGetEventAlliances,
+    tbaGetEventMatches,
+    tbaGetEventTeamInsights,
+    tbaGetEventTeams,
+  } from "#lib/tba/index.ts";
   import { goto } from "$app/navigation";
   import EditCompTbaEventKeyDialog from "./EditCompTbaEventKeyDialog.svelte";
 

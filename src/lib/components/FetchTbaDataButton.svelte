@@ -4,7 +4,12 @@
   import type { CompPageData } from "#lib/comp.ts";
   import { idb } from "#lib/idb.ts";
   import { compareMatches } from "#lib/match.ts";
-  import { tbaGetEventAlliances, tbaGetEventMatches, tbaGetEventTeamInsights, tbaGetEventTeams } from "#lib/tba.ts";
+  import {
+    tbaGetEventAlliances,
+    tbaGetEventMatches,
+    tbaGetEventTeamInsights,
+    tbaGetEventTeams,
+  } from "#lib/tba/index.ts";
   import Button from "./Button.svelte";
 
   let {

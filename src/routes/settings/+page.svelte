@@ -27,7 +27,7 @@
     useCompressionStore,
     webRtcForceFallbackStore,
   } from "#lib/settings.ts";
-  import { tbaAuthKeyIsValid } from "#lib/tba.ts";
+  import { tbaAuthKeyIsValid } from "#lib/tba/index.ts";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
 

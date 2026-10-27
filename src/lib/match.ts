@@ -6,7 +6,7 @@ import { teamStore } from "./settings";
 
 export const matchValueSchema = z.number().int().gt(0);
 
-export const matchLevels = ["qm", "ef", "qf", "sf", "f"] as const;
+export const matchLevels = ["qm", "ef", "qf", "sf", "f", "pm"] as const;
 export type MatchLevel = (typeof matchLevels)[number];
 
 export const matchIdentifierSchema = z.object({

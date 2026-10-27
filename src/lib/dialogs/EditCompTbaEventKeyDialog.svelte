@@ -3,7 +3,7 @@
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "#lib/dialog.ts";
   import { teamStore } from "#lib/settings.ts";
-  import { tbaEventExists, tbaGetTeamEvents } from "#lib/tba.ts";
+  import { tbaEventExists, tbaGetTeamEvents } from "#lib/tba/index.ts";
   import { onMount } from "svelte";
 
   let {
