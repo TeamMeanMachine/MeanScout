@@ -5,6 +5,7 @@
   import { idb } from "#lib/idb.ts";
   import { compareMatches } from "#lib/match.ts";
   import {
+    tbaGetEvent,
     tbaGetEventAlliances,
     tbaGetEventMatches,
     tbaGetEventTeamInsights,
@@ -32,6 +33,7 @@
 
     try {
       const anyPulled = await Promise.all([
+        getTbaEvent(),
         getMatchesFromTbaEvent(),
         getTeamsFromTbaEvent(),
         getAlliancesFromTbaEvent(),
@@ -52,6 +54,34 @@
     }
 
     isLoadingTbaData = false;
+  }
+
+  async function getTbaEvent() {
+    if (!pageData.compRecord.tbaEventKey) return false;
+
+    const response = await tbaGetEvent(pageData.compRecord.tbaEventKey);
+    if (response?.remap_teams) {
+      let teams = $state.snapshot(pageData.compRecord.teams);
+      for (const frcDemoTeam in response.remap_teams) {
+        const demoTeam = frcDemoTeam.replace("frc", "");
+        const bTeam = response.remap_teams[frcDemoTeam].replace("frc", "");
+
+        const teamObj = teams.find((t) => t.number == demoTeam);
+        if (teamObj) {
+          teamObj.remap = bTeam;
+        } else {
+          teams.push({ number: demoTeam, name: "", remap: bTeam });
+        }
+      }
+      pageData = {
+        ...pageData,
+        compRecord: { ...pageData.compRecord, teams },
+      };
+      idb.put("comps", $state.snapshot(pageData.compRecord));
+      return true;
+    }
+
+    return false;
   }
 
   async function getMatchesFromTbaEvent() {

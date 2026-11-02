@@ -18,32 +18,14 @@ TBA.use({
   },
 });
 
-export async function tbaFetch(endpoint: string, authKey = get(tbaAuthKeyStore) || TBA_AUTH_KEY) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: [["X-TBA-Auth-Key", authKey]],
-  });
-
-  const data = await response.json();
-
-  if (response.status == 200) {
-    return { status: "success" as const, data };
-  } else if (response.status == 401) {
-    return { status: "unauthorized" as const, error: data.Error };
-  } else if (response.status == 404) {
-    return { status: "not found" as const };
-  } else {
-    return { status: "error" as const };
-  }
-}
-
 export async function tbaAuthKeyIsValid(authKey: string) {
   const { data } = await TBA.GET("/status", { headers: { "X-TBA-Auth-Key": authKey } });
   return data !== undefined;
 }
 
-export async function tbaEventExists(event_key: string) {
-  const { data } = await TBA.GET("/event/{event_key}/simple", { params: { path: { event_key } } });
-  return data !== undefined;
+export async function tbaGetEvent(event_key: string) {
+  const { data } = await TBA.GET("/event/{event_key}", { params: { path: { event_key } } });
+  return data;
 }
 
 export async function tbaGetTeamEvents(team: string) {

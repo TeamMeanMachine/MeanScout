@@ -30,7 +30,7 @@ const teamInsightsSchema = z.object({
 });
 
 export type TeamInsights = z.infer<typeof teamInsightsSchema>;
-export const teamSchema = z.object({ number: z.string(), name: z.string() });
+export const teamSchema = z.object({ number: z.string(), name: z.string(), remap: z.optional(z.string()) });
 export type Team = z.infer<typeof teamSchema>;
 
 export function isValidTeam(team: string) {

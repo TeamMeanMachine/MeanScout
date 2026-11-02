@@ -10,16 +10,19 @@
     ondelete,
   }: {
     team: Team;
-    onedit(name: string): void;
+    onedit(name: string, remap?: string | undefined): void;
     ondelete(): void;
   } = $props();
 
   // svelte-ignore state_referenced_locally
   let name = $state(team.name);
 
+  // svelte-ignore state_referenced_locally
+  let remap = $state(team.remap);
+
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      onedit(name.trim());
+      onedit(name.trim(), remap?.trim() || undefined);
       closeDialog();
     },
   };
@@ -40,4 +43,9 @@
 <label class="flex flex-col">
   Name
   <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
+</label>
+
+<label class="flex flex-col">
+  Remap
+  <input bind:value={remap} class="bg-neutral-800 p-2 text-theme" />
 </label>

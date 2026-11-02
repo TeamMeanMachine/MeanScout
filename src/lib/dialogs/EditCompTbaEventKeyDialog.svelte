@@ -3,7 +3,7 @@
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "#lib/dialog.ts";
   import { teamStore } from "#lib/settings.ts";
-  import { tbaEventExists, tbaGetTeamEvents } from "#lib/tba/index.ts";
+  import { tbaGetEvent, tbaGetTeamEvents } from "#lib/tba/index.ts";
   import { onMount } from "svelte";
 
   let {
@@ -46,7 +46,7 @@
 
       const eventNotFound = events.every((e) => e.key != event);
 
-      if (eventNotFound && !(await tbaEventExists(event))) {
+      if (eventNotFound && !(await tbaGetEvent(event))) {
         error = "could not find event";
         return;
       }
