@@ -3,8 +3,7 @@
   import { allianceTeamLabels, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
-  import EditAllianceTeamDialog from "#lib/dialogs/EditAllianceTeamDialog.svelte";
-  import NewAllianceTeamDialog from "#lib/dialogs/NewAllianceTeamDialog.svelte";
+  import AllianceTeamDialog from "#lib/dialogs/AllianceTeamDialog.svelte";
   import { idb } from "#lib/idb.ts";
   import type { PageProps } from "./$types";
 
@@ -18,6 +17,25 @@
   const mostBackups = $derived(
     (compRecord.alliances || []).map((a) => a.teams.length).reduce((prev, curr) => Math.max(prev, curr - 3), 0) || 0,
   );
+
+  const sortedTeams = $derived(
+    data.compRecord.teams.toSorted((a, b) =>
+      (a.remap || a.number).localeCompare(b.remap || b.number, undefined, { numeric: true }),
+    ),
+  );
+
+  const teamNameMap = $derived.by(() => {
+    const teamNameMap = new Map<string, string>();
+    for (const team of sortedTeams) {
+      if (team.name) teamNameMap.set(parseInt(team.number).toString(), team.name);
+    }
+    for (const team of sortedTeams) {
+      if (!team.remap) continue;
+      const name = teamNameMap.get(parseInt(team.remap).toString());
+      if (name) teamNameMap.set(team.remap, `${name} ${team.remap.at(-1)}`);
+    }
+    return teamNameMap;
+  });
 </script>
 
 <div class="flex flex-col gap-3">
@@ -42,12 +60,14 @@
         {#each alliance.teams as team, teamIndex}
           <Button
             onclick={() => {
-              openDialog(EditAllianceTeamDialog, {
-                teams: compRecord.teams,
+              openDialog(AllianceTeamDialog, {
+                type: "edit",
+                teams: sortedTeams,
+                teamNameMap,
                 allianceIndex,
                 team,
                 teamLabel: allianceTeamLabels[teamIndex] || "Backup",
-                onedit(newTeam) {
+                onsubmit(newTeam) {
                   if (compRecord.alliances == undefined) return;
                   compRecord.alliances[allianceIndex].teams[teamIndex] = newTeam;
                   compRecord.modified = Date.now();
@@ -77,11 +97,13 @@
 
         <Button
           onclick={() => {
-            openDialog(NewAllianceTeamDialog, {
-              teams: compRecord.teams,
+            openDialog(AllianceTeamDialog, {
+              type: "add",
+              teams: sortedTeams,
+              teamNameMap,
               allianceIndex,
               teamLabel: allianceTeamLabels[alliance.teams.length] || "Backup",
-              onadd(newTeam) {
+              onsubmit(newTeam) {
                 if (compRecord.alliances == undefined) return;
                 compRecord.alliances[allianceIndex].teams.push(newTeam);
                 compRecord.modified = Date.now();
@@ -98,11 +120,13 @@
 
     <Button
       onclick={() => {
-        openDialog(NewAllianceTeamDialog, {
-          teams: compRecord.teams,
+        openDialog(AllianceTeamDialog, {
+          type: "add",
+          teams: sortedTeams,
+          teamNameMap,
           allianceIndex: (compRecord.alliances || []).length,
           teamLabel: allianceTeamLabels[0],
-          onadd(newTeam) {
+          onsubmit(newTeam) {
             if (compRecord.alliances == undefined) {
               compRecord.alliances = [{ teams: [newTeam] }];
             } else {
