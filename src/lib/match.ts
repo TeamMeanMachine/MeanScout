@@ -75,7 +75,7 @@ export function compareMatches(
 export function getMatchTeamFontWeight(team: string) {
   const teamStoreValue = get(teamStore);
   if (!teamStoreValue) return "";
-  if (team == teamStoreValue) return "font-bold underline";
+  if (parseInt(team) == parseInt(teamStoreValue)) return "font-bold underline";
   return "font-light";
 }
 

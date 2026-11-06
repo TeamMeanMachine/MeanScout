@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { allianceTeamLabels, rerunAllContextLoads } from "#lib";
+  import { allianceTeamLabels, getTeamNameMap, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import AllianceTeamDialog from "#lib/dialogs/AllianceTeamDialog.svelte";
@@ -24,18 +24,7 @@
     ),
   );
 
-  const teamNameMap = $derived.by(() => {
-    const teamNameMap = new Map<string, string>();
-    for (const team of sortedTeams) {
-      if (team.name) teamNameMap.set(parseInt(team.number).toString(), team.name);
-    }
-    for (const team of sortedTeams) {
-      if (!team.remap) continue;
-      const name = teamNameMap.get(parseInt(team.remap).toString());
-      if (name) teamNameMap.set(team.remap, `${name} ${team.remap.at(-1)}`);
-    }
-    return teamNameMap;
-  });
+  const teamNameMap = $derived(getTeamNameMap(sortedTeams));
 </script>
 
 <div class="flex flex-col gap-3">
