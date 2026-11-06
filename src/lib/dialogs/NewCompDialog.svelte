@@ -8,6 +8,7 @@
   import type { Match } from "#lib/match.ts";
   import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
   import {
+    tbaGetEvent,
     tbaGetEventAlliances,
     tbaGetEventMatches,
     tbaGetEventTeamInsights,
@@ -293,7 +294,8 @@
     isLoadingTbaData = true;
 
     try {
-      const [tbaMatches, tbaTeams, tbaAlliances, tbaInsights] = await Promise.all([
+      const [tbaEvent, tbaMatches, tbaTeams, tbaAlliances, tbaInsights] = await Promise.all([
+        tbaGetEvent(event),
         tbaGetEventMatches(event),
         tbaGetEventTeams(event),
         tbaGetEventAlliances(event),
@@ -304,6 +306,18 @@
       if (tbaTeams?.length) teams = tbaTeams;
       if (tbaAlliances?.length) alliances = tbaAlliances;
       if (tbaInsights) insights = tbaInsights;
+      if (tbaEvent?.remap_teams) {
+        for (const frcDemoTeam in tbaEvent.remap_teams) {
+          const demoTeam = frcDemoTeam.replace("frc", "");
+          const bTeam = tbaEvent.remap_teams[frcDemoTeam].replace("frc", "");
+          const teamObj = teams.find((t) => t.number == demoTeam);
+          if (teamObj) {
+            teamObj.remap = bTeam;
+          } else {
+            teams.push({ number: demoTeam, name: "", remap: bTeam });
+          }
+        }
+      }
     } catch (e) {
       error = "Error while trying to get data";
       console.error(e);
