@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
-  import { rerunAllContextLoads } from "#lib";
+  import { getTeamNameMap, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
@@ -16,13 +16,7 @@
     ),
   );
 
-  const teamNames = $derived.by(() => {
-    const teamNames = new Map<string, string>();
-    for (const team of data.compRecord.teams) {
-      if (team.name) teamNames.set(parseInt(team.number).toString(), team.name);
-    }
-    return teamNames;
-  });
+  const teamNameMap = $derived(getTeamNameMap(sortedTeams));
 </script>
 
 <div class="flex flex-col gap-6">
@@ -75,13 +69,7 @@
               {/if}
             </div>
 
-            {const remapName = $derived.by(() => {
-              if (!team.remap) return;
-              const newNumber = team.remap;
-              const numberSuffix = newNumber.at(-1);
-              const name = teamNames.get(parseInt(newNumber).toString());
-              if (name) return `${name} ${numberSuffix}`;
-            })}
+            {const remapName = $derived(team.remap ? teamNameMap.get(team.remap) : undefined)}
             {#if remapName}
               <div class="text-sm">
                 {remapName}

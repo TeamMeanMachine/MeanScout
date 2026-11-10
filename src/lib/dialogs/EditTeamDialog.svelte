@@ -46,6 +46,7 @@
 </label>
 
 <label class="flex flex-col">
-  Remap
+  Remap to B team
   <input bind:value={remap} class="bg-neutral-800 p-2 text-theme" />
+  <span class="pt-1 text-xs font-light">Only applicable for events that use B team numbers</span>
 </label>

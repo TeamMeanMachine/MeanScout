@@ -46,14 +46,27 @@ export function getTeamName(team: string, teams: Team[]) {
 
 export function getTeamNameMap(teams: Team[]) {
   const teamNameMap = new Map<string, string>();
+  const baseTeamNameMap = new Map<string, string>();
+
   for (const team of teams) {
-    if (team.name) teamNameMap.set(parseInt(team.number).toString(), team.name);
+    const baseNumber = parseInt(team.number).toString();
+    if (team.name) {
+      teamNameMap.set(team.number, team.name);
+      if (baseNumber == team.number) baseTeamNameMap.set(team.number, team.name);
+    }
   }
+
   for (const team of teams) {
     if (!team.remap) continue;
-    const name = teamNameMap.get(parseInt(team.remap).toString());
-    if (name) teamNameMap.set(team.remap, `${name} ${team.remap.at(-1)}`);
+    const baseRemap = parseInt(team.remap).toString();
+    const name = baseTeamNameMap.get(baseRemap);
+    if (!name) {
+      teamNameMap.set(baseRemap, team.name);
+      continue;
+    }
+    teamNameMap.set(team.remap, name + " " + team.remap.replace(baseRemap, ""));
   }
+
   return teamNameMap;
 }
 

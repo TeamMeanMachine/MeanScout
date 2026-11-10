@@ -4,7 +4,7 @@
   import type { Entry, MatchEntry } from "#lib/entry.ts";
   import { sortExpressions } from "#lib/expression.ts";
   import { getFieldsWithDetails } from "#lib/field.ts";
-  import { compareMatches, matchUrl, type Match, type MatchIdentifier } from "#lib/match.ts";
+  import { compareMatches, getAllMatches, matchUrl } from "#lib/match.ts";
   import { getExpressionData } from "#lib/rank.ts";
   import type { MatchSurvey } from "#lib/survey.ts";
   import Anchor from "./Anchor.svelte";
@@ -19,75 +19,55 @@
     team: Team;
   } = $props();
 
-  // svelte-ignore state_referenced_locally
-  const entryExpressions = surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions);
-
   const leftStickColumnName = "left-16";
 
-  // svelte-ignore state_referenced_locally
-  const fieldRecords = pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id);
-  // svelte-ignore state_referenced_locally
-  const fieldsWithDetails = getFieldsWithDetails(surveyRecord, fieldRecords);
-
-  // svelte-ignore state_referenced_locally
-  const entries = pageData.entryRecords.filter(filterEntries);
-
-  // svelte-ignore state_referenced_locally
-  const matches = pageData.compRecord.matches.filter((m) =>
-    [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(team.number),
+  const entryExpressions = $derived(
+    surveyRecord.expressions.filter((e) => e.scope == "entry").toSorted(sortExpressions),
   );
 
-  let allMatches: (Match & { extraTeams?: string[] })[] = [...matches];
-  for (const entry of entries) {
-    const entryMatchIdentifier: MatchIdentifier = { number: entry.match, level: entry.matchLevel, set: entry.matchSet };
-    const existingMatch = allMatches.find((m) => compareMatches(m, entryMatchIdentifier) == 0);
+  const fieldRecords = $derived(pageData.fieldRecords.filter((field) => field.surveyId == surveyRecord.id));
+  const fieldsWithDetails = $derived(getFieldsWithDetails(surveyRecord, fieldRecords));
 
-    if (existingMatch) {
-      const teams = [
-        existingMatch.red1,
-        existingMatch.red2,
-        existingMatch.red3,
-        existingMatch.blue1,
-        existingMatch.blue2,
-        existingMatch.blue3,
-        ...(existingMatch.extraTeams || []),
-      ];
+  const entries = $derived(pageData.entryRecords.filter(filterEntries));
 
-      if (!teams.includes(entry.team)) {
-        existingMatch.extraTeams = [...(existingMatch.extraTeams || []), entry.team].toSorted((a, b) =>
-          a.localeCompare(b),
-        );
-      }
-    } else {
-      allMatches.push({
-        ...entryMatchIdentifier,
-        red1: "",
-        red2: "",
-        red3: "",
-        blue1: "",
-        blue2: "",
-        blue3: "",
-        extraTeams: [entry.team],
-      });
+  const any = $derived.by(() => {
+    const any = {
+      hasScout: false,
+      hasScoutTeam: false,
+      isDraft: false,
+      isAbsent: false,
+      hasPrediction: false,
+      hasPredictionReason: false,
+    };
+
+    for (const e of entries) {
+      if (e.scout) any.hasScout = true;
+      if (e.scoutTeam) any.hasScoutTeam = true;
+      if (e.status == "draft") any.isDraft = true;
+      if (e.absent) any.isAbsent = true;
+      if (e.prediction) any.hasPrediction = true;
+      if (e.predictionReason) any.hasPredictionReason = true;
     }
-  }
 
-  allMatches = allMatches.toSorted(compareMatches).toReversed();
+    return any;
+  });
 
-  const entriesPerMatch = allMatches.map((match) => ({
-    match,
-    entries: entries
-      .filter((e) => compareMatches(e, match) == 0)
-      .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
-  }));
+  let { matches } = $derived(
+    getAllMatches($state.snapshot(pageData.compRecord), entries, {
+      withTeam: team.remap || team.number,
+      allowDrafts: true,
+      sort: "descending",
+    }),
+  );
 
-  const someScout = entries.some((entry) => entry.scout);
-  const someScoutTeam = entries.some((entry) => entry.scoutTeam);
-  const someDraft = entries.some((entry) => entry.status == "draft");
-  const someAbsent = entries.some((entry) => entry.absent);
-
-  const somePrediction = entries.some((entry) => entry.prediction);
-  const somePredictionReason = entries.some((entry) => entry.predictionReason);
+  const entriesPerMatch = $derived(
+    matches.map((match) => ({
+      match,
+      entries: entries
+        .filter((e) => compareMatches(e, match) == 0)
+        .toSorted((a, b) => (a.scout || "").localeCompare(b.scout || "")),
+    })),
+  );
 
   function getExpressionValues(entry: MatchEntry) {
     const values: Record<string, Value> = {};
@@ -101,9 +81,7 @@
         fieldsWithDetails.orderedSingle,
       )?.teams[0].value;
 
-      if (value) {
-        values[expression.name] = value;
-      }
+      if (value) values[expression.name] = value;
     }
 
     return values;
@@ -116,14 +94,14 @@
           .map((id) => fieldsWithDetails.nested.find((f) => f.field.id == id))
           .filter((f) => f !== undefined)
           .map((f) => ({ type: f.field.type, value: entry.values[f.valueIndex] }));
-      } else {
-        return { type: topLevelField.field.type, value: entry.values[topLevelField.valueIndex] };
       }
+
+      return { type: topLevelField.field.type, value: entry.values[topLevelField.valueIndex] };
     });
   }
 
   function filterEntries(entry: Entry): entry is MatchEntry {
-    return entry.type == "match" && entry.team == team.number && entry.surveyId == surveyRecord.id;
+    return entry.type == "match" && entry.team == (team.remap || team.number) && entry.surveyId == surveyRecord.id;
   }
 </script>
 
@@ -140,11 +118,11 @@
           #
         </th>
 
-        {#if someDraft}
+        {#if any.isDraft}
           <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
-        {#if someAbsent}
+        {#if any.isAbsent}
           <td class="border-t border-r border-neutral-700"></td>
         {/if}
 
@@ -180,9 +158,9 @@
           <td class="border-t border-r border-neutral-700"></td>
         {/each}
 
-        {#if someScout}
+        {#if any.hasScout}
           <th
-            colspan={1 + (someScoutTeam ? 1 : 0) + (somePrediction ? 1 : 0) + (somePredictionReason ? 1 : 0)}
+            colspan={1 + (any.hasScoutTeam ? 1 : 0) + (any.hasPrediction ? 1 : 0) + (any.hasPredictionReason ? 1 : 0)}
             class="border-t border-neutral-700 px-2 pt-1 pb-0 font-light"
           >
             <div class="sticky right-0 {leftStickColumnName} inline">Scout</div>
@@ -192,11 +170,11 @@
       </tr>
 
       <tr>
-        {#if someDraft}
+        {#if any.isDraft}
           <th class="border-r border-b border-neutral-700 p-2">Draft</th>
         {/if}
 
-        {#if someAbsent}
+        {#if any.isAbsent}
           <th class="border-r border-b border-neutral-700 p-2">Absent</th>
         {/if}
 
@@ -271,17 +249,17 @@
           {/if}
         {/each}
 
-        {#if someScout}
+        {#if any.hasScout}
           <th class="border-b border-neutral-700 p-2 text-left">Name</th>
 
-          {#if someScoutTeam}
+          {#if any.hasScoutTeam}
             <th class="border-b border-neutral-700 p-2">Team</th>
           {/if}
 
-          {#if somePrediction}
+          {#if any.hasPrediction}
             <th class="border-b border-neutral-700 p-2 text-left">Guess</th>
 
-            {#if somePredictionReason}
+            {#if any.hasPredictionReason}
               <th class="border-b border-neutral-700 p-2 text-left">
                 <div class="sticky {leftStickColumnName} inline">Reason</div>
               </th>
@@ -307,13 +285,13 @@
               </Anchor>
             </th>
 
-            {#if someDraft}
+            {#if any.isDraft}
               <td class="border-r border-b border-neutral-800 p-2">
                 {entry.status == "draft" ? "true" : ""}
               </td>
             {/if}
 
-            {#if someAbsent}
+            {#if any.isAbsent}
               <td class="border-r border-b border-neutral-800 p-2 text-left">
                 {entry.absent || ""}
               </td>
@@ -360,23 +338,23 @@
               {/if}
             {/each}
 
-            {#if someScout}
+            {#if any.hasScout}
               <td class="border-b border-neutral-800 p-2 text-left">
                 <div class="w-24 truncate">{entry.scout}</div>
               </td>
 
-              {#if someScoutTeam}
+              {#if any.hasScoutTeam}
                 <td class="border-b border-neutral-800 p-2">{entry.scoutTeam}</td>
               {/if}
 
-              {#if somePrediction}
+              {#if any.hasPrediction}
                 <td class="border-b border-neutral-800 p-2 capitalize">
                   <div class={entry.prediction == "red" ? "text-red" : entry.prediction == "blue" ? "text-blue" : ""}>
                     {entry.prediction}
                   </div>
                 </td>
 
-                {#if somePredictionReason}
+                {#if any.hasPredictionReason}
                   <td class="min-w-xs border-b border-neutral-800 p-2 text-left">
                     {entry.predictionReason}
                   </td>
@@ -400,11 +378,11 @@
               </Anchor>
             </th>
 
-            {#if someDraft}
+            {#if any.isDraft}
               <td class="border-r border-b border-neutral-800 p-2"></td>
             {/if}
 
-            {#if someAbsent}
+            {#if any.isAbsent}
               <td class="border-r border-b border-neutral-800 p-2"></td>
             {/if}
 
@@ -437,17 +415,17 @@
               {/if}
             {/each}
 
-            {#if someScout}
+            {#if any.hasScout}
               <td class="border-b border-neutral-800 p-2 text-left"></td>
 
-              {#if someScoutTeam}
+              {#if any.hasScoutTeam}
                 <td class="border-b border-neutral-800 p-2"></td>
               {/if}
 
-              {#if somePrediction}
+              {#if any.hasPrediction}
                 <td class="border-b border-neutral-800 p-2 text-left"></td>
 
-                {#if somePredictionReason}
+                {#if any.hasPredictionReason}
                   <td class="border-b border-neutral-800 p-2 text-left"></td>
                 {/if}
               {/if}

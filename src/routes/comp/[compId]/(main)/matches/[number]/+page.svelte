@@ -184,10 +184,7 @@
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
     <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
       <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-      {#key data.match}
-        <MatchDataTable pageData={data} {surveyRecord} match={data.match} />
-      {/key}
+      <MatchDataTable pageData={data} {surveyRecord} match={data.match} />
     </div>
   {/each}
 
@@ -196,10 +193,7 @@
     .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
     <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
       <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-      {#key data.match}
-        <MatchPitDataTable pageData={data} {surveyRecord} match={data.match} />
-      {/key}
+      <MatchPitDataTable pageData={data} {surveyRecord} match={data.match} />
     </div>
   {/each}
 

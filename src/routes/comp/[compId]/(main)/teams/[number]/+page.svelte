@@ -16,18 +16,21 @@
   let { data }: PageProps = $props();
 
   const allianceWithIndex = $derived(
-    data.compRecord.alliances?.map((a, i) => ({ ...a, i })).find((a) => a.teams.includes(data.team.number)),
+    data.compRecord.alliances
+      ?.map((a, i) => ({ ...a, i }))
+      .find((a) => a.teams.includes(data.team.remap || data.team.number)),
   );
 
-  const insights = $derived(getTeamInsights(data.compRecord, data.team.number));
+  const insights = $derived(getTeamInsights(data.compRecord, data.team.remap || data.team.number));
 </script>
 
 <div class="mt-14.25 flex grow flex-col gap-6 overflow-x-hidden px-3 py-6 max-lg:mb-16.25 lg:ml-80">
   <div class="flex items-start justify-between gap-3">
     <div class="flex flex-col">
-      <h2 class="font-bold">Team {data.team.number}</h2>
-      {#if data.team.name}
-        <span class="text-xs font-light text-balance">{data.team.name}</span>
+      <h2 class="font-bold">Team {data.team.remap || data.team.number}</h2>
+      {const teamName = $derived(data.teamNameMap.get(data.team.remap || data.team.number))}
+      {#if teamName}
+        <span class="text-xs font-light text-balance">{teamName}</span>
       {/if}
     </div>
 
@@ -64,15 +67,21 @@
         onclick={() => {
           openDialog(EditTeamDialog, {
             team: data.team,
-            onedit(name) {
+            onedit(name, remap) {
               const teams = $state.snapshot(data.compRecord.teams);
               let teamToEdit = teams.find((t) => t.number == data.team.number);
               if (teamToEdit) {
                 teamToEdit.name = name;
+                if (!remap) {
+                  delete teamToEdit.remap;
+                } else {
+                  teamToEdit.remap = remap;
+                }
               } else {
                 teamToEdit = { number: data.team.number, name };
+                if (remap) teamToEdit.remap = remap;
                 teams.push(teamToEdit);
-                teams.sort((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+                teams.sort((a, b) => (a.remap || a.number).localeCompare(b.remap || b.number, "en", { numeric: true }));
               }
               data = {
                 ...data,
@@ -113,10 +122,7 @@
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
       <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-        {#key data.team}
-          <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} />
-        {/key}
+        <TeamMatchDataTable pageData={data} {surveyRecord} team={data.team} />
       </div>
     {/each}
 
@@ -125,10 +131,7 @@
       .toSorted((a, b) => a.name.localeCompare(b.name)) as surveyRecord}
       <div class="-mr-3 flex flex-col items-start gap-1 overflow-x-auto pr-3">
         <h2 class="sticky left-0 text-sm">{surveyRecord.name}</h2>
-
-        {#key data.team}
-          <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
-        {/key}
+        <TeamPitDataTable pageData={data} {surveyRecord} team={data.team} />
       </div>
     {/each}
   {/if}

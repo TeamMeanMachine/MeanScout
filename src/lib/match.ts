@@ -94,13 +94,24 @@ export function matchUrl(match: MatchIdentifier, compId: string) {
   }
 }
 
-export function getAllMatches(comp: Comp, entries: Entry[]) {
-  const matches: (Match & { extraTeams?: string[] })[] = [...comp.matches];
+export function getAllMatches(
+  comp: Comp,
+  entries: Entry[],
+  options?: {
+    withTeam?: string | undefined;
+    allowDrafts?: boolean | undefined;
+    sort?: "ascending" | "descending" | undefined;
+  },
+) {
+  let matches: (Match & { extraTeams?: string[] })[] = comp.matches;
+  if (options?.withTeam) {
+    matches = matches.filter((m) => [m.red1, m.red2, m.red3, m.blue1, m.blue2, m.blue3].includes(options.withTeam!));
+  }
 
   let lastCompletedMatch: MatchIdentifier | undefined = undefined;
 
   for (const entry of entries) {
-    if (entry.type != "match" || entry.status == "draft") continue;
+    if (entry.type != "match" || (!options?.allowDrafts && entry.status == "draft")) continue;
 
     const entryMatchIdentifiers = { number: entry.match, set: entry.matchSet, level: entry.matchLevel };
     const existingMatch = matches.find((m) => compareMatches(m, entryMatchIdentifiers) == 0);
@@ -140,6 +151,7 @@ export function getAllMatches(comp: Comp, entries: Entry[]) {
   }
 
   matches.sort(compareMatches);
+  if (options?.sort == "descending") matches.reverse();
 
   return { matches, lastCompletedMatch };
 }
