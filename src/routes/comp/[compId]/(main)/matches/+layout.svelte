@@ -1,5 +1,9 @@
 <script lang="ts">
   import { ChevronRightIcon, ListOrderedIcon, PlusIcon, SearchIcon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import { afterNavigate, goto } from "$app/navigation";
+  import type { LayoutProps } from "./$types";
   import { rerunAllContextLoads } from "#lib";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -8,10 +12,6 @@
   import { idb } from "#lib/idb.ts";
   import { compareMatches, matchUrl, type Match } from "#lib/match.ts";
   import { teamStore } from "#lib/settings.ts";
-  import { afterNavigate, goto } from "$app/navigation";
-  import { slide } from "svelte/transition";
-  import { z } from "zod";
-  import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 

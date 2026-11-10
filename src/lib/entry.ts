@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { getTeamName, serializeDate, valueSchema } from "./";
-import type { Comp } from "./comp";
-import { compareMatches, matchLevels, matchValueSchema, type Match, type MatchIdentifier } from "./match";
-import { getAllScouts } from "./prediction";
-import { targets } from "./settings";
-import type { Survey } from "./survey";
+import { getTeamName, serializeDate, valueSchema } from "#lib";
+import type { Comp } from "#lib/comp.ts";
+import { compareMatches, matchLevels, matchValueSchema, type Match, type MatchIdentifier } from "#lib/match.ts";
+import { getAllScouts } from "#lib/prediction.ts";
+import { targets } from "#lib/settings.ts";
+import type { Survey } from "#lib/survey.ts";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
 export type EntryStatus = (typeof entryStatuses)[number];

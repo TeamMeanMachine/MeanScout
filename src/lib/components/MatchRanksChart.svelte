@@ -1,5 +1,7 @@
 <script lang="ts">
   import { ArrowRightIcon, ChartBarBigIcon, ChevronDownIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
+  import { z } from "zod";
   import {
     allianceTeamLabels,
     convertOprToLabel,
@@ -9,6 +11,8 @@
     sessionStorageStore,
   } from "#lib";
   import { getTeamsInsights, type CompPageData } from "#lib/comp.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
   import { type MatchEntry } from "#lib/entry.ts";
@@ -27,10 +31,6 @@
     type TeamRank,
   } from "#lib/rank.ts";
   import { groupRanks, type MatchSurvey } from "#lib/survey.ts";
-  import { slide } from "svelte/transition";
-  import { z } from "zod";
-  import Anchor from "./Anchor.svelte";
-  import Button from "./Button.svelte";
 
   let {
     pageData,

@@ -8,18 +8,18 @@
     Undo2Icon,
     XIcon,
   } from "@lucide/svelte";
+  import { z } from "zod";
   import { rerunAllContextLoads, sessionStorageStore } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import ImportViewer from "#lib/components/ImportViewer.svelte";
   import QrCodeReader from "#lib/components/QRCodeReader.svelte";
   import RoomWidget from "#lib/components/RoomWidget.svelte";
   import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
+  import HandleRtcResponseMessageDialog from "#lib/dialogs/HandleRtcResponseMessageDialog.svelte";
   import type { AllData } from "#lib/idb.ts";
   import { importData, importSchema, type ImportedData } from "#lib/import.svelte.ts";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import { webRtcActiveStore, webRtcAutoReceiveStore } from "#lib/settings.ts";
-  import { z } from "zod";
-  import HandleRtcResponseMessageDialog from "./HandleRtcResponseMessageDialog.svelte";
 
   let {
     existing,

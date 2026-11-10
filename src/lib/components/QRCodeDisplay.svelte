@@ -6,13 +6,13 @@
     SquareCheckBigIcon,
     SquareIcon,
   } from "@lucide/svelte";
+  import QRCode from "qrcode";
+  import { onDestroy, onMount } from "svelte";
   import { sessionStorageStore } from "#lib";
+  import Button from "#lib/components/Button.svelte";
   import { compress, supportsCompressionApi } from "#lib/compress.ts";
   import { FountainEncoder } from "#lib/fountain.ts";
   import { useCompressionStore } from "#lib/settings.ts";
-  import QRCode from "qrcode";
-  import { onDestroy, onMount } from "svelte";
-  import Button from "./Button.svelte";
 
   let {
     data,

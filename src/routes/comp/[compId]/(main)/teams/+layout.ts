@@ -1,5 +1,5 @@
-import { getTeamNameMap } from "#lib";
 import type { LayoutLoad } from "./$types";
+import { getTeamNameMap } from "#lib";
 
 export const load: LayoutLoad = async (event) => {
   const data = await event.parent();

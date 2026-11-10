@@ -1,10 +1,10 @@
 <script lang="ts">
   import { LoaderIcon } from "@lucide/svelte";
+  import jsQR from "jsqr";
+  import { onDestroy, onMount } from "svelte";
   import { decompress } from "#lib/compress.ts";
   import { FountainDecoder } from "#lib/fountain.ts";
   import { cameraStore } from "#lib/settings.ts";
-  import jsQR from "jsqr";
-  import { onDestroy, onMount } from "svelte";
 
   let {
     onread,

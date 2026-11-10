@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "@lucide/svelte";
 import { z } from "zod";
-import type { Survey } from "./survey";
+import type { Survey } from "#lib/survey.ts";
 
 export const singleFieldTypes = ["toggle", "number", "select", "text", "rating", "timer"] as const;
 export type SingleFieldType = (typeof singleFieldTypes)[number];

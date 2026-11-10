@@ -1,5 +1,7 @@
 <script lang="ts">
   import { SquareArrowOutUpRightIcon, SquarePenIcon, UserPenIcon, UserPlusIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
   import { allianceTeamLabels, convertOprToLabel, rerunAllContextLoads, rerunOtherContextLoads } from "#lib";
   import { getTeamInsights } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
@@ -10,8 +12,6 @@
   import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
   import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
   import { idb } from "#lib/idb.ts";
-  import { goto } from "$app/navigation";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

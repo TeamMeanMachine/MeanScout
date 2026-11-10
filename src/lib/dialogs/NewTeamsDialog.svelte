@@ -54,4 +54,7 @@
   <span class="pt-1 text-xs font-light">Separate multiple teams with commas</span>
 </label>
 
-<span class="text-xs">{error || "If this event has B teams, only use offseason demo teams here (unless you need to use a B team here to fix something)."}</span>
+<span class="text-xs">
+  {error ||
+    "If this event has B teams, only use offseason demo teams here (unless you need to use a B team here to fix something)."}
+</span>

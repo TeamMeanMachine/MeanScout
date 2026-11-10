@@ -1,11 +1,12 @@
 <script lang="ts">
   import { HomeIcon } from "@lucide/svelte";
-  import Anchor from "#lib/components/Anchor.svelte";
+  import { asset } from "$app/paths";
   import { page } from "$app/state";
+  import Anchor from "#lib/components/Anchor.svelte";
 </script>
 
 <header class="flex min-h-11 items-center gap-3">
-  <img src="./logo.svg" alt="" width="25" height="25" />
+  <img src={asset("logo.svg")} alt="" width="25" height="25" />
   <h1 class="font-bold">MeanScout</h1>
 </header>
 

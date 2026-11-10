@@ -1,6 +1,6 @@
-import type { Comp } from "./comp";
-import type { Entry, MatchEntry } from "./entry";
-import { compareMatches } from "./match";
+import type { Comp } from "#lib/comp.ts";
+import type { Entry, MatchEntry } from "#lib/entry.ts";
+import { compareMatches } from "#lib/match.ts";
 
 export function getAllScouts(comp: Comp, entries: Entry[]) {
   const scouts: { name: string; team?: string | undefined }[] = [];

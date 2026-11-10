@@ -1,5 +1,5 @@
-import { compareMatches, getAllMatches, matchLevels, type MatchIdentifier, type MatchLevel } from "#lib/match.ts";
 import type { LayoutLoad } from "./$types";
+import { compareMatches, getAllMatches, matchLevels, type MatchIdentifier, type MatchLevel } from "#lib/match.ts";
 
 export const load: LayoutLoad = async (event) => {
   const data = await event.parent();

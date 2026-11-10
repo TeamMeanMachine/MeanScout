@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ArrowBigDownDashIcon, EllipsisVerticalIcon, XIcon } from "@lucide/svelte";
-  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
-  import Anchor from "./Anchor.svelte";
-  import Button from "./Button.svelte";
-  import "#lib/app-update.svelte.ts";
+  import { asset } from "$app/paths";
   import { appUpdate } from "#lib/app-update.svelte.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
+  import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
 
   let {
     title = "MeanScout",
@@ -34,7 +34,7 @@
 <header class="fixed top-0 right-0 left-0 z-20 flex w-full flex-col border-b border-neutral-600 bg-neutral-900 py-2">
   <div class={["mx-auto flex min-h-10 w-full items-center gap-6 px-3", classes]}>
     <div class="flex gap-2">
-      <img src="./logo.svg" alt="" width="25" height="25" />
+      <img src={asset("logo.svg")} alt="" width="25" height="25" />
 
       <div class="flex flex-col truncate">
         {#if subheading}

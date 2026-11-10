@@ -1,11 +1,11 @@
+import createClient from "openapi-fetch";
+import { get } from "svelte/store";
 import { parseValueFromString, type Team, type Value } from "#lib";
 import type { Alliance, TeamsInsights } from "#lib/comp.ts";
 import type { TbaMetrics } from "#lib/entry.ts";
 import type { Match } from "#lib/match.ts";
 import { tbaAuthKeyStore } from "#lib/settings.ts";
-import createClient from "openapi-fetch";
-import { get } from "svelte/store";
-import type { paths } from "./schema";
+import type { paths } from "#lib/tba/schema.d.ts";
 
 const API_URL = "https://www.thebluealliance.com/api/v3";
 const TBA_AUTH_KEY = "QucqT0im61Z50YQnCpSdkifFqo2aoTKkQRyQSjlM1juuhLu6kr7jXlHjJsfIO78B";

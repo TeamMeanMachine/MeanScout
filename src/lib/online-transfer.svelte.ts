@@ -1,13 +1,19 @@
-import { serializeDate } from "#lib";
-import { browser, dev } from "$app/env";
 import { SvelteMap } from "svelte/reactivity";
 import { get } from "svelte/store";
 import { z } from "zod";
-import { compress, decompress } from "./compress";
-import type { AllData } from "./idb";
-import { importSchema, mergeOldAndNewData, type ImportedData } from "./import.svelte";
-import { matchIdentifierSchema } from "./match";
-import { scoutStore, teamStore, webRtcActiveStore, webRtcForceFallbackStore, webRtcRoomIdStore } from "./settings";
+import { browser, dev } from "$app/env";
+import { serializeDate } from "#lib";
+import { compress, decompress } from "#lib/compress.ts";
+import type { AllData } from "#lib/idb.ts";
+import { importSchema, mergeOldAndNewData, type ImportedData } from "#lib/import.svelte.ts";
+import { matchIdentifierSchema } from "#lib/match.ts";
+import {
+  scoutStore,
+  teamStore,
+  webRtcActiveStore,
+  webRtcForceFallbackStore,
+  webRtcRoomIdStore,
+} from "#lib/settings.ts";
 
 const clientInfoSchema = z.object({ id: z.string(), name: z.string().optional(), team: z.string().optional() });
 export type ClientInfo = z.infer<typeof clientInfoSchema>;

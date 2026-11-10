@@ -1,9 +1,9 @@
 <script lang="ts">
   import { CircleCheckBigIcon, CircleIcon, Trash2Icon } from "@lucide/svelte";
+  import { untrack } from "svelte";
   import { type Team } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "#lib/dialog.ts";
-  import { untrack } from "svelte";
 
   let props: {
     teams: Team[];

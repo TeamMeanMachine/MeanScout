@@ -1,5 +1,6 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
   import { rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
@@ -9,7 +10,6 @@
   import NewPickListDialog from "#lib/dialogs/NewPickListDialog.svelte";
   import { sortExpressions, type Expression } from "#lib/expression.ts";
   import { idb } from "#lib/idb.ts";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

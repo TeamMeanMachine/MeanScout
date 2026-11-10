@@ -2,6 +2,7 @@
   "endOfLine": "lf",
   "printWidth": 120,
   "plugins": ["prettier-plugin-svelte", "@ianvs/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+  "importOrder": ["^\\$", "\\./\\$types", "^#.*", "^\\."],
   "overrides": [
     {
       "files": "*.svelte",

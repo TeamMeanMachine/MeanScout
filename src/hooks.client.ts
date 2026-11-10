@@ -1,4 +1,5 @@
 import type { ClientInit } from "@sveltejs/kit/hooks";
+import { get } from "svelte/store";
 import { idb } from "#lib/idb.ts";
 import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
 import {
@@ -8,7 +9,6 @@ import {
   webRtcForceFallbackStore,
   webRtcRoomIdStore,
 } from "#lib/settings.ts";
-import { get } from "svelte/store";
 
 export const init: ClientInit = async () => {
   const webRtcActive = get(webRtcActiveStore);

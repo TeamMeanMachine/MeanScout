@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { valueSchema } from "./";
+import { valueSchema } from "#lib";
 
 export const reduceExpressionTypes = ["average", "min", "max", "sum", "count"] as const;
 export const mapExpressionTypes = ["convert", "multiply", "divide", "abs"] as const;

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { ClipboardCopy, Share2Icon, SquarePenIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
   import { rerunAllContextLoads, rerunOtherContextLoads, sessionStorageStore } from "#lib";
   import BarChart from "#lib/components/BarChart.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -9,8 +11,6 @@
   import EditPickListDialog from "#lib/dialogs/EditPickListDialog.svelte";
   import { type Expression } from "#lib/expression.ts";
   import { idb } from "#lib/idb.ts";
-  import { goto } from "$app/navigation";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

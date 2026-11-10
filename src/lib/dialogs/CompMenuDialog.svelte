@@ -17,9 +17,9 @@
   import FetchTbaDataButton from "#lib/components/FetchTbaDataButton.svelte";
   import RoomWidget from "#lib/components/RoomWidget.svelte";
   import { openDialog } from "#lib/dialog.ts";
+  import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
+  import BulkImportDialog from "#lib/dialogs/BulkImportDialog.svelte";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
-  import BulkExportDialog from "./BulkExportDialog.svelte";
-  import BulkImportDialog from "./BulkImportDialog.svelte";
 
   let {
     pageData,

@@ -13,20 +13,20 @@
     UserPlusIcon,
     XIcon,
   } from "@lucide/svelte";
+  import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
+  import { untrack } from "svelte";
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import { allianceTeamLabels, convertOprToLabel, getOrdinal, rerunAllContextLoads, sessionStorageStore } from "#lib";
   import type { CompPageData } from "#lib/comp.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
+  import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import AddTeamToAllianceDialog from "#lib/dialogs/AddTeamToAllianceDialog.svelte";
   import OmitTeamFromPickListDialog from "#lib/dialogs/OmitTeamFromPickListDialog.svelte";
   import { getFieldsWithDetails } from "#lib/field.ts";
   import { idb } from "#lib/idb.ts";
   import { colors, type RankData, type TeamRank } from "#lib/rank.ts";
-  import { generateNJitteredKeysBetween, IndexGenerator } from "fractional-indexing-jittered";
-  import { untrack } from "svelte";
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
-  import Anchor from "./Anchor.svelte";
-  import Button from "./Button.svelte";
 
   let {
     pageData,

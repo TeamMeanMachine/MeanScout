@@ -13,6 +13,8 @@
     UsersIcon,
     XIcon,
   } from "@lucide/svelte";
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import Button from "#lib/components/Button.svelte";
   import Header from "#lib/components/Header.svelte";
   import { supportsCompressionApi } from "#lib/compress.ts";
@@ -28,8 +30,6 @@
     webRtcForceFallbackStore,
   } from "#lib/settings.ts";
   import { tbaAuthKeyIsValid } from "#lib/tba/index.ts";
-  import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
 
   const backLink = sessionStorage.getItem("home") || "";
 

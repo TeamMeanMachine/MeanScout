@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { getTeamName, type Value } from "./";
-import type { Comp } from "./comp";
-import type { MatchEntry } from "./entry";
-import { type Expression, type ExpressionMethod } from "./expression";
-import type { SingleFieldWithDetails } from "./field";
-import type { MatchSurvey } from "./survey";
+import { getTeamName, type Value } from "#lib";
+import type { Comp } from "#lib/comp.ts";
+import type { MatchEntry } from "#lib/entry.ts";
+import { type Expression, type ExpressionMethod } from "#lib/expression.ts";
+import type { SingleFieldWithDetails } from "#lib/field.ts";
+import type { MatchSurvey } from "#lib/survey.ts";
 
 const weightSchema = z.discriminatedUnion("from", [
   z.object({ from: z.literal("expression").optional(), expressionName: z.string(), percentage: z.number() }),

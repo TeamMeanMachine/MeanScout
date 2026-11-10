@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { CompPageData } from "#lib/comp.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
   import type { Entry, PitEntry } from "#lib/entry.ts";
   import { getFieldsWithDetails } from "#lib/field.ts";
   import { type Match } from "#lib/match.ts";
   import type { PitSurvey } from "#lib/survey.ts";
-  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { type Value } from "#lib";
   import type { CompPageData } from "#lib/comp.ts";
+  import Anchor from "#lib/components/Anchor.svelte";
   import type { Entry, MatchEntry } from "#lib/entry.ts";
   import { sortExpressions } from "#lib/expression.ts";
   import { getFieldsWithDetails } from "#lib/field.ts";
   import { compareMatches, type Match } from "#lib/match.ts";
   import { getExpressionData } from "#lib/rank.ts";
   import type { MatchSurvey } from "#lib/survey.ts";
-  import Anchor from "./Anchor.svelte";
 
   let {
     pageData,

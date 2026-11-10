@@ -1,6 +1,6 @@
 import { error } from "@sveltejs/kit";
-import { groupEntries } from "#lib/entry.ts";
 import type { PageLoad } from "./$types";
+import { groupEntries } from "#lib/entry.ts";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();

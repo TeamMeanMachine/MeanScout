@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Sortable from "sortablejs";
+  import type { PageProps } from "./$types";
   import { rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
@@ -6,8 +8,6 @@
   import NewFieldDialog from "#lib/dialogs/NewFieldDialog.svelte";
   import { fieldIcons, fieldTypes, type Field, type GroupField } from "#lib/field.ts";
   import { idb } from "#lib/idb.ts";
-  import Sortable from "sortablejs";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

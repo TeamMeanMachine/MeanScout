@@ -1,5 +1,7 @@
 <script lang="ts">
   import { ArrowLeftIcon, ArrowRightIcon, SquareArrowOutUpRightIcon, SquarePenIcon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
   import { getTeamName, rerunOtherContextLoads } from "#lib";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -10,8 +12,6 @@
   import EditMatchDialog from "#lib/dialogs/EditMatchDialog.svelte";
   import { idb } from "#lib/idb.ts";
   import { compareMatches, matchUrl } from "#lib/match.ts";
-  import { goto } from "$app/navigation";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

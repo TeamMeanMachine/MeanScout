@@ -1,7 +1,7 @@
-import { browser } from "$app/env";
-import { refreshAll } from "$app/navigation";
 import { writable } from "svelte/store";
 import { z } from "zod";
+import { browser } from "$app/env";
+import { refreshAll } from "$app/navigation";
 
 const bc = new BroadcastChannel("invalidate");
 bc.onmessage = () => refreshAll();

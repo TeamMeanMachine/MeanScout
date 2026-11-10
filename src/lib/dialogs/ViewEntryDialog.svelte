@@ -1,16 +1,16 @@
 <script lang="ts">
   import { ShareIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { goto } from "$app/navigation";
   import { getTeamName, rerunOtherContextLoads, type Value } from "#lib";
   import type { Comp } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, openDialog } from "#lib/dialog.ts";
+  import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
+  import DeleteEntryDialog from "#lib/dialogs/DeleteEntryDialog.svelte";
   import type { Entry } from "#lib/entry.ts";
   import { getFieldsWithDetails, type Field, type SingleField } from "#lib/field.ts";
   import { idb } from "#lib/idb.ts";
   import type { Survey } from "#lib/survey.ts";
-  import { goto } from "$app/navigation";
-  import BulkExportDialog from "./BulkExportDialog.svelte";
-  import DeleteEntryDialog from "./DeleteEntryDialog.svelte";
 
   let {
     compRecord,

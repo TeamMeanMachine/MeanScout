@@ -1,8 +1,8 @@
 <script lang="ts">
   import { PauseIcon, PlayIcon, TimerResetIcon } from "@lucide/svelte";
+  import { onDestroy } from "svelte";
   import Button from "#lib/components/Button.svelte";
   import type { TimerField } from "#lib/field.ts";
-  import { onDestroy } from "svelte";
 
   let {
     field,

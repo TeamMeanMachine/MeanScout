@@ -1,8 +1,8 @@
 <script lang="ts">
   import { MinusIcon, PlusIcon } from "@lucide/svelte";
+  import { fly, type FlyParams } from "svelte/transition";
   import Button from "#lib/components/Button.svelte";
   import type { NumberField } from "#lib/field.ts";
-  import { fly, type FlyParams } from "svelte/transition";
 
   let {
     field,

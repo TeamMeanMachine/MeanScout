@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ArrowRightIcon, CalendarDaysIcon, PlusIcon, Settings2Icon, SquarePenIcon } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
   import { rerunAllContextLoads } from "#lib";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -9,7 +10,6 @@
   import EditCompTbaEventKeyDialog from "#lib/dialogs/EditCompTbaEventKeyDialog.svelte";
   import NewSurveyDialog from "#lib/dialogs/NewSurveyDialog.svelte";
   import { idb } from "#lib/idb.ts";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>

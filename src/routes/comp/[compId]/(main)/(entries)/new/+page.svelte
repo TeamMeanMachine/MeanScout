@@ -12,6 +12,11 @@
     UserSearchIcon,
     XIcon,
   } from "@lucide/svelte";
+  import { untrack } from "svelte";
+  import { fly, slide, type FlyParams } from "svelte/transition";
+  import { z } from "zod";
+  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
   import { getTeamName, isValidTeam, rerunAllContextLoads, rerunOtherContextLoads, type Team } from "#lib";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -27,11 +32,6 @@
   import { onlineTransfer, type ScoutingStatus } from "#lib/online-transfer.svelte.ts";
   import { scoutStore, targetStore, teamStore, type Target } from "#lib/settings.ts";
   import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
-  import { goto } from "$app/navigation";
-  import { untrack } from "svelte";
-  import { fly, slide, type FlyParams } from "svelte/transition";
-  import { z } from "zod";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

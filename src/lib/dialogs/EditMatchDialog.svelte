@@ -1,13 +1,13 @@
 <script lang="ts">
   import { Trash2Icon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
   import { isValidTeam } from "#lib";
   import type { Comp } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
+  import DeleteMatchDialog from "#lib/dialogs/DeleteMatchDialog.svelte";
+  import SelectTeamsDialog from "#lib/dialogs/SelectTeamsDialog.svelte";
   import { compareMatches, matchLevels, type Match } from "#lib/match.ts";
-  import { slide } from "svelte/transition";
-  import DeleteMatchDialog from "./DeleteMatchDialog.svelte";
-  import SelectTeamsDialog from "./SelectTeamsDialog.svelte";
 
   let {
     match,

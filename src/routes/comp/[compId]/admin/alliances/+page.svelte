@@ -1,11 +1,11 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
   import { allianceTeamLabels, getTeamNameMap, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import AllianceTeamDialog from "#lib/dialogs/AllianceTeamDialog.svelte";
   import { idb } from "#lib/idb.ts";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

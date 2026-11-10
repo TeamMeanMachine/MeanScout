@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 import { z } from "zod";
-import type { Comp } from "./comp";
-import type { Entry } from "./entry";
-import { teamStore } from "./settings";
+import type { Comp } from "#lib/comp.ts";
+import type { Entry } from "#lib/entry.ts";
+import { teamStore } from "#lib/settings.ts";
 
 export const matchValueSchema = z.number().int().gt(0);
 

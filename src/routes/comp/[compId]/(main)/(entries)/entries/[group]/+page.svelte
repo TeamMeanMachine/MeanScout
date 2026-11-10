@@ -1,5 +1,9 @@
 <script lang="ts">
   import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
+  import { slide } from "svelte/transition";
+  import { z } from "zod";
+  import { goto } from "$app/navigation";
+  import type { PageProps } from "./$types";
   import { getTeamName, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
@@ -9,10 +13,6 @@
   import { idb } from "#lib/idb.ts";
   import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "#lib/match.ts";
   import { targets, type Target } from "#lib/settings.ts";
-  import { goto } from "$app/navigation";
-  import { slide } from "svelte/transition";
-  import { z } from "zod";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 

@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { rerunOtherContextLoads } from "#lib";
   import type { Comp } from "#lib/comp.ts";
   import type { DialogExports } from "#lib/dialog.ts";
   import { idb } from "#lib/idb.ts";
-  import { goto } from "$app/navigation";
 
   let {
     compRecord,

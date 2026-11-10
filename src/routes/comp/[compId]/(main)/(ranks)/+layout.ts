@@ -1,7 +1,7 @@
+import type { LayoutLoad } from "./$types";
 import { sortExpressions } from "#lib/expression.ts";
 import { getFieldsWithDetails } from "#lib/field.ts";
 import { groupRanks } from "#lib/survey.ts";
-import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {
   const data = await event.parent();

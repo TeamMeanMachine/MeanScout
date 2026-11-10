@@ -3,12 +3,12 @@
   import { getTeamsInsights, type Comp } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
+  import DeletePickListDialog from "#lib/dialogs/DeletePickListDialog.svelte";
+  import ResetPickListDialog from "#lib/dialogs/ResetPickListDialog.svelte";
   import type { EntryExpression, Expression, SurveyExpression } from "#lib/expression.ts";
   import { isNumericField, type SingleFieldWithDetails } from "#lib/field.ts";
   import type { PickList } from "#lib/rank.ts";
   import type { MatchSurvey } from "#lib/survey.ts";
-  import DeletePickListDialog from "./DeletePickListDialog.svelte";
-  import ResetPickListDialog from "./ResetPickListDialog.svelte";
 
   let {
     compRecord,

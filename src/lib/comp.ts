@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { convertOprToLabel, serializeDate, teamSchema, type TeamInsights } from "./";
-import type { Entry } from "./entry";
-import type { Field } from "./field";
-import type { AllData } from "./idb";
-import { matchSchema } from "./match";
-import type { Survey } from "./survey";
+import { convertOprToLabel, serializeDate, teamSchema, type TeamInsights } from "#lib";
+import type { Entry } from "#lib/entry.ts";
+import type { Field } from "#lib/field.ts";
+import type { AllData } from "#lib/idb.ts";
+import { matchSchema } from "#lib/match.ts";
+import type { Survey } from "#lib/survey.ts";
 
 const allianceSchema = z.object({
   teams: z.array(z.string()),

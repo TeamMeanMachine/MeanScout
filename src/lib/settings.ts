@@ -1,6 +1,6 @@
-import { browser } from "$app/env";
 import { writable } from "svelte/store";
-import { supportsCompressionApi } from "./compress";
+import { browser } from "$app/env";
+import { supportsCompressionApi } from "#lib/compress.ts";
 
 function localStorageStore<T extends string>(
   key: string,

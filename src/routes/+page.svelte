@@ -8,6 +8,7 @@
     PlusIcon,
     SettingsIcon,
   } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
   import { appUpdate } from "#lib/app-update.svelte.ts";
   import Anchor from "#lib/components/Anchor.svelte";
   import Button from "#lib/components/Button.svelte";
@@ -17,7 +18,6 @@
   import BulkImportDialog from "#lib/dialogs/BulkImportDialog.svelte";
   import NewCompDialog from "#lib/dialogs/NewCompDialog.svelte";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>

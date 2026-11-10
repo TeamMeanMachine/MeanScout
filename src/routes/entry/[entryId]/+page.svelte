@@ -8,6 +8,10 @@
     UserSearchIcon,
     UsersIcon,
   } from "@lucide/svelte";
+  import { onMount } from "svelte";
+  import { slide } from "svelte/transition";
+  import { goto, onNavigate } from "$app/navigation";
+  import type { PageData, PageProps } from "./$types";
   import { getTeamName, rerunOtherContextLoads, schemaVersion, type Team } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import FieldValueEditor from "#lib/components/FieldValueEditor.svelte";
@@ -21,11 +25,7 @@
   import { idb } from "#lib/idb.ts";
   import { getAllMatches, type MatchIdentifier } from "#lib/match.ts";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
-  import { scoutStore, teamStore, webRtcActiveStore, webRtcAutoSendStore } from "#lib/settings.ts";
-  import { goto, onNavigate } from "$app/navigation";
-  import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
-  import type { PageData, PageProps } from "./$types";
+  import { scoutStore, teamStore, webRtcAutoSendStore } from "#lib/settings.ts";
 
   let { data }: PageProps = $props();
 

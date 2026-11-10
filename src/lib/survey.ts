@@ -1,8 +1,8 @@
-import { serializeDate } from "#lib";
 import { z } from "zod";
-import { expressionSchema, sortExpressions } from "./expression";
-import { isNumericField, type SingleFieldWithDetails } from "./field";
-import { pickListSchema } from "./rank";
+import { serializeDate } from "#lib";
+import { expressionSchema, sortExpressions } from "#lib/expression.ts";
+import { isNumericField, type SingleFieldWithDetails } from "#lib/field.ts";
+import { pickListSchema } from "#lib/rank.ts";
 
 export const surveyTypes = ["match", "pit"] as const;
 export type SurveyType = (typeof surveyTypes)[number];

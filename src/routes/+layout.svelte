@@ -1,13 +1,13 @@
 <script lang="ts">
   import "./layout.css";
+  import { onDestroy } from "svelte";
+  import { onNavigate } from "$app/navigation";
   import { rerunAllContextLoads } from "#lib";
   import DialogBox from "#lib/components/DialogBox.svelte";
   import { closeAllDialogs, subscribeDialog, type DialogState } from "#lib/dialog.ts";
   import { importData } from "#lib/import.svelte.ts";
   import { onlineTransfer } from "#lib/online-transfer.svelte.ts";
   import { webRtcAutoReceiveStore } from "#lib/settings.ts";
-  import { onNavigate } from "$app/navigation";
-  import { onDestroy } from "svelte";
 
   let { data, children } = $props();
 

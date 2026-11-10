@@ -1,10 +1,10 @@
 import { error } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 import { type Value } from "#lib";
 import type { Comp } from "#lib/comp.ts";
 import type { Entry, MatchEntry, PitEntry } from "#lib/entry.ts";
 import { getDefaultFieldValue, getFieldsWithDetails } from "#lib/field.ts";
 import type { MatchSurvey, PitSurvey } from "#lib/survey.ts";
-import type { PageLoad } from "./$types";
 
 type EntryPageData = {
   title: string;

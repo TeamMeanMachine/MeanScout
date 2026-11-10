@@ -1,11 +1,11 @@
-import { type Team, type Value } from "#lib";
 import { z } from "zod";
-import { compSchema, type Comp } from "./comp";
-import { entrySchema, type Entry, type TbaMetrics } from "./entry";
-import { fieldSchema } from "./field";
-import { idb, type AllData } from "./idb";
-import { compareMatches, type Match } from "./match";
-import { surveySchema, type MatchSurvey, type PitSurvey } from "./survey";
+import { type Team, type Value } from "#lib";
+import { compSchema, type Comp } from "#lib/comp.ts";
+import { entrySchema, type Entry } from "#lib/entry.ts";
+import { fieldSchema } from "#lib/field.ts";
+import { idb, type AllData } from "#lib/idb.ts";
+import { compareMatches, type Match } from "#lib/match.ts";
+import { surveySchema, type MatchSurvey, type PitSurvey } from "#lib/survey.ts";
 
 export const importSchema = z
   .object({

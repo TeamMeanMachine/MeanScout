@@ -3,6 +3,8 @@
   import { parseValueFromString } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, openDialog, type DialogExports } from "#lib/dialog.ts";
+  import DeleteExpressionDialog from "#lib/dialogs/DeleteExpressionDialog.svelte";
+  import EditConvertersDialog from "#lib/dialogs/EditConvertersDialog.svelte";
   import {
     mapExpressionTypes,
     reduceExpressionTypes,
@@ -12,8 +14,6 @@
   } from "#lib/expression.ts";
   import type { SingleFieldWithDetails } from "#lib/field.ts";
   import type { MatchSurvey } from "#lib/survey.ts";
-  import DeleteExpressionDialog from "./DeleteExpressionDialog.svelte";
-  import EditConvertersDialog from "./EditConvertersDialog.svelte";
 
   let {
     surveyRecord,

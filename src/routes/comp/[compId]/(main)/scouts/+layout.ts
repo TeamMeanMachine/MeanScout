@@ -1,6 +1,6 @@
+import type { LayoutLoad } from "./$types";
 import type { MatchEntry } from "#lib/entry.ts";
 import { getPredictionsPerMatch, getPredictionsPerScout } from "#lib/prediction.ts";
-import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async (event) => {
   const data = await event.parent();

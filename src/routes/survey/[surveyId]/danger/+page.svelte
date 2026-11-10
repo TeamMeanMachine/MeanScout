@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Trash2Icon } from "@lucide/svelte";
+  import type { PageProps } from "./$types";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import DeleteEntriesDialog from "#lib/dialogs/DeleteEntriesDialog.svelte";
   import DeleteSurveyDialog from "#lib/dialogs/DeleteSurveyDialog.svelte";
-  import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
 </script>

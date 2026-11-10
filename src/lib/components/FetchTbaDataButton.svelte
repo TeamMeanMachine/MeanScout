@@ -2,6 +2,7 @@
   import { CheckIcon, CloudDownloadIcon, LoaderIcon } from "@lucide/svelte";
   import { rerunAllContextLoads } from "#lib";
   import type { CompPageData } from "#lib/comp.ts";
+  import Button from "#lib/components/Button.svelte";
   import { idb } from "#lib/idb.ts";
   import { compareMatches } from "#lib/match.ts";
   import {
@@ -11,7 +12,6 @@
     tbaGetEventTeamInsights,
     tbaGetEventTeams,
   } from "#lib/tba/index.ts";
-  import Button from "./Button.svelte";
 
   let {
     pageData,

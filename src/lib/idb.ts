@@ -1,8 +1,8 @@
-import { schemaVersion, serializeDate } from "./";
-import type { Comp } from "./comp";
-import type { Entry } from "./entry";
-import type { Field } from "./field";
-import type { Survey } from "./survey";
+import { schemaVersion, serializeDate } from "#lib";
+import type { Comp } from "#lib/comp.ts";
+import type { Entry } from "#lib/entry.ts";
+import type { Field } from "#lib/field.ts";
+import type { Survey } from "#lib/survey.ts";
 
 type IDBStoreRecordMap = {
   comps: Comp;

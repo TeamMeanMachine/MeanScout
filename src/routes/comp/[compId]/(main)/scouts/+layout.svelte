@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Anchor from "#lib/components/Anchor.svelte";
   import type { LayoutProps } from "./$types";
+  import Anchor from "#lib/components/Anchor.svelte";
 
   let { data, children }: LayoutProps = $props();
 </script>

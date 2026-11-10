@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { rerunOtherContextLoads } from "#lib";
   import type { DialogExports } from "#lib/dialog.ts";
   import { idb } from "#lib/idb.ts";
   import type { Survey } from "#lib/survey.ts";
-  import { goto } from "$app/navigation";
 
   let {
     surveyRecord,

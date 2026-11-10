@@ -1,10 +1,10 @@
 import { error } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 import { convertOprToLabel } from "#lib";
 import type { MatchEntry } from "#lib/entry.ts";
 import { sortExpressions } from "#lib/expression.ts";
 import { getFieldsWithDetails } from "#lib/field.ts";
 import { getExpressionData, getFieldData, getOprData, getPickListData } from "#lib/rank.ts";
-import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async (event) => {
   const data = await event.parent();
