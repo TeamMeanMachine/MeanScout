@@ -3,6 +3,7 @@
   import { rerunAllContextLoads } from "#lib";
   import type { CompPageData } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
+  import type { Entry } from "#lib/entry.ts";
   import { idb } from "#lib/idb.ts";
   import { compareMatches } from "#lib/match.ts";
   import {
@@ -24,185 +25,125 @@
   let showCheck = $state(false);
   let showCheckTimeout = $state<number | undefined>();
 
-  async function getDataFromTbaEvent() {
+  function getDataFromTbaEvent() {
+    if (!pageData.compRecord.tbaEventKey) return;
+
     showCheck = false;
     window.clearTimeout(showCheckTimeout);
 
     getTbaDataError = "";
     isLoadingTbaData = true;
 
-    try {
-      const anyPulled = await Promise.all([
-        getTbaEvent(),
-        getMatchesFromTbaEvent(),
-        getTeamsFromTbaEvent(),
-        getAlliancesFromTbaEvent(),
-        getTeamsInsightsFromTbaEvent(),
-      ]);
+    Promise.allSettled([
+      tbaGetEvent(pageData.compRecord.tbaEventKey),
+      tbaGetEventMatches(pageData.compRecord.tbaEventKey),
+      tbaGetEventTeams(pageData.compRecord.tbaEventKey),
+      tbaGetEventTeamInsights(pageData.compRecord.tbaEventKey),
+      tbaGetEventAlliances(pageData.compRecord.tbaEventKey),
+    ])
+      .then((results) => {
+        const [eventResult, matchesResult, teamsResult, insightsResult, alliancesResult] = results;
 
-      showCheck = anyPulled.includes(true);
-    } catch (e) {
-      getTbaDataError = "Error while trying to get data";
-      console.error(e);
-    }
+        const comp = $state.snapshot(pageData.compRecord);
+        let entries: Entry[] | undefined = undefined;
 
-    if (showCheck) {
-      rerunAllContextLoads();
-      showCheckTimeout = window.setTimeout(() => (showCheck = false), 1000);
-    } else {
-      window.clearTimeout(showCheckTimeout);
-    }
-
-    isLoadingTbaData = false;
-  }
-
-  async function getTbaEvent() {
-    if (!pageData.compRecord.tbaEventKey) return false;
-
-    const response = await tbaGetEvent(pageData.compRecord.tbaEventKey);
-    if (response?.remap_teams) {
-      let teams = $state.snapshot(pageData.compRecord.teams);
-      for (const frcDemoTeam in response.remap_teams) {
-        const demoTeam = frcDemoTeam.replace("frc", "");
-        const bTeam = response.remap_teams[frcDemoTeam].replace("frc", "");
-
-        const teamObj = teams.find((t) => t.number == demoTeam);
-        if (teamObj) {
-          teamObj.remap = bTeam;
-        } else {
-          teams.push({ number: demoTeam, name: "", remap: bTeam });
-        }
-      }
-      pageData = {
-        ...pageData,
-        compRecord: { ...pageData.compRecord, teams },
-      };
-      idb.put("comps", $state.snapshot(pageData.compRecord));
-      return true;
-    }
-
-    return false;
-  }
-
-  async function getMatchesFromTbaEvent() {
-    if (!pageData.compRecord.tbaEventKey) return false;
-
-    try {
-      const response = await tbaGetEventMatches(pageData.compRecord.tbaEventKey);
-
-      if (response) {
-        const matchesTx = idb.transaction(["comps", "entries"], "readwrite");
-        matchesTx.onabort = () => {
-          getTbaDataError = "Error while trying to get matches";
-        };
-
-        let matches = $state.snapshot(pageData.compRecord.matches);
-
-        for (const { match } of response) {
-          const similarMatches = matches.filter((existingMatch) => compareMatches(existingMatch, match) == 0);
-          if (similarMatches.length > 1) {
-            matches = matches.filter((m) => compareMatches(m, match) != 0);
-            matches.push(match);
-            continue;
-          }
-
-          const matchIndex = matches.findIndex((existingMatch) => compareMatches(existingMatch, match) == 0);
-
-          if (matchIndex == -1) {
-            matches.push(match);
-          } else {
-            matches[matchIndex] = match;
+        if (eventResult.status == "fulfilled" && eventResult.value?.remap_teams) {
+          comp.teamsRemaps ??= {};
+          for (const frcDemoTeam in eventResult.value.remap_teams) {
+            const demoTeam = frcDemoTeam.replace("frc", "");
+            const bTeam = eventResult.value.remap_teams[frcDemoTeam].replace("frc", "");
+            comp.teamsRemaps[demoTeam] = bTeam;
           }
         }
 
-        matches = matches.toSorted(compareMatches);
+        if (matchesResult.status == "fulfilled" && matchesResult.value?.length) {
+          for (const { match } of matchesResult.value) {
+            const similarMatches = comp.matches.filter((existingMatch) => compareMatches(existingMatch, match) == 0);
+            if (similarMatches.length > 1) {
+              comp.matches = comp.matches.filter((m) => compareMatches(m, match) != 0);
+              comp.matches.push(match);
+              continue;
+            }
+            const matchIndex = comp.matches.findIndex((existingMatch) => compareMatches(existingMatch, match) == 0);
+            if (matchIndex == -1) {
+              comp.matches.push(match);
+            } else {
+              comp.matches[matchIndex] = match;
+            }
+          }
+          comp.matches.sort(compareMatches);
 
-        const entryStore = matchesTx.objectStore("entries");
-        for (const { match, breakdowns } of response) {
-          if (!breakdowns) continue;
-
-          for (const { team, tbaMetrics } of breakdowns) {
-            const entries = pageData.entryRecords.filter(
-              (e) => e.team == team && e.type == "match" && compareMatches(match, e) == 0,
-            );
-            for (const entry of entries) {
-              entryStore.put({ ...$state.snapshot(entry), tbaMetrics });
+          if (pageData.entryRecords.length) {
+            entries = [];
+            for (const { match, breakdowns } of matchesResult.value) {
+              if (!breakdowns) continue;
+              for (const { team, tbaMetrics } of breakdowns) {
+                entries.push(
+                  ...pageData.entryRecords
+                    .filter((e) => e.team == team && e.type == "match" && compareMatches(match, e) == 0)
+                    .map((e) => ({ ...e, tbaMetrics })),
+                );
+              }
             }
           }
         }
 
-        pageData = {
-          ...pageData,
-          compRecord: { ...pageData.compRecord, matches, modified: Date.now() },
-        };
-        matchesTx.objectStore("comps").put($state.snapshot(pageData.compRecord));
-        return matches.length > 0;
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    return false;
-  }
-
-  async function getTeamsFromTbaEvent() {
-    if (!pageData.compRecord.tbaEventKey) return false;
-
-    const response = await tbaGetEventTeams(pageData.compRecord.tbaEventKey);
-    if (response) {
-      const teams = $state.snapshot(pageData.compRecord.teams);
-      for (const team of response) {
-        const existingTeam = teams.find((t) => t.number == team.number);
-        if (!existingTeam) {
-          teams.push(team);
-        } else {
-          if (team.name && !existingTeam.name) {
-            existingTeam.name = team.name;
+        if (teamsResult.status == "fulfilled" && teamsResult.value?.length) {
+          for (let team of teamsResult.value) {
+            const remap = comp.teamsRemaps?.[team.number];
+            if (remap) team = { number: remap, name: `${team.name} (${team.number})` };
+            const existingTeam = comp.teams.find((t) => t.number == team.number);
+            if (!existingTeam) {
+              comp.teams.push(team);
+            } else {
+              if (team.name && !existingTeam.name) {
+                existingTeam.name = team.name;
+              }
+            }
           }
         }
-      }
 
-      pageData = {
-        ...pageData,
-        compRecord: { ...pageData.compRecord, teams, modified: Date.now() },
-      };
-      idb.put("comps", $state.snapshot(pageData.compRecord));
-      return teams.length > 0;
-    }
+        if (insightsResult.status == "fulfilled" && insightsResult.value) {
+          comp.teamsInsights = insightsResult.value;
+        }
 
-    return false;
-  }
+        if (alliancesResult.status == "fulfilled" && alliancesResult.value?.length) {
+          comp.alliances = alliancesResult.value;
+        }
 
-  async function getAlliancesFromTbaEvent() {
-    if (!pageData.compRecord.tbaEventKey) return false;
+        if (!results.some((r) => r.status == "fulfilled" && r.value)) {
+          return;
+        }
 
-    const response = await tbaGetEventAlliances(pageData.compRecord.tbaEventKey);
-    if (response) {
-      pageData = {
-        ...pageData,
-        compRecord: { ...pageData.compRecord, alliances: response, modified: Date.now() },
-      };
-      idb.put("comps", $state.snapshot(pageData.compRecord));
-      return true;
-    }
+        comp.modified = Date.now();
 
-    return false;
-  }
+        return new Promise<void>((resolve, reject) => {
+          pageData = { ...pageData, compRecord: comp };
+          const tx = idb.transaction(["comps", "entries"], "readwrite");
+          tx.oncomplete = () => resolve();
+          tx.onabort = () => reject(tx.error);
+          tx.objectStore("comps").put($state.snapshot(comp));
+          if (entries?.length) {
+            for (const entry of $state.snapshot(entries)) {
+              tx.objectStore("entries").put(entry);
+            }
+          }
+        });
+      })
+      .catch((e) => {
+        getTbaDataError = "Error while trying to get data";
+        console.error(e);
+      })
+      .finally(() => {
+        if (showCheck) {
+          rerunAllContextLoads();
+          showCheckTimeout = window.setTimeout(() => (showCheck = false), 1000);
+        } else {
+          window.clearTimeout(showCheckTimeout);
+        }
 
-  async function getTeamsInsightsFromTbaEvent() {
-    if (!pageData.compRecord.tbaEventKey) return false;
-
-    const response = await tbaGetEventTeamInsights(pageData.compRecord.tbaEventKey);
-    if (response) {
-      pageData = {
-        ...pageData,
-        compRecord: { ...pageData.compRecord, teamsInsights: response, modified: Date.now() },
-      };
-      idb.put("comps", $state.snapshot(pageData.compRecord));
-      return true;
-    }
-
-    return false;
+        isLoadingTbaData = false;
+      });
   }
 </script>
 

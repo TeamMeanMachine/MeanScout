@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import { z } from "zod";
 import { browser } from "$app/env";
 import { refreshAll } from "$app/navigation";
+import type { TeamsRemaps } from "./comp";
 
 const bc = new BroadcastChannel("invalidate");
 bc.onmessage = () => refreshAll();
@@ -30,7 +31,7 @@ const teamInsightsSchema = z.object({
 });
 
 export type TeamInsights = z.infer<typeof teamInsightsSchema>;
-export const teamSchema = z.object({ number: z.string(), name: z.string(), remap: z.optional(z.string()) });
+export const teamSchema = z.object({ number: z.string(), name: z.string() });
 export type Team = z.infer<typeof teamSchema>;
 
 export function isValidTeam(team: string) {
@@ -44,7 +45,7 @@ export function getTeamName(team: string, teams: Team[]) {
   );
 }
 
-export function getTeamNameMap(teams: Team[]) {
+export function getTeamNameMap(teams: Team[], remaps?: TeamsRemaps) {
   const teamNameMap = new Map<string, string>();
   const baseTeamNameMap = new Map<string, string>();
 
@@ -55,6 +56,8 @@ export function getTeamNameMap(teams: Team[]) {
       if (baseNumber == team.number) baseTeamNameMap.set(team.number, team.name);
     }
   }
+
+  if (!remaps) return teamNameMap;
 
   for (const team of teams) {
     if (!team.remap) continue;

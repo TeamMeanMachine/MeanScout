@@ -2,7 +2,7 @@
   import { CalendarDaysIcon, LoaderIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import { goto } from "$app/navigation";
   import { rerunOtherContextLoads, type Team } from "#lib";
-  import { type Alliance, type Comp, type TeamsInsights } from "#lib/comp.ts";
+  import { type Alliance, type Comp, type TeamsInsights, type TeamsRemaps } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import { openDialog, type DialogExports } from "#lib/dialog.ts";
   import EditCompTbaEventKeyDialog from "#lib/dialogs/EditCompTbaEventKeyDialog.svelte";
@@ -19,13 +19,14 @@
 
   let { existing }: { existing: AllData } = $props();
 
+  let id = $state("");
   let name = $state("");
   let event = $state<string | undefined>();
-  let id = $state("");
   let matches = $state<Match[]>([]);
+  let teamsRemaps = $state<TeamsRemaps | undefined>(undefined);
   let teams = $state<Team[]>([]);
+  let teamsInsights = $state<TeamsInsights | undefined>(undefined);
   let alliances = $state<Alliance[] | undefined>(undefined);
-  let insights = $state<TeamsInsights | undefined>(undefined);
 
   let createSurveys = $state({ match: true, pit: true });
 
@@ -61,8 +62,9 @@
       };
 
       if (event) comp.tbaEventKey = event;
+      if (teamsRemaps) comp.teamsRemaps = teamsRemaps;
       if (alliances) comp.alliances = alliances;
-      if (insights) comp.teamsInsights = insights;
+      if (teamsInsights) comp.teamsInsights = teamsInsights;
 
       const tx = idb.transaction(["comps", "surveys", "fields"], "readwrite");
       tx.onerror = () => {
@@ -283,47 +285,51 @@
     }
   }
 
-  async function getDataFromTbaEvent() {
+  function getDataFromTbaEvent() {
     if (!event) return;
 
     matches = [];
+    teamsRemaps = undefined;
     teams = [];
+    teamsInsights = undefined;
     alliances = undefined;
-    insights = undefined;
 
     isLoadingTbaData = true;
 
-    try {
-      const [tbaEvent, tbaMatches, tbaTeams, tbaAlliances, tbaInsights] = await Promise.all([
-        tbaGetEvent(event),
-        tbaGetEventMatches(event),
-        tbaGetEventTeams(event),
-        tbaGetEventAlliances(event),
-        tbaGetEventTeamInsights(event),
-      ]);
-
-      if (tbaMatches?.length) matches = tbaMatches.map(({ match }) => match);
-      if (tbaTeams?.length) teams = tbaTeams;
-      if (tbaAlliances?.length) alliances = tbaAlliances;
-      if (tbaInsights) insights = tbaInsights;
-      if (tbaEvent?.remap_teams) {
-        for (const frcDemoTeam in tbaEvent.remap_teams) {
-          const demoTeam = frcDemoTeam.replace("frc", "");
-          const bTeam = tbaEvent.remap_teams[frcDemoTeam].replace("frc", "");
-          const teamObj = teams.find((t) => t.number == demoTeam);
-          if (teamObj) {
-            teamObj.remap = bTeam;
-          } else {
-            teams.push({ number: demoTeam, name: "", remap: bTeam });
+    Promise.all([
+      tbaGetEvent(event),
+      tbaGetEventMatches(event),
+      tbaGetEventTeams(event),
+      tbaGetEventAlliances(event),
+      tbaGetEventTeamInsights(event),
+    ])
+      .then(([tbaEvent, tbaMatches, tbaTeams, tbaAlliances, tbaInsights]) => {
+        if (tbaEvent?.remap_teams) {
+          teamsRemaps = {};
+          for (const frcDemoTeam in tbaEvent.remap_teams) {
+            const demoTeam = frcDemoTeam.replace("frc", "");
+            const bTeam = tbaEvent.remap_teams[frcDemoTeam].replace("frc", "");
+            teamsRemaps[demoTeam] = bTeam;
           }
         }
-      }
-    } catch (e) {
-      error = "Error while trying to get data";
-      console.error(e);
-    }
-
-    isLoadingTbaData = false;
+        if (tbaMatches?.length) matches = tbaMatches.map(({ match }) => match);
+        if (tbaTeams?.length) {
+          teams = tbaTeams.map((team) => {
+            const remap = teamsRemaps?.[team.number];
+            if (remap) return { number: remap, name: `${team.name} (${team.number})` };
+            return team;
+          });
+        }
+        if (tbaAlliances?.length) alliances = tbaAlliances;
+        if (tbaInsights) teamsInsights = tbaInsights;
+      })
+      .catch((e) => {
+        error = "Error while trying to get data";
+        console.error(e);
+      })
+      .finally(() => {
+        isLoadingTbaData = false;
+      });
   }
 </script>
 
@@ -378,7 +384,7 @@
     {#if alliances?.length}
       <span>Alliances: {alliances.length}</span>
     {/if}
-    {#if insights}
+    {#if teamsInsights}
       <span>Insights (OPRs) found</span>
     {/if}
   </div>

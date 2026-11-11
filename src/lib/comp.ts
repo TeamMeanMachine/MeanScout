@@ -6,10 +6,8 @@ import type { AllData } from "#lib/idb.ts";
 import { matchSchema } from "#lib/match.ts";
 import type { Survey } from "#lib/survey.ts";
 
-const allianceSchema = z.object({
-  teams: z.array(z.string()),
-});
-export type Alliance = z.infer<typeof allianceSchema>;
+export const teamsRemapsSchema = z.record(z.string(), z.string());
+export type TeamsRemaps = z.infer<typeof teamsRemapsSchema>;
 
 export const teamsInsightsSchema = z.object({
   oprs: z.record(z.string(), z.number()),
@@ -19,11 +17,17 @@ export const teamsInsightsSchema = z.object({
 });
 export type TeamsInsights = z.infer<typeof teamsInsightsSchema>;
 
+const allianceSchema = z.object({
+  teams: z.array(z.string()),
+});
+export type Alliance = z.infer<typeof allianceSchema>;
+
 export const compSchema = z.object({
   id: z.string(),
   name: z.string(),
   tbaEventKey: z.optional(z.string()),
   matches: z.array(matchSchema),
+  teamsRemaps: z.optional(teamsRemapsSchema),
   teams: z.array(teamSchema),
   teamsInsights: z.optional(teamsInsightsSchema),
   alliances: z.optional(z.array(allianceSchema)),
