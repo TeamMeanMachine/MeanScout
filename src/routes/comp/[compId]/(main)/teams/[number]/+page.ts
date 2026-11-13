@@ -7,11 +7,12 @@ export const load: PageLoad = async (event) => {
     error(404, `Team not found with number ${event.params.number}`);
   }
 
-  sessionStorage.setItem("team-highlight", data.team.remap || data.team.number);
+  sessionStorage.setItem("team-highlight", data.team.number);
 
   return {
-    title: `Team ${data.team.remap || data.team.number}`,
+    title: `Team ${data.team.number}`,
     team: data.team,
-    anyData: data.teamsFromEntries.includes(data.team.remap || data.team.number),
+    unrecognized: data.unrecognizedTeams.has(data.team.number),
+    anyData: data.teamsFromEntries.includes(data.team.number),
   };
 };

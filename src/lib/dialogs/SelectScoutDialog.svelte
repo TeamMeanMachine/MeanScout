@@ -7,11 +7,13 @@
     scouts,
     prefilled,
     prefilledTeam,
+    editingBulk,
     onselect,
   }: {
     scouts: string[];
     prefilled: string;
     prefilledTeam: string;
+    editingBulk?: boolean;
     onselect(scout: string, scoutTeam: string): void;
   } = $props();
 
@@ -27,7 +29,7 @@
 
       selectedScout = selectedScout.trim();
 
-      if (!selectedScout) {
+      if (!editingBulk && !selectedScout) {
         error = "No name inputted";
         return;
       }
@@ -41,18 +43,18 @@
 <div class="flex flex-col">
   <div class="mb-3 flex gap-2">
     <label class="flex grow flex-col">
-      <span>Input your name</span>
+      <span>Input {editingBulk ? "name" : "your name"}</span>
       <input
         bind:value={selectedScout}
         oninput={() => {
-          if (!selectedScout) error = "No name inputted";
+          if (!editingBulk && !selectedScout) error = "No name inputted";
           else error = "";
         }}
         class="w-full bg-neutral-800 p-2 text-theme"
       />
     </label>
     <label class="flex shrink flex-col">
-      Your team
+      {editingBulk ? "Team" : "Your team"}
       <input bind:value={selectedScoutTeam} class="w-24 bg-neutral-800 p-2 text-theme" />
     </label>
   </div>
@@ -62,7 +64,7 @@
       {#if error}
         <span class="text-sm font-bold">Error: {error}</span>
       {:else}
-        <span class="text-sm">Or, select your name below</span>
+        <span class="text-sm">Or, select {editingBulk ? "name" : "your name"} below</span>
       {/if}
 
       <div class="@container -m-1 flex max-h-100 flex-col gap-2 overflow-auto p-1">

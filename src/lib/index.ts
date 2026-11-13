@@ -2,7 +2,6 @@ import { writable } from "svelte/store";
 import { z } from "zod";
 import { browser } from "$app/env";
 import { refreshAll } from "$app/navigation";
-import type { TeamsRemaps } from "./comp";
 
 const bc = new BroadcastChannel("invalidate");
 bc.onmessage = () => refreshAll();
@@ -43,34 +42,6 @@ export function getTeamName(team: string, teams: Team[]) {
     teams.find((t) => t.number == team && t.name)?.name ||
     teams.find((t) => parseInt(t.number) == parseInt(team) && t.name)?.name
   );
-}
-
-export function getTeamNameMap(teams: Team[], remaps?: TeamsRemaps) {
-  const teamNameMap = new Map<string, string>();
-  const baseTeamNameMap = new Map<string, string>();
-
-  for (const team of teams) {
-    const baseNumber = parseInt(team.number).toString();
-    if (team.name) {
-      teamNameMap.set(team.number, team.name);
-      if (baseNumber == team.number) baseTeamNameMap.set(team.number, team.name);
-    }
-  }
-
-  if (!remaps) return teamNameMap;
-
-  for (const team of teams) {
-    if (!team.remap) continue;
-    const baseRemap = parseInt(team.remap).toString();
-    const name = baseTeamNameMap.get(baseRemap);
-    if (!name) {
-      teamNameMap.set(baseRemap, team.name);
-      continue;
-    }
-    teamNameMap.set(team.remap, name + " " + team.remap.replace(baseRemap, ""));
-  }
-
-  return teamNameMap;
 }
 
 export const allianceTeamLabels = ["Captain", "1st Pick", "2nd Pick"];

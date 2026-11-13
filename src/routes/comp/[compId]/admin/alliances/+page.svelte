@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { allianceTeamLabels, getTeamNameMap, rerunAllContextLoads } from "#lib";
+  import { allianceTeamLabels, rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import AllianceTeamDialog from "#lib/dialogs/AllianceTeamDialog.svelte";
@@ -19,12 +19,8 @@
   );
 
   const sortedTeams = $derived(
-    data.compRecord.teams.toSorted((a, b) =>
-      (a.remap || a.number).localeCompare(b.remap || b.number, undefined, { numeric: true }),
-    ),
+    data.compRecord.teams.toSorted((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true })),
   );
-
-  const teamNameMap = $derived(getTeamNameMap(sortedTeams));
 </script>
 
 <div class="flex flex-col gap-3">
@@ -52,7 +48,6 @@
               openDialog(AllianceTeamDialog, {
                 type: "edit",
                 teams: sortedTeams,
-                teamNameMap,
                 allianceIndex,
                 team,
                 teamLabel: allianceTeamLabels[teamIndex] || "Backup",
@@ -89,7 +84,6 @@
             openDialog(AllianceTeamDialog, {
               type: "add",
               teams: sortedTeams,
-              teamNameMap,
               allianceIndex,
               teamLabel: allianceTeamLabels[alliance.teams.length] || "Backup",
               onsubmit(newTeam) {
@@ -112,7 +106,6 @@
         openDialog(AllianceTeamDialog, {
           type: "add",
           teams: sortedTeams,
-          teamNameMap,
           allianceIndex: (compRecord.alliances || []).length,
           teamLabel: allianceTeamLabels[0],
           onsubmit(newTeam) {

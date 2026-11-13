@@ -1,20 +1,9 @@
 import type { LayoutLoad } from "./$types";
-import { getTeamNameMap } from "#lib";
 
 export const load: LayoutLoad = async (event) => {
   const data = await event.parent();
 
-  const teams = structuredClone(data.compRecord.teams);
-
-  const remaps = new Map<string, string>();
-  for (const team of teams) {
-    if (team.remap) remaps.set(team.number, team.remap);
-  }
-
-  const teamNameMap = getTeamNameMap(teams);
-
-  const teamsFromEntries = data.entryRecords.map((e) => remaps.get(e.team) || e.team);
-
+  const teamsFromEntries = data.entryRecords.map((e) => e.team);
   const teamNumbersFromStuff = [
     ...new Set([
       ...teamsFromEntries,
@@ -25,20 +14,26 @@ export const load: LayoutLoad = async (event) => {
     ]),
   ];
 
+  const teams = structuredClone(data.compRecord.teams);
+  const unrecognizedTeams = new Set<string>();
   for (const teamNumber of teamNumbersFromStuff) {
-    if (!teams.some((t) => (t.remap || t.number) == teamNumber)) {
-      teams.push({ number: teamNumber, name: teamNameMap.get(teamNumber) || "" });
+    if (!teams.some((t) => t.number == teamNumber)) {
+      teams.push({
+        number: teamNumber,
+        name: teams.find((t) => parseInt(t.number) == parseInt(teamNumber))?.name || "",
+      });
+      unrecognizedTeams.add(teamNumber);
     }
   }
 
-  teams.sort((a, b) => (a.remap || a.number).localeCompare(b.remap || b.number, "en", { numeric: true }));
+  teams.sort((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
 
-  const team = teams.find((t) => (t.remap || t.number) == event.params.number);
+  const team = teams.find((t) => t.number == event.params.number);
 
   return {
     title: "Teams",
     teams,
-    teamNameMap,
+    unrecognizedTeams,
     teamsFromEntries,
     team,
   };

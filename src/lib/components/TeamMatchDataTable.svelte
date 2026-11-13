@@ -54,7 +54,7 @@
 
   let { matches } = $derived(
     getAllMatches($state.snapshot(pageData.compRecord), entries, {
-      withTeam: team.remap || team.number,
+      withTeam: team.number,
       allowDrafts: true,
       sort: "descending",
     }),
@@ -101,7 +101,7 @@
   }
 
   function filterEntries(entry: Entry): entry is MatchEntry {
-    return entry.type == "match" && entry.team == (team.remap || team.number) && entry.surveyId == surveyRecord.id;
+    return entry.type == "match" && entry.team == team.number && entry.surveyId == surveyRecord.id;
   }
 </script>
 

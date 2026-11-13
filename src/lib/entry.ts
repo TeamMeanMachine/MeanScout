@@ -3,7 +3,7 @@ import { getTeamName, serializeDate, valueSchema } from "#lib";
 import type { Comp } from "#lib/comp.ts";
 import { compareMatches, matchLevels, matchValueSchema, type Match, type MatchIdentifier } from "#lib/match.ts";
 import { getAllScouts } from "#lib/prediction.ts";
-import { targets } from "#lib/settings.ts";
+import { targets, type Target } from "#lib/settings.ts";
 import type { Survey } from "#lib/survey.ts";
 
 export const entryStatuses = ["draft", "submitted", "exported"] as const;
@@ -109,6 +109,15 @@ function compareMatchTeams(a: Entry, b: Entry, matches: Match[]) {
   return 0;
 }
 
+export type EntryGroupInfo =
+  | { by: "survey"; surveyId: string }
+  | { by: "match"; match: MatchIdentifier }
+  | { by: "scout"; scout: { name: string; team?: string | undefined } }
+  | { by: "target"; target: Target }
+  | { by: "team"; team: string; teamName?: string | undefined; isUnrecognized: boolean }
+  | { by: "absent"; absent: boolean }
+  | { by: "status"; status: EntryStatus };
+
 export function groupEntries(
   comp: Comp,
   surveys: Survey[],
@@ -177,7 +186,12 @@ export function groupEntries(
         .map((team) => {
           const entries = sortedEntries.filter((e) => e.team == team);
           if (entries.length) {
-            return { team, teamName: getTeamName(team, comp.teams), entries };
+            return {
+              team,
+              teamName: getTeamName(team, comp.teams),
+              isUnrecognized: !comp.teams.some((t) => t.number == team),
+              entries,
+            };
           }
         })
         .filter((group) => group !== undefined),

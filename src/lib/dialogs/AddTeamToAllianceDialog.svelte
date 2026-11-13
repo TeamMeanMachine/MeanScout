@@ -15,8 +15,6 @@
     onadd(newAlliances: Alliance[]): void;
   } = $props();
 
-  const bestNumber = $derived(team.remap || team.number);
-
   // svelte-ignore state_referenced_locally
   let alliances = $state($state.snapshot(compAlliances));
 
@@ -36,7 +34,7 @@
   function clearExistingOfThisTeam() {
     alliances = alliances
       .map((a) => {
-        a.teams = a.teams.filter((t) => t != bestNumber);
+        a.teams = a.teams.filter((t) => t != team.number);
         return a;
       })
       .filter((a) => a.teams.length);
@@ -44,13 +42,13 @@
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">
-  {#if compAlliances.some((a) => a.teams.includes(bestNumber))}
-    <span>Edit {bestNumber}'s alliance</span>
+  {#if compAlliances.some((a) => a.teams.includes(team.number))}
+    <span>Edit {team.number}'s alliance</span>
   {:else}
-    <span>Add {bestNumber} to Alliance</span>
+    <span>Add {team.number} to Alliance</span>
   {/if}
 
-  <Button onclick={clearExistingOfThisTeam} disabled={alliances.every((a) => !a.teams.includes(bestNumber))}>
+  <Button onclick={clearExistingOfThisTeam} disabled={alliances.every((a) => !a.teams.includes(team.number))}>
     <UserMinusIcon class="size-5 text-theme" />
   </Button>
 </div>
@@ -73,16 +71,16 @@
     <div class="col-span-full grid grid-cols-subgrid items-center">
       <Button
         onclick={() => {
-          if (alliance.teams.includes(bestNumber)) return;
+          if (alliance.teams.includes(team.number)) return;
           clearExistingOfThisTeam();
-          const currentIndex = compAlliances[allianceIndex].teams.indexOf(bestNumber);
+          const currentIndex = compAlliances[allianceIndex].teams.indexOf(team.number);
           if (currentIndex == -1) {
-            alliance.teams.push(bestNumber);
+            alliance.teams.push(team.number);
           } else {
-            alliance.teams.splice(currentIndex, 0, bestNumber);
+            alliance.teams.splice(currentIndex, 0, team.number);
           }
         }}
-        disabled={alliance.teams.includes(bestNumber)}
+        disabled={alliance.teams.includes(team.number)}
         class="min-w-10 justify-center"
       >
         {allianceIndex + 1}
@@ -92,8 +90,8 @@
         <div
           class={[
             "min-w-15 justify-center",
-            alliance.teams.includes(bestNumber) ? "font-bold" : "font-light",
-            t == bestNumber ? "underline" : "",
+            alliance.teams.includes(team.number) ? "font-bold" : "font-light",
+            t == team.number ? "underline" : "",
           ]}
         >
           {t}
@@ -106,11 +104,11 @@
     </div>
   {/each}
 
-  {#if !alliances.some((a) => a.teams.includes(bestNumber) && a.teams.length == 1)}
+  {#if !alliances.some((a) => a.teams.includes(team.number) && a.teams.length == 1)}
     <Button
       onclick={() => {
         clearExistingOfThisTeam();
-        alliances.push({ teams: [bestNumber] });
+        alliances.push({ teams: [team.number] });
       }}
       class="col-span-1 justify-self-center"
     >

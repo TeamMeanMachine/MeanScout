@@ -7,7 +7,6 @@
 
   let props: {
     teams: Team[];
-    teamNameMap: Map<string, string>;
     allianceIndex: number;
     teamLabel: string;
     onsubmit(team: string): void;
@@ -43,10 +42,10 @@
 {#if props.teams.length}
   <div class="-m-1 flex max-h-125 flex-col gap-2 overflow-auto p-1">
     {#each props.teams as existingTeam}
-      {const selected = $derived(team == (existingTeam.remap || existingTeam.number))}
+      {const selected = $derived(team == existingTeam.number)}
 
       <Button
-        onclick={() => (team = existingTeam.remap || existingTeam.number)}
+        onclick={() => (team = existingTeam.number)}
         class={[selected ? "font-bold" : "font-light"]}
         {@attach (btn) => {
           if (untrack(() => selected)) {
@@ -61,10 +60,9 @@
         {/if}
 
         <div class="flex flex-col truncate">
-          {existingTeam.remap || existingTeam.number}
-          {const teamName = $derived(props.teamNameMap.get(existingTeam.remap || existingTeam.number))}
-          {#if teamName}
-            <div class="text-sm">{teamName}</div>
+          {existingTeam.number}
+          {#if existingTeam.name}
+            <div class="text-sm">{existingTeam.name}</div>
           {/if}
         </div>
       </Button>
@@ -75,7 +73,7 @@
 <label class="flex flex-col">
   <div class="flex items-baseline justify-between gap-x-3">
     <span>Team</span>
-    <span class="truncate text-xs font-light">{props.teamNameMap.get(team)}</span>
+    <span class="truncate text-xs font-light">{props.teams.find((t) => t.number == team)?.name}</span>
   </div>
   <input bind:value={team} class="bg-neutral-800 p-2 text-theme" />
 </label>

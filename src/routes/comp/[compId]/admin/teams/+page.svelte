@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PlusIcon } from "@lucide/svelte";
   import type { PageProps } from "./$types";
-  import { getTeamNameMap, rerunAllContextLoads } from "#lib";
+  import { rerunAllContextLoads } from "#lib";
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import EditTeamDialog from "#lib/dialogs/EditTeamDialog.svelte";
@@ -11,12 +11,8 @@
   let { data }: PageProps = $props();
 
   const sortedTeams = $derived(
-    data.compRecord.teams.toSorted((a, b) =>
-      (a.remap || a.number).localeCompare(b.remap || b.number, undefined, { numeric: true }),
-    ),
+    data.compRecord.teams.toSorted((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true })),
   );
-
-  const teamNameMap = $derived(getTeamNameMap(sortedTeams));
 </script>
 
 <div class="flex flex-col gap-6">
@@ -28,20 +24,11 @@
             onclick={() => {
               openDialog(EditTeamDialog, {
                 team,
-                onedit(name, remap) {
-                  const teams = $state.snapshot(data.compRecord.teams);
-                  const teamToEdit = teams.find((t) => t.number == team.number);
-                  if (teamToEdit) {
-                    teamToEdit.name = name;
-                    if (!remap) {
-                      delete teamToEdit.remap;
-                    } else {
-                      teamToEdit.remap = remap;
-                    }
-                  }
+                onedit(name) {
+                  team.name = name;
                   data = {
                     ...data,
-                    compRecord: { ...data.compRecord, teams, modified: Date.now() },
+                    compRecord: { ...data.compRecord, modified: Date.now() },
                   };
                   idb.put("comps", $state.snapshot(data.compRecord)).onsuccess = rerunAllContextLoads;
                 },
@@ -60,24 +47,8 @@
             }}
             class="col-span-full grid grid-cols-subgrid gap-4"
           >
-            <div class="font-bold">
-              {#if team.remap}
-                {team.remap}
-                <div class="text-xs font-light">({team.number})</div>
-              {:else}
-                {team.number}
-              {/if}
-            </div>
-
-            {const remapName = $derived(team.remap ? teamNameMap.get(team.remap) : undefined)}
-            {#if remapName}
-              <div class="text-sm">
-                {remapName}
-                {#if team.name}
-                  <div class="mt-0.5 text-xs font-light">({team.name})</div>
-                {/if}
-              </div>
-            {:else if team.name}
+            <div class="font-bold">{team.number}</div>
+            {#if team.name}
               <div class="text-sm">{team.name}</div>
             {/if}
           </Button>

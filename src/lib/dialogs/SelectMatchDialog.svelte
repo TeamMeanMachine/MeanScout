@@ -7,11 +7,13 @@
     matches,
     lastCompletedMatch,
     prefilled,
+    editingBulk,
     onselect,
   }: {
     matches: (Match & { extraTeams?: string[] })[];
     lastCompletedMatch?: MatchIdentifier | undefined;
     prefilled: MatchIdentifier;
+    editingBulk?: boolean,
     onselect(match: MatchIdentifier): void;
   } = $props();
 

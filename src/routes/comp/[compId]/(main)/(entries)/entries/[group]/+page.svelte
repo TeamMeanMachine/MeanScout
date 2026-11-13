@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRightIcon, NotepadTextIcon, ShareIcon } from "@lucide/svelte";
+  import { ChevronRightIcon, NotepadTextIcon, ShareIcon, SquarePenIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
   import { z } from "zod";
   import { goto } from "$app/navigation";
@@ -8,22 +8,15 @@
   import Button from "#lib/components/Button.svelte";
   import { openDialog } from "#lib/dialog.ts";
   import BulkExportDialog from "#lib/dialogs/BulkExportDialog.svelte";
+  import SelectMatchDialog from "#lib/dialogs/SelectMatchDialog.svelte";
+  import SelectScoutDialog from "#lib/dialogs/SelectScoutDialog.svelte";
   import ViewEntryDialog from "#lib/dialogs/ViewEntryDialog.svelte";
-  import { entryStatuses, type Entry, type EntryStatus } from "#lib/entry.ts";
+  import { entryStatuses, type Entry, type EntryGroupInfo } from "#lib/entry.ts";
   import { idb } from "#lib/idb.ts";
-  import { compareMatches, matchIdentifierSchema, type MatchIdentifier } from "#lib/match.ts";
-  import { targets, type Target } from "#lib/settings.ts";
+  import { compareMatches, matchIdentifierSchema } from "#lib/match.ts";
+  import { targets } from "#lib/settings.ts";
 
   let { data }: PageProps = $props();
-
-  type Group =
-    | { by: "survey"; surveyId: string }
-    | { by: "match"; match: MatchIdentifier }
-    | { by: "scout"; scout: { name: string; team?: string | undefined } }
-    | { by: "target"; target: Target }
-    | { by: "team"; team: string; teamName?: string | undefined }
-    | { by: "absent"; absent: boolean }
-    | { by: "status"; status: EntryStatus };
 
   const toggleStatesSchema = z
     .object({
@@ -113,9 +106,9 @@
     </div>
   {:else if data.groupedEntries.by == "team"}
     <div class="flex flex-col space-y-6" in:slide={{ delay: 50 }}>
-      {#each data.groupedEntries.groups as { team, teamName, entries }}
+      {#each data.groupedEntries.groups as { team, teamName, isUnrecognized, entries }}
         {@const toggled = toggleStates.team.includes(team)}
-        {@render entryGroup({ by: "team", team, teamName }, entries, toggled, () => {
+        {@render entryGroup({ by: "team", team, teamName, isUnrecognized }, entries, toggled, () => {
           if (toggled) toggleStates.team = toggleStates.team.filter((val) => val != team);
           else toggleStates.team.push(team);
         })}
@@ -144,45 +137,45 @@
   {/if}
 </div>
 
-{#snippet entryGroup(group: Group, entries: Entry[], toggled: boolean, toggle: () => void)}
-  <div class="flex flex-col space-y-2">
+{#snippet entryGroup(groupInfo: EntryGroupInfo, entries: Entry[], toggled: boolean, toggle: () => void)}
+  <div class="flex flex-col">
     <div class="flex gap-2">
       <Button onclick={toggle} class="grow">
         <ChevronRightIcon class="text-theme transition-[rotate] {toggled ? 'rotate-90' : 'rotate-0'}" />
 
         <div class="flex grow items-center justify-between gap-x-1">
-          {#if group.by == "survey"}
+          {#if groupInfo.by == "survey"}
             <span class={toggled ? "font-bold" : "font-light"}>
-              {data.surveyRecords.find((s) => s.id == group.surveyId)?.name}
+              {data.surveyRecords.find((s) => s.id == groupInfo.surveyId)?.name}
             </span>
-          {:else if group.by == "match"}
+          {:else if groupInfo.by == "match"}
             <span class={toggled ? "font-bold" : "font-light"}>
-              {#if group.match.level && group.match.level != "qm"}
-                {group.match.level}{group.match.set || 1}-{group.match.number}
+              {#if groupInfo.match.level && groupInfo.match.level != "qm"}
+                {groupInfo.match.level}{groupInfo.match.set || 1}-{groupInfo.match.number}
               {:else}
-                {group.match.number}
+                {groupInfo.match.number}
               {/if}
             </span>
-          {:else if group.by == "scout"}
+          {:else if groupInfo.by == "scout"}
             <div class={["flex flex-col", toggled ? "font-bold" : "font-light"]}>
-              {group.scout.name || "No name"}
-              {#if group.scout.team}
-                <span class="text-xs font-light">{group.scout.team}</span>
+              {groupInfo.scout.name || "No name"}
+              {#if groupInfo.scout.team}
+                <span class="text-xs font-light">{groupInfo.scout.team}</span>
               {/if}
             </div>
-          {:else if group.by == "target"}
-            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{group.target}</span>
-          {:else if group.by == "team"}
+          {:else if groupInfo.by == "target"}
+            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{groupInfo.target}</span>
+          {:else if groupInfo.by == "team"}
             <div class="flex flex-col">
-              <span class="font-bold">{group.team}</span>
-              {#if group.teamName}
-                <span class="text-xs {toggled ? 'font-bold' : 'font-light'}">{group.teamName}</span>
+              <span class="font-bold">{groupInfo.team}</span>
+              {#if groupInfo.teamName}
+                <span class="text-xs {toggled ? 'font-bold' : 'font-light'}">{groupInfo.teamName}</span>
               {/if}
             </div>
-          {:else if group.by == "absent"}
-            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{group.absent}</span>
+          {:else if groupInfo.by == "absent"}
+            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{groupInfo.absent}</span>
           {:else}
-            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{group.status}</span>
+            <span class="capitalize {toggled ? 'font-bold' : 'font-light'}">{groupInfo.status}</span>
           {/if}
 
           <div class="flex gap-0.5 text-sm">
@@ -197,7 +190,9 @@
     </div>
 
     {#if toggled}
-      <div class="flex flex-col gap-2" transition:slide>
+      <div class="mt-2 flex flex-col gap-2" transition:slide>
+        {@render bulkEditButton(groupInfo, entries)}
+
         {#each entries as entry (entry.id)}
           {@const survey = data.surveyRecords.find((survey) => survey.id == entry.surveyId)}
 
@@ -269,4 +264,30 @@
       </div>
     {/if}
   </div>
+{/snippet}
+
+{#snippet bulkEditButton(groupInfo: EntryGroupInfo, entries: Entry[])}
+  <Button
+    onclick={() => {
+      if (groupInfo.by == "scout") {
+        openDialog(SelectScoutDialog, {
+          scouts: data.suggestedScouts,
+          prefilled: groupInfo.scout.name,
+          prefilledTeam: groupInfo.scout.team || "",
+          editingBulk: true,
+          onselect(scout, team) {},
+        });
+      } else if (groupInfo.by == "match") {
+        openDialog(SelectMatchDialog, {
+          matches: data.matches,
+          prefilled: groupInfo.match,
+          onselect(selected) {},
+        });
+      }
+    }}
+    class="self-start text-sm"
+  >
+    <SquarePenIcon class="size-5 text-theme" />
+    Bulk edit
+  </Button>
 {/snippet}

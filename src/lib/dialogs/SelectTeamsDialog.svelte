@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EraserIcon, SquareCheckBigIcon, SquareIcon } from "@lucide/svelte";
   import { slide } from "svelte/transition";
-  import { allianceTeamLabels, getTeamNameMap, isValidTeam } from "#lib";
+  import { allianceTeamLabels, isValidTeam } from "#lib";
   import type { Comp } from "#lib/comp.ts";
   import Button from "#lib/components/Button.svelte";
   import { closeDialog, type DialogExports } from "#lib/dialog.ts";
@@ -24,8 +24,8 @@
   const sortedTeams = $derived.by(() => {
     if (sortBy == "alliance" && comp.alliances?.length) {
       return comp.teams.toSorted((a, b) => {
-        const aAllianceIndex = allianceTeams?.indexOf(a.remap || a.number);
-        const bAllianceIndex = allianceTeams?.indexOf(b.remap || b.number);
+        const aAllianceIndex = allianceTeams?.indexOf(a.number);
+        const bAllianceIndex = allianceTeams?.indexOf(b.number);
 
         if (aAllianceIndex != undefined && bAllianceIndex == undefined) {
           return -1;
@@ -49,21 +49,17 @@
           }
         }
 
-        return (a.remap || a.number).localeCompare(b.remap || b.number, "en", { numeric: true });
+        return a.number.localeCompare(b.number, "en", { numeric: true });
       });
     }
 
-    return comp.teams.toSorted((a, b) =>
-      (a.remap || a.number).localeCompare(b.remap || b.number, "en", { numeric: true }),
-    );
+    return comp.teams.toSorted((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
   });
-
-  const teamNameMap = $derived(getTeamNameMap(sortedTeams));
 
   const groupedTeams = $derived(
     Object.groupBy(sortedTeams, (team) => {
       if (!comp.alliances || sortBy == "number") return "Teams";
-      const allianceIndex = comp.alliances.findIndex((a) => a.teams.includes(team.remap || team.number));
+      const allianceIndex = comp.alliances.findIndex((a) => a.teams.includes(team.number));
       if (allianceIndex == -1) return "Teams";
       return ("Alliance " + (allianceIndex + 1)) as `Alliance ${number}`;
     }),
@@ -113,18 +109,18 @@
       <span class="mr-2 text-end text-sm not-first:mt-2">{group}</span>
     {/if}
     {#each teams || [] as team}
-      {@const selected = selection.includes(team.remap || team.number)}
+      {@const selected = selection.includes(team.number)}
       {@const allianceWithIndex = comp.alliances
         ?.map((a, i) => ({ ...a, i }))
-        .find((a) => a.teams.includes(team.remap || team.number))}
+        .find((a) => a.teams.includes(team.number))}
       {@const font = selected ? "font-bold" : "font-light"}
 
       <Button
         onclick={() => {
           if (selected) {
-            selection = selection.filter((s) => s != (team.remap || team.number));
+            selection = selection.filter((s) => s != team.number);
           } else {
-            selection.push(team.remap || team.number);
+            selection.push(team.number);
           }
         }}
         class="{font} justify-between"
@@ -136,8 +132,8 @@
             <SquareIcon class="size-5 text-neutral-500" />
           {/if}
           <div class="flex flex-col truncate">
-            <span>{team.remap || team.number}</span>
-            <span class="truncate text-xs">{teamNameMap.get(team.remap || team.number)}</span>
+            <span>{team.number}</span>
+            <span class="truncate text-xs">{team.name}</span>
           </div>
         </div>
 

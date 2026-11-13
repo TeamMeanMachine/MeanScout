@@ -10,19 +10,16 @@
     ondelete,
   }: {
     team: Team;
-    onedit(name: string, remap?: string | undefined): void;
+    onedit(name: string): void;
     ondelete(): void;
   } = $props();
 
   // svelte-ignore state_referenced_locally
   let name = $state(team.name);
 
-  // svelte-ignore state_referenced_locally
-  let remap = $state(team.remap);
-
   export const { onconfirm }: DialogExports = {
     onconfirm() {
-      onedit(name.trim(), remap?.trim() || undefined);
+      onedit(name.trim());
       closeDialog();
     },
   };
@@ -43,10 +40,4 @@
 <label class="flex flex-col">
   Name
   <input bind:value={name} class="bg-neutral-800 p-2 text-theme" />
-</label>
-
-<label class="flex flex-col">
-  Remap to B team
-  <input bind:value={remap} class="bg-neutral-800 p-2 text-theme" />
-  <span class="pt-1 text-xs font-light">Only applicable for events that use B team numbers</span>
 </label>

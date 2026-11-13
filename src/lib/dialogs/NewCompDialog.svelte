@@ -306,10 +306,10 @@
       .then(([tbaEvent, tbaMatches, tbaTeams, tbaAlliances, tbaInsights]) => {
         if (tbaEvent?.remap_teams) {
           teamsRemaps = {};
-          for (const frcDemoTeam in tbaEvent.remap_teams) {
-            const demoTeam = frcDemoTeam.replace("frc", "");
-            const bTeam = tbaEvent.remap_teams[frcDemoTeam].replace("frc", "");
-            teamsRemaps[demoTeam] = bTeam;
+          for (const frcFromTeam in tbaEvent.remap_teams) {
+            const fromTeam = frcFromTeam.replace("frc", "");
+            const toTeam = tbaEvent.remap_teams[frcFromTeam].replace("frc", "");
+            teamsRemaps[fromTeam] = toTeam;
           }
         }
         if (tbaMatches?.length) matches = tbaMatches.map(({ match }) => match);

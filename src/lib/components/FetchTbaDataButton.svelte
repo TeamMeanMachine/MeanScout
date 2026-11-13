@@ -14,7 +14,7 @@
     tbaGetEventTeams,
   } from "#lib/tba/index.ts";
 
-  let {
+  const {
     pageData,
   }: {
     pageData: CompPageData;
@@ -49,10 +49,10 @@
 
         if (eventResult.status == "fulfilled" && eventResult.value?.remap_teams) {
           comp.teamsRemaps ??= {};
-          for (const frcDemoTeam in eventResult.value.remap_teams) {
-            const demoTeam = frcDemoTeam.replace("frc", "");
-            const bTeam = eventResult.value.remap_teams[frcDemoTeam].replace("frc", "");
-            comp.teamsRemaps[demoTeam] = bTeam;
+          for (const frcFromTeam in eventResult.value.remap_teams) {
+            const fromTeam = frcFromTeam.replace("frc", "");
+            const toTeam = eventResult.value.remap_teams[frcFromTeam].replace("frc", "");
+            comp.teamsRemaps[fromTeam] = toTeam;
           }
         }
 
@@ -91,7 +91,7 @@
         if (teamsResult.status == "fulfilled" && teamsResult.value?.length) {
           for (let team of teamsResult.value) {
             const remap = comp.teamsRemaps?.[team.number];
-            if (remap) team = { number: remap, name: `${team.name} (${team.number})` };
+            if (remap) team = { number: remap, name: team.name };
             const existingTeam = comp.teams.find((t) => t.number == team.number);
             if (!existingTeam) {
               comp.teams.push(team);
@@ -115,10 +115,11 @@
           return;
         }
 
+        showCheck = true;
+
         comp.modified = Date.now();
 
         return new Promise<void>((resolve, reject) => {
-          pageData = { ...pageData, compRecord: comp };
           const tx = idb.transaction(["comps", "entries"], "readwrite");
           tx.oncomplete = () => resolve();
           tx.onabort = () => reject(tx.error);

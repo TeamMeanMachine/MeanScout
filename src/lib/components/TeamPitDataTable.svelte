@@ -48,7 +48,7 @@
   }
 
   function filterEntries(entry: Entry): entry is PitEntry {
-    return entry.type == "pit" && entry.team == (team.remap || team.number) && entry.surveyId == surveyRecord.id;
+    return entry.type == "pit" && entry.team == team.number && entry.surveyId == surveyRecord.id;
   }
 
   function sortEntries(a: PitEntry, b: PitEntry) {

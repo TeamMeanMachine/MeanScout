@@ -9,5 +9,14 @@ export const load: PageLoad = async (event) => {
   }
 
   const groupedEntries = groupEntries(data.compRecord, data.surveyRecords, data.entryRecords, data.groupBy as any);
-  return { groupedEntries };
+
+  const suggestedScouts = new Set([
+    ...data.entryRecords.map((entry) => entry.scout).filter((scout) => scout !== undefined),
+    ...(data.compRecord.scouts || []),
+  ])
+    .values()
+    .toArray()
+    .toSorted((a, b) => a.localeCompare(b));
+
+  return { groupedEntries, suggestedScouts };
 };

@@ -36,12 +36,8 @@
   function filterTeam(team: Team) {
     if (!cleanedSearch) return true;
 
-    const bestName = data.teamNameMap.get(team.remap || team.number) || team.name;
-
     return (
-      (team.remap && parseInt(team.remap) == parseInt(cleanedSearch)) ||
       parseInt(team.number) == parseInt(cleanedSearch) ||
-      bestName.toLowerCase().replaceAll(" ", "").includes(cleanedSearch) ||
       team.name.toLowerCase().replaceAll(" ", "").includes(cleanedSearch)
     );
   }
@@ -121,26 +117,31 @@
   {#if data.teams.length}
     <div class="mb-6 flex flex-col gap-2 px-3 pt-1">
       {#each filteredTeams as team}
-        {const viewing = $derived((team.remap || team.number) == (data.team?.remap || data.team?.number))}
+        {const viewing = $derived(team.number == data.team?.number)}
+        {const unrecognized = $derived(data.unrecognizedTeams.has(team.number))}
         {const allianceWithIndex = $derived(
-          data.compRecord.alliances
-            ?.map((a, i) => ({ ...a, i }))
-            .find((a) => a.teams.includes(team.remap || team.number)),
+          data.compRecord.alliances?.map((a, i) => ({ ...a, i })).find((a) => a.teams.includes(team.number)),
         )}
-        {const teamName = $derived(data.teamNameMap.get(team.remap || team.number))}
 
-        <Anchor route="comp/{data.compRecord.id}/teams/{team.remap || team.number}" class="justify-between">
-          <div id={team.remap || team.number} class="flex flex-col">
-            <span class="font-bold {viewing ? 'underline' : ''}">{team.remap || team.number}</span>
-            {#if teamName}
-              <span class="text-xs {viewing ? 'font-bold underline' : 'font-light'} text-balance">{teamName}</span>
+        <Anchor
+          route="comp/{data.compRecord.id}/teams/{team.number}"
+          title={unrecognized ? "Unrecognized team" : undefined}
+          class="relative justify-between"
+        >
+          {#if unrecognized}
+            <span class="absolute top-1.5 right-1.5 animate-bounce text-xs font-bold tracking-tighter">?</span>
+          {/if}
+          <div id={team.number} class="flex flex-col">
+            <span class="font-bold {viewing ? 'underline' : ''}">{team.number}</span>
+            {#if team.name}
+              <span class="text-xs {viewing ? 'font-bold underline' : 'font-light'} text-balance">{team.name}</span>
             {/if}
           </div>
           <div class="flex flex-col text-end">
             {#if allianceWithIndex}
               <div class="truncate text-xs tracking-tighter">
                 Alliance {allianceWithIndex.i + 1}<br />
-                {allianceTeamLabels[allianceWithIndex.teams.indexOf(team.remap || team.number)] || "Backup"}
+                {allianceTeamLabels[allianceWithIndex.teams.indexOf(team.number)] || "Backup"}
               </div>
             {/if}
           </div>
